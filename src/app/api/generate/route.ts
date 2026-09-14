@@ -19,10 +19,10 @@ export async function POST(req: Request) {
       apiKey: json.apiKey
     });
     return NextResponse.json(content);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error generating content:", error);
     return NextResponse.json(
-      { error: "Error interno al procesar el contenido" },
+      { error: "Error interno al procesar el contenido", details: error?.message || String(error) },
       { status: 500 }
     );
   }
