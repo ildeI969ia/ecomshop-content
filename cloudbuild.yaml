@@ -1,0 +1,45 @@
+steps:
+  # Paso 1: Construir la imagen de Docker utilizando el Dockerfile multi-stage
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/ecomshop-repo/content-engine:$COMMIT_SHA'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/ecomshop-repo/content-engine:latest'
+      - '.'
+
+  # Paso 2: Subir la imagen construida a Google Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/ecomshop-repo/content-engine:$COMMIT_SHA'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/ecomshop-repo/content-engine:latest'
+
+  # Paso 3: Desplegar en Google Cloud Run (europe-west1) con inyección de secretos desde Secret Manager
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'ecomshop-content'
+      - '--image=europe-west1-docker.pkg.dev/$PROJECT_ID/ecomshop-repo/content-engine:$COMMIT_SHA'
+      - '--region=europe-west1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--min-instances=0'
+      - '--max-instances=5'
+      - '--memory=1Gi'
+      - '--cpu=1'
+      - '--set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest'
+
+images:
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/ecomshop-repo/content-engine:$COMMIT_SHA'
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/ecomshop-repo/content-engine:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
