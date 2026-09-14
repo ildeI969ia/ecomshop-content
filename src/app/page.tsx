@@ -35,6 +35,8 @@ import { StrategicAngle } from "@/lib/gemini-agent";
 import { PRESET_IMAGE_PROMPTS } from "@/lib/image-generator";
 import { UsageRecord, calculateUsageCost } from "@/lib/finops";
 import { NotebookState, OFFICIAL_NOTEBOOK } from "@/lib/notebooklm";
+import { MultimodalAdvisor } from "@/components/MultimodalAdvisor";
+import { CampaignRecommendation } from "@/lib/multimodal-advisor";
 
 export default function ContentDashboard() {
   const [selectedPresetId, setSelectedPresetId] = useState(PRESET_TOPICS[0].id);
@@ -57,8 +59,8 @@ export default function ContentDashboard() {
   
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState<ContentOutput | null>(null);
-  // Vista Principal del Panel de Administración (4 Módulos)
-  const [mainView, setMainView] = useState<"generator" | "history" | "image_studio" | "finops">("generator");
+  // Vista Principal del Panel de Administración (5 Módulos)
+  const [mainView, setMainView] = useState<"generator" | "advisor" | "history" | "image_studio" | "finops">("generator");
 
   // Historial de Contenidos y Estados
   interface ArticleHistoryItem {
@@ -248,6 +250,21 @@ export default function ContentDashboard() {
       setCustomCtaText(ctaMatch.defaultButtonText);
       setCustomCtaUrl(ctaMatch.defaultUrl);
     }
+  };
+
+  const handleApplyMultimodalRecommendation = (rec: CampaignRecommendation) => {
+    setTopicTitle(rec.title);
+    setCategory(rec.category);
+    setCustomNotes(`Recomendación del Asesor Multimodal [${rec.suggestedAngle}]:\n- Contexto Técnico Detectado: ${rec.detectedContext}\n- Gancho Inicial: ${rec.hookText}\n- Por qué funciona: ${rec.whyThisWorks}`);
+    setCustomCtaText(rec.recommendedCtaText);
+
+    // Si detectó productos
+    if (rec.recommendedProducts && rec.recommendedProducts.length > 0) {
+      setCustomProductText(rec.recommendedProducts.join(", "));
+    }
+
+    // Cambiar a la vista del generador multicanal
+    setMainView("generator");
   };
 
   const handleSelectPreset = (id: string) => {
@@ -471,7 +488,7 @@ export default function ContentDashboard() {
           </div>
         </div>
 
-        {/* 4 Módulos de Navegación del Panel */}
+        {/* 5 Módulos de Navegación del Panel */}
         <nav className="flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/80">
           <button
             onClick={() => setMainView("generator")}
@@ -483,6 +500,21 @@ export default function ContentDashboard() {
           >
             <Layers className="w-3.5 h-3.5 text-sky-600" />
             Generador Multicanal
+          </button>
+
+          <button
+            onClick={() => setMainView("advisor")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              mainView === "advisor"
+                ? "bg-white text-slate-900 shadow-xs border border-slate-200/80 font-bold"
+                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+            Brainstorming Multimodal
+            <span className="px-1.5 py-0.2 rounded-full bg-indigo-100 text-indigo-800 text-[9px] font-bold">
+              IA Vision & Audio
+            </span>
           </button>
 
           <button
@@ -570,6 +602,16 @@ export default function ContentDashboard() {
       </header>
 
       {/* Contenido según Módulo Seleccionado */}
+      {mainView === "advisor" && (
+        <div className="flex-1 p-6 max-w-7xl mx-auto w-full">
+          <MultimodalAdvisor
+            apiKey={geminiApiKey}
+            onApplyRecommendation={handleApplyMultimodalRecommendation}
+            onRecordFinops={addFinopsRecord}
+          />
+        </div>
+      )}
+
       {mainView === "generator" && (
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 max-w-7xl mx-auto w-full">
           {/* Columna Izquierda: Configuración del Tema */}

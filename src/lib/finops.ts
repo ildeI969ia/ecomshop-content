@@ -1,7 +1,7 @@
 export interface UsageRecord {
   id: string;
   timestamp: string;
-  action: "gemini_generation" | "gemini_angles" | "imagen_image" | "firestore_read" | "firestore_write" | "cloud_run_req";
+  action: "gemini_generation" | "gemini_angles" | "gemini_multimodal_advisor" | "imagen_image" | "firestore_read" | "firestore_write" | "cloud_run_req";
   details: string;
   tokensInput?: number;
   tokensOutput?: number;
@@ -37,7 +37,8 @@ export function calculateUsageCost(params: {
 
   switch (params.action) {
     case "gemini_generation":
-    case "gemini_angles": {
+    case "gemini_angles":
+    case "gemini_multimodal_advisor": {
       const inCost = ((params.tokensInput || 800) / 1_000_000) * PRICING.geminiInputPerMillionEur;
       const outCost = ((params.tokensOutput || 1500) / 1_000_000) * PRICING.geminiOutputPerMillionEur;
       cost = inCost + outCost;
