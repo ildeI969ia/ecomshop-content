@@ -1,5 +1,5 @@
 import { ContentOutput, GenerateRequest } from "./schema";
-import { ECOM_BRAND, PRESET_TOPICS } from "./knowledge";
+import { ECOM_BRAND, PRESET_TOPICS, STAR_PRODUCTS } from "./knowledge";
 
 import { STRATEGIC_AGENT_SYSTEM_PROMPT } from "./gemini-agent";
 
@@ -105,7 +105,6 @@ function generateDeterministicFallback(req: GenerateRequest): ContentOutput {
   const slug = req.topicTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   
   // Equipos promocionados
-  const { STAR_PRODUCTS } = require("./knowledge");
   const selectedStarProducts = STAR_PRODUCTS.filter((p: any) => req.promotedProductIds?.includes(p.id));
   const customProdText = req.customEquipmentName ? `${req.customEquipmentName}` : "";
   
