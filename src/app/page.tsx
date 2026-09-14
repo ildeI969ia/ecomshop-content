@@ -27,7 +27,8 @@ import {
   RefreshCw,
   Search,
   Filter,
-  Plus
+  Plus,
+  Zap
 } from "lucide-react";
 import { PRESET_TOPICS, ECOM_BRAND, STAR_PRODUCTS, CAMPAIGN_IDEAS, B2B_CTA_OPTIONS } from "@/lib/knowledge";
 import { ContentOutput } from "@/lib/schema";
@@ -166,6 +167,87 @@ export default function ContentDashboard() {
         setNewSourceTitle("");
         setNewSourceDesc("");
         setNewSourceUrl("");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAddingSource(false);
+    }
+  };
+
+  // Cuestionar al NotebookLM & Sugerencia de Nuevas Fuentes
+  const [notebookTab, setNotebookTab] = useState<"sources" | "ask">("sources");
+  const [notebookQuestion, setNotebookQuestion] = useState("");
+  const [suggestNewSources, setSuggestNewSources] = useState(true);
+  const [askingNotebook, setAskingNotebook] = useState(false);
+  const [notebookAnswer, setNotebookAnswer] = useState<{
+    answer: string;
+    citedSources: { id: string; title: string }[];
+    suggestedNewSources: { title: string; type: string; description: string; url?: string }[];
+    transferableTopic?: { title: string; category: string; recommendedProducts?: string[] } | null;
+  } | null>(null);
+
+  const handleAskNotebook = async (customQ?: string) => {
+    const q = customQ || notebookQuestion;
+    if (!q.trim()) return;
+    setAskingNotebook(true);
+    setNotebookAnswer(null);
+
+    try {
+      const res = await fetch("/api/notebooklm/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: q,
+          suggestNewSources,
+          apiKey: geminiApiKey || undefined
+        })
+      });
+
+      const data = await res.json();
+      if (data.success && data.data) {
+        setNotebookAnswer(data.data);
+        addFinopsRecord({
+          action: "notebooklm_query",
+          details: `Consulta NotebookLM: "${q.substring(0, 45)}..."`,
+          tokensInput: data.data.tokensInput,
+          tokensOutput: data.data.tokensOutput
+        });
+      }
+    } catch (err) {
+      console.error("Error consultando NotebookLM:", err);
+    } finally {
+      setAskingNotebook(false);
+    }
+  };
+
+  const handleTransferNotebookTopic = (topic: { title: string; category: string; recommendedProducts?: string[] }) => {
+    setTopicTitle(topic.title);
+    setCategory(topic.category as any);
+    if (topic.recommendedProducts && topic.recommendedProducts.length > 0) {
+      setCustomProductText(topic.recommendedProducts.join(", "));
+    }
+    setCustomNotes(`Idea fundamentada en Google NotebookLM:\n${notebookAnswer?.answer?.substring(0, 200)}...`);
+    setShowNotebookModal(false);
+    setMainView("generator");
+  };
+
+  const handleAddSuggestedSource = async (src: { title: string; type: string; description: string; url?: string }) => {
+    setAddingSource(true);
+    try {
+      const res = await fetch("/api/notebooklm/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: src.title,
+          description: src.description,
+          url: src.url || "https://www.ecomshop.es",
+          type: src.type || "datasheet"
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotebookState(data);
       }
     } catch (err) {
       console.error(err);
@@ -1712,103 +1794,308 @@ export default function ContentDashboard() {
               </button>
             </div>
 
-            {/* Banner de Enlace Oficial */}
-            <div className="bg-purple-50/60 border border-purple-200/80 rounded-xl p-4 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700">Notebook Oficial en Google</span>
-                <p className="text-xs font-semibold text-slate-800 mt-0.5">{notebookState.title}</p>
-                <span className="text-[11px] text-slate-500">El Agente Gemini consulta este repositorio de conocimiento para generar contenidos B2B.</span>
-              </div>
-              <a
-                href={notebookState.officialUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition shadow-2xs shrink-0"
+            {/* Pestañas del Modal */}
+            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+              <button
+                type="button"
+                onClick={() => setNotebookTab("sources")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  notebookTab === "sources"
+                    ? "bg-purple-100 text-purple-900 border border-purple-200"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                }`}
               >
-                Abrir NotebookLM
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
+                📚 Fuentes Sincronizadas ({notebookState.sources.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setNotebookTab("ask")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                  notebookTab === "ask"
+                    ? "bg-purple-600 text-white shadow-xs"
+                    : "text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200/70"
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Cuestionar al Notebook & Sugerir Fuentes
+              </button>
             </div>
 
-            {/* Lista de Fuentes Cargadas */}
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                Fuentes y Whitepapers Sincronizados ({notebookState.sources.length})
-              </h4>
-              <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto pr-1">
-                {notebookState.sources.map((src) => (
-                  <div key={src.id} className="p-3 rounded-lg border border-slate-200/70 bg-slate-50/60 flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-xs text-slate-900">{src.title}</span>
-                        <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-purple-100 text-purple-800">
-                          {src.type}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-600 mt-1">{src.description}</p>
-                      {src.url && (
-                        <a href={src.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-sky-600 hover:underline mt-1 inline-block">
-                          {src.url}
-                        </a>
-                      )}
-                    </div>
-                    <span className="text-[10px] text-slate-400 shrink-0 font-mono">{src.addedAt}</span>
+            {/* VISTA 1: FUENTES SINCRONIZADAS */}
+            {notebookTab === "sources" && (
+              <div className="space-y-4">
+                {/* Banner de Enlace Oficial */}
+                <div className="bg-purple-50/60 border border-purple-200/80 rounded-xl p-4 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700">Notebook Oficial en Google</span>
+                    <p className="text-xs font-semibold text-slate-800 mt-0.5">{notebookState.title}</p>
+                    <span className="text-[11px] text-slate-500">El Agente Gemini consulta este repositorio de conocimiento para generar contenidos B2B.</span>
                   </div>
-                ))}
-              </div>
-            </div>
+                  <a
+                    href={notebookState.officialUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition shadow-2xs shrink-0"
+                  >
+                    Abrir NotebookLM
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
 
-            {/* Formulario para Registrar Nueva Fuente */}
-            <form onSubmit={handleAddNotebookSource} className="bg-slate-50/80 border border-slate-200/80 rounded-xl p-4 flex flex-col gap-3">
-              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <Plus className="w-3.5 h-3.5 text-purple-600" />
-                Registrar Nueva Fuente / Documento Técnico
-              </span>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <input
-                  type="text"
-                  placeholder="Título de la fuente (ej: Datasheet EnGenius Fit Switch...)"
-                  value={newSourceTitle}
-                  onChange={(e) => setNewSourceTitle(e.target.value)}
-                  className="bg-white border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-purple-500"
-                  required
-                />
-                <select
-                  value={newSourceType}
-                  onChange={(e) => setNewSourceType(e.target.value as any)}
-                  className="bg-white border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-purple-500"
-                >
-                  <option value="datasheet">Datasheet Técnico</option>
-                  <option value="pdf">Whitepaper / PDF</option>
-                  <option value="url">URL Web / Catálogo</option>
-                  <option value="note">Nota de Ingeniería Preventa</option>
-                </select>
+                {/* Lista de Fuentes Cargadas */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                    Fuentes y Whitepapers Sincronizados ({notebookState.sources.length})
+                  </h4>
+                  <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto pr-1">
+                    {notebookState.sources.map((src) => (
+                      <div key={src.id} className="p-3 rounded-lg border border-slate-200/70 bg-slate-50/60 flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-xs text-slate-900">{src.title}</span>
+                            <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-purple-100 text-purple-800">
+                              {src.type}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 mt-1">{src.description}</p>
+                          {src.url && (
+                            <a href={src.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-sky-600 hover:underline mt-1 inline-block">
+                              {src.url}
+                            </a>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-slate-400 shrink-0 font-mono">{src.addedAt}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Formulario para Registrar Nueva Fuente */}
+                <form onSubmit={handleAddNotebookSource} className="bg-slate-50/80 border border-slate-200/80 rounded-xl p-4 flex flex-col gap-3">
+                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Plus className="w-3.5 h-3.5 text-purple-600" />
+                    Registrar Nueva Fuente / Documento Técnico
+                  </span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="Título de la fuente (ej: Datasheet EnGenius Fit Switch...)"
+                      value={newSourceTitle}
+                      onChange={(e) => setNewSourceTitle(e.target.value)}
+                      className="bg-white border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-purple-500"
+                      required
+                    />
+                    <select
+                      value={newSourceType}
+                      onChange={(e) => setNewSourceType(e.target.value as any)}
+                      className="bg-white border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-purple-500"
+                    >
+                      <option value="datasheet">Datasheet Técnico</option>
+                      <option value="pdf">Whitepaper / PDF</option>
+                      <option value="url">URL Web / Catálogo</option>
+                      <option value="note">Nota de Ingeniería Preventa</option>
+                    </select>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Breve resumen del contenido y especificaciones..."
+                    value={newSourceDesc}
+                    onChange={(e) => setNewSourceDesc(e.target.value)}
+                    className="bg-white border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-purple-500"
+                    required
+                  />
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="url"
+                      placeholder="URL oficial (opcional: https://www.ecomshop.es/...)"
+                      value={newSourceUrl}
+                      onChange={(e) => setNewSourceUrl(e.target.value)}
+                      className="flex-1 bg-white border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-purple-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={addingSource}
+                      className="bg-purple-700 hover:bg-purple-800 disabled:opacity-50 text-white font-bold text-xs px-4 py-1.5 rounded transition shrink-0"
+                    >
+                      {addingSource ? "Añadiendo..." : "Añadir Fuente"}
+                    </button>
+                  </div>
+                </form>
               </div>
-              <input
-                type="text"
-                placeholder="Breve resumen del contenido y especificaciones..."
-                value={newSourceDesc}
-                onChange={(e) => setNewSourceDesc(e.target.value)}
-                className="bg-white border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-purple-500"
-                required
-              />
-              <div className="flex items-center gap-2">
-                <input
-                  type="url"
-                  placeholder="URL oficial (opcional: https://www.ecomshop.es/...)"
-                  value={newSourceUrl}
-                  onChange={(e) => setNewSourceUrl(e.target.value)}
-                  className="flex-1 bg-white border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-purple-500"
-                />
-                <button
-                  type="submit"
-                  disabled={addingSource}
-                  className="bg-purple-700 hover:bg-purple-800 disabled:opacity-50 text-white font-bold text-xs px-4 py-1.5 rounded transition shrink-0"
-                >
-                  {addingSource ? "Añadiendo..." : "Añadir Fuente"}
-                </button>
+            )}
+
+            {/* VISTA 2: CUESTIONAR AL NOTEBOOK & SUGERIR FUENTES */}
+            {notebookTab === "ask" && (
+              <div className="space-y-4">
+                <div className="bg-gradient-to-r from-purple-900 to-slate-900 text-white p-4 rounded-xl shadow-xs">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-purple-300">
+                    Analista Preventa & Documentalista IA
+                  </span>
+                  <h4 className="text-sm font-bold mt-0.5">
+                    Cuestiona las 20 fuentes oficiales de NotebookLM o detecta vacíos documentales
+                  </h4>
+                  <p className="text-[11px] text-slate-300 mt-1">
+                    Pregunta sobre compatibilidades, especificaciones PoE++ o solicita al agente qué nuevas fuentes de 2026 deberías incorporar.
+                  </p>
+                </div>
+
+                {/* Preguntas Sugeridas Rápidas */}
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-semibold text-slate-500">Preguntas sugeridas frecuentes:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleAskNotebook("¿Qué switch EnGenius recomendamos para alimentar puntos de acceso WiFi 7 PoE++?")}
+                      className="text-[11px] bg-slate-100 hover:bg-purple-50 hover:text-purple-700 border border-slate-200 px-2.5 py-1 rounded-full text-slate-700 transition"
+                    >
+                      ⚡ Switches PoE++ para WiFi 7
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAskNotebook("¿Cuáles son las principales ventajas de TCO de EnGenius Cloud frente a Cisco Meraki a 3 años?")}
+                      className="text-[11px] bg-slate-100 hover:bg-purple-50 hover:text-purple-700 border border-slate-200 px-2.5 py-1 rounded-full text-slate-700 transition"
+                    >
+                      💰 Ahorro TCO vs Meraki
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAskNotebook("Analiza nuestras 20 fuentes e indica qué novedades de 2026 nos faltan por cubrir.")}
+                      className="text-[11px] bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 px-2.5 py-1 rounded-full font-semibold transition"
+                    >
+                      🔍 ¿Qué fuentes de 2026 nos faltan?
+                    </button>
+                  </div>
+                </div>
+
+                {/* Formulario de Pregunta */}
+                <div className="space-y-2">
+                  <div className="relative">
+                    <textarea
+                      rows={3}
+                      value={notebookQuestion}
+                      onChange={(e) => setNotebookQuestion(e.target.value)}
+                      placeholder="Escribe tu consulta técnica o pide sugerencias de fuentes para 2026..."
+                      className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-slate-900 resize-none"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={suggestNewSources}
+                        onChange={(e) => setSuggestNewSources(e.target.checked)}
+                        className="rounded text-purple-600 focus:ring-purple-500"
+                      />
+                      <span>Sugerir nuevas fuentes faltantes si aplica</span>
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAskNotebook()}
+                      disabled={askingNotebook || !notebookQuestion.trim()}
+                      className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 transition shadow-xs"
+                    >
+                      {askingNotebook ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Consultando NotebookLM...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3.5 h-3.5 text-purple-200" />
+                          Cuestionar al Notebook
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Resultados de la Consulta */}
+                {notebookAnswer && (
+                  <div className="border border-purple-200 bg-purple-50/30 rounded-xl p-4 space-y-3.5 animate-in fade-in">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="p-1 rounded bg-purple-600 text-white">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        </span>
+                        <h5 className="text-xs font-bold uppercase tracking-wider text-purple-950">
+                          Respuesta Fundamentada en NotebookLM
+                        </h5>
+                      </div>
+                      <p className="text-xs text-slate-800 leading-relaxed font-medium bg-white p-3 rounded-lg border border-purple-100">
+                        {notebookAnswer.answer}
+                      </p>
+                    </div>
+
+                    {/* Fuentes Citadas */}
+                    {notebookAnswer.citedSources && notebookAnswer.citedSources.length > 0 && (
+                      <div className="space-y-1">
+                        <span className="text-[11px] font-bold text-slate-600">Fuentes consultadas en el cuaderno:</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {notebookAnswer.citedSources.map((cs) => (
+                            <span key={cs.id} className="text-[10px] font-semibold bg-white border border-purple-200 text-purple-900 px-2 py-0.5 rounded shadow-2xs">
+                              📌 {cs.title}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Nuevas Fuentes Sugeridas para incorporar */}
+                    {notebookAnswer.suggestedNewSources && notebookAnswer.suggestedNewSources.length > 0 && (
+                      <div className="space-y-2 border-t border-purple-200/60 pt-2.5">
+                        <span className="text-[11px] font-bold text-purple-900 flex items-center gap-1.5">
+                          <Plus className="w-3.5 h-3.5 text-purple-600" />
+                          Nuevas Fuentes Recomendadas para Incorporar al Cuaderno:
+                        </span>
+                        <div className="grid grid-cols-1 gap-2">
+                          {notebookAnswer.suggestedNewSources.map((ns, idx) => (
+                            <div key={idx} className="bg-white p-2.5 rounded-lg border border-purple-200 flex items-start justify-between gap-3 shadow-2xs">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-bold text-slate-900">{ns.title}</span>
+                                  <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-purple-100 text-purple-800">
+                                    {ns.type}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-slate-600 mt-0.5">{ns.description}</p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleAddSuggestedSource(ns)}
+                                disabled={addingSource}
+                                className="shrink-0 text-[11px] bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold px-2.5 py-1 rounded border border-purple-200 transition"
+                              >
+                                + Añadir al Notebook
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Botón Transferir al Generador de Contenido */}
+                    {notebookAnswer.transferableTopic && (
+                      <div className="border-t border-purple-200/60 pt-3 flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-slate-500">¿Quieres redactar sobre esto?</span>
+                          <p className="text-xs font-bold text-slate-900">{notebookAnswer.transferableTopic.title}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleTransferNotebookTopic(notebookAnswer.transferableTopic!)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition shadow-xs"
+                        >
+                          <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                          Transferir al Generador &rarr;
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            </form>
+            )}
           </div>
         </div>
       )}
