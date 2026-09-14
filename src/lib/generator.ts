@@ -94,9 +94,19 @@ JSON Schema requerido:
     }
   });
 
-  const text = response.text || "{}";
-  const parsed = JSON.parse(text);
-  return parsed as ContentOutput;
+  const rawText = response.text || "{}";
+  // Limpiar posibles bloques markdown ```json ... ```
+  const cleanedText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+  try {
+    const parsed = JSON.parse(cleanedText);
+    if (parsed.blog && parsed.mailchimp) {
+      return parsed as ContentOutput;
+    }
+  } catch (parseError) {
+    console.warn("Error parsing Gemini JSON output, falling back to deterministic generator:", parseError);
+  }
+
+  return generateDeterministicFallback(req);
 }
 
 function generateDeterministicFallback(req: GenerateRequest): ContentOutput {
