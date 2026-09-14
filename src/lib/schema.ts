@@ -14,7 +14,28 @@ export const ContentOutputSchema = z.object({
     readingTimeMinutes: z.number(),
     targetKeywords: z.array(z.string()),
     htmlContent: z.string(),
-    cleanPlainTextExcerpt: z.string()
+    cleanPlainTextExcerpt: z.string(),
+    // Guía Editorial de Maquetación B2B
+    editorialLayout: z.object({
+      targetProfiles: z.array(z.object({
+        profile: z.string(), // "Instalador" | "Director TIC" | "Jefe de Compras" | "Distribuidor"
+        keyTakeaway: z.string()
+      })).optional(),
+      photoPlacements: z.array(z.object({
+        id: z.string(),
+        placementAfterHeading: z.string(),
+        photoType: z.string(),
+        description: z.string(),
+        imagen3Prompt: z.string()
+      })).optional(),
+      ctaPlacements: z.array(z.object({
+        id: z.string(),
+        placement: z.string(),
+        ctaType: z.string(),
+        buttonText: z.string(),
+        targetUrl: z.string()
+      })).optional()
+    }).optional()
   }),
 
   // Mailchimp Campaign Draft

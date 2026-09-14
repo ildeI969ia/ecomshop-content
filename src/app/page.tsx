@@ -864,7 +864,7 @@ export default function ContentDashboard() {
               <div className="p-6 flex-1 overflow-y-auto max-h-[750px]">
                 {/* 1. BLOG DURABLE TAB */}
                 {activeTab === "blog" && (
-                  <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-5">
                     <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200">
                       <div>
                         <span className="text-[10px] uppercase tracking-wider font-bold text-sky-600">Título SEO & Cabecera</span>
@@ -883,6 +883,89 @@ export default function ContentDashboard() {
                         {copiedKey === "blog-html" ? "¡Copiado!" : "Copiar HTML Durable"}
                       </button>
                     </div>
+
+                    {/* Ficha de Novedad e Interés por Perfil B2B */}
+                    {content.blog.editorialLayout?.targetProfiles && content.blog.editorialLayout.targetProfiles.length > 0 && (
+                      <div className="bg-white border border-slate-200 rounded-xl p-4.5 shadow-xs">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="w-2 h-2 rounded-full bg-sky-600" />
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                            Propuesta de Valor y Novedad por Perfil (4 Clientes Clave)
+                          </h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                          {content.blog.editorialLayout.targetProfiles.map((p, idx) => (
+                            <div key={idx} className="bg-slate-50 rounded-lg p-3 border border-slate-200/80 flex flex-col justify-between">
+                              <span className="text-[10px] font-bold uppercase text-sky-700 bg-sky-100/70 px-2 py-0.5 rounded w-fit mb-1.5">
+                                {p.profile}
+                              </span>
+                              <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                                {p.keyTakeaway}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Guía Editorial: Dónde Ubicar Fotos y CTAs + Botón Generar Imagen 3 */}
+                    {content.blog.editorialLayout?.photoPlacements && content.blog.editorialLayout.photoPlacements.length > 0 && (
+                      <div className="bg-gradient-to-r from-purple-50/70 via-indigo-50/50 to-purple-50/70 border border-purple-200/80 rounded-xl p-4.5 shadow-xs">
+                        <div className="flex items-center justify-between mb-3 border-b border-purple-200/60 pb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="p-1 rounded bg-purple-600 text-white">
+                              <ImageIcon className="w-3.5 h-3.5" />
+                            </span>
+                            <div>
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-purple-950">
+                                Guía de Ubicación de Fotos Recomendadas (Durable CMS)
+                              </h4>
+                              <p className="text-[11px] text-purple-700">
+                                El sistema define la ubicación idónea y genera el prompt optimizado para Imagen 3.
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold text-purple-800 bg-purple-200/60 px-2 py-0.5 rounded">
+                            {content.blog.editorialLayout.photoPlacements.length} Fotos Sugeridas
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                          {content.blog.editorialLayout.photoPlacements.map((photo, i) => (
+                            <div key={photo.id || i} className="bg-white rounded-lg p-3.5 border border-purple-200 shadow-2xs flex flex-col justify-between gap-3">
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[10px] font-bold text-slate-700 uppercase bg-slate-100 px-2 py-0.5 rounded">
+                                    Foto #{i + 1} &bull; Tras: {photo.placementAfterHeading}
+                                  </span>
+                                  <span className="text-[10px] font-semibold text-purple-600">
+                                    {photo.photoType}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-slate-800 font-medium mt-1">
+                                  {photo.description}
+                                </p>
+                                <p className="text-[11px] text-slate-500 font-mono bg-slate-50 p-2 rounded border border-slate-100 line-clamp-2">
+                                  "{photo.imagen3Prompt}"
+                                </p>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setImagePrompt(photo.imagen3Prompt);
+                                  setMainView("image_studio");
+                                }}
+                                className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition shadow-2xs"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 text-purple-200" />
+                                Generar esta foto en Estudio Imagen 3 &rarr;
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="border border-slate-200 rounded-xl p-8 bg-white text-slate-900 shadow-xs overflow-x-auto">
                       <div 
