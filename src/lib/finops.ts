@@ -15,8 +15,8 @@ export const PRICING = {
   geminiInputPerMillionEur: 0.07,
   geminiOutputPerMillionEur: 0.28,
   
-  // Google Imagen 3: ~$0.03 por imagen (~0.028€)
-  imagen3PerImageEur: 0.028,
+  // Gemini 2.5 Flash Image: ~$0.004 por imagen web (~0.0038€, 86% más económico que Imagen 3)
+  imagen3PerImageEur: 0.0038,
 
   // Firebase Firestore: Primeras 50k lecturas y 20k escrituras/día son gratuitas en plan Spark.
   // Superado el tier gratis: ~$0.06 por 100k lecturas, ~$0.18 por 100k escrituras (~0.0000006€/lectura)

@@ -4,7 +4,7 @@ import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 
 export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
   try {
-    const { prompt, aspectRatio, apiKey, baseImage } = await req.json();
+    const { prompt, aspectRatio, apiKey, baseImage, mode } = await req.json();
     if (!prompt) {
       return NextResponse.json({ error: "Falta el prompt para generar la imagen" }, { status: 400 });
     }
@@ -13,7 +13,8 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       prompt,
       aspectRatio: aspectRatio || "16:9",
       apiKey,
-      baseImage
+      baseImage,
+      mode: mode || "ai"
     });
 
     return NextResponse.json({

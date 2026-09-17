@@ -97,7 +97,7 @@ async function tryGeminiGenerateContentImage(
     "gemini-2.0-flash-exp",
   ];
 
-  const enrichedPrompt = `Generate a photorealistic, professional ${aspectRatio} photograph for an enterprise B2B telecommunications article: ${prompt}. Clean lighting, crisp focus, high-end commercial quality.`;
+  const enrichedPrompt = `Professional ${aspectRatio} web photograph for enterprise B2B telecommunications: ${prompt}. Sharp focus, clean studio lighting.`;
 
   for (const model of models) {
     try {
@@ -105,7 +105,7 @@ async function tryGeminiGenerateContentImage(
         model,
         contents: enrichedPrompt,
         config: {
-          responseModalities: ["TEXT", "IMAGE"],
+          responseModalities: ["IMAGE"], // Únicamente IMAGE para máxima velocidad y menor coste
         } as any,
       });
 
@@ -170,7 +170,29 @@ export async function generateImageWithImagen(params: {
   aspectRatio: "16:9" | "1:1" | "4:3";
   apiKey?: string;
   baseImage?: string;
+  mode?: "ai" | "curated";
 }): Promise<GenerateImageResult> {
+  // Si se solicita expresamente modo curado / stock gratuito (Coste 0€)
+  if (params.mode === "curated") {
+    const lower = params.prompt.toLowerCase();
+    let pool = DIVERSE_STOCK_CATALOG.tech;
+    if (lower.includes("rack") || lower.includes("switch") || lower.includes("server")) {
+      pool = DIVERSE_STOCK_CATALOG.rack;
+    } else if (lower.includes("wifi") || lower.includes("ap") || lower.includes("access point")) {
+      pool = DIVERSE_STOCK_CATALOG.wifi;
+    } else if (lower.includes("fibra") || lower.includes("fiber") || lower.includes("fusion") || lower.includes("cable")) {
+      pool = DIVERSE_STOCK_CATALOG.fiber;
+    }
+    const randomIndex = Math.floor(Math.random() * pool.length);
+    const selectedUrl = pool[randomIndex];
+    const variedUrl = `${selectedUrl}&sig=${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    return {
+      imageUrl: variedUrl,
+      sourceType: "curated_varied",
+      warning: "Imagen de banco curado Unsplash seleccionada (Coste: 0,00 €).",
+      refinedPrompt: params.prompt,
+    };
+  }
   const serverApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   const userApiKey = params.apiKey?.trim();
   const gcpProject =

@@ -804,7 +804,7 @@ export default function ContentDashboard() {
     }
   };
 
-  const handleGenerateImage = async () => {
+  const handleGenerateImage = async (mode: "ai" | "curated" = "ai") => {
     if (!imagePrompt) return;
     setGeneratingImage(true);
     setImageNotice(null);
@@ -820,7 +820,8 @@ export default function ContentDashboard() {
           prompt: imagePrompt,
           aspectRatio: imageAspectRatio,
           baseImage: imageBase || undefined,
-          apiKey: geminiApiKey || undefined
+          apiKey: geminiApiKey || undefined,
+          mode
         })
       });
       if (data.imageUrl) {
@@ -841,12 +842,14 @@ export default function ContentDashboard() {
           return updated;
         });
 
-        // Registrar coste en FinOps
-        addFinopsRecord({
-          action: "imagen_image",
-          details: `${imageBase ? "Multimodal Variación" : "Google Imagen 3"}: ${imagePrompt.substring(0, 30)}...`,
-          imageCount: 1
-        });
+        // Registrar coste en FinOps (0,00 € si es stock gratuito, o tarifa reducida ~0.0038 € si es IA Flash)
+        if (data.sourceType !== "curated_varied") {
+          addFinopsRecord({
+            action: "imagen_image",
+            details: `${imageBase ? "Multimodal Variación" : "Gemini Flash Image"}: ${imagePrompt.substring(0, 30)}...`,
+            imageCount: 1
+          });
+        }
       }
     } catch (err: any) {
       console.error(err);
@@ -2107,23 +2110,33 @@ export default function ContentDashboard() {
                   </div>
                 )}
 
-                <button
-                  onClick={handleGenerateImage}
-                  disabled={generatingImage}
-                  className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-2.5 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition shadow-xs mt-2"
-                >
-                  {generatingImage ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      {imageBase ? "Procesando Variación Multimodal..." : "Procesando con Imagen 3..."}
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      {imageBase ? "Generar Variación desde Imagen Base" : "Generar Imagen con IA"}
-                    </>
-                  )}
-                </button>
+                <div className="flex flex-col gap-2 mt-2">
+                  <button
+                    onClick={() => handleGenerateImage("ai")}
+                    disabled={generatingImage}
+                    className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-2.5 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition shadow-xs"
+                  >
+                    {generatingImage ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Generando con IA Flash (~0,004 €)...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        <span>Generar con IA Flash (~0,004 €)</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => handleGenerateImage("curated")}
+                    disabled={generatingImage}
+                    className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg text-xs flex items-center justify-center gap-1.5 transition"
+                  >
+                    <span>🖼️ Usar Banco de Stock Web (Gratis 0,00 €)</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
