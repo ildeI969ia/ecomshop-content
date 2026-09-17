@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Playfair_Display } from "next/font/google";
+﻿import type { Metadata } from "next";
+import { Plus_Jakarta_Sans, Playfair_Display, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 const jakartaSans = Plus_Jakarta_Sans({
@@ -12,9 +12,14 @@ const playfairDisplay = Playfair_Display({
   subsets: ["latin"],
 });
 
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "EcomShop B2B Content Engine • Editorial Intelligence",
-  description: "Plataforma editorial y generador de contenidos multicanal de alto rendimiento para EcomShop",
+  title: "EcomSpain Marketing OS — Technical Editorial Operating System",
+  description: "Carrier-Grade Enterprise Marketing OS & Multimodal Content Engine for EcomSpain",
 };
 
 export default function RootLayout({
@@ -25,7 +30,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${jakartaSans.variable} ${playfairDisplay.variable} h-full antialiased`}
+      className={`${jakartaSans.variable} ${playfairDisplay.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans bg-slate-50 text-slate-900">{children}</body>
     </html>

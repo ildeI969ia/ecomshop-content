@@ -50,10 +50,10 @@ export const OFFICIAL_NOTEBOOK: NotebookState = {
     },
     {
       id: "src-4",
-      title: "Arquitectura EnGenius Fit sin Cuotas Anuales",
+      title: "Arquitectura EnGenius Cloud Enterprise Sin Cuotas Anuales",
       type: "pdf",
-      description: "Whitepaper sobre ahorro de costes con FitController on-premise frente a modelos de suscripción obligatoria.",
-      url: "https://www.ecomshop.es/engenius-fit",
+      description: "Whitepaper sobre ahorro de costes con EnGenius Cloud multi-tenant frente a modelos de suscripción obligatoria tipo Meraki.",
+      url: "https://www.ecomshop.es/engenius-cloud",
       addedAt: "14 Sep 2026"
     },
     {

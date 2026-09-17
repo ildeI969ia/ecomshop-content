@@ -16,12 +16,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT));
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
-    if (key) {
+    if (key || isVertex) {
       try {
-        const { GoogleGenAI } = await import("@google/genai");
-        const ai = new GoogleGenAI({ apiKey: key });
+        const { getGenAIClient, getActiveGeminiModel } = await import("@/lib/genai-client");
+        const ai = getGenAIClient(apiKey);
+        const activeModel = getActiveGeminiModel(apiKey);
 
         const sourcesSummary = OFFICIAL_NOTEBOOK.sources.map((s, i) => 
           `[Fuente ${i + 1}] ID: ${s.id} | Tipo: ${s.type} | Título: ${s.title} | Descripción: ${s.description} | URL: ${s.url || "N/A"}`
@@ -66,7 +68,7 @@ ${sourcesSummary}
 `;
 
         const res = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
+          model: activeModel,
           contents: prompt,
           config: {
             systemInstruction,
@@ -118,7 +120,7 @@ function generateDeterministicNotebookAnswer(question: string) {
       answer: "Según las fuentes [src-4] y [src-11] del NotebookLM (Comparativa TCO 2026: EnGenius Cloud vs Cisco Meraki), EnGenius opera con un modelo sin licencias anuales obligatorias. A 3 años, un despliegue de 20 APs y 4 switches representa un ahorro de hasta un 42% en TCO frente a Cisco Meraki, donde la renovación de licencias Enterprise Cloud es obligatoria para evitar el bloqueo del hardware.",
       citedSources: [
         { id: "src-11", title: "Comparativa TCO 2026: EnGenius Cloud vs Cisco Meraki" },
-        { id: "src-4", title: "Arquitectura EnGenius Fit sin Cuotas Anuales" }
+        { id: "src-4", title: "Arquitectura EnGenius Cloud sin Cuotas Anuales" }
       ],
       suggestedNewSources: [
         {

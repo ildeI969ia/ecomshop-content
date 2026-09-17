@@ -30,7 +30,10 @@ import {
   Plus,
   Zap,
   Camera,
-  Upload
+  Upload,
+  Shield,
+  LogOut,
+  User as UserIcon
 } from "lucide-react";
 import { PRESET_TOPICS, ECOM_BRAND, STAR_PRODUCTS, CAMPAIGN_IDEAS, B2B_CTA_OPTIONS } from "@/lib/knowledge";
 import { ContentOutput } from "@/lib/schema";
@@ -41,6 +44,19 @@ import { NotebookState, OFFICIAL_NOTEBOOK } from "@/lib/notebooklm";
 import { MultimodalAdvisor } from "@/components/MultimodalAdvisor";
 import { CampaignRecommendation } from "@/lib/multimodal-advisor";
 import { ImageInterrogatorModal } from "@/components/ImageInterrogatorModal";
+import { ProductIntelligenceView } from "@/components/product-intelligence-view";
+import { EvidenceAuditDrawer } from "@/components/evidence-audit-drawer";
+import { ProductIntelligenceCard } from "@/lib/types/product-intelligence";
+import { OpportunityRadarWidget } from "@/components/opportunity-radar-widget";
+import { ProductOpportunityRecord } from "@/lib/services/opportunity-radar";
+import { CorporateSignIn } from "@/components/auth/CorporateSignIn";
+import { apiFetch, ApiError } from "@/lib/api-client";
+import { CampaignWorkspace } from "@/components/campaign-workspace";
+import { GenerationStage } from "@/components/campaign-stepper";
+import { EditorialControlsBar } from "@/components/editorial-controls-bar";
+import { EditorialControls } from "@/lib/types/editorial-controls";
+import { SuggestedTopics } from "@/components/suggested-topics";
+import { EditorialTopicCard } from "@/lib/types/editorial-topics";
 
 export default function ContentDashboard() {
   const [selectedPresetId, setSelectedPresetId] = useState(PRESET_TOPICS[0].id);
@@ -63,6 +79,210 @@ export default function ContentDashboard() {
   
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState<ContentOutput | null>(null);
+  const [intelligenceCard, setIntelligenceCard] = useState<ProductIntelligenceCard | null>(null);
+  const [inputMode, setInputMode] = useState<"ecomshop_url" | "prompt_libre">("ecomshop_url");
+  const [customAngle, setCustomAngle] = useState<"ROI" | "PERFORMANCE" | "OPERATIONS" | "GENERAL">("ROI");
+  const [opportunities, setOpportunities] = useState<ProductOpportunityRecord[]>([]);
+  const [loadingOpportunities, setLoadingOpportunities] = useState(false);
+
+  // Ciclo de vida y orquestación de Campaña
+  const [campaignStage, setCampaignStage] = useState<GenerationStage>("IDLE");
+  const [campaignOpportunity, setCampaignOpportunity] = useState<ProductOpportunityRecord | null>(null);
+  const [campaignErrorMessage, setCampaignErrorMessage] = useState<string | null>(null);
+  const [launchingSku, setLaunchingSku] = useState<string | null>(null);
+
+  // Controles Editoriales Personalizables (Fase 08.6)
+  const [editorialControls, setEditorialControls] = useState<EditorialControls>({
+    targetSector: "ENTERPRISE_OFFICE",
+    includePricing: false,
+    emphasizeUplinkSwitching: true,
+    technicalDeepDiveLevel: "HIGH_TECHNICAL",
+    customInstructions: ""
+  });
+
+  const [currentUser, setCurrentUser] = useState<{
+    uid: string;
+    email: string;
+    role: string;
+    workspaceId: string;
+    permissions?: string[];
+  } | null>(null);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [showSignInModal, setShowSignInModal] = useState(false);
+
+  // Comprobar sesión de usuario corporativo
+  const checkSession = async () => {
+    try {
+      const data = await apiFetch<{ authenticated: boolean; user?: any }>("/api/auth/me");
+      if (data.authenticated && data.user) {
+        setCurrentUser(data.user);
+        setShowSignInModal(false);
+      } else {
+        setCurrentUser(null);
+      }
+    } catch {
+      setCurrentUser(null);
+    } finally {
+      setAuthChecking(false);
+    }
+  };
+
+  useEffect(() => {
+    checkSession();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      setCurrentUser(null);
+    } catch (err) {
+      console.error("Error logging out:", err);
+    }
+  };
+
+  useEffect(() => {
+    async function loadOpportunities() {
+      if (!currentUser) return;
+      setLoadingOpportunities(true);
+      try {
+        const data = await apiFetch<{ opportunities?: ProductOpportunityRecord[] }>("/api/opportunities?limit=3");
+        if (data.opportunities) {
+          setOpportunities(data.opportunities);
+        }
+      } catch (err) {
+        console.warn("Radar de oportunidades requiere autenticación o no devolvió datos:", err);
+      } finally {
+        setLoadingOpportunities(false);
+      }
+    }
+    loadOpportunities();
+  }, [currentUser]);
+
+  const handleSelectOpportunity = (opp: ProductOpportunityRecord) => {
+    setInputMode("ecomshop_url");
+    setProductUrl(opp.url);
+    setTopicTitle(opp.actionTitle);
+    setCategory(opp.category as any);
+    setTargetAudience(opp.targetSegment);
+    setCustomAngle(opp.recommendedAngle);
+    if (opp.suggestedBundle) {
+      setCustomProductText(`${opp.model} + ${opp.suggestedBundle.accessorySku} (${opp.suggestedBundle.accessoryName})`);
+    }
+    if (opp.productBrainProfile?.buyerPersonas?.[0]) {
+      setCustomNotes(`Enfoque Estratégico Product Brain:\n- Buyer Persona: ${opp.productBrainProfile.buyerPersonas[0].name}\n- Pitch: ${opp.productBrainProfile.buyerPersonas[0].pitchIn30Seconds}\n- Bundle: ${opp.suggestedBundle.rationale}`);
+    }
+  };
+
+  const handleLaunchCampaign = async (opp: ProductOpportunityRecord) => {
+    // 1. Sincronizar formulario lateral
+    handleSelectOpportunity(opp);
+
+    // 2. Comprobar sesión de usuario corporativo
+    if (!currentUser) {
+      setShowSignInModal(true);
+      return;
+    }
+
+    setCampaignOpportunity(opp);
+    setCampaignErrorMessage(null);
+    setLaunchingSku(opp.sku);
+    setCampaignStage("EXTRACTING");
+
+    try {
+      // Simular progresión reactiva de etapas mientras el backend procesa
+      const t1 = setTimeout(() => {
+        setCampaignStage((prev) => (prev === "EXTRACTING" ? "NOTEBOOK_GROUNDING" : prev));
+      }, 1200);
+
+      const t2 = setTimeout(() => {
+        setCampaignStage((prev) => (prev === "NOTEBOOK_GROUNDING" ? "GENERATING_CHANNELS" : prev));
+      }, 2600);
+
+      const t3 = setTimeout(() => {
+        setCampaignStage((prev) => (prev === "GENERATING_CHANNELS" ? "FACT_CHECKING" : prev));
+      }, 5200);
+
+      const customEquipment = opp.suggestedBundle
+        ? `${opp.model} + ${opp.suggestedBundle.accessorySku} (${opp.suggestedBundle.accessoryName})`
+        : opp.model;
+
+      const notes = opp.productBrainProfile?.buyerPersonas?.[0]
+        ? `Enfoque Estratégico Product Brain:\n- Buyer Persona: ${opp.productBrainProfile.buyerPersonas[0].name}\n- Pitch: ${opp.productBrainProfile.buyerPersonas[0].pitchIn30Seconds}\n- Bundle: ${opp.suggestedBundle?.rationale || ""}`
+        : `Lanzamiento Automatizado para SKU ${opp.sku}`;
+
+      const data = await apiFetch<ContentOutput & { intelligenceCard?: ProductIntelligenceCard }>("/api/generate", {
+        method: "POST",
+        body: JSON.stringify({
+          topicTitle: opp.actionTitle,
+          category: opp.category,
+          targetAudience: opp.targetSegment,
+          productUrl: opp.url,
+          customNotes: notes,
+          promotedProductIds: [opp.sku.toLowerCase()],
+          customEquipmentName: customEquipment,
+          customEquipmentUrl: opp.url,
+          ctaObjective: "Solicitar Presupuesto y Asesoramiento",
+          ctaButtonText: "Consultar Condiciones B2B",
+          ctaUrl: opp.url,
+          syncWhatsApp: true,
+          syncLinkedIn: true,
+          customAngle: opp.recommendedAngle,
+          editorialControls,
+          apiKey: geminiApiKey || undefined
+        })
+      });
+
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+
+      setContent(data);
+      if (data.intelligenceCard) {
+        setIntelligenceCard(data.intelligenceCard);
+      }
+      setCampaignStage("COMPLETED");
+
+      // Registrar métrica en FinOps
+      addFinopsRecord({
+        action: "gemini_generation",
+        details: `Campaña Autopilot (${opp.sku}): ${data.topicTitle.substring(0, 30)}...`,
+        tokensInput: 1450,
+        tokensOutput: 2600
+      });
+
+      // Guardar en Historial de Artículos
+      const historyEntry: ArticleHistoryItem = {
+        id: Math.random().toString(36).substring(2, 9),
+        title: data.topicTitle,
+        category: data.category,
+        status: "draft",
+        createdAt: new Date().toLocaleDateString("es-ES", {
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit"
+        }),
+        content: data
+      };
+      setHistoryItems((prev) => {
+        const updated = [historyEntry, ...prev];
+        localStorage.setItem("ecomshop_article_history", JSON.stringify(updated.slice(0, 50)));
+        return updated;
+      });
+    } catch (err: any) {
+      console.error("Error al lanzar campaña:", err);
+      setCampaignStage("ERROR");
+      if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+        setCampaignErrorMessage("Sesión no autorizada o expirada. Por favor inicie sesión corporativa.");
+        setShowSignInModal(true);
+      } else {
+        setCampaignErrorMessage(err?.message || "Error al procesar la campaña multicanal.");
+      }
+    } finally {
+      setLaunchingSku(null);
+    }
+  };
+
   // Vista Principal del Panel de Administración (5 Módulos)
   const [mainView, setMainView] = useState<"generator" | "advisor" | "history" | "image_studio" | "finops">("generator");
 
@@ -95,6 +315,33 @@ export default function ContentDashboard() {
   // Monitor FinOps de Costes
   const [usageRecords, setUsageRecords] = useState<UsageRecord[]>([]);
 
+  // Costes Reales Google Cloud (desde Billing API)
+  const [cloudCosts, setCloudCosts] = useState<{
+    services: Array<{ service: string; displayName: string; costEur: number; currency: string }>;
+    totalEur: number;
+    source: "google_cloud_billing_api" | "google_cloud_monitoring" | "fallback_estimation";
+    billingAccountId: string | null;
+    period: { start: string; end: string };
+    fetchedAt: string;
+    cached?: boolean;
+    error?: string;
+  } | null>(null);
+  const [loadingCloudCosts, setLoadingCloudCosts] = useState(false);
+
+  const fetchCloudCosts = async (forceRefresh = false) => {
+    if (!currentUser) return;
+    setLoadingCloudCosts(true);
+    try {
+      const url = `/api/finops/cloud-costs${forceRefresh ? "?refresh=1" : ""}`;
+      const res = await apiFetch<typeof cloudCosts>(url);
+      setCloudCosts(res);
+    } catch (err) {
+      console.warn("[FinOps] No se pudo cargar costes reales de GCP:", err);
+    } finally {
+      setLoadingCloudCosts(false);
+    }
+  };
+
   useEffect(() => {
     // Cargar historial y finops de localStorage
     const savedHist = localStorage.getItem("ecomshop_article_history");
@@ -110,6 +357,14 @@ export default function ContentDashboard() {
       try { setGeneratedImagesList(JSON.parse(savedImgs)); } catch {}
     }
   }, []);
+
+  // Cargar costes GCP cuando el usuario abre el panel FinOps
+  useEffect(() => {
+    if (mainView === "finops" && currentUser && !cloudCosts && !loadingCloudCosts) {
+      fetchCloudCosts();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mainView, currentUser]);
 
   const addFinopsRecord = (record: Omit<UsageRecord, "id" | "timestamp" | "estimatedCostEur">) => {
     const cost = calculateUsageCost({
@@ -274,34 +529,57 @@ export default function ContentDashboard() {
   const [selectedAngleId, setSelectedAngleId] = useState<string | null>(null);
   const [loadingAngles, setLoadingAngles] = useState(false);
 
+  const [activeBackendLabel, setActiveBackendLabel] = useState<string>("Gemini Conectado");
+  const [connectedModel, setConnectedModel] = useState<string>("gemini-2.5-flash");
+
   useEffect(() => {
     const saved = localStorage.getItem("ecomshop_gemini_key");
     if (saved) {
       setGeminiApiKey(saved);
       checkKeyValidity(saved);
+    } else {
+      // Probar si el servidor ya tiene conexión directa (Vertex AI en Cloud Run o local)
+      checkKeyValidity("");
     }
   }, []);
 
+  const [keyErrorMessage, setKeyErrorMessage] = useState<string | null>(null);
+
   const checkKeyValidity = async (keyToTest: string) => {
-    if (!keyToTest) {
-      setKeyStatus("unchecked");
-      return;
-    }
     setValidatingKey(true);
+    setKeyErrorMessage(null);
     try {
       const res = await fetch("/api/validate-key", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: keyToTest })
+        body: JSON.stringify({ apiKey: keyToTest || undefined })
       });
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && data.valid) {
         setKeyStatus("valid");
-        localStorage.setItem("ecomshop_gemini_key", keyToTest);
+        const detectedModel = data.model || "gemini-2.5-flash";
+        setConnectedModel(detectedModel);
+        if (data.backend) {
+          setActiveBackendLabel(data.backend.includes("Vertex") ? "Vertex AI Conectado" : `${detectedModel} Activo`);
+        }
+        if (keyToTest) {
+          localStorage.setItem("ecomshop_gemini_key", keyToTest);
+        }
       } else {
-        setKeyStatus("invalid");
+        if (keyToTest) {
+          setKeyStatus("invalid");
+          setKeyErrorMessage(data.message || "Clave inválida o sin permisos en Google Cloud");
+        } else {
+          setKeyStatus("unchecked");
+        }
       }
-    } catch {
-      setKeyStatus("invalid");
+    } catch (err: any) {
+      if (keyToTest) {
+        setKeyStatus("invalid");
+        setKeyErrorMessage(err?.message || "Error de conexión al verificar la clave");
+      } else {
+        setKeyStatus("unchecked");
+      }
     } finally {
       setValidatingKey(false);
     }
@@ -357,6 +635,62 @@ export default function ContentDashboard() {
     setMainView("generator");
   };
 
+  const handleSelectEditorialTopic = async (topic: EditorialTopicCard) => {
+    setSelectedPresetId(topic.id);
+    setTopicTitle(topic.title);
+    setTargetAudience(topic.targetAudience);
+
+    // Map category
+    const catMap: Record<string, "wifi" | "switches" | "fibra" | "engenius" | "general"> = {
+      WIFI7: "engenius",
+      POE_SWITCHING: "switches",
+      FIBRA_SFP: "fibra",
+      ROUTERS_5G: "engenius",
+      ALL: "engenius"
+    };
+    const cat = catMap[topic.category] || "engenius";
+    setCategory(cat);
+
+    // Auto-link primary SKU URL
+    if (topic.suggestedSKUs && topic.suggestedSKUs.length > 0) {
+      const primarySku = topic.suggestedSKUs[0];
+      const starProd = STAR_PRODUCTS.find((p) => p.model.toLowerCase() === primarySku.toLowerCase());
+      if (starProd) {
+        setProductUrl(starProd.url);
+        setSelectedProducts([starProd.id]);
+      } else {
+        setProductUrl(`${ECOM_BRAND.storeUrl}?s=${encodeURIComponent(primarySku)}`);
+      }
+    } else {
+      setProductUrl(ECOM_BRAND.storeUrl);
+    }
+
+    setCustomNotes(`Línea Editorial [${topic.badge}]:\n- Argumento Clave: ${topic.coreArgument}\n- SKUs: ${topic.suggestedSKUs?.join(", ") || "N/A"}`);
+    setSelectedAngleId(null);
+
+    // Actualizar de inmediato los 3 ángulos derivados de ese tema específico
+    setLoadingAngles(true);
+    try {
+      const res = await fetch("/api/strategy/angles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topicTitle: topic.title,
+          category: cat,
+          apiKey: geminiApiKey || undefined
+        })
+      });
+      const data = await res.json();
+      if (data.angles) {
+        setStrategicAngles(data.angles);
+      }
+    } catch (err) {
+      console.error("Error auto-fetching angles for selected topic:", err);
+    } finally {
+      setLoadingAngles(false);
+    }
+  };
+
   const handleSelectPreset = (id: string) => {
     setSelectedPresetId(id);
     const preset = PRESET_TOPICS.find((p) => p.id === id);
@@ -403,9 +737,8 @@ export default function ContentDashboard() {
   const handleGenerate = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/generate", {
+      const data = await apiFetch<ContentOutput & { intelligenceCard?: ProductIntelligenceCard }>("/api/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           topicTitle,
           category,
@@ -420,13 +753,16 @@ export default function ContentDashboard() {
           ctaUrl: customCtaUrl,
           syncWhatsApp,
           syncLinkedIn,
+          customAngle,
+          editorialControls,
           apiKey: geminiApiKey || undefined
         })
       });
 
-      if (!res.ok) throw new Error("Fallo al generar contenido");
-      const data: ContentOutput = await res.json();
       setContent(data);
+      if (data.intelligenceCard) {
+        setIntelligenceCard(data.intelligenceCard);
+      }
       setActiveTab("blog");
 
       // Registrar métrica en FinOps
@@ -456,9 +792,13 @@ export default function ContentDashboard() {
         localStorage.setItem("ecomshop_article_history", JSON.stringify(updated.slice(0, 50)));
         return updated;
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Hubo un error al generar el contenido.");
+      if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+        setShowSignInModal(true);
+      } else {
+        alert(`Hubo un error al generar el contenido: ${err?.message || err}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -469,9 +809,13 @@ export default function ContentDashboard() {
     setGeneratingImage(true);
     setImageNotice(null);
     try {
-      const res = await fetch("/api/images/generate", {
+      const data = await apiFetch<{
+        imageUrl: string;
+        sourceType?: string;
+        warning?: string;
+        refinedPrompt?: string;
+      }>("/api/images/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: imagePrompt,
           aspectRatio: imageAspectRatio,
@@ -479,7 +823,6 @@ export default function ContentDashboard() {
           apiKey: geminiApiKey || undefined
         })
       });
-      const data = await res.json();
       if (data.imageUrl) {
         if (data.warning) {
           setImageNotice(data.warning);
@@ -505,9 +848,13 @@ export default function ContentDashboard() {
           imageCount: 1
         });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Error al generar la imagen.");
+      if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+        setShowSignInModal(true);
+      } else {
+        alert("Error al generar la imagen: " + (err?.message || err));
+      }
     } finally {
       setGeneratingImage(false);
     }
@@ -670,6 +1017,36 @@ export default function ContentDashboard() {
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           </button>
 
+          {/* Corporate Session Badge */}
+          {currentUser ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-slate-50 border-slate-200 text-slate-800">
+              <Shield className="w-3.5 h-3.5 text-emerald-600" />
+              <div className="flex flex-col text-left">
+                <span className="font-semibold text-[11px] leading-tight flex items-center gap-1">
+                  {currentUser.email}
+                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-mono font-bold">
+                    {currentUser.role}
+                  </span>
+                </span>
+              </div>
+              <button
+                onClick={handleLogout}
+                title="Cerrar Sesión Corporativa"
+                className="ml-1 p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-800 transition"
+              >
+                <LogOut className="w-3 h-3" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowSignInModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100/80 font-semibold text-xs shadow-2xs transition"
+            >
+              <Shield className="w-3.5 h-3.5 text-amber-600" />
+              <span>Iniciar Sesión @ecomspain.com</span>
+            </button>
+          )}
+
           {/* Gemini API Status Badge & Config */}
           <button
             onClick={() => setShowKeyModal(true)}
@@ -684,7 +1061,7 @@ export default function ContentDashboard() {
             <Bot className="w-3.5 h-3.5 text-slate-600" />
             <span className="font-semibold text-xs">
               {keyStatus === "valid"
-                ? "Gemini 2.5 Flash Activo"
+                ? activeBackendLabel
                 : keyStatus === "invalid"
                 ? "API Key Inválida"
                 : "Conectar Gemini API"}
@@ -710,42 +1087,51 @@ export default function ContentDashboard() {
       )}
 
       {mainView === "generator" && (
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 max-w-7xl mx-auto w-full">
-          {/* Columna Izquierda: Configuración del Tema */}
-          <div className="lg:col-span-4 flex flex-col gap-5">
-            <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-xs">
-              <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-sky-600">Edición Semanal</span>
-                  <h2 className="font-editorial text-base font-bold text-slate-900">Temas Sugeridos</h2>
-                </div>
-                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                  B2B Editorial
-                </span>
-              </div>
-              <div className="flex flex-col gap-2">
-                {PRESET_TOPICS.map((preset) => (
-                  <button
-                    key={preset.id}
-                    onClick={() => handleSelectPreset(preset.id)}
-                    className={`text-left p-3 rounded-lg border text-xs transition flex flex-col gap-1.5 ${
-                      selectedPresetId === preset.id
-                        ? "bg-sky-50/60 border-sky-400 text-sky-950 shadow-2xs"
-                        : "bg-white border-slate-200/70 text-slate-700 hover:border-slate-300 hover:bg-slate-50/80"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="uppercase tracking-wider text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
-                        {preset.category}
-                      </span>
-                      <ChevronRight className={`w-3.5 h-3.5 ${selectedPresetId === preset.id ? "text-sky-600" : "text-slate-400"}`} />
-                    </div>
-                    <span className="font-semibold text-xs leading-snug text-slate-900">{preset.title}</span>
-                    <span className="text-[11px] text-slate-500 line-clamp-1">{preset.targetAudience}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+        <div className="flex-1 p-6 max-w-7xl mx-auto w-full">
+          {/* Radar de Oportunidades Diarias (Fase 08 Marketing Autopilot) */}
+          <OpportunityRadarWidget
+            opportunities={opportunities}
+            isLoading={loadingOpportunities}
+            onSelectOpportunity={handleSelectOpportunity}
+            onLaunchCampaign={handleLaunchCampaign}
+            launchingSku={launchingSku}
+          />
+
+          {/* Barra de Controles Editoriales Personalizables (Fase 08.6) */}
+          <EditorialControlsBar
+            controls={editorialControls}
+            onChange={setEditorialControls}
+          />
+
+          {/* Campaign Workspace Interactivo (Pipeline Stepper + Contenido Multicanal Grounded) */}
+          {campaignStage !== "IDLE" && (
+            <CampaignWorkspace
+              stage={campaignStage}
+              opportunity={campaignOpportunity}
+              content={content}
+              intelligenceCard={intelligenceCard}
+              errorMessage={campaignErrorMessage}
+              onRetry={() => campaignOpportunity && handleLaunchCampaign(campaignOpportunity)}
+              onReset={() => {
+                setCampaignStage("IDLE");
+                setCampaignOpportunity(null);
+                setCampaignErrorMessage(null);
+              }}
+              onOpenImageStudio={(prompt) => {
+                setImagePrompt(prompt);
+                setMainView("image_studio");
+              }}
+            />
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Columna Izquierda: Configuración del Tema */}
+            <div className="lg:col-span-4 flex flex-col gap-5">
+            <SuggestedTopics
+              selectedTopicId={selectedPresetId}
+              onSelectTopic={handleSelectEditorialTopic}
+              geminiApiKey={geminiApiKey || undefined}
+            />
 
             {/* 3 Ángulos Estratégicos (Agente Gemini) */}
             <div className="bg-white border border-indigo-200/80 rounded-xl p-5 shadow-xs relative overflow-hidden">
@@ -812,10 +1198,122 @@ export default function ContentDashboard() {
             </div>
 
             <div className="bg-white border border-slate-200/80 rounded-xl p-5 flex flex-col gap-4 shadow-xs">
-              <div className="border-b border-slate-100 pb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Composición</span>
-                <h2 className="font-editorial text-base font-bold text-slate-900">Parámetros de Publicación</h2>
+              <div className="border-b border-slate-100 pb-2 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Configuración</span>
+                  <h2 className="font-editorial text-base font-bold text-slate-900">Entrada de Campaña</h2>
+                </div>
+                {/* Selector de Modo */}
+                <div className="flex bg-slate-100 p-1 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setInputMode("ecomshop_url")}
+                    className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition ${
+                      inputMode === "ecomshop_url"
+                        ? "bg-white text-blue-700 shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    EcomShop URL
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setInputMode("prompt_libre")}
+                    className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition ${
+                      inputMode === "prompt_libre"
+                        ? "bg-white text-slate-900 shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    Prompt Libre
+                  </button>
+                </div>
               </div>
+
+              {inputMode === "ecomshop_url" && (
+                <div className="space-y-3 bg-blue-50/50 p-3.5 rounded-lg border border-blue-100">
+                  <div>
+                    <label className="text-xs font-bold text-blue-950 block mb-1">
+                      URL de Producto en EcomShop.es (Extracción Automática):
+                    </label>
+                    <input
+                      type="text"
+                      value={productUrl}
+                      onChange={(e) => setProductUrl(e.target.value)}
+                      placeholder="https://www.ecomshop.es/..."
+                      className="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-600 transition"
+                    />
+                  </div>
+
+                  {/* Ejemplos rápidos */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] text-slate-500 font-medium">Ejemplos rápidos:</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProductUrl("https://www.ecomshop.es/engenius-ecw536");
+                        setTopicTitle("EnGenius ECW536 Cloud WiFi 7 AP");
+                        setCategory("engenius");
+                      }}
+                      className="text-[10px] bg-white border border-slate-200 hover:border-blue-300 text-slate-700 px-2 py-0.5 rounded shadow-2xs"
+                    >
+                      ⚡ ECW536 WiFi 7
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProductUrl("https://www.ecomshop.es/engenius-ecs1528fp");
+                        setTopicTitle("Switch EnGenius ECS1528FP Cloud PoE+");
+                        setCategory("switches");
+                      }}
+                      className="text-[10px] bg-white border border-slate-200 hover:border-blue-300 text-slate-700 px-2 py-0.5 rounded shadow-2xs"
+                    >
+                      ⚡ ECS1528FP PoE+
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProductUrl("https://www.ecomshop.es/engenius-esg510");
+                        setTopicTitle("Gateway EnGenius ESG510 Cloud Security 2.5G");
+                        setCategory("engenius");
+                      }}
+                      className="text-[10px] bg-white border border-slate-200 hover:border-blue-300 text-slate-700 px-2 py-0.5 rounded shadow-2xs"
+                    >
+                      ⚡ Gateway ESG510
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Público Objetivo</label>
+                      <select
+                        value={targetAudience}
+                        onChange={(e) => setTargetAudience(e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded px-2 py-1.5 text-xs text-slate-800"
+                      >
+                        <option value="Instaladores de telecomunicaciones e integradores IT">Instaladores & Integradores IT</option>
+                        <option value="Directores de TIC y responsables de sistemas">Directores de Sistemas / CIO</option>
+                        <option value="Jefes de compras y directores de operaciones">Jefes de Compras / TCO</option>
+                        <option value="Sector Hospitality y Hoteles">Sector Hospitality / Hoteles</option>
+                        <option value="Operadores locales y WISP">Operadores WISP / Telco</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Ángulo Estratégico</label>
+                      <select
+                        value={customAngle}
+                        onChange={(e) => setCustomAngle(e.target.value as any)}
+                        className="w-full bg-white border border-slate-200 rounded px-2 py-1.5 text-xs text-slate-800"
+                      >
+                        <option value="ROI">ROI & Cero Licencias</option>
+                        <option value="PERFORMANCE">Rendimiento Técnico & 10G</option>
+                        <option value="OPERATIONS">Despliegue Rápido & Soporte</option>
+                        <option value="GENERAL">Equilibrado General</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="text-xs font-semibold text-slate-700 block mb-1">Título del Artículo / Cobertura</label>
@@ -897,6 +1395,18 @@ export default function ContentDashboard() {
 
         {/* Columna Derecha: Previsualización & Derivación Multicanal */}
         <div className="lg:col-span-8 flex flex-col gap-4">
+          {/* Ficha de Inteligencia de Producto & Evidence Drawer si están disponibles */}
+          {intelligenceCard && (
+            <div className="space-y-4">
+              <ProductIntelligenceView card={intelligenceCard} />
+              <EvidenceAuditDrawer
+                score={95}
+                evidenceLedger={intelligenceCard.evidenceLedger}
+                productName={intelligenceCard.product.model}
+              />
+            </div>
+          )}
+
           {content ? (
             <div className="bg-white border border-slate-200/80 rounded-xl flex flex-col h-full shadow-xs overflow-hidden">
               {/* Tab Navigation */}
@@ -1345,7 +1855,8 @@ export default function ContentDashboard() {
             </div>
           )}
         </div>
-      </div>
+          </div>
+        </div>
       )}
 
       {/* VISTA 2: HISTORIAL Y ESTADOS */}
@@ -1694,9 +2205,38 @@ export default function ContentDashboard() {
                 Auditoría continua de consumo en Google Gemini 2.5 Flash, Google Imagen 3, Google Cloud Run y Firebase Firestore.
               </p>
             </div>
-            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg text-emerald-800 text-xs font-semibold">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              Tarifas Oficiales de Google Cloud
+            <div className="flex items-center gap-2">
+              {/* Badge de fuente de datos */}
+              {cloudCosts ? (
+                cloudCosts.source === "fallback_estimation" ? (
+                  <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg text-amber-800 text-xs font-semibold">
+                    <AlertCircle className="w-4 h-4 text-amber-600" />
+                    Estimación local (sin billing viewer)
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg text-emerald-800 text-xs font-semibold">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    Datos Reales Google Cloud
+                  </div>
+                )
+              ) : (
+                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg text-emerald-800 text-xs font-semibold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  Tarifas Oficiales de Google Cloud
+                </div>
+              )}
+              {/* Botón Actualizar desde GCP */}
+              {currentUser && (
+                <button
+                  onClick={() => fetchCloudCosts(true)}
+                  disabled={loadingCloudCosts}
+                  className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 border border-slate-200 px-3 py-1.5 rounded-lg text-slate-700 text-xs font-semibold transition"
+                  title="Consultar Google Cloud Billing en tiempo real"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingCloudCosts ? "animate-spin" : ""}`} />
+                  {loadingCloudCosts ? "Consultando GCP…" : "↻ Actualizar"}
+                </button>
+              )}
             </div>
           </div>
 
@@ -1726,14 +2266,119 @@ export default function ContentDashboard() {
               <span className="text-[10px] text-slate-500">~0.028€ por imagen generada</span>
             </div>
 
-            <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs">
+            {/* Tarjeta Cloud Run & Firebase — ahora con datos reales */}
+            <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs relative">
               <span className="text-xs text-slate-500 font-medium block mb-1">Cloud Run & Firebase</span>
-              <div className="font-editorial text-2xl font-bold text-emerald-700">
-                0,00 € <span className="text-xs font-normal text-emerald-600">(Capa Gratuita)</span>
-              </div>
-              <span className="text-[10px] text-slate-500">2M req/mes gratis en Cloud Run</span>
+              {loadingCloudCosts ? (
+                <div className="flex items-center gap-2 py-1">
+                  <div className="w-4 h-4 border-2 border-slate-300 border-t-emerald-600 rounded-full animate-spin" />
+                  <span className="text-xs text-slate-400">Consultando GCP…</span>
+                </div>
+              ) : cloudCosts ? (
+                <>
+                  <div className="font-editorial text-2xl font-bold text-emerald-700">
+                    {cloudCosts.totalEur.toFixed(4)} €
+                    {cloudCosts.totalEur === 0 && (
+                      <span className="text-xs font-normal text-emerald-600 ml-1">(Capa Gratuita)</span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-slate-500">
+                    {cloudCosts.period.start} → {cloudCosts.period.end}
+                    {cloudCosts.cached && " · caché"}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <div className="font-editorial text-2xl font-bold text-emerald-700">
+                    0,00 € <span className="text-xs font-normal text-emerald-600">(Capa Gratuita)</span>
+                  </div>
+                  <span className="text-[10px] text-slate-500">2M req/mes gratis en Cloud Run</span>
+                </>
+              )}
             </div>
           </div>
+
+          {/* Panel de Costes Reales GCP por Servicio */}
+          {cloudCosts && cloudCosts.services.length > 0 && (
+            <div className="bg-white border border-slate-200/80 rounded-xl p-5 flex flex-col gap-3 shadow-xs">
+              <div className="flex items-center justify-between">
+                <h3 className="font-editorial text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                  Desglose Real por Servicio Google Cloud MTD
+                </h3>
+                <div className="flex items-center gap-2">
+                  {cloudCosts.billingAccountId && (
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      Billing: {cloudCosts.billingAccountId}
+                    </span>
+                  )}
+                  <span className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
+                    cloudCosts.source === "google_cloud_monitoring"
+                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                      : cloudCosts.source === "google_cloud_billing_api"
+                      ? "bg-sky-50 text-sky-700 border border-sky-200"
+                      : "bg-amber-50 text-amber-700 border border-amber-200"
+                  }`}>
+                    {cloudCosts.source === "google_cloud_monitoring"
+                      ? "Cloud Monitoring API"
+                      : cloudCosts.source === "google_cloud_billing_api"
+                      ? "Billing API"
+                      : "Estimación local"}
+                  </span>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-slate-500 font-semibold">
+                      <th className="py-2.5">Servicio GCP</th>
+                      <th className="py-2.5 text-right">Coste MTD (€)</th>
+                      <th className="py-2.5 text-right">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                    {cloudCosts.services.map((svc) => (
+                      <tr key={svc.service}>
+                        <td className="py-2.5 font-medium">{svc.displayName}</td>
+                        <td className="py-2.5 text-right font-mono font-bold text-emerald-700">
+                          {svc.costEur.toFixed(6)} €
+                        </td>
+                        <td className="py-2.5 text-right">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            svc.costEur === 0
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : svc.costEur < 1
+                              ? "bg-sky-50 text-sky-700 border border-sky-200"
+                              : "bg-amber-50 text-amber-700 border border-amber-200"
+                          }`}>
+                            {svc.costEur === 0 ? "FREE TIER" : svc.costEur < 1 ? "< 1€" : `${svc.costEur.toFixed(2)}€`}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 border-slate-200">
+                      <td className="py-2.5 font-bold text-slate-900">TOTAL Google Cloud MTD</td>
+                      <td className="py-2.5 text-right font-mono font-bold text-slate-900">
+                        {cloudCosts.totalEur.toFixed(6)} €
+                      </td>
+                      <td />
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              {cloudCosts.error && (
+                <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded">
+                  ⚠️ {cloudCosts.error}. Para acceso completo, añade el rol <strong>roles/billing.viewer</strong> al Service Account.
+                </div>
+              )}
+              <p className="text-[10px] text-slate-400">
+                Actualizado: {new Date(cloudCosts.fetchedAt).toLocaleString("es-ES")}
+                {cloudCosts.cached && " · Datos en caché (TTL 5 min)"}
+              </p>
+            </div>
+          )}
 
           {/* Registro de Telemetría y Acciones */}
           <div className="bg-white border border-slate-200/80 rounded-xl p-5 flex flex-col gap-3 shadow-xs">
@@ -1827,7 +2472,7 @@ export default function ContentDashboard() {
                   setGeminiApiKey(e.target.value);
                   setKeyStatus("unchecked");
                 }}
-                placeholder="AIzaSy..."
+                placeholder="AQ... o AIzaSy..."
                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 font-mono"
               />
             </div>
@@ -1842,12 +2487,12 @@ export default function ContentDashboard() {
               ) : keyStatus === "valid" ? (
                 <span className="text-emerald-700 font-medium flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  API Key válida. Modelo <strong>gemini-2.5-flash</strong> conectado.
+                  API Key válida. Modelo <strong>{connectedModel}</strong> conectado.
                 </span>
               ) : keyStatus === "invalid" ? (
                 <span className="text-rose-700 font-medium flex items-center gap-1">
-                  <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
-                  Clave inválida o sin permisos en Google Cloud.
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                  <span>{keyErrorMessage || "Clave inválida o sin permisos en Google Cloud."}</span>
                 </span>
               ) : (
                 <span className="text-slate-500 text-[11px]">
@@ -1986,7 +2631,7 @@ export default function ContentDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     <input
                       type="text"
-                      placeholder="Título de la fuente (ej: Datasheet EnGenius Fit Switch...)"
+                      placeholder="Título de la fuente (ej: Datasheet EnGenius Cloud Switch...)"
                       value={newSourceTitle}
                       onChange={(e) => setNewSourceTitle(e.target.value)}
                       className="bg-white border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-purple-500"
@@ -2203,6 +2848,29 @@ export default function ContentDashboard() {
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Autenticación Corporativa */}
+      {showSignInModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
+            <button
+              onClick={() => setShowSignInModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-sm font-bold z-10 w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center transition"
+            >
+              ✕
+            </button>
+            <CorporateSignIn
+              onSuccess={(user) => {
+                setCurrentUser(user as any);
+                setShowSignInModal(false);
+              }}
+              onContinueAsGuest={() => {
+                setShowSignInModal(false);
+              }}
+            />
           </div>
         </div>
       )}

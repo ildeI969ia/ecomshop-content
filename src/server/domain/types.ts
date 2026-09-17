@@ -1,4 +1,4 @@
-﻿import { z } from "zod";
+import { z } from "zod";
 
 export const UserRoleSchema = z.enum([
   "ADMIN",
@@ -193,3 +193,63 @@ export const AuditLogSchema = z.object({
   source: z.literal("UI").or(z.literal("SYSTEM_JOB"))
 });
 export type AuditLog = z.infer<typeof AuditLogSchema>;
+export const AssetTypeSchema = z.enum(["image", "diagram", "pdf", "audio", "datasheet"]);
+export type AssetType = z.infer<typeof AssetTypeSchema>;
+
+export const AssetSchema = z.object({
+  id: z.string(),
+  workspaceId: z.string().default("default-ecomspain"),
+  filename: z.string(),
+  mimeType: z.string(),
+  sizeBytes: z.number(),
+  storagePath: z.string(),
+  publicUrl: z.string().optional(),
+  type: AssetTypeSchema.default("image"),
+  campaignId: z.string().optional(),
+  productId: z.string().optional(),
+  contentId: z.string().optional(),
+  aiGenerated: z.boolean().default(false),
+  aiProvenance: AIProvenanceSchema.optional(),
+  ownerId: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  createdBy: z.string(),
+  updatedBy: z.string()
+});
+export type Asset = z.infer<typeof AssetSchema>;
+
+export const ProductEntitySchema = z.object({
+  id: z.string(),
+  sku: z.string(),
+  ean: z.string().optional(),
+  brand: z.string(),
+  model: z.string(),
+  title: z.string(),
+  category: z.string(),
+  description: z.string(),
+  url: z.string().url().optional(),
+  stockStatus: z.enum(["IN_STOCK", "LOW_STOCK", "OUT_OF_STOCK", "UNKNOWN"]).default("IN_STOCK"),
+  priceEur: z.number().optional(),
+  wholesalePriceEur: z.number().optional(),
+  datasheetUrl: z.string().url().optional(),
+  standards: z.array(z.string()).default([]),
+  ports: z.array(z.string()).default([]),
+  poeBudgetWatts: z.number().optional(),
+  managementType: z.string().optional(),
+  tags: z.array(z.string()).default([]),
+  updatedAt: z.string()
+});
+export type ProductEntity = z.infer<typeof ProductEntitySchema>;
+
+export const ProductIntelligenceRecordSchema = z.object({
+  id: z.string(),
+  productId: z.string(),
+  sku: z.string(),
+  cardPayload: z.record(z.string(), z.any()),
+  version: z.number().default(1),
+  qualityGatePassed: z.boolean().default(true),
+  evidenceCount: z.number().default(0),
+  generatedAt: z.string(),
+  updatedAt: z.string()
+});
+export type ProductIntelligenceRecord = z.infer<typeof ProductIntelligenceRecordSchema>;

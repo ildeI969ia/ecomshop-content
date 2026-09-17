@@ -1,22 +1,18 @@
-﻿import { AIProvider, TextGenerationOptions, TextGenerationResult, ImageGenerationResult, MultimodalInputOptions } from "./ai-provider";
+import { AIProvider, TextGenerationOptions, TextGenerationResult, ImageGenerationResult, MultimodalInputOptions } from "./ai-provider";
 import { AIProvenance } from "../domain/types";
 import { PRICING } from "@/lib/finops";
+import { getGenAIClient, getActiveGeminiModel } from "@/lib/genai-client";
 
 export class GoogleGenAIProvider implements AIProvider {
-  private apiKey: string;
+  private apiKey?: string;
 
   constructor(apiKey?: string) {
-    // Solo permitir API key del entorno o Secret Manager del servidor
-    this.apiKey = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
-    if (!this.apiKey) {
-      console.warn("GoogleGenAIProvider initialized without GEMINI_API_KEY in environment");
-    }
+    this.apiKey = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   }
 
   async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
-    const { GoogleGenAI } = await import("@google/genai");
-    const ai = new GoogleGenAI({ apiKey: this.apiKey });
-    const model = options?.model || "gemini-2.5-flash";
+    const ai = getGenAIClient(this.apiKey);
+    const model = options?.model || getActiveGeminiModel(this.apiKey);
     const startTime = Date.now();
 
     const response = await ai.models.generateContent({
@@ -96,9 +92,8 @@ export class GoogleGenAIProvider implements AIProvider {
   }
 
   async analyzeMultimodal(options: MultimodalInputOptions): Promise<TextGenerationResult> {
-    const { GoogleGenAI } = await import("@google/genai");
-    const ai = new GoogleGenAI({ apiKey: this.apiKey });
-    const model = "gemini-2.5-flash";
+    const ai = getGenAIClient(this.apiKey);
+    const model = getActiveGeminiModel(this.apiKey);
     const startTime = Date.now();
 
     const parts: any[] = [];

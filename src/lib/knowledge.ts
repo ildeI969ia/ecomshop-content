@@ -15,7 +15,7 @@ export const ECOM_BRAND = {
   usp: [
     "Soporte técnico y preventa de ingeniería especializado para integradores e instaladores IT",
     "Stock permanente y envíos rápidos en 24/48h",
-    "Partner oficial y experto en EnGenius Networks (Fit, Cloud y On-Premises)",
+    "Partner oficial y experto en EnGenius Networks (Cloud y Standalone/MESH)",
     "Precios profesionales con condiciones especiales para empresas y distribuidores"
   ]
 };
@@ -68,18 +68,18 @@ export const PRESET_TOPICS: KnowledgeTopic[] = [
     ]
   },
   {
-    id: "engenius-fit-controller",
+    id: "engenius-cloud-architecture",
     category: "wifi",
-    title: "EnGenius Fit vs EnGenius Cloud: ¿Qué arquitectura de gestión elegir para tus clientes?",
-    targetAudience: "Proveedores de servicios gestionados (MSPs) y consultores IT",
+    title: "Arquitectura EnGenius Cloud Nativa: Gestión Multi-Tenant Centralizada Sin Licencias",
+    targetAudience: "Proveedores de servicios gestionados (MSPs), integradores IT y directores TIC",
     keyPoints: [
-      "EnGenius Fit: solución híbrida con FitController on-premise sin cuotas recurrentes",
-      "EnGenius Cloud: gestión multi-tenant desde cualquier navegador o app móvil para cientos de sedes",
-      "Instalación Plug & Play y aprovisionamiento rápido con escaneo de código QR",
-      "Optimización de costes de despliegue y mantenimiento para el instalador"
+      "EnGenius Cloud: gestión multi-tenant desde cualquier navegador o app móvil para cientos de sedes con aprovisionamiento QR",
+      "Control de enlace simultáneo (MLO) y punzonado de preámbulo para eliminar interferencias de canal",
+      "Conmutación de acceso y agregación con uplinks de 10 Gbps SFP+ para evitar cuellos de botella de 1 GbE",
+      "Cero costes recurrentes de licencia anual o por dispositivo, garantizando máxima rentabilidad de proyecto"
     ],
     suggestedProducts: [
-      { name: "Gama EnGenius Fit", url: "https://www.ecomshop.es/engenius-fit", highlight: "Control total local o cloud híbrido para proyectos de coste ajustado" }
+      { name: "EnGenius Cloud Networking", url: "https://www.ecomshop.es/engenius-cloud", highlight: "Gestión centralizada oficial Cloud y Standalone/MESH sin cuotas recurrentes" }
     ]
   }
 ];
@@ -114,13 +114,13 @@ export const STAR_PRODUCTS: StarProduct[] = [
     specs: ["24x GbE PoE+ (410W budget)", "4x 10G SFP+ uplinks", "Reinicio remoto PoE", "Topología visual en Cloud"]
   },
   {
-    id: "fitcontroller",
-    name: "EnGenius FitController & APs Fit",
-    model: "FitController-100",
-    category: "wifi",
-    description: "Controlador físico on-premise para hasta 100 APs/Switches sin costes de suscripción ni cuotas recurrentes.",
-    url: "https://www.ecomshop.es/engenius-fit",
-    specs: ["Gestión local Plug & Play", "0€ cuotas de licencia", "Portal cautivo para invitados", "Monitoreo multi-sede"]
+    id: "esg510",
+    name: "EnGenius Cloud Security Gateway ESG510",
+    model: "ESG510",
+    category: "engenius",
+    description: "Gateway de seguridad gestionado 100% en EnGenius Cloud con doble WAN 2.5 GbE, VPN Site-to-Site y firewall de inspección con cero licencias.",
+    url: "https://www.ecomshop.es/engenius-esg510",
+    specs: ["Doble WAN 2.5 GbE", "Gestión unificada EnGenius Cloud", "0€ licencias de firewall/VPN", "Failover WAN automático"]
   },
   {
     id: "sfp-kit-10g",
@@ -157,11 +157,11 @@ export const CAMPAIGN_IDEAS: CampaignIdea[] = [
     recommendedProducts: ["ecs1528fp"]
   },
   {
-    id: "promo-fit-zero-license",
-    title: "Alternativa sin licencias anuales: EnGenius Fit",
-    angle: "Ofrece a clientes con presupuesto ajustado una red gestionable y segura sin cuotas recurrentes.",
-    targetObjective: "Descargar ficha técnica / Caso de éxito",
-    recommendedProducts: ["fitcontroller"]
+    id: "promo-cloud-zero-license",
+    title: "Infraestructura Cloud Sin Licencias: EnGenius Cloud Enterprise",
+    angle: "Ofrece a clientes corporativos gestión centralizada multi-tenant, VPN mesh y analítica de espectro sin cuotas recurrentes.",
+    targetObjective: "Descargar comparativa de TCO frente a Cisco Meraki / Ubiquiti",
+    recommendedProducts: ["esg510", "ecs1528fp", "ecw536"]
   },
   {
     id: "promo-fibra-backbone",

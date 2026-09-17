@@ -1,3 +1,6 @@
+import { GoogleGenAI } from "@google/genai";
+import { getVertexImageClient, IMAGEN_SUPPORTED_LOCATIONS } from "./genai-client";
+
 export interface GeneratedImage {
   id: string;
   prompt: string;
@@ -70,81 +73,207 @@ export interface GenerateImageResult {
   refinedPrompt?: string;
 }
 
+/** Aspect ratio normalizer — Imagen 3 accepts "16:9", "4:3", "1:1" */
+function normalizeAspectRatio(ar: string): "16:9" | "4:3" | "1:1" {
+  if (ar === "4:3") return "4:3";
+  if (ar === "16:9") return "16:9";
+  return "1:1";
+}
+
+/**
+ * Attempts to generate an image via Vertex AI Imagen 3 in a given region.
+ * Returns base64 image bytes on success, null on failure.
+ */
+async function tryVertexImagen(
+  client: GoogleGenAI,
+  prompt: string,
+  aspectRatio: string,
+  label: string
+): Promise<string | null> {
+  try {
+    const response = await client.models.generateImages({
+      model: "imagen-3.0-generate-002",
+      prompt,
+      config: {
+        numberOfImages: 1,
+        aspectRatio: normalizeAspectRatio(aspectRatio),
+        outputMimeType: "image/jpeg",
+      },
+    });
+    const bytes = response.generatedImages?.[0]?.image?.imageBytes;
+    if (bytes) return bytes;
+    console.warn(`[Imagen3][${label}] Respuesta vacía de Vertex AI`);
+    return null;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[Imagen3][${label}] Error:`, msg);
+    return null;
+  }
+}
+
+/**
+ * Attempts to generate an image via the Google AI Studio REST predict endpoint.
+ * Works with both user-provided keys and the server-side GEMINI_API_KEY env var.
+ * Returns base64 image bytes on success, null on failure.
+ */
+async function tryAiStudioREST(
+  apiKey: string,
+  prompt: string,
+  aspectRatio: string
+): Promise<string | null> {
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        instances: [{ prompt }],
+        parameters: {
+          sampleCount: 1,
+          aspectRatio: normalizeAspectRatio(aspectRatio),
+          outputOptions: { mimeType: "image/jpeg" },
+        },
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const b64 =
+        data.predictions?.[0]?.bytesBase64Encoded ||
+        data.predictions?.[0]?.image?.imageBytes;
+      if (b64) return b64;
+      console.warn("[Imagen3][AI Studio REST] Respuesta vacía");
+    } else {
+      const errBody = await res.text();
+      console.warn(`[Imagen3][AI Studio REST] HTTP ${res.status}:`, errBody);
+    }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn("[Imagen3][AI Studio REST] Excepción:", msg);
+  }
+  return null;
+}
+
+/**
+ * Attempts to generate an image via the Google AI Studio SDK.
+ * Returns base64 image bytes on success, null on failure.
+ */
+async function tryAiStudioSDK(
+  apiKey: string,
+  prompt: string,
+  aspectRatio: string
+): Promise<string | null> {
+  try {
+    const client = new GoogleGenAI({ vertexai: false, apiKey });
+    const response = await client.models.generateImages({
+      model: "imagen-3.0-generate-002",
+      prompt,
+      config: {
+        numberOfImages: 1,
+        aspectRatio: normalizeAspectRatio(aspectRatio),
+        outputMimeType: "image/jpeg",
+      },
+    });
+    const bytes = response.generatedImages?.[0]?.image?.imageBytes;
+    if (bytes) return bytes;
+    console.warn("[Imagen3][AI Studio SDK] Respuesta vacía");
+    return null;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn("[Imagen3][AI Studio SDK] Error:", msg);
+    return null;
+  }
+}
+
 export async function generateImageWithImagen(params: {
   prompt: string;
   aspectRatio: "16:9" | "1:1" | "4:3";
   apiKey?: string;
   baseImage?: string;
 }): Promise<GenerateImageResult> {
-  const key = params.apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const serverApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const userApiKey = params.apiKey?.trim();
+  const hasGcpProject = Boolean(process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT);
+
   let refinedPrompt = params.prompt;
 
-  if (key) {
+  // ─── Multimodal vision enrichment (if base image provided) ────────────────
+  if (params.baseImage) {
     try {
-      const { GoogleGenAI } = await import("@google/genai");
-      const ai = new GoogleGenAI({ apiKey: key });
+      const { getGenAIClient, getActiveGeminiModel } = await import("./genai-client");
+      const ai = getGenAIClient(userApiKey);
+      const activeModel = getActiveGeminiModel(userApiKey);
+      const match = params.baseImage.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+      const mimeType = match ? match[1] : "image/jpeg";
+      const data = match ? match[2] : params.baseImage;
 
-      // Si se provee una imagen base, enriquecer el prompt con visión multimodal de Gemini 2.5 Flash
-      if (params.baseImage) {
-        try {
-          const match = params.baseImage.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
-          const mimeType = match ? match[1] : "image/jpeg";
-          const data = match ? match[2] : params.baseImage;
-
-          const visionAnalysis = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: [
+      const visionAnalysis = await ai.models.generateContent({
+        model: activeModel,
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { inlineData: { mimeType, data } },
               {
-                role: "user",
-                parts: [
-                  {
-                    inlineData: {
-                      mimeType,
-                      data
-                    }
-                  },
-                  {
-                    text: `You are an expert photographic director. Analyze this reference image and the user's intent: "${params.prompt}". Generate a highly detailed, professional photorealistic visual prompt for an image generator. Maintain the core subject, hardware type, color palette and architectural context of the reference image, but adapt it to the user's instructions. Respond ONLY with the photographic prompt in English (no markdown, no intro).`
-                  }
-                ]
-              }
-            ]
-          });
-
-          const suggestedPrompt = visionAnalysis.text?.trim();
-          if (suggestedPrompt && suggestedPrompt.length > 20) {
-            refinedPrompt = suggestedPrompt;
-          }
-        } catch (visionErr) {
-          console.warn("No se pudo analizar la imagen base con visión multimodal:", visionErr);
-        }
-      }
-
-      // Llamada al modelo Imagen 3 vía Google GenAI SDK
-      const response = await ai.models.generateImages({
-        model: "imagen-3.0-generate-002",
-        prompt: refinedPrompt,
-        config: {
-          numberOfImages: 1,
-          aspectRatio: params.aspectRatio === "16:9" ? "16:9" : params.aspectRatio === "4:3" ? "4:3" : "1:1",
-          outputMimeType: "image/jpeg"
-        }
+                text: `You are an expert photographic director. Analyze this reference image and the user's intent: "${params.prompt}". Generate a highly detailed, professional photorealistic visual prompt for an image generator. Maintain the core subject, hardware type, color palette and architectural context of the reference image, but adapt it to the user's instructions. Respond ONLY with the photographic prompt in English (no markdown, no intro).`,
+              },
+            ],
+          },
+        ],
       });
 
-      const base64ImageBytes = response.generatedImages?.[0]?.image?.imageBytes;
-      if (base64ImageBytes) {
-        return {
-          imageUrl: `data:image/jpeg;base64,${base64ImageBytes}`,
-          sourceType: params.baseImage ? "gemini_multimodal" : "imagen3",
-          refinedPrompt
-        };
+      const suggestedPrompt = visionAnalysis.text?.trim();
+      if (suggestedPrompt && suggestedPrompt.length > 20) {
+        refinedPrompt = suggestedPrompt;
       }
-    } catch (err: any) {
-      console.warn("Error llamando a Google Imagen 3 API:", err?.message || err);
+    } catch (visionErr: unknown) {
+      const msg = visionErr instanceof Error ? visionErr.message : String(visionErr);
+      console.warn("[Imagen3] No se pudo analizar la imagen base con visión multimodal:", msg);
     }
   }
 
-  // Fallback variado si la API de Imagen 3 no está disponible o la key no tiene permisos
+  const sourceType = params.baseImage ? "gemini_multimodal" : "imagen3";
+
+  // ─── PASO 1: Vertex AI — us-central1 (región primaria para Imagen 3) ───────
+  if (hasGcpProject) {
+    const usClient = getVertexImageClient("us-central1");
+    const bytes = await tryVertexImagen(usClient, refinedPrompt, params.aspectRatio, "Vertex us-central1");
+    if (bytes) {
+      return { imageUrl: `data:image/jpeg;base64,${bytes}`, sourceType, refinedPrompt };
+    }
+  }
+
+  // ─── PASO 2: Vertex AI — europe-west4 (región secundaria para Imagen 3) ────
+  if (hasGcpProject) {
+    const euClient = getVertexImageClient("europe-west4");
+    const bytes = await tryVertexImagen(euClient, refinedPrompt, params.aspectRatio, "Vertex europe-west4");
+    if (bytes) {
+      return { imageUrl: `data:image/jpeg;base64,${bytes}`, sourceType, refinedPrompt };
+    }
+  }
+
+  // ─── PASO 3: AI Studio REST — user key first, then server key ───────────────
+  const restKey = userApiKey || serverApiKey;
+  if (restKey) {
+    const bytes = await tryAiStudioREST(restKey, refinedPrompt, params.aspectRatio);
+    if (bytes) {
+      return { imageUrl: `data:image/jpeg;base64,${bytes}`, sourceType, refinedPrompt };
+    }
+  }
+
+  // ─── PASO 4: AI Studio SDK — user key first, then server key ────────────────
+  const sdkKey = userApiKey || serverApiKey;
+  if (sdkKey) {
+    const bytes = await tryAiStudioSDK(sdkKey, refinedPrompt, params.aspectRatio);
+    if (bytes) {
+      return { imageUrl: `data:image/jpeg;base64,${bytes}`, sourceType, refinedPrompt };
+    }
+  }
+
+  // ─── PASO 5: Curated stock fallback ─────────────────────────────────────────
   const lower = params.prompt.toLowerCase();
   let pool = DIVERSE_STOCK_CATALOG.tech;
   if (lower.includes("rack") || lower.includes("switch") || lower.includes("server")) {
@@ -155,17 +284,17 @@ export async function generateImageWithImagen(params: {
     pool = DIVERSE_STOCK_CATALOG.fiber;
   }
 
-  // Selección aleatoria para evitar que siempre devuelva la misma imagen
   const randomIndex = Math.floor(Math.random() * pool.length);
   const selectedUrl = pool[randomIndex];
   const variedUrl = `${selectedUrl}&sig=${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
+  const hasAnyKey = Boolean(hasGcpProject || userApiKey || serverApiKey);
   return {
     imageUrl: variedUrl,
     sourceType: "curated_varied",
-    warning: key
-      ? "Nota: Tu API Key no tiene permisos para Imagen 3 (o superó la cuota). Se ha generado una variación fotográfica curada con temática coincidente."
-      : "Nota: No se detectó API Key con soporte de Imagen 3. Se ha seleccionado una imagen fotográfica curada de alta resolución.",
-    refinedPrompt
+    warning: hasAnyKey
+      ? `Nota: Imagen 3 no respondió en ninguna región disponible (${IMAGEN_SUPPORTED_LOCATIONS.join(", ")}) ni en AI Studio. Se ha seleccionado una imagen fotográfica curada de alta resolución.`
+      : "Nota: No se detectó credencial válida para Imagen 3. Se ha seleccionado una imagen fotográfica curada de alta resolución.",
+    refinedPrompt,
   };
 }

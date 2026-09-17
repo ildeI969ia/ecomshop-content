@@ -62,12 +62,14 @@ export async function analyzeMultimodalInput(params: {
   mimeType?: string;
   apiKey?: string;
 }): Promise<MultimodalAdvisorResponse> {
+  const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!params.apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT));
   const key = params.apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
-  if (key) {
+  if (key || isVertex) {
     try {
-      const { GoogleGenAI } = await import("@google/genai");
-      const ai = new GoogleGenAI({ apiKey: key });
+      const { getGenAIClient, getActiveGeminiModel } = await import("./genai-client");
+      const ai = getGenAIClient(params.apiKey);
+      const activeModel = getActiveGeminiModel(params.apiKey);
 
       const contents: any[] = [];
 
@@ -86,7 +88,7 @@ export async function analyzeMultimodalInput(params: {
       contents.push(promptText);
 
       const res = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: activeModel,
         contents: contents,
         config: {
           systemInstruction: MULTIMODAL_ADVISOR_SYSTEM_PROMPT,

@@ -9,7 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@google-cloud/firestore": "^9.1.0",
     "@google/genai": "^2.22.0",
+    "cheerio": "^1.2.0",
     "firebase-admin": "^14.4.0",
     "framer-motion": "^13.2.0",
     "isomorphic-dompurify": "^3.19.0",
@@ -21,12 +23,14 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/cheerio": "^0.22.35",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }

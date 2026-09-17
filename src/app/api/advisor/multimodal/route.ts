@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeMultimodalInput } from "@/lib/multimodal-advisor";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 
 export const maxDuration = 60; // 60 segundos para Cloud Run
 
-export async function POST(req: NextRequest) {
+export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
   try {
     const body = await req.json();
     const { textPrompt, mediaBase64, mimeType, apiKey } = body;
@@ -36,4 +37,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

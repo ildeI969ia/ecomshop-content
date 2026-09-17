@@ -70,12 +70,15 @@ export const ContentOutputSchema = z.object({
 
 export type ContentOutput = z.infer<typeof ContentOutputSchema>;
 
+import { EditorialControlsSchema } from "./types/editorial-controls";
+
 export const GenerateRequestSchema = z.object({
-  topicTitle: z.string().min(3),
-  category: z.enum(["wifi", "switches", "fibra", "engenius", "general"]),
+  topicTitle: z.string().min(3).optional(),
+  category: z.enum(["wifi", "switches", "fibra", "engenius", "general"]).default("general"),
   customNotes: z.string().optional(),
   targetAudience: z.string().optional(),
   productUrl: z.string().optional(),
+  customAngle: z.enum(["ROI", "PERFORMANCE", "OPERATIONS", "GENERAL"]).optional(),
   
   // Asistente Mailchimp B2B
   promotedProductIds: z.array(z.string()).optional(),
@@ -85,7 +88,11 @@ export const GenerateRequestSchema = z.object({
   ctaButtonText: z.string().optional(),
   ctaUrl: z.string().optional(),
   syncWhatsApp: z.boolean().optional(),
-  syncLinkedIn: z.boolean().optional()
+  syncLinkedIn: z.boolean().optional(),
+
+  // Controles Editoriales Personalizables (Fase 08.6)
+  editorialControls: EditorialControlsSchema.optional()
 });
 
 export type GenerateRequest = z.infer<typeof GenerateRequestSchema>;
+

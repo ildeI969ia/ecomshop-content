@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getGenAIClient, getActiveGeminiModel } from "@/lib/genai-client";
 
 interface QuestionOption {
   id: string;
@@ -15,14 +16,15 @@ interface InterviewQuestion {
 export async function POST(req: Request) {
   try {
     const { mode, userIdea, answers, baseImage, apiKey } = await req.json();
+    const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT));
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
     // MODO 1: INTERROGAR -> Generar preguntas contextuales
     if (mode === "interrogate") {
-      if (key) {
+      if (key || isVertex) {
         try {
-          const { GoogleGenAI } = await import("@google/genai");
-          const ai = new GoogleGenAI({ apiKey: key });
+          const ai = getGenAIClient(apiKey);
+          const activeModel = getActiveGeminiModel(apiKey);
 
           const promptParts: any[] = [];
           if (baseImage) {
@@ -55,7 +57,7 @@ Devuelve ÚNICAMENTE un JSON válido con este formato:
           });
 
           const res = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: activeModel,
             contents: [{ role: "user", parts: promptParts }],
             config: { responseMimeType: "application/json" }
           });
@@ -107,10 +109,10 @@ Devuelve ÚNICAMENTE un JSON válido con este formato:
 
     // MODO 2: SINTETIZAR -> Compilar prompt final a partir de las respuestas
     if (mode === "synthesize") {
-      if (key) {
+      if (key || isVertex) {
         try {
-          const { GoogleGenAI } = await import("@google/genai");
-          const ai = new GoogleGenAI({ apiKey: key });
+          const ai = getGenAIClient(apiKey);
+          const activeModel = getActiveGeminiModel(apiKey);
 
           const promptParts: any[] = [];
           if (baseImage) {
@@ -139,7 +141,7 @@ Devuelve ÚNICAMENTE un JSON:
           });
 
           const res = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: activeModel,
             contents: [{ role: "user", parts: promptParts }],
             config: { responseMimeType: "application/json" }
           });

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { generateImageWithImagen } from "@/lib/image-generator";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 
-export async function POST(req: Request) {
+export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
   try {
     const { prompt, aspectRatio, apiKey, baseImage } = await req.json();
     if (!prompt) {
@@ -25,4 +26,4 @@ export async function POST(req: Request) {
     console.error("Error generating image:", error);
     return NextResponse.json({ error: error.message || "Error al generar imagen" }, { status: 500 });
   }
-}
+});

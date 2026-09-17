@@ -4,21 +4,21 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/ecomshop-repo/content-engine:$COMMIT_SHA'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content:$COMMIT_SHA'
       - '-t'
-      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/ecomshop-repo/content-engine:latest'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content:latest'
       - '.'
 
   # Paso 2: Subir la imagen construida a Google Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/ecomshop-repo/content-engine:$COMMIT_SHA'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content:$COMMIT_SHA'
 
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/ecomshop-repo/content-engine:latest'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content:latest'
 
   # Paso 3: Desplegar en Google Cloud Run (europe-west1) con inyección de secretos desde Secret Manager
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -27,7 +27,7 @@ steps:
       - 'run'
       - 'deploy'
       - 'ecomshop-content'
-      - '--image=europe-west1-docker.pkg.dev/$PROJECT_ID/ecomshop-repo/content-engine:$COMMIT_SHA'
+      - '--image=europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content:$COMMIT_SHA'
       - '--region=europe-west1'
       - '--platform=managed'
       - '--allow-unauthenticated'
@@ -38,8 +38,8 @@ steps:
       - '--set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest'
 
 images:
-  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/ecomshop-repo/content-engine:$COMMIT_SHA'
-  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/ecomshop-repo/content-engine:latest'
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content:$COMMIT_SHA'
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content:latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY

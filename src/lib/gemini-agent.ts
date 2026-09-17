@@ -18,8 +18,8 @@ Tu público objetivo son integradores de sistemas IT, instaladores de telecomuni
 Tus directrices estratégicas inquebrantables son:
 1. Rigor de Ingeniería: Habla el lenguaje del técnico (estándares IEEE 802.11be/ax, modulación 4096-QAM, presupuestos PoE 802.3bt, enlaces uplink 10G SFP+, VLANs, Spanning Tree).
 2. Foco en Dolor Real: Evita retórica publicitaria genérica de IA (prohibido decir "en el mundo digital actual", "en la era de la tecnología"). Enfócate en problemas de obra: cortes de servicio, quejas de clientes por saturación WiFi, sobrecostes de licencias recurrentes anuales y tiempo invertido en configuraciones.
-3. Propuesta de Valor de EcomShop: Mayorista con stock permanente en España, envíos en 24h, precios especiales para profesionales y soporte preventa de ingeniería antes de comprar.
-4. Especialidad EnGenius Networks: Destaca el aprovisionamiento Cloud o FitController sin costes ocultos de suscripción anual obligatoria.
+4. Especialidad EnGenius Networks: Destaca el aprovisionamiento oficial EnGenius Cloud o Standalone/MESH sin costes ocultos de suscripción anual obligatoria. Queda terminantemente PROHIBIDO mencionar gamas o controladores heredados en desuso como 'Fit', 'FitController' o 'FitXpress'.
+5. Hardware Blacklist Estricta: Nunca menciones 'EnGenius Fit', 'FitController', 'FitXpress' ni controladores on-premise obsoletos. Toda gestión de campus/red debe basarse exclusivamente en EnGenius Cloud o Standalone/MESH.
 `;
 
 export async function generateStrategicAngles(
@@ -27,12 +27,14 @@ export async function generateStrategicAngles(
   category: string,
   apiKey?: string
 ): Promise<StrategicAngle[]> {
+  const { getGenAIClient, getActiveGeminiModel } = await import("./genai-client");
+  const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT));
   const key = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
-  if (key) {
+  if (key || isVertex) {
     try {
-      const { GoogleGenAI } = await import("@google/genai");
-      const ai = new GoogleGenAI({ apiKey: key });
+      const ai = getGenAIClient(apiKey);
+      const activeModel = getActiveGeminiModel(apiKey);
 
       const prompt = `
 Tema: "${topicTitle}"
@@ -76,7 +78,7 @@ Responde ÚNICAMENTE en JSON con esta estructura:
 `;
 
       const res = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: activeModel,
         contents: prompt,
         config: {
           systemInstruction: STRATEGIC_AGENT_SYSTEM_PROMPT,
@@ -101,7 +103,7 @@ Responde ÚNICAMENTE en JSON con esta estructura:
       title: "Enfoque Rentabilidad & Cero Licencias",
       headline: "¿Por qué seguir pagando suscripciones anuales en cada punto de acceso?",
       hook: "El modelo de licencias cloud obligatorio está asfixiando los márgenes de los instaladores. Te mostramos cómo desplegar una infraestructura corporativa con coste cero en licencias recurrentes.",
-      coreArgument: "Ahorro directo de hasta un 40% en el coste total de propiedad (TCO) a 3 años mediante arquitecturas EnGenius Cloud o FitController on-premise.",
+      coreArgument: "Ahorro directo de hasta un 40% en el coste total de propiedad (TCO) a 3 años mediante arquitecturas nativas EnGenius Cloud sin suscripciones recurrentes.",
       recommendedCta: "Solicitar tarifa de instalador / Descuento por volumen"
     },
     {

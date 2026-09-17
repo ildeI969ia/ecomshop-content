@@ -1,25 +1,51 @@
 import { ContentOutput, GenerateRequest } from "./schema";
 import { ECOM_BRAND, PRESET_TOPICS, STAR_PRODUCTS } from "./knowledge";
 import { STRATEGIC_AGENT_SYSTEM_PROMPT } from "./gemini-agent";
+import { ProductIntelligenceService } from "@/server/services/product-intelligence-service";
+import { ProductIntelligenceCard } from "./types/product-intelligence";
 
 export async function generateB2BContent(req: GenerateRequest & { apiKey?: string }): Promise<ContentOutput> {
+  const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!req.apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT));
   const apiKey = req.apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
-  if (apiKey) {
+  // Paso intermedio: Obtener o sintetizar la ProductIntelligenceCard con evidencia
+  let intelligenceCard: ProductIntelligenceCard | null = null;
+  const productIdentifier = req.customEquipmentName || (req.promotedProductIds && req.promotedProductIds[0]) || req.topicTitle || "Solución de Networking";
+
+  try {
+    const intelService = new ProductIntelligenceService();
+    intelligenceCard = await intelService.getOrGenerateCard(productIdentifier, apiKey);
+  } catch (intelErr) {
+    console.warn("No se pudo obtener ProductIntelligenceCard (continuando):", intelErr);
+  }
+
+  if (apiKey || isVertex) {
     try {
-      return await generateWithGeminiAPI(req, apiKey);
+      return await generateWithGeminiAPI(req, apiKey, intelligenceCard);
     } catch (err) {
       console.warn("Error calling Gemini API, falling back to deterministic high-quality B2B generator:", err);
     }
   }
 
   // Fallback de alta fidelidad técnica (modo offline o sin API key inmediata)
-  return generateDeterministicFallback(req);
+  return generateDeterministicFallback(req, intelligenceCard);
 }
 
-async function generateWithGeminiAPI(req: GenerateRequest, apiKey: string): Promise<ContentOutput> {
-  const { GoogleGenAI } = await import("@google/genai");
-  const ai = new GoogleGenAI({ apiKey });
+async function generateWithGeminiAPI(
+  req: GenerateRequest,
+  apiKey?: string,
+  intel?: ProductIntelligenceCard | null
+): Promise<ContentOutput> {
+  const { getGenAIClient, getActiveGeminiModel } = await import("./genai-client");
+  const ai = getGenAIClient(apiKey);
+  const activeModel = getActiveGeminiModel(apiKey);
+  const controls = req.editorialControls || {
+    targetSector: "ENTERPRISE_OFFICE",
+    includePricing: false,
+    emphasizeUplinkSwitching: true,
+    technicalDeepDiveLevel: "HIGH_TECHNICAL",
+    customInstructions: ""
+  };
 
   const systemInstruction = `
 Eres el Director de Estrategia de Contenidos y Jefe de Ingeniería Preventa de ${ECOM_BRAND.name} (${ECOM_BRAND.description}).
@@ -28,6 +54,17 @@ Tu misión es redactar artículos técnicos de blog y campañas multicanal con a
 2. DIRECTORES DE TIC / RESPONSABLES DE SISTEMAS: Preocupados por seguridad WPA3 Enterprise, latencia, VLANs, control centralizado y CERO LICENCIAS recurrentes obligatorias (ventaja competitiva de EnGenius Cloud).
 3. JEFES DE COMPRAS: Preocupados por márgenes comerciales netos, TCO a 3-5 años frente a marcas con suscripciones abusivas (Cisco Meraki, etc.), stock permanente en España y entregas en 24h.
 4. DISTRIBUIDORES / MAYORISTAS: Preocupados por condiciones profesionales de distribución, rotación de producto y escalabilidad de gama.
+
+🚨 HARDWARE BLACKLIST ESTRICTA (TOLERANCIA CERO):
+- Queda TERMINANTEMENTE PROHIBIDO mencionar o sugerir cualquier gama descatalogada o en desuso: "EnGenius Fit", "FitController", "FitXpress" o controladores locales heredados.
+- El estándar oficial de gestión es EXCLUSIVAMENTE EnGenius Cloud o Standalone/MESH.
+- Si detectas una referencia previa a Fit o controladores locales, sustitúyela de inmediato por EnGenius Cloud.
+
+⚡ DIRECTRICES DE PROFUNDIDAD TÉCNICA E INGENIERÍA REAL:
+- Cuellos de botella en Uplinks: Explica que conectar un AP Wi-Fi 7 (capaz de superar varios Gbps agregados) a un enlace Ethernet de 1 GbE crea un estrangulamiento severo de red; es indispensable conmutación 2.5G/10G (switches multi-gigabit como ECS2512FP o uplinks 10G SFP+ en ECS1528FP).
+- Multi-Link Operation (MLO): Aborda cómo los enlaces simultáneos en 5 GHz y 6 GHz reducen la latencia a menos de 3ms y garantizan redundancia sin desconexión de clientes.
+- Punzonado de Preámbulo (Preamble Puncturing): Explica cómo Wi-Fi 7 aprovecha canales anchos de 160/320 MHz incluso cuando hay frecuencias ocupadas por radar o interferencias, evitando degradar el canal a 20/40 MHz.
+- Presupuesto PoE y Gestión Térmica: Detalla el cálculo de PoE+ (802.3at) vs PoE++ (802.3bt), disipación térmica y balance energético en racks.
 
 DIRECTRICES EDITORIALES PARA EL BLOG (DURABLE CMS):
 1. El HTML del blog debe ser semántico, limpio y visualmente atractivo.
@@ -53,10 +90,29 @@ Debes responder ÚNICAMENTE con un JSON válido cumpliendo estrictamente la estr
 Genera el paquete de contenido multicanal con guía editorial para:
 - Título/Tema: ${req.topicTitle}
 - Categoría: ${req.category}
+- Sector Objetivo: ${controls.targetSector}
+- Nivel de Profundidad Técnica: ${controls.technicalDeepDiveLevel}
+- Énfasis en Switching / Uplinks 10G: ${controls.emphasizeUplinkSwitching ? "SÍ (Obligatorio destacar switches PoE Multi-Gigabit y enlaces 10G SFP+)" : "NO"}
+- Incluir Precios / Condiciones B2B: ${controls.includePricing ? "SÍ (Citar márgenes y condiciones comerciales ventajosas)" : "NO (Enfoque puramente técnico/operativo)"}
+${controls.customInstructions ? `- Directivas Personalizadas del Usuario: "${controls.customInstructions}"` : ""}
 - Público objetivo: Instaladores, Directores TIC, Jefes de Compras y Distribuidores
-- Notas adicionales / Productos destacados: ${req.customNotes || "Enfocarse en ventajas operativas, disponibilidad inmediata, cero licencias EnGenius y soporte preventa de EcomShop"}
-- URL de producto / enlace de referencia: ${req.productUrl || ECOM_BRAND.storeUrl}
+- Notas adicionales / Productos destacados: ${req.customNotes || "Enfocarse en ventajas operativas, disponibilidad inmediata, cero licencias EnGenius Cloud y soporte preventa de EcomShop"}
+- URL de producto / enlace de referencia: ${req.productUrl || (intel?.product?.url) || ECOM_BRAND.storeUrl}
 - CTA Propuesto: ${req.ctaButtonText || "Solicitar Condiciones Especiales B2B"} (${req.ctaUrl || ECOM_BRAND.storeUrl})
+${intel ? `
+FICHA DE INTELIGENCIA TÉCNICA VERIFICADA (CALIDAD Y ANTI-ALUCINACIÓN OBLIGATORIA):
+- Producto: ${intel.product.brand} ${intel.product.model} (SKU: ${intel.product.sku})
+- Puertos y Estándares: ${intel.technicalSpecs.ports.join(", ")} | ${intel.technicalSpecs.standards.join(", ")}
+- Alimentación: ${intel.technicalSpecs.powerRequirements}
+- Gestión: ${intel.technicalSpecs.management}
+- Diferenciadores Clave: ${intel.technicalSpecs.keyDifferentiators.join(" | ")}
+- Ángulos de Venta:
+  * ROI / FinOps: ${intel.commercialAngles.executiveRoi}
+  * Rendimiento: ${intel.commercialAngles.engineeringPerformance}
+  * Operaciones: ${intel.commercialAngles.operationsDeployment}
+- Ledger de Evidencias Verificadas:
+${intel.evidenceLedger.map(e => `  [${e.sourceType}] ${e.claim} (Fuente: ${e.source})`).join("\n")}
+` : ""}
 
 JSON Schema requerido:
 {
@@ -139,14 +195,20 @@ JSON Schema requerido:
 }
 `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+  const generatePromise = ai.models.generateContent({
+    model: activeModel,
     contents: prompt,
     config: {
       systemInstruction,
       responseMimeType: "application/json"
     }
   });
+
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("[Generator] Timeout excedido en generación multicanal (25s)")), 25000)
+  );
+
+  const response = await Promise.race([generatePromise, timeoutPromise]);
 
   const rawText = response.text || "{}";
   const cleanedText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
@@ -159,16 +221,17 @@ JSON Schema requerido:
     console.warn("Error parsing Gemini JSON output, falling back to deterministic generator:", parseError);
   }
 
-  return generateDeterministicFallback(req);
+  return generateDeterministicFallback(req, intel);
 }
 
-function generateDeterministicFallback(req: GenerateRequest): ContentOutput {
-  const matchedPreset = PRESET_TOPICS.find(t => t.title.toLowerCase().includes(req.topicTitle.toLowerCase()) || t.category === req.category) || PRESET_TOPICS[0];
+function generateDeterministicFallback(req: GenerateRequest, intel?: ProductIntelligenceCard | null): ContentOutput {
+  const effectiveTitle = req.topicTitle || (intel?.product ? `${intel.product.brand} ${intel.product.model}` : "Solución de Conectividad Profesional EcomShop");
+  const matchedPreset = PRESET_TOPICS.find(t => t.title.toLowerCase().includes(effectiveTitle.toLowerCase()) || t.category === req.category) || PRESET_TOPICS[0];
   const now = new Date().toISOString();
-  const slug = req.topicTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const slug = effectiveTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
   const selectedStarProducts = STAR_PRODUCTS.filter(p => (req.promotedProductIds || []).includes(p.id));
-  const customProdText = req.customEquipmentName?.trim();
+  const customProdText = intel?.product ? `${intel.product.brand} ${intel.product.model}` : req.customEquipmentName?.trim();
   
   const featuredProductNames = [
     ...selectedStarProducts.map((p: any) => p.name),
@@ -199,10 +262,13 @@ function generateDeterministicFallback(req: GenerateRequest): ContentOutput {
     <p style="margin:0;font-size:12px;color:#64748b;font-style:italic;">Prompt sugerido para Imagen 3: "${photo1Prompt}"</p>
   </div>
 
-  <h2>2. Ventajas Técnicas y Arquitectura Recomendada</h2>
-  <p>Al seleccionar la solución para este escenario, destacamos los siguientes pilares clave:</p>
+  <h2>2. Desglose Técnico: Enlaces 10G, MLO y Punzonado de Frecuencias</h2>
+  <p>Al seleccionar la solución para este escenario, el instalador profesional debe considerar 4 pilares de ingeniería:</p>
   <ul>
-    ${matchedPreset.keyPoints.map(kp => `<li><strong>${kp}</strong></li>`).join("\n    ")}
+    <li><strong>Cuello de Botella de Enlaces 1 GbE:</strong> Un AP Wi-Fi 7 (como el EnGenius ECW536) supera con holgura los 5 Gbps agregados. Conectarlo a un switch Gigabit tradicional de 1 GbE ahoga el tráfico. Es imprescindible alimentar los puntos de acceso mediante puertos <strong>Multi-Gigabit 2.5G/10G</strong> (ej. switches EnGenius ECS2512FP) con uplinks de <strong>10G SFP+</strong> hacia el core.</li>
+    <li><strong>Multi-Link Operation (MLO):</strong> La capacidad de transmitir y recibir paquetes simultáneamente en las bandas de 5 GHz y 6 GHz reduce la latencia por debajo de los 3 ms, ofreciendo resiliencia frente a caídas y asegurando videoconferencias fluidas.</li>
+    <li><strong>Punzonado de Preámbulo (Preamble Puncturing):</strong> En lugar de degradar un canal ancho de 160 o 320 MHz a solo 20 MHz cuando detecta una frecuencia ocupada, Wi-Fi 7 "recorta" únicamente el subcanal con interferencia, manteniendo el 80% del rendimiento disponible.</li>
+    <li><strong>Presupuesto PoE++ (802.3bt) y Balance Térmico:</strong> Con radios tribanda de alta potencia, los APs modernos requieren hasta 30W-45W. Es crítico auditar el presupuesto total del switch (como los 410W del ECS1528FP) y la ventilación del rack.</li>
   </ul>
 
   <!-- BLOQUE RECOMENDADO CTA 1 -->
@@ -219,8 +285,9 @@ function generateDeterministicFallback(req: GenerateRequest): ContentOutput {
     <p style="margin:0;font-size:12px;color:#64748b;font-style:italic;">Prompt sugerido para Imagen 3: "${photo2Prompt}"</p>
   </div>
 
-  <h2>3. Buenas Prácticas de Ingeniería y Soporte Oficial</h2>
-  <p>Recomendamos verificar siempre el balance térmico en armario rack, realizar un site survey previo con análisis de espectro y certificar cada enlace de datos o fibra óptica antes del pase a producción.</p>
+  <h2>3. Buenas Prácticas de Despliegue en EnGenius Cloud</h2>
+  <p>Recomendamos verificar siempre el balance térmico en armario rack, realizar un site survey previo con análisis de espectro y certificar cada enlace de cobre Cat6A o fibra óptica antes del pase a producción.</p>
+  <p>Toda la flota se gestiona centralizadamente desde la plataforma <strong>EnGenius Cloud</strong> (o modo Standalone/MESH), permitiendo monitoreo en tiempo real, alertas de topología y aprovisionamiento instantáneo mediante código QR sin cuotas ocultas.</p>
 
   <p>En <strong>EcomShop / EcomSpain</strong> disponemos de stock permanente con entrega en 24h y un departamento de ingeniería preventa que te asesora gratuitamente en el dimensionamiento de tu lista de materiales (BOM).</p>
 
@@ -281,7 +348,7 @@ function generateDeterministicFallback(req: GenerateRequest): ContentOutput {
 
   // WhatsApp
   let whatsappMessage = `
-*📡 NOVEDAD TÉCNICA ECOMSHOP | ${req.topicTitle.toUpperCase()}*
+*📡 NOVEDAD TÉCNICA ECOMSHOP | ${effectiveTitle.toUpperCase()}*
 
 Hola compañero/a de profesión 👋
 
@@ -309,7 +376,7 @@ ${ctaDestination}?utm_source=whatsapp&utm_medium=broadcast
   let linkedinPost = `
 ¿Estás sobredimensionando o quedándote corto en tus despliegues de conectividad empresarial?
 
-${req.topicTitle} es hoy uno de los mayores focos de duda para integradores y responsables de sistemas.
+${effectiveTitle} es hoy uno de los mayores focos de duda para integradores y responsables de sistemas.
 
 En proyectos corporativos e industriales, la diferencia entre una red estable y visitas recurrentes por soporte está en los detalles de ingeniería:
 
@@ -335,12 +402,12 @@ ${ctaDestination}
 
   return {
     topicId: slug,
-    topicTitle: req.topicTitle,
+    topicTitle: effectiveTitle,
     category: req.category,
     generatedAt: now,
     blog: {
-      title: req.topicTitle,
-      metaDescription: `Guía técnica para instaladores, directores TIC y jefes de compras sobre ${req.topicTitle}. Buenas prácticas y catálogo oficial en EcomShop.`,
+      title: effectiveTitle,
+      metaDescription: `Guía técnica para instaladores, directores TIC y jefes de compras sobre ${effectiveTitle}. Buenas prácticas y catálogo oficial en EcomShop.`,
       slug,
       readingTimeMinutes: 5,
       targetKeywords: [req.category, "EnGenius Networks", "Networking B2B", "Switches PoE", "WiFi profesional", "TCO sin licencias"],

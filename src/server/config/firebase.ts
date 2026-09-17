@@ -1,4 +1,4 @@
-﻿import { getApps, initializeApp, cert, App } from "firebase-admin/app";
+import { getApps, initializeApp, cert, App } from "firebase-admin/app";
 import { getFirestore, Firestore } from "firebase-admin/firestore";
 import { getAuth, Auth } from "firebase-admin/auth";
 
@@ -38,6 +38,11 @@ export function getAdminFirestore(): Firestore {
   if (!db) {
     const adminApp = getFirebaseAdminApp();
     db = getFirestore(adminApp);
+    try {
+      db.settings({ ignoreUndefinedProperties: true });
+    } catch {
+      // Ignore if already set
+    }
   }
   return db;
 }
