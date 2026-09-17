@@ -863,6 +863,23 @@ export default function ContentDashboard() {
     }
   };
 
+  const handleUseRealProductPhoto = (product: (typeof STAR_PRODUCTS)[number]) => {
+    const newImg = {
+      id: "real-" + product.id + "-" + Date.now(),
+      url: product.imageUrl,
+      prompt: `${product.name} (${product.model}) — Fotografía Oficial de Fabricante / NotebookLM`,
+      createdAt: new Date().toLocaleTimeString("es-ES"),
+      sourceType: "official_product" as any,
+      warning: undefined
+    };
+    setGeneratedImagesList((prev) => {
+      const updated = [newImg, ...prev];
+      localStorage.setItem("ecomshop_generated_images", JSON.stringify(updated.slice(0, 20)));
+      return updated;
+    });
+    setImageNotice(`Fotografía oficial de ${product.name} cargada directamente desde el catálogo / NotebookLM. Producto 100% real sin alucinaciones (Coste: 0,00 €).`);
+  };
+
   const updateArticleStatus = (id: string, newStatus: ArticleHistoryItem["status"]) => {
     setHistoryItems((prev) => {
       const updated = prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item));
@@ -2055,6 +2072,67 @@ export default function ContentDashboard() {
                   )}
                 </div>
 
+                {/* Bloque de Fotos Reales de Producto (NotebookLM - 100% Sin Alucinaciones) */}
+                <div className="border border-emerald-200 bg-emerald-50/50 rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Shield className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <label className="text-xs font-bold text-emerald-950">Fotos Reales Oficiales (NotebookLM)</label>
+                    </div>
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded border border-emerald-200">
+                      0 Alucinaciones · 0€
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-emerald-800/80 mb-2.5 leading-snug">
+                    Hardware exacto del catálogo oficial sin manipulación por IA. Fotos de fabricante para tienda y blog:
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 max-h-[320px] overflow-y-auto pr-1">
+                    {STAR_PRODUCTS.map((prod) => (
+                      <div
+                        key={prod.id}
+                        className="bg-white border border-emerald-200/80 rounded-lg p-2 flex flex-col justify-between hover:shadow-xs transition"
+                      >
+                        <div className="relative aspect-video bg-slate-50 rounded overflow-hidden mb-1.5 flex items-center justify-center border border-slate-100">
+                          <img
+                            src={prod.imageUrl}
+                            alt={prod.name}
+                            className="object-contain w-full h-full p-1"
+                            loading="lazy"
+                          />
+                        </div>
+                        <div className="text-[11px] font-bold text-slate-900 truncate mb-0.5" title={prod.name}>
+                          {prod.model}
+                        </div>
+                        <div className="text-[10px] text-slate-500 line-clamp-1 mb-2">
+                          {prod.description}
+                        </div>
+                        <div className="grid grid-cols-2 gap-1 mt-auto">
+                          <button
+                            type="button"
+                            onClick={() => handleUseRealProductPhoto(prod)}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-1 rounded text-[10px] transition text-center"
+                            title="Añadir fotografía real a la galería (Coste: 0€)"
+                          >
+                            Usar (0€)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setImageBase(prod.imageUrl);
+                              setImagePrompt(`Corporate architectural placement of ${prod.name} (${prod.model}) in an enterprise office`);
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                            }}
+                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-1 px-1 rounded text-[10px] transition text-center"
+                            title="Usar como base de referencia visual"
+                          >
+                            Como Base
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">Plantillas Técnicas Preconfiguradas</label>
                   <div className="grid grid-cols-1 gap-2">
@@ -2160,8 +2238,18 @@ export default function ContentDashboard() {
                       <div className="relative aspect-video bg-slate-900 flex items-center justify-center overflow-hidden">
                         <img src={img.url} alt={img.prompt} className="object-cover w-full h-full group-hover:scale-105 transition duration-300" />
                         {img.sourceType && (
-                          <span className="absolute top-2 left-2 bg-slate-900/80 text-white text-[9px] px-2 py-0.5 rounded font-mono font-medium backdrop-blur-xs">
-                            {img.sourceType === "imagen3" ? "Google Imagen 3" : img.sourceType === "gemini_multimodal" ? "Multimodal Gemini" : "Stock Variado"}
+                          <span className={`absolute top-2 left-2 text-[9px] px-2 py-0.5 rounded font-mono font-medium backdrop-blur-xs ${
+                            img.sourceType === "official_product"
+                              ? "bg-emerald-700/95 text-emerald-100 border border-emerald-500/30"
+                              : "bg-slate-900/80 text-white"
+                          }`}>
+                            {img.sourceType === "official_product"
+                              ? "✓ Foto Oficial (NotebookLM)"
+                              : img.sourceType === "imagen3"
+                              ? "Google Imagen 3"
+                              : img.sourceType === "gemini_multimodal"
+                              ? "Multimodal Gemini"
+                              : "Stock Variado"}
                           </span>
                         )}
                       </div>

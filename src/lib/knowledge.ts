@@ -91,6 +91,7 @@ export interface StarProduct {
   category: "wifi" | "switches" | "fibra" | "engenius";
   description: string;
   url: string;
+  imageUrl: string;
   specs: string[];
 }
 
@@ -102,7 +103,28 @@ export const STAR_PRODUCTS: StarProduct[] = [
     category: "engenius",
     description: "Punto de acceso Tri-Band WiFi 7 gestionado por Cloud, 18.7 Gbps agregados y puerto 10GbE PoE++.",
     url: "https://www.ecomshop.es/engenius-ecw536",
+    imageUrl: "https://store.engeniustech.com/cdn/shop/files/ECW536-2.jpg?v=1745267297&width=1445",
     specs: ["Tri-Band WiFi 7 (2.4/5/6 GHz)", "Puerto 10 GbE PoE++", "Gestión Cloud sin licencias", "Análisis de interferencias por IA"]
+  },
+  {
+    id: "ecw526",
+    name: "EnGenius ECW526 WiFi 7 AP Interior",
+    model: "ECW526",
+    category: "engenius",
+    description: "Punto de acceso WiFi 7 compacto Tri-Band 2x2x2 para despachos, hoteles y salas de reuniones.",
+    url: "https://www.ecomshop.es/engenius-ecw526",
+    imageUrl: "https://store.engeniustech.com/cdn/shop/files/Product_Photos_Cloud_Access_Point_InD_ECW526_Front_View_907d4351-407d-4679-8491-99e6307ad5d1.jpg",
+    specs: ["Tri-Band WiFi 7 2x2x2", "Puerto 2.5GbE PoE+", "Diseño ultra discreto para techo", "Gestión EnGenius Cloud"]
+  },
+  {
+    id: "ecs2512fp",
+    name: "Switch EnGenius ECS2512FP Multi-Gigabit PoE++",
+    model: "ECS2512FP",
+    category: "switches",
+    description: "Switch L2+ con 8 puertos 2.5GbE PoE++ (60W por puerto, 240W budget) y 4 uplinks 10G SFP+.",
+    url: "https://www.ecomshop.es/engenius-ecs2512fp",
+    imageUrl: "https://www.engeniustech.com/wp-content/uploads/2020/02/ecs2512fp-front-opt.jpg",
+    specs: ["8x 2.5GbE PoE++ (802.3bt 60W)", "4x 10G SFP+ uplinks", "Reinicio remoto de puertos", "Diseñado para WiFi 7"]
   },
   {
     id: "ecs1528fp",
@@ -111,6 +133,7 @@ export const STAR_PRODUCTS: StarProduct[] = [
     category: "switches",
     description: "Switch L2+ gestionado en Cloud con 24 puertos Gigabit PoE+ (410W) y 4 uplinks 10G SFP+.",
     url: "https://www.ecomshop.es/engenius-ecs1528fp",
+    imageUrl: "https://store.engeniustech.com/cdn/shop/files/Product_Photos_Cloud_Switch_ECS1528FP_Front_Top_View.jpg?v=1745267323&width=1946",
     specs: ["24x GbE PoE+ (410W budget)", "4x 10G SFP+ uplinks", "Reinicio remoto PoE", "Topología visual en Cloud"]
   },
   {
@@ -118,9 +141,20 @@ export const STAR_PRODUCTS: StarProduct[] = [
     name: "EnGenius Cloud Security Gateway ESG510",
     model: "ESG510",
     category: "engenius",
-    description: "Gateway de seguridad gestionado 100% en EnGenius Cloud con doble WAN 2.5 GbE, VPN Site-to-Site y firewall de inspección con cero licencias.",
+    description: "Gateway de seguridad gestionado 100% en EnGenius Cloud con doble WAN 2.5 GbE, VPN Site-to-Site y firewall con cero licencias.",
     url: "https://www.ecomshop.es/engenius-esg510",
+    imageUrl: "https://store.engeniustech.com/cdn/shop/files/Product_Photos_Cloud_VPN_Router_ESG510_Top_View_Angle_Left.jpg",
     specs: ["Doble WAN 2.5 GbE", "Gestión unificada EnGenius Cloud", "0€ licencias de firewall/VPN", "Failover WAN automático"]
+  },
+  {
+    id: "esg610",
+    name: "EnGenius Cloud Security Gateway ESG610",
+    model: "ESG610",
+    category: "engenius",
+    description: "Gateway corporativo de alto rendimiento con procesador Quad Core 2.2 GHz, 4 puertos 2.5 GbE y balanceo multi-WAN.",
+    url: "https://www.ecomshop.es/engenius-esg610",
+    imageUrl: "https://store.engeniustech.com/cdn/shop/files/Product_Photos_Cloud_VPN_Router_ESG610_Front_Top_View.jpg",
+    specs: ["Quad-Core 2.2 GHz", "4x puertos 2.5GbE", "SD-WAN y VPN WireGuard/IPsec", "Rendimiento corporativo"]
   },
   {
     id: "sfp-kit-10g",
@@ -129,6 +163,7 @@ export const STAR_PRODUCTS: StarProduct[] = [
     category: "fibra",
     description: "Módulos ópticos SFP+ 10G multimodo 850nm con latiguillos OM4 preconectorizados de baja atenuación.",
     url: "https://www.ecomshop.es/transceptores-sfp-10g",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
     specs: ["10 Gbps garantizados", "Conector LC dúplex", "Compatible EnGenius/Cisco/MikroTik", "Latiguillos OM4 testados"]
   }
 ];

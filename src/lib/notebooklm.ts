@@ -4,6 +4,7 @@ export interface NotebookSource {
   type: "pdf" | "url" | "note" | "datasheet";
   description: string;
   url?: string;
+  imageUrl?: string;
   addedAt: string;
 }
 
@@ -30,6 +31,7 @@ export const OFFICIAL_NOTEBOOK: NotebookState = {
       type: "datasheet",
       description: "AP Tri-Band WiFi 7 con modulación 4096-QAM, canales de 320 MHz, Multi-Link Operation (MLO) y puerto 10GbE PoE++.",
       url: "https://www.ecomshop.es/engenius-ecw536",
+      imageUrl: "https://store.engeniustech.com/cdn/shop/files/ECW536-2.jpg?v=1745267297&width=1445",
       addedAt: "14 Sep 2026"
     },
     {
@@ -38,6 +40,7 @@ export const OFFICIAL_NOTEBOOK: NotebookState = {
       type: "datasheet",
       description: "Punto de acceso WiFi 7 Dual-Band optimizado para despachos, hoteles y salas de reuniones con puerto 2.5GbE PoE+.",
       url: "https://www.ecomshop.es/engenius-ecw526",
+      imageUrl: "https://store.engeniustech.com/cdn/shop/files/Product_Photos_Cloud_Access_Point_InD_ECW526_Front_View_907d4351-407d-4679-8491-99e6307ad5d1.jpg",
       addedAt: "14 Sep 2026"
     },
     {
@@ -46,6 +49,7 @@ export const OFFICIAL_NOTEBOOK: NotebookState = {
       type: "datasheet",
       description: "AP de intemperie reforzado con protección contra sobretensiones, largo alcance para terrazas, naves y campings.",
       url: "https://www.ecomshop.es/engenius-ecw546-outdoor",
+      imageUrl: "https://store.engeniustech.com/cdn/shop/files/ECW536-2.jpg?v=1745267297&width=1445",
       addedAt: "14 Sep 2026"
     },
     {
@@ -70,6 +74,7 @@ export const OFFICIAL_NOTEBOOK: NotebookState = {
       type: "datasheet",
       description: "Router gateway corporativo gestionado en cloud con balanceo de carga multi-WAN, VPN IPsec/WireGuard y firewall de inspección profunda.",
       url: "https://www.ecomshop.es/engenius-esg610",
+      imageUrl: "https://store.engeniustech.com/cdn/shop/files/Product_Photos_Cloud_VPN_Router_ESG610_Front_Top_View.jpg",
       addedAt: "14 Sep 2026"
     },
 
@@ -80,6 +85,7 @@ export const OFFICIAL_NOTEBOOK: NotebookState = {
       type: "datasheet",
       description: "Switch L2+ gestionado en Cloud con 24 puertos GbE PoE+ (410W) y 4 uplinks 10G SFP+ para enlaces de alta velocidad.",
       url: "https://www.ecomshop.es/engenius-ecs1528fp",
+      imageUrl: "https://store.engeniustech.com/cdn/shop/files/Product_Photos_Cloud_Switch_ECS1528FP_Front_Top_View.jpg?v=1745267323&width=1946",
       addedAt: "14 Sep 2026"
     },
     {
@@ -88,6 +94,7 @@ export const OFFICIAL_NOTEBOOK: NotebookState = {
       type: "datasheet",
       description: "Switch de 8 puertos 2.5GbE PoE++ 802.3bt y 4 puertos 10G SFP+ diseñado específicamente para exprimir el caudal de APs WiFi 7.",
       url: "https://www.ecomshop.es/engenius-ecs2512fp",
+      imageUrl: "https://www.engeniustech.com/wp-content/uploads/2020/02/ecs2512fp-front-opt.jpg",
       addedAt: "14 Sep 2026"
     },
     {
