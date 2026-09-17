@@ -40,8 +40,6 @@ steps:
       - '--max-instances=5'
       - '--memory=1Gi'
       - '--cpu=1'
-      # Secrets de Google Secret Manager
-      - '--set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest'
       # Variables de entorno explícitas para Vertex AI / Imagen 3
       - '--update-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GCP_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=europe-west1,VERTEX_LOCATION=europe-west1,GOOGLE_GENAI_USE_VERTEXAI=true'
       # Imagen 3 solo funciona en us-central1 o europe-west4
