@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getGenAIClient, getActiveGeminiModel } from "@/lib/genai-client";
+import { resolveBaseImageToData } from "@/lib/image-generator";
 
 interface QuestionOption {
   id: string;
@@ -19,6 +20,9 @@ export async function POST(req: Request) {
     const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT));
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
+    // Resolver imagen base (ya sea data: URL o URL HTTP de producto)
+    const baseImageData = await resolveBaseImageToData(baseImage);
+
     // MODO 1: INTERROGAR -> Generar preguntas contextuales
     if (mode === "interrogate") {
       if (key || isVertex) {
@@ -27,12 +31,11 @@ export async function POST(req: Request) {
           const activeModel = getActiveGeminiModel(apiKey);
 
           const promptParts: any[] = [];
-          if (baseImage) {
-            const match = baseImage.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+          if (baseImageData?.data) {
             promptParts.push({
               inlineData: {
-                mimeType: match ? match[1] : "image/jpeg",
-                data: match ? match[2] : baseImage
+                mimeType: baseImageData.mimeType,
+                data: baseImageData.data
               }
             });
           }
@@ -115,12 +118,11 @@ Devuelve ÚNICAMENTE un JSON válido con este formato:
           const activeModel = getActiveGeminiModel(apiKey);
 
           const promptParts: any[] = [];
-          if (baseImage) {
-            const match = baseImage.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+          if (baseImageData?.data) {
             promptParts.push({
               inlineData: {
-                mimeType: match ? match[1] : "image/jpeg",
-                data: match ? match[2] : baseImage
+                mimeType: baseImageData.mimeType,
+                data: baseImageData.data
               }
             });
           }

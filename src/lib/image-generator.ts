@@ -85,11 +85,65 @@ function normalizeAspectRatio(ar: string): "16:9" | "4:3" | "1:1" {
  * utilizando el método oficial generateContent con responseModalities: ["TEXT", "IMAGE"].
  * Este es el estándar actual de Google para generación de imágenes tras la transición de Imagen 3.
  */
+/**
+ * Resuelve una imagen de referencia (ya sea un Data URL base64 o una URL HTTP/HTTPS externa)
+ * a un objeto limpio con MIME type y base64 seguro para las APIs de Google GenAI.
+ */
+export async function resolveBaseImageToData(
+  rawImage?: string | null
+): Promise<{ mimeType: string; data: string } | null> {
+  if (!rawImage || typeof rawImage !== "string") return null;
+  const trimmed = rawImage.trim();
+
+  // Caso 1: Data URL en base64
+  const match = trimmed.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
+  if (match) {
+    return {
+      mimeType: match[1],
+      data: match[2],
+    };
+  }
+
+  // Caso 2: URL HTTP / HTTPS externa
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const res = await fetch(trimmed, {
+        signal: controller.signal,
+        headers: { "User-Agent": "EcomShop-ImageStudio/1.0" },
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const contentType = res.headers.get("content-type") || "image/jpeg";
+        const mimeType = contentType.split(";")[0].trim();
+        const arrayBuf = await res.arrayBuffer();
+        const buffer = Buffer.from(arrayBuf);
+        return {
+          mimeType,
+          data: buffer.toString("base64"),
+        };
+      }
+    } catch (err) {
+      console.warn("[resolveBaseImageToData] No se pudo descargar la imagen externa:", err);
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Generación moderna de imágenes con modelos Gemini Flash Image (gemini-2.5-flash-image / gemini-3.1-flash-image)
+ * utilizando el método oficial generateContent con responseModalities: ["IMAGE"].
+ * Soporta tanto generación pura desde texto como variación fotográfica guiada por imagen de referencia.
+ */
 async function tryGeminiGenerateContentImage(
   client: GoogleGenAI,
   prompt: string,
   aspectRatio: string,
-  label: string
+  label: string,
+  baseImageData?: { mimeType: string; data: string } | null
 ): Promise<{ bytes: string; mimeType: string } | null> {
   const models = [
     "gemini-2.5-flash-image",
@@ -100,12 +154,59 @@ async function tryGeminiGenerateContentImage(
   const enrichedPrompt = `Professional ${aspectRatio} web photograph for enterprise B2B telecommunications: ${prompt}. Sharp focus, clean studio lighting.`;
 
   for (const model of models) {
+    // Intento 1: Si hay imagen base, intentar variación multimodal con imagen + prompt
+    if (baseImageData?.data) {
+      try {
+        const response = await client.models.generateContent({
+          model,
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  inlineData: {
+                    mimeType: baseImageData.mimeType,
+                    data: baseImageData.data,
+                  },
+                },
+                {
+                  text: `${enrichedPrompt}. Maintain the physical design and authenticity of the reference hardware, seamlessly placing it in the specified environment.`,
+                },
+              ],
+            },
+          ],
+          config: {
+            responseModalities: ["IMAGE"],
+          } as any,
+        });
+
+        const candidates = response.candidates || [];
+        for (const cand of candidates) {
+          const parts = cand.content?.parts || [];
+          for (const part of parts) {
+            const inlineData = (part as any).inlineData;
+            if (inlineData?.data) {
+              console.log(`[ImageGen][${label}] Imagen multimodal generada exitosamente con modelo ${model}`);
+              return {
+                bytes: inlineData.data,
+                mimeType: inlineData.mimeType || "image/jpeg",
+              };
+            }
+          }
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(`[ImageGen][${label}][${model} Multimodal] Aviso:`, msg);
+      }
+    }
+
+    // Intento 2 (o fallback si no hay imagen base o si multimodal falló): Generación por texto enriquecido
     try {
       const response = await client.models.generateContent({
         model,
         contents: enrichedPrompt,
         config: {
-          responseModalities: ["IMAGE"], // Únicamente IMAGE para máxima velocidad y menor coste
+          responseModalities: ["IMAGE"],
         } as any,
       });
 
@@ -203,15 +304,14 @@ export async function generateImageWithImagen(params: {
 
   let refinedPrompt = params.prompt;
 
-  // ─── Multimodal vision enrichment (if base image provided) ────────────────
-  if (params.baseImage) {
+  // ─── Multimodal vision enrichment & base image resolution ────────────────
+  const baseImageData = await resolveBaseImageToData(params.baseImage);
+
+  if (baseImageData) {
     try {
       const { getGenAIClient, getActiveGeminiModel } = await import("./genai-client");
       const ai = getGenAIClient(userApiKey);
       const activeModel = getActiveGeminiModel(userApiKey);
-      const match = params.baseImage.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
-      const mimeType = match ? match[1] : "image/jpeg";
-      const data = match ? match[2] : params.baseImage;
 
       const visionAnalysis = await ai.models.generateContent({
         model: activeModel,
@@ -219,9 +319,14 @@ export async function generateImageWithImagen(params: {
           {
             role: "user",
             parts: [
-              { inlineData: { mimeType, data } },
               {
-                text: `You are an expert photographic director. Analyze this reference image and the user's intent: "${params.prompt}". Generate a highly detailed, professional photorealistic visual prompt for an image generator. Maintain the core subject, hardware type, color palette and architectural context of the reference image, but adapt it to the user's instructions. Respond ONLY with the photographic prompt in English (no markdown, no intro).`,
+                inlineData: {
+                  mimeType: baseImageData.mimeType,
+                  data: baseImageData.data,
+                },
+              },
+              {
+                text: `You are an expert photographic director and telecom engineer. Analyze this reference hardware image and the user's intent: "${params.prompt}". Generate a highly detailed, professional photorealistic visual prompt for an image generator. Maintain the exact physical subject (chassis, ports, logo, LEDs), color palette and hardware characteristics of the reference image, placing it naturally in the requested setting. Respond ONLY with the photographic prompt in English (no markdown, no intro).`,
               },
             ],
           },
@@ -243,7 +348,13 @@ export async function generateImageWithImagen(params: {
   // ─── PASO 1: Vertex AI us-central1 con Gemini Flash Image (gemini-2.5-flash-image) ───
   if (hasGcpProject) {
     const usClient = getVertexImageClient("us-central1");
-    const result = await tryGeminiGenerateContentImage(usClient, refinedPrompt, params.aspectRatio, "Vertex us-central1 (Gemini Image)");
+    const result = await tryGeminiGenerateContentImage(
+      usClient,
+      refinedPrompt,
+      params.aspectRatio,
+      "Vertex us-central1 (Gemini Image)",
+      baseImageData
+    );
     if (result) {
       return {
         imageUrl: `data:${result.mimeType};base64,${result.bytes}`,
@@ -256,7 +367,13 @@ export async function generateImageWithImagen(params: {
   // ─── PASO 2: Vertex AI europe-west4 con Gemini Flash Image ────────────────────
   if (hasGcpProject) {
     const euClient = getVertexImageClient("europe-west4");
-    const result = await tryGeminiGenerateContentImage(euClient, refinedPrompt, params.aspectRatio, "Vertex europe-west4 (Gemini Image)");
+    const result = await tryGeminiGenerateContentImage(
+      euClient,
+      refinedPrompt,
+      params.aspectRatio,
+      "Vertex europe-west4 (Gemini Image)",
+      baseImageData
+    );
     if (result) {
       return {
         imageUrl: `data:${result.mimeType};base64,${result.bytes}`,
@@ -270,7 +387,13 @@ export async function generateImageWithImagen(params: {
   const activeApiKey = userApiKey || serverApiKey;
   if (activeApiKey) {
     const aiStudioClient = new GoogleGenAI({ vertexai: false, apiKey: activeApiKey });
-    const result = await tryGeminiGenerateContentImage(aiStudioClient, refinedPrompt, params.aspectRatio, "AI Studio (Gemini Image)");
+    const result = await tryGeminiGenerateContentImage(
+      aiStudioClient,
+      refinedPrompt,
+      params.aspectRatio,
+      "AI Studio (Gemini Image)",
+      baseImageData
+    );
     if (result) {
       return {
         imageUrl: `data:${result.mimeType};base64,${result.bytes}`,

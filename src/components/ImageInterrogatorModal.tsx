@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Sparkles, Camera, X, Check, HelpCircle, ArrowRight, RefreshCw, Upload, Image as ImageIcon } from "lucide-react";
+import { compressImageToDataUrl } from "@/lib/image-compressor";
 
 interface QuestionOption {
   id: string;
@@ -45,14 +46,19 @@ export function ImageInterrogatorModal({
 
   if (!isOpen) return null;
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setBaseImage(event.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressImageToDataUrl(file);
+      setBaseImage(compressed);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setBaseImage(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleStartInterrogation = async () => {

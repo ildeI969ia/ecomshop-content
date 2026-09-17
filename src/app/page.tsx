@@ -57,6 +57,7 @@ import { EditorialControlsBar } from "@/components/editorial-controls-bar";
 import { EditorialControls } from "@/lib/types/editorial-controls";
 import { SuggestedTopics } from "@/components/suggested-topics";
 import { EditorialTopicCard } from "@/lib/types/editorial-topics";
+import { compressImageToDataUrl } from "@/lib/image-compressor";
 
 export default function ContentDashboard() {
   const [selectedPresetId, setSelectedPresetId] = useState(PRESET_TOPICS[0].id);
@@ -342,19 +343,55 @@ export default function ContentDashboard() {
     }
   };
 
+  /**
+   * Guarda de forma defensiva la lista de imágenes en localStorage sin saturar la cuota de 5MB
+   * Evita el temido QuotaExceededError que crashea el árbol de componentes de React.
+   */
+  const safeSaveGeneratedImages = (
+    images: Array<{ id: string; url: string; prompt: string; createdAt: string; sourceType?: string; warning?: string }>
+  ) => {
+    try {
+      // Filtrar Data URLs gigantes (> 50KB) al persistir para proteger el storage del navegador
+      // La imagen completa sigue disponible en memoria en React durante toda la sesión
+      const lightweight = images.slice(0, 20).map((img) => {
+        if (img.url && img.url.startsWith("data:") && img.url.length > 50000) {
+          return { ...img, url: "" };
+        }
+        return img;
+      }).filter((img) => Boolean(img.url));
+
+      localStorage.setItem("ecomshop_generated_images", JSON.stringify(lightweight));
+    } catch (err) {
+      console.warn("[Storage] Quota excedida en localStorage, liberando caché de imágenes:", err);
+      try {
+        localStorage.removeItem("ecomshop_generated_images");
+      } catch {}
+    }
+  };
+
   useEffect(() => {
-    // Cargar historial y finops de localStorage
-    const savedHist = localStorage.getItem("ecomshop_article_history");
-    if (savedHist) {
-      try { setHistoryItems(JSON.parse(savedHist)); } catch {}
-    }
-    const savedFinops = localStorage.getItem("ecomshop_finops_records");
-    if (savedFinops) {
-      try { setUsageRecords(JSON.parse(savedFinops)); } catch {}
-    }
-    const savedImgs = localStorage.getItem("ecomshop_generated_images");
-    if (savedImgs) {
-      try { setGeneratedImagesList(JSON.parse(savedImgs)); } catch {}
+    // Cargar historial y finops de localStorage con control total de excepciones
+    try {
+      const savedHist = localStorage.getItem("ecomshop_article_history");
+      if (savedHist) setHistoryItems(JSON.parse(savedHist));
+    } catch {}
+
+    try {
+      const savedFinops = localStorage.getItem("ecomshop_finops_records");
+      if (savedFinops) setUsageRecords(JSON.parse(savedFinops));
+    } catch {}
+
+    try {
+      const savedImgs = localStorage.getItem("ecomshop_generated_images");
+      if (savedImgs) {
+        const parsed = JSON.parse(savedImgs);
+        if (Array.isArray(parsed)) {
+          setGeneratedImagesList(parsed);
+        }
+      }
+    } catch (err) {
+      console.warn("[Storage] Error parseando imágenes guardadas, limpiando:", err);
+      try { localStorage.removeItem("ecomshop_generated_images"); } catch {}
     }
   }, []);
 
@@ -838,7 +875,7 @@ export default function ContentDashboard() {
         };
         setGeneratedImagesList((prev) => {
           const updated = [newImg, ...prev];
-          localStorage.setItem("ecomshop_generated_images", JSON.stringify(updated.slice(0, 20)));
+          safeSaveGeneratedImages(updated);
           return updated;
         });
 
@@ -874,7 +911,7 @@ export default function ContentDashboard() {
     };
     setGeneratedImagesList((prev) => {
       const updated = [newImg, ...prev];
-      localStorage.setItem("ecomshop_generated_images", JSON.stringify(updated.slice(0, 20)));
+      safeSaveGeneratedImages(updated);
       return updated;
     });
     setImageNotice(`Fotografía oficial de ${product.name} cargada directamente desde el catálogo / NotebookLM. Producto 100% real sin alucinaciones (Coste: 0,00 €).`);
@@ -2058,14 +2095,19 @@ export default function ContentDashboard() {
                         type="file"
                         accept="image/*"
                         className="hidden"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
-                          const reader = new FileReader();
-                          reader.onload = (ev) => {
-                            setImageBase(ev.target?.result as string);
-                          };
-                          reader.readAsDataURL(file);
+                          try {
+                            const compressed = await compressImageToDataUrl(file);
+                            setImageBase(compressed);
+                          } catch {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              setImageBase(ev.target?.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
                         }}
                       />
                     </label>
