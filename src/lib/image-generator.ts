@@ -90,25 +90,29 @@ async function tryVertexImagen(
   aspectRatio: string,
   label: string
 ): Promise<string | null> {
-  try {
-    const response = await client.models.generateImages({
-      model: "imagen-3.0-generate-002",
-      prompt,
-      config: {
-        numberOfImages: 1,
-        aspectRatio: normalizeAspectRatio(aspectRatio),
-        outputMimeType: "image/jpeg",
-      },
-    });
-    const bytes = response.generatedImages?.[0]?.image?.imageBytes;
-    if (bytes) return bytes;
-    console.warn(`[Imagen3][${label}] Respuesta vacía de Vertex AI`);
-    return null;
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.warn(`[Imagen3][${label}] Error:`, msg);
-    return null;
+  const models = ["imagen-3.0-generate-002", "imagen-3.0-fast-generate-001"];
+  for (const model of models) {
+    try {
+      const response = await client.models.generateImages({
+        model,
+        prompt,
+        config: {
+          numberOfImages: 1,
+          aspectRatio: normalizeAspectRatio(aspectRatio),
+          outputMimeType: "image/jpeg",
+        },
+      });
+      const bytes = response.generatedImages?.[0]?.image?.imageBytes;
+      if (bytes) {
+        console.log(`[Imagen3][${label}] Generada exitosamente con modelo ${model}`);
+        return bytes;
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[Imagen3][${label}][${model}] Error:`, msg);
+    }
   }
+  return null;
 }
 
 /**
@@ -196,7 +200,11 @@ export async function generateImageWithImagen(params: {
 }): Promise<GenerateImageResult> {
   const serverApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   const userApiKey = params.apiKey?.trim();
-  const hasGcpProject = Boolean(process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT);
+  const gcpProject =
+    process.env.GOOGLE_CLOUD_PROJECT ||
+    process.env.GCP_PROJECT ||
+    (process.env.NODE_ENV === "production" || process.env.K_SERVICE ? "ecomshop-marketing-prod" : "");
+  const hasGcpProject = Boolean(gcpProject);
 
   let refinedPrompt = params.prompt;
 

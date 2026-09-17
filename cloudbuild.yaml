@@ -1,5 +1,5 @@
 steps:
-  # Paso 1: Construir la imagen de Docker utilizando el Dockerfile multi-stage
+  # Paso 1: Construir la imagen Docker multi-stage
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -9,7 +9,7 @@ steps:
       - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content:latest'
       - '.'
 
-  # Paso 2: Subir la imagen construida a Google Artifact Registry
+  # Paso 2: Subir imagen a Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
@@ -20,7 +20,12 @@ steps:
       - 'push'
       - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content:latest'
 
-  # Paso 3: Desplegar en Google Cloud Run (europe-west1) con inyección de secretos desde Secret Manager
+  # Paso 3: Desplegar en Cloud Run (europe-west1)
+  # IMPORTANTE: La Service Account debe tener roles/aiplatform.user para Vertex AI / Imagen 3
+  # Comando para asignar el rol (ejecutar una vez manualmente):
+  #   gcloud projects add-iam-policy-binding $PROJECT_ID \
+  #     --member="serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
+  #     --role="roles/aiplatform.user"
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -35,7 +40,16 @@ steps:
       - '--max-instances=5'
       - '--memory=1Gi'
       - '--cpu=1'
+      # Secrets de Google Secret Manager
       - '--set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest'
+      # Variables de entorno explícitas para Vertex AI / Imagen 3
+      # GOOGLE_CLOUD_PROJECT es inyectado automáticamente por Cloud Run,
+      # pero lo declaramos explícitamente para el SDK de GenAI
+      - '--set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID'
+      - '--set-env-vars=GOOGLE_CLOUD_LOCATION=europe-west1'
+      # Imagen 3 solo funciona en us-central1 o europe-west4
+      # El código prueba ambas regiones automáticamente (IMAGEN_LOCATION es opcional)
+      # - '--set-env-vars=IMAGEN_LOCATION=us-central1'
 
 images:
   - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content:$COMMIT_SHA'
