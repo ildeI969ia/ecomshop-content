@@ -409,14 +409,29 @@ export default function ContentDashboard() {
           .filter((a: any) => Boolean(a.url));
 
         setGeneratedImagesList((prev) => {
-          const existingUrls = new Set(dbImages.map((i) => i.url));
-          const merged: Array<{ id: string; url: string; prompt: string; createdAt: string; sourceType?: string; warning?: string }> = [...dbImages];
+          // Prevalecen las imágenes generadas por el usuario (más recientes y con alta resolución)
+          const seenIds = new Set<string>();
+          const seenUrls = new Set<string>();
+          const merged: Array<{ id: string; url: string; prompt: string; createdAt: string; sourceType?: string; warning?: string }> = [];
+
+          // 1. Prioridad: generaciones locales del usuario en IndexedDB/estado
           for (const localImg of prev) {
-            if (localImg.url && !existingUrls.has(localImg.url)) {
+            if (localImg.url && !seenIds.has(localImg.id) && !seenUrls.has(localImg.url)) {
               merged.push(localImg);
-              existingUrls.add(localImg.url);
+              seenIds.add(localImg.id);
+              seenUrls.add(localImg.url);
             }
           }
+
+          // 2. Activos remotos de Firestore que no estén ya en la lista
+          for (const dbImg of dbImages) {
+            if (dbImg.url && !seenIds.has(dbImg.id) && !seenUrls.has(dbImg.url)) {
+              merged.push(dbImg);
+              seenIds.add(dbImg.id);
+              seenUrls.add(dbImg.url);
+            }
+          }
+
           safeSaveGeneratedImages(merged);
           saveImagesBulkToIndexedDB(merged);
           return merged;
@@ -554,11 +569,12 @@ export default function ContentDashboard() {
     // Cargar historial de imágenes desde IndexedDB (sesiones anteriores persistentes)
     getAllImagesFromIndexedDB().then((idbImages) => {
       if (idbImages && idbImages.length > 0) {
+        const validIdbImages = idbImages.filter((img) => Boolean(img?.url && img.url.length > 20));
         setGeneratedImagesList((prev) => {
           const existingIds = new Set(prev.map((i) => i.id));
           const existingUrls = new Set(prev.map((i) => i.url));
           const merged = [...prev];
-          for (const img of idbImages) {
+          for (const img of validIdbImages) {
             if (!existingIds.has(img.id) && !existingUrls.has(img.url)) {
               merged.push(img);
               existingIds.add(img.id);
@@ -578,19 +594,24 @@ export default function ContentDashboard() {
       if (savedImgs) {
         const parsed = JSON.parse(savedImgs);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setGeneratedImagesList((prev) => {
-            const existingIds = new Set(prev.map((i) => i.id));
-            const merged = [...prev];
-            for (const img of parsed) {
-              if (!existingIds.has(img.id) && img.url) {
-                merged.push(img);
-                existingIds.add(img.id);
+          const validParsed = parsed.filter((img: any) => Boolean(img?.url && img.url.length > 20));
+          if (validParsed.length > 0) {
+            setGeneratedImagesList((prev) => {
+              const existingIds = new Set(prev.map((i) => i.id));
+              const existingUrls = new Set(prev.map((i) => i.url));
+              const merged = [...prev];
+              for (const img of validParsed) {
+                if (!existingIds.has(img.id) && !existingUrls.has(img.url)) {
+                  merged.push(img);
+                  existingIds.add(img.id);
+                  existingUrls.add(img.url);
+                }
               }
-            }
-            return merged;
-          });
-          // Migrar automáticamente al nuevo almacenamiento IndexedDB
-          saveImagesBulkToIndexedDB(parsed);
+              return merged;
+            });
+            // Migrar automáticamente al nuevo almacenamiento IndexedDB
+            saveImagesBulkToIndexedDB(validParsed);
+          }
         }
       }
     } catch (err) {
@@ -2844,22 +2865,30 @@ export default function ContentDashboard() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto max-h-[650px]">
                   {generatedImagesList.map((img) => (
-                    <div key={img.id} className="bg-slate-50 border border-slate-200 rounded-lg overflow-hidden group hover:shadow-md transition duration-200 flex flex-col justify-between">
+                    <div key={img.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden group hover:shadow-md transition duration-200 flex flex-col justify-between shadow-2xs">
                       <div 
-                        className="relative aspect-video bg-slate-900 flex items-center justify-center overflow-hidden cursor-zoom-in"
+                        className="relative w-full h-44 sm:h-48 bg-slate-950 flex items-center justify-center overflow-hidden cursor-zoom-in shrink-0"
                         onClick={() => setSelectedImageForDetail(img)}
                         title="Haz clic para ampliar la foto y ver detalles de generación"
                       >
-                        <img 
-                          src={img.url} 
-                          alt={img.prompt} 
-                          className="object-cover w-full h-full group-hover:scale-105 transition duration-300" 
-                        />
+                        {img.url ? (
+                          <img 
+                            src={img.url} 
+                            alt={img.prompt} 
+                            className="object-cover w-full h-full group-hover:scale-105 transition duration-300"
+                            loading="lazy" 
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center text-slate-500 gap-1.5 p-4 text-center">
+                            <ImageIcon className="w-8 h-8 text-slate-600 mb-1" />
+                            <span className="text-[11px] font-medium text-slate-400">Miniatura no disponible</span>
+                          </div>
+                        )}
                         {img.sourceType && (
                           <span className={`absolute top-2 left-2 text-[9px] px-2 py-0.5 rounded font-mono font-medium backdrop-blur-xs z-10 ${
                             img.sourceType === "official_product"
                               ? "bg-emerald-700/95 text-emerald-100 border border-emerald-500/30"
-                              : "bg-slate-900/80 text-white"
+                              : "bg-slate-900/80 text-white border border-white/10"
                           }`}>
                             {img.sourceType === "official_product"
                               ? "✓ Foto Oficial (NotebookLM)"

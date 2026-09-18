@@ -30,7 +30,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         mimeType: result.imageUrl.startsWith("data:image/png") ? "image/png" : "image/jpeg",
         sizeBytes: result.imageUrl.length,
         storagePath: `generated/${assetId}`,
-        publicUrl: result.imageUrl,
+        publicUrl: result.imageUrl.length > 800000 ? "" : result.imageUrl,
         type: "image",
         aiGenerated: true,
         aiProvenance: {

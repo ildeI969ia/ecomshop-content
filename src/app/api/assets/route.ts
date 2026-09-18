@@ -112,39 +112,6 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Si aún así no hay ninguna imagen generada todavía, incorporar las fotos de producto oficiales de catálogo
-    if (list.length === 0) {
-      const defaultCatalogAssets: Asset[] = STAR_PRODUCTS.map((p) => ({
-        id: `official-${p.id}`,
-        workspaceId: user.workspaceId,
-        filename: `Fotografía Oficial: ${p.name} (${p.model})`,
-        mimeType: "image/jpeg",
-        sizeBytes: 0,
-        storagePath: p.imageUrl,
-        publicUrl: p.imageUrl,
-        type: "image",
-        aiGenerated: false,
-        aiProvenance: {
-          provider: "google-vertex-genai",
-          model: "official_product",
-          requestId: `official-${p.id}`,
-          generatedAt: new Date().toISOString(),
-          inputTokens: 0,
-          outputTokens: 0,
-          cachedTokens: 0,
-          latencyMs: 0,
-          estimatedCostEur: 0,
-          sourceIdsUsed: []
-        },
-        ownerId: user.uid,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        createdBy: user.uid,
-        updatedBy: user.uid
-      }));
-      list = defaultCatalogAssets;
-    }
-
     return NextResponse.json({ assets: list });
   } catch (err: any) {
     return NextResponse.json({ assets: [], error: err?.message }, { status: 200 });
