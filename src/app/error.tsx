@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect } from "react";
 import { AlertTriangle, RefreshCw, Trash2, Home } from "lucide-react";
@@ -33,10 +33,16 @@ export default function ErrorBoundary({
         <h2 className="text-lg font-bold text-slate-100 mb-1">
           Sesión Visual Restablecida
         </h2>
-        <p className="text-xs text-slate-400 mb-6 leading-relaxed">
-          Se detectó una excepción en la carga de recursos gráficos en memoria.
-          Puedes reintentar inmediatamente o limpiar la caché local para restaurar la interfaz sin perder tus datos de configuración.
+        <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+          Se detectó una excepción al procesar los datos de la vista.
+          Puedes reintentar inmediatamente o limpiar la caché local para restaurar la interfaz sin perder tu configuración.
         </p>
+
+        {error?.message && (
+          <div className="mb-5 p-3 rounded-lg bg-rose-950/40 border border-rose-900/60 text-rose-300 text-left text-[11px] font-mono break-words max-h-32 overflow-y-auto">
+            {error.message}
+          </div>
+        )}
 
         <div className="flex flex-col gap-2.5">
           <button

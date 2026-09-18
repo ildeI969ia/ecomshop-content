@@ -340,13 +340,23 @@ export default function ContentDashboard() {
   const loadDatabaseContents = async () => {
     setLoadingDatabaseContents(true);
     try {
-      const res = await apiFetch<{ contents?: ArticleHistoryItem[] }>("/api/contents");
+      const res = await apiFetch<{ contents?: any[] }>("/api/contents");
       if (res?.contents && Array.isArray(res.contents)) {
+        const sanitizedRemote: ArticleHistoryItem[] = res.contents.map((item: any, idx: number) => ({
+          id: item?.id ? String(item.id) : `remote-${idx}-${Date.now()}`,
+          title: item?.title ? String(item.title) : "Artículo sin título",
+          category: item?.category ? String(item.category) : "general",
+          status: (["draft", "reviewed", "approved", "published"].includes(item?.status) ? item.status : "draft") as any,
+          createdAt: item?.createdAt ? String(item.createdAt) : new Date().toLocaleDateString("es-ES"),
+          content: item?.content || null
+        }));
+
         setHistoryItems((prev) => {
-          const existingIds = new Set(res.contents!.map((c) => c.id));
-          const existingSlugs = new Set(res.contents!.map((c) => c.content?.blog?.slug).filter(Boolean));
-          const merged = [...res.contents!];
+          const existingIds = new Set(sanitizedRemote.map((c) => c.id));
+          const existingSlugs = new Set(sanitizedRemote.map((c) => c.content?.blog?.slug).filter(Boolean));
+          const merged = [...sanitizedRemote];
           for (const localItem of prev) {
+            if (!localItem) continue;
             const rawId = localItem.id;
             const localSlug = localItem.content?.blog?.slug;
             if (
@@ -515,8 +525,23 @@ export default function ContentDashboard() {
     // Cargar historial y finops de localStorage con control total de excepciones
     try {
       const savedHist = localStorage.getItem("ecomshop_article_history");
-      if (savedHist) setHistoryItems(JSON.parse(savedHist));
-    } catch {}
+      if (savedHist) {
+        const parsed = JSON.parse(savedHist);
+        if (Array.isArray(parsed)) {
+          const sanitized = parsed.map((item: any, idx: number) => ({
+            id: item?.id ? String(item.id) : `hist-${idx}-${Date.now()}`,
+            title: item?.title ? String(item.title) : "Artículo sin título",
+            category: item?.category ? String(item.category) : "general",
+            status: (["draft", "reviewed", "approved", "published"].includes(item?.status) ? item.status : "draft") as any,
+            createdAt: item?.createdAt ? String(item.createdAt) : new Date().toLocaleDateString("es-ES"),
+            content: item?.content || null
+          }));
+          setHistoryItems(sanitized);
+        }
+      }
+    } catch (err) {
+      console.warn("[Storage] Error parseando historial local:", err);
+    }
 
     try {
       const savedFinops = localStorage.getItem("ecomshop_finops_records");
@@ -2296,70 +2321,90 @@ export default function ContentDashboard() {
           ) : (
             <div className="grid grid-cols-1 gap-3">
               {historyItems
-                .filter(item => item.title.toLowerCase().includes(searchHistory.toLowerCase()) || item.category.toLowerCase().includes(searchHistory.toLowerCase()))
-                .map((item) => (
-                  <div
-                    key={item.id}
-                    className="bg-white border border-slate-200/80 rounded-xl p-4 flex items-center justify-between hover:border-slate-300 hover:shadow-2xs transition"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-xs uppercase text-slate-800 border border-slate-200">
-                        {item.category.substring(0, 3)}
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-slate-900 hover:text-sky-600 cursor-pointer font-editorial" onClick={() => {
-                          if (item.content) {
-                            setContent(item.content);
-                            setTopicTitle(item.title);
-                            setCategory(item.category as any || "general");
-                            setMainView("generator");
-                          }
-                        }}>
-                          {item.title}
-                        </h4>
-                        <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
-                          <span>Fecha: {item.createdAt}</span>
-                          <span>&bull;</span>
-                          <span>Slug: /{item.content?.blog?.slug || "general"}</span>
+                .filter(item => {
+                  if (!item) return false;
+                  const query = (searchHistory || "").toLowerCase();
+                  const title = String(item.title || "").toLowerCase();
+                  const cat = String(item.category || "").toLowerCase();
+                  return title.includes(query) || cat.includes(query);
+                })
+                .map((item, idx) => {
+                  const itemId = item?.id || `hist-item-${idx}`;
+                  const itemTitle = item?.title || "Artículo sin título";
+                  const itemCat = String(item?.category || "GEN");
+                  const itemDate = item?.createdAt || "Fecha no disponible";
+                  const itemSlug = item?.content?.blog?.slug || "general";
+                  const itemStatus = item?.status || "draft";
+
+                  return (
+                    <div
+                      key={itemId}
+                      className="bg-white border border-slate-200/80 rounded-xl p-4 flex items-center justify-between hover:border-slate-300 hover:shadow-2xs transition"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-xs uppercase text-slate-800 border border-slate-200">
+                          {itemCat.substring(0, 3)}
+                        </div>
+                        <div>
+                          <h4
+                            className="text-sm font-bold text-slate-900 hover:text-sky-600 cursor-pointer font-editorial"
+                            onClick={() => {
+                              if (item?.content) {
+                                setContent(item.content);
+                                setTopicTitle(itemTitle);
+                                setCategory((item?.category as any) || "general");
+                                setMainView("generator");
+                              }
+                            }}
+                          >
+                            {itemTitle}
+                          </h4>
+                          <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                            <span>Fecha: {itemDate}</span>
+                            <span>&bull;</span>
+                            <span>Slug: /{itemSlug}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-3">
-                      {/* Selector de Estado */}
-                      <select
-                        value={item.status}
-                        onChange={(e) => updateArticleStatus(item.id, e.target.value as any)}
-                        className={`text-xs px-2.5 py-1.5 rounded-lg border font-semibold focus:outline-none ${
-                          item.status === "published"
-                            ? "bg-purple-50 border-purple-200 text-purple-800"
-                            : item.status === "approved"
-                            ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                            : item.status === "reviewed"
-                            ? "bg-sky-50 border-sky-200 text-sky-800"
-                            : "bg-amber-50 border-amber-200 text-amber-800"
-                        }`}
-                      >
-                        <option value="draft">🟡 Borrador</option>
-                        <option value="reviewed">🔵 Revisado Preventa</option>
-                        <option value="approved">🟢 Aprobado</option>
-                        <option value="published">🟣 Publicado en Durable</option>
-                      </select>
+                      <div className="flex items-center gap-3">
+                        {/* Selector de Estado */}
+                        <select
+                          value={itemStatus}
+                          onChange={(e) => updateArticleStatus(itemId, e.target.value as any)}
+                          className={`text-xs px-2.5 py-1.5 rounded-lg border font-semibold focus:outline-none ${
+                            itemStatus === "published"
+                              ? "bg-purple-50 border-purple-200 text-purple-800"
+                              : itemStatus === "approved"
+                              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                              : itemStatus === "reviewed"
+                              ? "bg-sky-50 border-sky-200 text-sky-800"
+                              : "bg-amber-50 border-amber-200 text-amber-800"
+                          }`}
+                        >
+                          <option value="draft">🟡 Borrador</option>
+                          <option value="reviewed">🔵 Revisado Preventa</option>
+                          <option value="approved">🟢 Aprobado</option>
+                          <option value="published">🟣 Publicado en Durable</option>
+                        </select>
 
-                      <button
-                        onClick={() => {
-                          setContent(item.content);
-                          setTopicTitle(item.title);
-                          setMainView("generator");
-                        }}
-                        className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition border border-slate-200"
-                      >
-                        <Eye className="w-3.5 h-3.5 text-sky-600" />
-                        Cargar en Editor
-                      </button>
+                        <button
+                          onClick={() => {
+                            if (item?.content) {
+                              setContent(item.content);
+                              setTopicTitle(itemTitle);
+                              setMainView("generator");
+                            }
+                          }}
+                          className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition border border-slate-200"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-sky-600" />
+                          Cargar en Editor
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
             </div>
           )}
         </div>
