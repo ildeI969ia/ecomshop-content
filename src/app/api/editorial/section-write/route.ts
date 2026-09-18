@@ -3,15 +3,26 @@ import { authenticateServerRequest } from "@/server/security/auth";
 import { ArticleOutlineSchema, ArticleOutlineSectionSchema } from "@/lib/types/article-outline";
 import {
   writeArticleSection,
-  writeFullArticleFromOutline
+  writeFullArticleFromOutline,
+  finalizeArticleFromSections,
+  WrittenSectionResult
 } from "@/lib/services/deep-section-writer";
 import { deriveOmnichannelAssets } from "@/lib/services/omnichannel-deriver";
 import { z } from "zod";
 
+const WrittenSectionResultSchema = z.object({
+  sectionId: z.string(),
+  title: z.string(),
+  level: z.enum(["H2", "H3"]),
+  htmlContent: z.string(),
+  wordCount: z.number()
+});
+
 const WriteSectionRequestSchema = z.object({
-  action: z.enum(["WRITE_SECTION", "WRITE_FULL_ARTICLE"]).default("WRITE_FULL_ARTICLE"),
+  action: z.enum(["WRITE_SECTION", "FINALIZE_ARTICLE", "WRITE_FULL_ARTICLE"]).default("WRITE_FULL_ARTICLE"),
   outline: ArticleOutlineSchema,
   section: ArticleOutlineSectionSchema.optional(),
+  writtenSections: z.array(WrittenSectionResultSchema).optional(),
   previousSectionsSummary: z.string().optional(),
   category: z.string().default("wifi"),
   apiKey: z.string().optional()
@@ -36,8 +47,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { action, outline, section, previousSectionsSummary, category, apiKey } = parsed.data;
+    const { action, outline, section, writtenSections, previousSectionsSummary, category, apiKey } = parsed.data;
 
+    // Caso A: Redactar una sola sección individual
     if (action === "WRITE_SECTION") {
       if (!section) {
         return NextResponse.json(
@@ -50,7 +62,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ section: written });
     }
 
-    // action === "WRITE_FULL_ARTICLE"
+    // Caso B: Finalizar y ensamblar el artículo a partir de secciones redactadas en el cliente
+    if (action === "FINALIZE_ARTICLE") {
+      if (!writtenSections || writtenSections.length === 0) {
+        return NextResponse.json(
+          { error: "Se requiere la lista de secciones redactadas para action=FINALIZE_ARTICLE" },
+          { status: 400 }
+        );
+      }
+
+      const fullArticle = finalizeArticleFromSections(outline, writtenSections);
+      const contentOutput = await deriveOmnichannelAssets(
+        fullArticle,
+        `junia-${Date.now()}`,
+        category,
+        apiKey
+      );
+
+      return NextResponse.json({
+        article: fullArticle,
+        contentOutput
+      });
+    }
+
+    // Caso C: Redactar artículo completo de una vez (legacy / headless)
     const fullArticle = await writeFullArticleFromOutline(outline, undefined, apiKey);
     const contentOutput = await deriveOmnichannelAssets(
       fullArticle,

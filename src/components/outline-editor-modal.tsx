@@ -14,7 +14,6 @@ import {
   AlertTriangle,
   HelpCircle,
   FileText,
-  ExternalLink,
   CheckCircle2,
   Loader2
 } from "lucide-react";
@@ -25,6 +24,7 @@ import {
   SectionLevel
 } from "@/lib/types/article-outline";
 import { ContentOutput } from "@/lib/schema";
+import { WrittenSectionResult } from "@/lib/services/deep-section-writer";
 
 interface OutlineEditorModalProps {
   isOpen: boolean;
@@ -43,6 +43,9 @@ export function OutlineEditorModal({
 }: OutlineEditorModalProps) {
   const [outline, setOutline] = useState<ArticleOutline>(initialOutline);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [activeWritingIndex, setActiveWritingIndex] = useState<number | null>(null);
+  const [completedSections, setCompletedSections] = useState<Record<string, { wordCount: number }>>({});
+  const [totalWordsWritten, setTotalWordsWritten] = useState(0);
   const [progressStatus, setProgressStatus] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -107,32 +110,84 @@ export function OutlineEditorModal({
     }));
   };
 
+  /**
+   * Orquestación Sección por Sección en Tiempo Real:
+   * En lugar de una llamada monolítica bloqueante de 2 minutos, ejecuta
+   * cada sección individualmente actualizando la barra de progreso, palabras
+   * y estado visual de cada tarjeta antes de ensamblar el artículo final.
+   */
   const handleLaunchDeepWriter = async () => {
     setIsGenerating(true);
     setErrorMsg(null);
-    setProgressStatus("Iniciando Motor Deep Section Writer (Junia Engine)...");
+    setCompletedSections({});
+    setTotalWordsWritten(0);
+
+    const writtenSectionsList: WrittenSectionResult[] = [];
+    let accumulatedSummary = "";
+    let runningWords = 0;
+    const totalSecs = outline.sections.length;
 
     try {
-      setProgressStatus(`Redactando ${outline.sections.length} secciones con Gemini 2.5 Pro y enlazado a ecomshop.es...`);
+      // 1. Redacción interactiva sección por sección
+      for (let i = 0; i < totalSecs; i++) {
+        const sec = outline.sections[i];
+        setActiveWritingIndex(i);
+        setProgressStatus(`Redactando sección ${i + 1} de ${totalSecs}: "${sec.title.slice(0, 38)}..."`);
 
-      const res = await fetch("/api/editorial/section-write", {
+        const res = await fetch("/api/editorial/section-write", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "WRITE_SECTION",
+            outline,
+            section: sec,
+            previousSectionsSummary: accumulatedSummary,
+            category
+          })
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Error al redactar sección ${i + 1}: ${sec.title}`);
+        }
+
+        const data = await res.json();
+        const writtenSec: WrittenSectionResult = data.section;
+        writtenSectionsList.push(writtenSec);
+
+        runningWords += writtenSec.wordCount || 0;
+        setTotalWordsWritten(runningWords);
+        accumulatedSummary += `\n- [${sec.level}] ${sec.title}: ${sec.keyTakeaway}`;
+
+        setCompletedSections((prev) => ({
+          ...prev,
+          [sec.id]: { wordCount: writtenSec.wordCount || 0 }
+        }));
+      }
+
+      // 2. Ensamblado final, enlazado interno y derivación omnicanal
+      setActiveWritingIndex(null);
+      setProgressStatus("Enlazando términos a ecomshop.es y generando activos omnicanal (LinkedIn, Mailchimp, WhatsApp)...");
+
+      const finalRes = await fetch("/api/editorial/section-write", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "WRITE_FULL_ARTICLE",
+          action: "FINALIZE_ARTICLE",
           outline,
+          writtenSections: writtenSectionsList,
           category
         })
       });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `Error HTTP ${res.status} al redactar artículo`);
+      if (!finalRes.ok) {
+        const errorData = await finalRes.json().catch(() => ({}));
+        throw new Error(errorData.error || "Error al ensamblar los activos omnicanal finales");
       }
 
-      const data = await res.json();
-      if (data.contentOutput) {
-        onArticleGenerated(data.contentOutput);
+      const finalData = await finalRes.json();
+      if (finalData.contentOutput) {
+        onArticleGenerated(finalData.contentOutput);
         onClose();
       } else {
         throw new Error("No se recibieron los activos multicanal generados.");
@@ -142,6 +197,7 @@ export function OutlineEditorModal({
       setErrorMsg(err.message || "Ocurrió un error durante la redacción por secciones.");
     } finally {
       setIsGenerating(false);
+      setActiveWritingIndex(null);
     }
   };
 
@@ -159,6 +215,9 @@ export function OutlineEditorModal({
         return <FileText className="w-4 h-4 text-slate-600" />;
     }
   };
+
+  const completedCount = Object.keys(completedSections).length;
+  const progressPercent = outline.sections.length > 0 ? Math.round((completedCount / outline.sections.length) * 100) : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto">
@@ -251,13 +310,15 @@ export function OutlineEditorModal({
                   Estructura de Secciones ({outline.sections.length})
                 </span>
                 <span className="text-xs text-slate-500">
-                  (Cada sección será redactada con memoria contextual de las anteriores)
+                  {isGenerating
+                    ? `• Redacción en progreso (${completedCount}/${outline.sections.length} secciones listas)`
+                    : "(Cada sección será redactada con memoria contextual de las anteriores)"}
                 </span>
               </div>
               <button
                 onClick={handleAddSection}
                 disabled={isGenerating}
-                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors disabled:opacity-50"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Añadir Sección
@@ -265,136 +326,177 @@ export function OutlineEditorModal({
             </div>
 
             <div className="space-y-3">
-              {outline.sections.map((section, idx) => (
-                <div
-                  key={section.id}
-                  className="p-4 bg-white border border-slate-200 rounded-xl hover:border-slate-300 transition-all shadow-sm space-y-3"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 flex-1">
-                      {/* Nivel H2 / H3 */}
-                      <select
-                        value={section.level}
-                        onChange={(e) =>
-                          handleUpdateSection(idx, { level: e.target.value as SectionLevel })
-                        }
-                        disabled={isGenerating}
-                        className="px-2 py-1 text-xs font-bold bg-slate-100 border border-slate-300 rounded-md text-slate-800"
-                      >
-                        <option value="H2">H2</option>
-                        <option value="H3">H3</option>
-                      </select>
+              {outline.sections.map((section, idx) => {
+                const isWriting = activeWritingIndex === idx;
+                const isCompleted = Boolean(completedSections[section.id]);
+                const words = completedSections[section.id]?.wordCount || 0;
 
-                      {/* Tipo de Contenido */}
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-md">
-                        {renderContentTypeIcon(section.contentType)}
+                return (
+                  <div
+                    key={section.id}
+                    className={`p-4 rounded-xl transition-all shadow-xs space-y-3 border ${
+                      isWriting
+                        ? "bg-indigo-50/50 border-indigo-500 ring-2 ring-indigo-400/40"
+                        : isCompleted
+                        ? "bg-emerald-50/30 border-emerald-300"
+                        : "bg-white border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 flex-1">
+                        {/* Indicador de Estado de Redacción en Vivo */}
+                        {isWriting && (
+                          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-600 text-white rounded-md text-[11px] font-bold animate-pulse">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>Redactando...</span>
+                          </div>
+                        )}
+                        {isCompleted && (
+                          <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-md text-[11px] font-bold">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>{words} palabras</span>
+                          </div>
+                        )}
+
+                        {/* Nivel H2 / H3 */}
                         <select
-                          value={section.contentType}
+                          value={section.level}
                           onChange={(e) =>
-                            handleUpdateSection(idx, {
-                              contentType: e.target.value as ArticleContentType
-                            })
+                            handleUpdateSection(idx, { level: e.target.value as SectionLevel })
                           }
                           disabled={isGenerating}
-                          className="bg-transparent text-xs font-medium text-slate-700 outline-none cursor-pointer"
+                          className="px-2 py-1 text-xs font-bold bg-slate-100 border border-slate-300 rounded-md text-slate-800"
                         >
-                          <option value="TEXT">Texto Técnico</option>
-                          <option value="COMPARISON_TABLE">Tabla Comparativa</option>
-                          <option value="TOPOLOGY_DIAGRAM">Diagrama de Topología</option>
-                          <option value="INSTALLER_CALLOUT">Tip del Instalador (Callout)</option>
-                          <option value="FAQ">Preguntas Frecuentes (FAQ)</option>
+                          <option value="H2">H2</option>
+                          <option value="H3">H3</option>
                         </select>
+
+                        {/* Tipo de Contenido */}
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-md">
+                          {renderContentTypeIcon(section.contentType)}
+                          <select
+                            value={section.contentType}
+                            onChange={(e) =>
+                              handleUpdateSection(idx, {
+                                contentType: e.target.value as ArticleContentType
+                              })
+                            }
+                            disabled={isGenerating}
+                            className="bg-transparent text-xs font-medium text-slate-700 outline-none cursor-pointer"
+                          >
+                            <option value="TEXT">Texto Técnico</option>
+                            <option value="COMPARISON_TABLE">Tabla Comparativa</option>
+                            <option value="TOPOLOGY_DIAGRAM">Diagrama de Topología</option>
+                            <option value="INSTALLER_CALLOUT">Tip del Instalador (Callout)</option>
+                            <option value="FAQ">Preguntas Frecuentes (FAQ)</option>
+                          </select>
+                        </div>
+
+                        {/* Título de la sección */}
+                        <input
+                          type="text"
+                          value={section.title}
+                          onChange={(e) => handleUpdateSection(idx, { title: e.target.value })}
+                          disabled={isGenerating}
+                          placeholder="Título de la sección..."
+                          className="flex-1 px-3 py-1 text-xs font-semibold text-slate-900 border border-slate-300 rounded-md focus:ring-1 focus:ring-indigo-500"
+                        />
                       </div>
 
-                      {/* Título de la sección */}
-                      <input
-                        type="text"
-                        value={section.title}
-                        onChange={(e) => handleUpdateSection(idx, { title: e.target.value })}
-                        disabled={isGenerating}
-                        placeholder="Título de la sección..."
-                        className="flex-1 px-3 py-1 text-xs font-semibold text-slate-900 border border-slate-300 rounded-md focus:ring-1 focus:ring-indigo-500"
-                      />
+                      {/* Controles de orden y eliminación */}
+                      {!isGenerating && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleMoveSection(idx, "up")}
+                            disabled={idx === 0 || isGenerating}
+                            title="Subir sección"
+                            className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30 rounded hover:bg-slate-100"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleMoveSection(idx, "down")}
+                            disabled={idx === outline.sections.length - 1 || isGenerating}
+                            title="Bajar sección"
+                            className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30 rounded hover:bg-slate-100"
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSection(idx)}
+                            disabled={isGenerating}
+                            title="Eliminar sección"
+                            className="p-1 text-rose-400 hover:text-rose-600 rounded hover:bg-rose-50"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Controles de orden y eliminación */}
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleMoveSection(idx, "up")}
-                        disabled={idx === 0 || isGenerating}
-                        title="Subir sección"
-                        className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30 rounded hover:bg-slate-100"
-                      >
-                        <ArrowUp className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleMoveSection(idx, "down")}
-                        disabled={idx === outline.sections.length - 1 || isGenerating}
-                        title="Bajar sección"
-                        className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30 rounded hover:bg-slate-100"
-                      >
-                        <ArrowDown className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteSection(idx)}
-                        disabled={isGenerating}
-                        title="Eliminar sección"
-                        className="p-1 text-rose-400 hover:text-rose-600 rounded hover:bg-rose-50"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                    {/* Fila inferior: Key Takeaway y Link Sugerido */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-slate-100 text-xs">
+                      <div className="md:col-span-2">
+                        <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-0.5">
+                          Conclusión de Ingeniería (Key Takeaway)
+                        </label>
+                        <input
+                          type="text"
+                          value={section.keyTakeaway}
+                          onChange={(e) =>
+                            handleUpdateSection(idx, { keyTakeaway: e.target.value })
+                          }
+                          disabled={isGenerating}
+                          className="w-full px-2 py-1 text-xs text-slate-700 bg-slate-50/70 border border-slate-200 rounded focus:bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-0.5">
+                          Enlace Sugerido (SKU / EcomShop)
+                        </label>
+                        <input
+                          type="text"
+                          value={section.suggestedProductLink || ""}
+                          onChange={(e) =>
+                            handleUpdateSection(idx, { suggestedProductLink: e.target.value })
+                          }
+                          disabled={isGenerating}
+                          placeholder="ej: ECW536 o URL"
+                          className="w-full px-2 py-1 text-xs text-slate-700 bg-slate-50/70 border border-slate-200 rounded focus:bg-white"
+                        />
+                      </div>
                     </div>
                   </div>
-
-                  {/* Fila inferior: Key Takeaway y Link Sugerido */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-slate-100 text-xs">
-                    <div className="md:col-span-2">
-                      <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-0.5">
-                        Conclusión de Ingeniería (Key Takeaway)
-                      </label>
-                      <input
-                        type="text"
-                        value={section.keyTakeaway}
-                        onChange={(e) =>
-                          handleUpdateSection(idx, { keyTakeaway: e.target.value })
-                        }
-                        disabled={isGenerating}
-                        className="w-full px-2 py-1 text-xs text-slate-700 bg-slate-50/70 border border-slate-200 rounded focus:bg-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-0.5">
-                        Enlace Sugerido (SKU / EcomShop)
-                      </label>
-                      <input
-                        type="text"
-                        value={section.suggestedProductLink || ""}
-                        onChange={(e) =>
-                          handleUpdateSection(idx, { suggestedProductLink: e.target.value })
-                        }
-                        disabled={isGenerating}
-                        placeholder="ej: ECW536 o URL"
-                        className="w-full px-2 py-1 text-xs text-slate-700 bg-slate-50/70 border border-slate-200 rounded focus:bg-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
 
-        {/* Footer con Barra de Progreso y Acción de Lanzamiento */}
+        {/* Footer con Barra de Progreso Dinámica y Acción de Lanzamiento */}
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex-1 w-full sm:w-auto">
             {isGenerating ? (
-              <div className="flex items-center gap-2 text-xs font-semibold text-indigo-700 animate-pulse">
-                <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
-                <span>{progressStatus}</span>
+              <div className="space-y-1.5 w-full">
+                <div className="flex items-center justify-between text-xs font-semibold text-indigo-900">
+                  <div className="flex items-center gap-2 truncate pr-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-indigo-600 shrink-0" />
+                    <span className="truncate">{progressStatus}</span>
+                  </div>
+                  <span className="text-slate-500 font-mono text-[11px] shrink-0">
+                    {completedCount}/{outline.sections.length} ({progressPercent}%) • {totalWordsWritten} palabras
+                  </span>
+                </div>
+                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-indigo-600 to-blue-600 h-full rounded-full transition-all duration-300"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-xs text-slate-500">
+              <div className="flex items-center gap-2 text-xs text-slate-600">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <span>
                   {outline.sections.length} secciones preparadas • Enlazado interno automático activado
@@ -419,7 +521,7 @@ export function OutlineEditorModal({
               {isGenerating ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Redactando Artículo...</span>
+                  <span>Redactando ({completedCount}/{outline.sections.length})...</span>
                 </>
               ) : (
                 <>

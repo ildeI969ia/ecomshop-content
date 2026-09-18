@@ -84,13 +84,19 @@ RESPONDE ÚNICAMENTE CON EL FRAGMENTO HTML LIMPIO DE LA SECCIÓN (comenzando con
 `;
 
   try {
-    const response = await client.models.generateContent({
+    const generatePromise = client.models.generateContent({
       model,
       contents: prompt,
       config: {
         temperature: 0.3
       }
     });
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("[DeepSectionWriter] Timeout superado (12s)")), 12000)
+    );
+
+    const response = await Promise.race([generatePromise, timeoutPromise]);
 
     const rawHtml = (response.text || "")
       .replace(/```html/gi, "")
@@ -108,7 +114,7 @@ RESPONDE ÚNICAMENTE CON EL FRAGMENTO HTML LIMPIO DE LA SECCIÓN (comenzando con
       };
     }
   } catch (err) {
-    console.warn(`[DeepSectionWriter] Error redactando sección ${section.id} con IA, aplicando fallback determinista:`, err);
+    console.warn(`[DeepSectionWriter] Error/Timeout redactando sección ${section.id} con IA, aplicando fallback determinista:`, err);
   }
 
   // Fallback determinista de alta fidelidad para la sección
@@ -272,6 +278,17 @@ export async function writeFullArticleFromOutline(
     }
   }
 
+  return finalizeArticleFromSections(outline, writtenSections);
+}
+
+/**
+ * Combina un conjunto de secciones ya redactadas, inyecta el catálogo oficial de enlaces
+ * internos hacia ecomshop.es y genera los metadatos finales.
+ */
+export function finalizeArticleFromSections(
+  outline: ArticleOutline,
+  writtenSections: WrittenSectionResult[]
+): FullArticleResult {
   // Combinar el HTML de todas las secciones
   const rawCombinedHtml = `
 <article class="ecom-technical-deep-article prose lg:prose-xl max-w-none">

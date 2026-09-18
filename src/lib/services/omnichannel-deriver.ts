@@ -69,7 +69,7 @@ GENERA ÚNICAMENTE UN JSON CON ESTA ESTRUCTURA EXACTA:
 `;
 
   try {
-    const response = await client.models.generateContent({
+    const generatePromise = client.models.generateContent({
       model,
       contents: prompt,
       config: {
@@ -77,6 +77,12 @@ GENERA ÚNICAMENTE UN JSON CON ESTA ESTRUCTURA EXACTA:
         temperature: 0.3
       }
     });
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("[OmnichannelDeriver] Timeout superado (10s)")), 10000)
+    );
+
+    const response = await Promise.race([generatePromise, timeoutPromise]);
 
     const cleanJson = (response.text || "")
       .replace(/```json/gi, "")
