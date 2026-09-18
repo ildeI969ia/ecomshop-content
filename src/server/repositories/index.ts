@@ -67,7 +67,7 @@ export class ContentRepository {
         }
         const snapshot = await query.limit(limitCount).get();
         const items = snapshot.docs.map((d: QueryDocumentSnapshot) => d.data() as ContentItem);
-        return items.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+        return items.sort((a: ContentItem, b: ContentItem) => (b.createdAt || "").localeCompare(a.createdAt || ""));
       } catch (fallbackErr) {
         console.error("[ContentRepository] Fallback query error:", fallbackErr);
         return [];
