@@ -13,7 +13,8 @@ import {
   Maximize2, 
   Minimize2,
   Clock,
-  Cpu
+  Cpu,
+  Trash2
 } from "lucide-react";
 
 export interface ImageDetailItem {
@@ -29,9 +30,10 @@ interface ImageDetailModalProps {
   image: ImageDetailItem | null;
   onClose: () => void;
   onUseAsBase?: (url: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-export function ImageDetailModal({ image, onClose, onUseAsBase }: ImageDetailModalProps) {
+export function ImageDetailModal({ image, onClose, onUseAsBase, onDelete }: ImageDetailModalProps) {
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
 
@@ -233,6 +235,20 @@ export function ImageDetailModal({ image, onClose, onUseAsBase }: ImageDetailMod
               <Download className="w-3.5 h-3.5" />
               <span>Descargar HD</span>
             </a>
+
+            {onDelete && (
+              <button
+                onClick={() => {
+                  onDelete(image.id);
+                  onClose();
+                }}
+                className="bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
+                title="Eliminar esta imagen permanentemente"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                <span>Eliminar</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -1,15 +1,16 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
-import { Shield, Lock, ArrowRight, CheckCircle2, AlertCircle } from "lucide-react";
+import { Shield, Lock, ArrowRight, AlertCircle, Eye, EyeOff, KeyRound } from "lucide-react";
 
 interface CorporateSignInProps {
   onSuccess: (user: { email: string; role: string; workspaceId: string }) => void;
-  onContinueAsGuest?: () => void;
 }
 
-export function CorporateSignIn({ onSuccess, onContinueAsGuest }: CorporateSignInProps) {
+export function CorporateSignIn({ onSuccess }: CorporateSignInProps) {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -20,6 +21,11 @@ export function CorporateSignIn({ onSuccess, onContinueAsGuest }: CorporateSignI
       return;
     }
 
+    if (!password.trim()) {
+      setErrorMsg("Debe ingresar la contraseña de acceso corporativo");
+      return;
+    }
+
     setLoading(true);
     setErrorMsg(null);
 
@@ -27,7 +33,7 @@ export function CorporateSignIn({ onSuccess, onContinueAsGuest }: CorporateSignI
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password })
       });
 
       const data = await res.json();
@@ -36,8 +42,9 @@ export function CorporateSignIn({ onSuccess, onContinueAsGuest }: CorporateSignI
       }
 
       onSuccess(data.user);
-    } catch (err: any) {
-      setErrorMsg(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error inesperado al iniciar sesión";
+      setErrorMsg(message);
     } finally {
       setLoading(false);
     }
@@ -59,7 +66,7 @@ export function CorporateSignIn({ onSuccess, onContinueAsGuest }: CorporateSignI
         <div className="mb-6">
           <h2 className="text-xl font-serif font-bold text-slate-900">Corporate Sign In</h2>
           <p className="text-xs text-slate-600 mt-1">
-            Plataforma reservada exclusivamente a personal de ingeniería, producto y marketing de EcomSpain.
+            Plataforma protegida. Ingrese su correo corporativo y clave de acceso autorizada.
           </p>
         </div>
 
@@ -81,14 +88,45 @@ export function CorporateSignIn({ onSuccess, onContinueAsGuest }: CorporateSignI
               onChange={(e) => setEmail(e.target.value)}
               placeholder="nombre@ecomspain.com"
               required
+              autoComplete="username"
               className="w-full h-10 px-3 text-sm bg-white border border-slate-300 rounded-sm focus:outline-none focus:border-sky-600 font-sans"
             />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                Contraseña de Acceso
+              </label>
+              <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1">
+                <KeyRound className="w-3 h-3" /> Master Passcode
+              </span>
+            </div>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••••••"
+                required
+                autoComplete="current-password"
+                className="w-full h-10 pl-3 pr-10 text-sm bg-white border border-slate-300 rounded-sm focus:outline-none focus:border-sky-600 font-sans"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold uppercase tracking-wider rounded-sm flex items-center justify-center gap-2 transition-colors"
+            className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold uppercase tracking-wider rounded-sm flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
           >
             {loading ? "Verificando Credenciales..." : "Acceder al Sistema"}
             <ArrowRight className="w-4 h-4" />
@@ -102,21 +140,9 @@ export function CorporateSignIn({ onSuccess, onContinueAsGuest }: CorporateSignI
           </div>
           <div className="flex items-center gap-2 text-[11px] text-slate-500 font-mono">
             <Lock className="w-3.5 h-3.5 text-sky-600" />
-            <span>Google Cloud Run Session (europe-west1)</span>
+            <span>HMAC-SHA256 Encrypted Session Cookie</span>
           </div>
         </div>
-
-        {onContinueAsGuest && (
-          <div className="mt-6 pt-4 text-center">
-            <button
-              onClick={onContinueAsGuest}
-              type="button"
-              className="text-xs text-slate-500 hover:text-slate-800 underline underline-offset-4"
-            >
-              Continuar en Modo Demostración Local (Sin Firestore)
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

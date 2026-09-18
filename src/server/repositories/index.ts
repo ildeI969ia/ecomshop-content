@@ -166,24 +166,29 @@ export class AssetRepository {
   }
 
   async listByWorkspace(workspaceId: string, limitCount = 50): Promise<Asset[]> {
+    return this.listRecent(limitCount, workspaceId);
+  }
+
+  async listRecent(limitCount = 100, workspaceId?: string): Promise<Asset[]> {
     try {
-      const snapshot = await this.collection()
-        .where("workspaceId", "==", workspaceId)
-        .orderBy("createdAt", "desc")
-        .limit(limitCount)
-        .get();
-      return snapshot.docs.map((d) => d.data() as Asset);
+      let query: any = this.collection();
+      if (workspaceId) {
+        query = query.where("workspaceId", "==", workspaceId);
+      }
+      const snapshot = await query.orderBy("createdAt", "desc").limit(limitCount).get();
+      return snapshot.docs.map((d: any) => d.data() as Asset);
     } catch (err) {
       console.warn("[AssetRepository] orderBy createdAt falló (posible falta de índice compuesto), aplicando sort en memoria:", err);
       try {
-        const snapshot = await this.collection()
-          .where("workspaceId", "==", workspaceId)
-          .limit(limitCount)
-          .get();
-        const items = snapshot.docs.map((d) => d.data() as Asset);
-        return items.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+        let query: any = this.collection();
+        if (workspaceId) {
+          query = query.where("workspaceId", "==", workspaceId);
+        }
+        const snapshot = await query.limit(limitCount).get();
+        const items = snapshot.docs.map((d: any) => d.data() as Asset);
+        return items.sort((a: Asset, b: Asset) => (b.createdAt || "").localeCompare(a.createdAt || ""));
       } catch (fallbackErr) {
-        console.error("[AssetRepository] Fallback listByWorkspace falló:", fallbackErr);
+        console.error("[AssetRepository] Fallback listRecent falló:", fallbackErr);
         return [];
       }
     }

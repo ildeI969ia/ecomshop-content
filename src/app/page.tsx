@@ -34,7 +34,8 @@ import {
   Shield,
   LogOut,
   User as UserIcon,
-  Maximize2
+  Maximize2,
+  Trash2
 } from "lucide-react";
 import { PRESET_TOPICS, ECOM_BRAND, STAR_PRODUCTS, CAMPAIGN_IDEAS, B2B_CTA_OPTIONS } from "@/lib/knowledge";
 import { ContentOutput } from "@/lib/schema";
@@ -63,6 +64,13 @@ import { compressImageToDataUrl } from "@/lib/image-compressor";
 import { OutlineEditorModal } from "@/components/outline-editor-modal";
 import { ArticleOutline } from "@/lib/types/article-outline";
 import { PromptRefinementCard, PromptRefinementData } from "@/components/PromptRefinementCard";
+import {
+  saveImageToIndexedDB,
+  saveImagesBulkToIndexedDB,
+  getAllImagesFromIndexedDB,
+  deleteImageFromIndexedDB,
+  clearAllImagesFromIndexedDB
+} from "@/lib/image-db";
 
 export default function ContentDashboard() {
   const [selectedPresetId, setSelectedPresetId] = useState(PRESET_TOPICS[0].id);
@@ -388,15 +396,17 @@ export default function ContentDashboard() {
       const res = await apiFetch<{ assets?: Array<any> }>("/api/assets");
       if (res?.assets && Array.isArray(res.assets)) {
         const dbImages = res.assets
-          .filter((a) => a.type === "image" || a.mimeType?.startsWith("image/"))
-          .map((a) => ({
-            id: a.id,
-            url: a.publicUrl || a.storagePath,
-            prompt: a.filename ? a.filename.replace(/^AI:\s*/, "") : "Imagen generada",
-            createdAt: a.createdAt ? new Date(a.createdAt).toLocaleTimeString("es-ES") : new Date().toLocaleTimeString("es-ES"),
-            sourceType: a.aiProvenance?.model || "imagen3"
-          }))
-          .filter((a) => Boolean(a.url));
+          .map((a: any) => {
+            const rawUrl = a.publicUrl || a.url || (a.storagePath && (a.storagePath.startsWith("http") || a.storagePath.startsWith("data:")) ? a.storagePath : "");
+            return {
+              id: a.id || String(Math.random()),
+              url: rawUrl,
+              prompt: a.prompt || (a.filename ? a.filename.replace(/^(AI|Placement|Fotografía Oficial|Artículo):\s*/i, "") : "Imagen generada"),
+              createdAt: a.createdAt ? (isNaN(new Date(a.createdAt).getTime()) ? a.createdAt : new Date(a.createdAt).toLocaleTimeString("es-ES")) : new Date().toLocaleTimeString("es-ES"),
+              sourceType: a.aiProvenance?.model || a.sourceType || "imagen3"
+            };
+          })
+          .filter((a: any) => Boolean(a.url));
 
         setGeneratedImagesList((prev) => {
           const existingUrls = new Set(dbImages.map((i) => i.url));
@@ -408,6 +418,7 @@ export default function ContentDashboard() {
             }
           }
           safeSaveGeneratedImages(merged);
+          saveImagesBulkToIndexedDB(merged);
           return merged;
         });
       }
@@ -496,28 +507,20 @@ export default function ContentDashboard() {
   };
 
   /**
-   * Guarda de forma defensiva la lista de imágenes en localStorage sin saturar la cuota de 5MB
+   * Guarda de forma defensiva la lista de imágenes en localStorage sin perder las URLs
    * Evita el temido QuotaExceededError que crashea el árbol de componentes de React.
    */
   const safeSaveGeneratedImages = (
     images: Array<{ id: string; url: string; prompt: string; createdAt: string; sourceType?: string; warning?: string }>
   ) => {
     try {
-      // Filtrar Data URLs gigantes (> 50KB) al persistir para proteger el storage del navegador
-      // La imagen completa sigue disponible en memoria en React durante toda la sesión
-      const lightweight = images.slice(0, 20).map((img) => {
-        if (img.url && img.url.startsWith("data:") && img.url.length > 50000) {
-          return { ...img, url: "" };
-        }
-        return img;
-      }).filter((img) => Boolean(img.url));
-
-      localStorage.setItem("ecomshop_generated_images", JSON.stringify(lightweight));
-    } catch (err) {
-      console.warn("[Storage] Quota excedida en localStorage, liberando caché de imágenes:", err);
+      localStorage.setItem("ecomshop_generated_images", JSON.stringify(images.slice(0, 30)));
+    } catch {
       try {
-        localStorage.removeItem("ecomshop_generated_images");
-      } catch {}
+        localStorage.setItem("ecomshop_generated_images", JSON.stringify(images.slice(0, 10)));
+      } catch {
+        console.warn("[Storage] Cuota de almacenamiento local alcanzada; Firestore mantiene los activos persistentes.");
+      }
     }
   };
 
@@ -548,12 +551,46 @@ export default function ContentDashboard() {
       if (savedFinops) setUsageRecords(JSON.parse(savedFinops));
     } catch {}
 
+    // Cargar historial de imágenes desde IndexedDB (sesiones anteriores persistentes)
+    getAllImagesFromIndexedDB().then((idbImages) => {
+      if (idbImages && idbImages.length > 0) {
+        setGeneratedImagesList((prev) => {
+          const existingIds = new Set(prev.map((i) => i.id));
+          const existingUrls = new Set(prev.map((i) => i.url));
+          const merged = [...prev];
+          for (const img of idbImages) {
+            if (!existingIds.has(img.id) && !existingUrls.has(img.url)) {
+              merged.push(img);
+              existingIds.add(img.id);
+              existingUrls.add(img.url);
+            }
+          }
+          return merged;
+        });
+      }
+    }).catch((err) => {
+      console.warn("[IndexedDB] Error cargando imágenes históricas:", err);
+    });
+
+    // Fallback de compatibilidad con localStorage de sesiones previas
     try {
       const savedImgs = localStorage.getItem("ecomshop_generated_images");
       if (savedImgs) {
         const parsed = JSON.parse(savedImgs);
-        if (Array.isArray(parsed)) {
-          setGeneratedImagesList(parsed);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setGeneratedImagesList((prev) => {
+            const existingIds = new Set(prev.map((i) => i.id));
+            const merged = [...prev];
+            for (const img of parsed) {
+              if (!existingIds.has(img.id) && img.url) {
+                merged.push(img);
+                existingIds.add(img.id);
+              }
+            }
+            return merged;
+          });
+          // Migrar automáticamente al nuevo almacenamiento IndexedDB
+          saveImagesBulkToIndexedDB(parsed);
         }
       }
     } catch (err) {
@@ -1181,6 +1218,7 @@ export default function ContentDashboard() {
           sourceType: data.sourceType,
           warning: data.warning
         };
+        saveImageToIndexedDB(newImg);
         setGeneratedImagesList((prev) => {
           const updated = [newImg, ...prev];
           safeSaveGeneratedImages(updated);
@@ -1218,12 +1256,52 @@ export default function ContentDashboard() {
       sourceType: "official_product" as any,
       warning: undefined
     };
+    saveImageToIndexedDB(newImg);
     setGeneratedImagesList((prev) => {
       const updated = [newImg, ...prev];
       safeSaveGeneratedImages(updated);
       return updated;
     });
     setImageNotice(`Fotografía oficial de ${product.name} cargada directamente desde el catálogo / NotebookLM. Producto 100% real sin alucinaciones (Coste: 0,00 €).`);
+  };
+
+  const handleDeleteImage = async (id: string) => {
+    if (!confirm("¿Deseas eliminar esta imagen generada del historial?")) return;
+    try {
+      await deleteImageFromIndexedDB(id);
+      try {
+        await apiFetch(`/api/assets?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      } catch {
+        // Silencioso si no está en backend
+      }
+      setGeneratedImagesList((prev) => {
+        const updated = prev.filter((img) => img.id !== id);
+        safeSaveGeneratedImages(updated);
+        return updated;
+      });
+      if (selectedImageForDetail?.id === id) {
+        setSelectedImageForDetail(null);
+      }
+    } catch (err) {
+      console.error("Error al eliminar imagen:", err);
+    }
+  };
+
+  const handleClearAllImages = async () => {
+    if (!confirm("¿Estás seguro de que deseas eliminar TODAS las imágenes generadas del historial? Esta acción no se puede deshacer.")) return;
+    try {
+      await clearAllImagesFromIndexedDB();
+      try {
+        await apiFetch("/api/assets?clearAll=true", { method: "DELETE" });
+      } catch {
+        // Silencioso si no está en backend
+      }
+      setGeneratedImagesList([]);
+      try { localStorage.removeItem("ecomshop_generated_images"); } catch {}
+      setSelectedImageForDetail(null);
+    } catch (err) {
+      console.error("Error al limpiar historial de imágenes:", err);
+    }
   };
 
   const updateArticleStatus = async (id: string, newStatus: ArticleHistoryItem["status"]) => {
@@ -1248,6 +1326,25 @@ export default function ContentDashboard() {
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 2000);
   };
+
+  if (authChecking) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white">
+        <div className="w-10 h-10 border-2 border-sky-400 border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-xs font-mono tracking-widest uppercase text-slate-400">Verificando sesión corporativa...</p>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <CorporateSignIn
+        onSuccess={(user) => {
+          setCurrentUser(user as any);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col font-sans selection:bg-sky-100 selection:text-sky-900">
@@ -2701,18 +2798,32 @@ export default function ContentDashboard() {
             <div className="bg-white border border-slate-200/80 rounded-xl p-5 flex-1 flex flex-col shadow-xs">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h3 className="font-editorial text-sm font-bold text-slate-900">Galería de Imágenes Generadas</h3>
-                  <p className="text-[11px] text-slate-500">Catálogo compartido de activos visuales en Firestore</p>
+                  <h3 className="font-editorial text-sm font-bold text-slate-900">
+                    Galería de Imágenes Generadas ({generatedImagesList.length})
+                  </h3>
+                  <p className="text-[11px] text-slate-500">Historial persistente de activos visuales en IndexedDB y Firestore</p>
                 </div>
-                <button
-                  onClick={() => loadDatabaseAssets()}
-                  disabled={loadingDatabaseAssets}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-semibold text-slate-700 transition shadow-2xs"
-                  title="Recargar imágenes desde Firestore"
-                >
-                  <RefreshCw className={`w-3 h-3 ${loadingDatabaseAssets ? "animate-spin text-purple-600" : "text-slate-500"}`} />
-                  <span>{loadingDatabaseAssets ? "Cargando..." : "Recargar BBDD"}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  {generatedImagesList.length > 0 && (
+                    <button
+                      onClick={handleClearAllImages}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-rose-200 bg-rose-50 hover:bg-rose-100 text-[11px] font-semibold text-rose-700 transition shadow-2xs"
+                      title="Eliminar todas las imágenes del historial"
+                    >
+                      <Trash2 className="w-3 h-3 text-rose-500" />
+                      <span>Borrar todas</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => loadDatabaseAssets()}
+                    disabled={loadingDatabaseAssets}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-semibold text-slate-700 transition shadow-2xs"
+                    title="Recargar imágenes desde Firestore"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${loadingDatabaseAssets ? "animate-spin text-purple-600" : "text-slate-500"}`} />
+                    <span>{loadingDatabaseAssets ? "Cargando..." : "Recargar BBDD"}</span>
+                  </button>
+                </div>
               </div>
 
               {generatedImagesList.length === 0 ? (
@@ -2800,6 +2911,15 @@ export default function ContentDashboard() {
                               <Download className="w-3 h-3 text-slate-600" />
                               Descargar
                             </a>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteImage(img.id)}
+                              className="bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-300 text-slate-400 hover:text-rose-600 px-2 py-1 rounded text-[10px] font-medium flex items-center gap-1 transition shadow-2xs"
+                              title="Eliminar esta imagen del historial"
+                            >
+                              <Trash2 className="w-3 h-3 text-rose-500" />
+                              <span className="hidden sm:inline">Borrar</span>
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -3489,9 +3609,6 @@ export default function ContentDashboard() {
                 setCurrentUser(user as any);
                 setShowSignInModal(false);
               }}
-              onContinueAsGuest={() => {
-                setShowSignInModal(false);
-              }}
             />
           </div>
         </div>
@@ -3520,6 +3637,7 @@ export default function ContentDashboard() {
           setImageBase(url);
           window.scrollTo({ top: 0, behavior: "smooth" });
         }}
+        onDelete={handleDeleteImage}
       />
 
       {/* Modal de The Junia Engine: Outline Interactivo y Redacción Profunda (Fase 09) */}
