@@ -4,35 +4,23 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content:$COMMIT_SHA'
-      - '-t'
-      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content:latest'
+      - 'gcr.io/$PROJECT_ID/ecomshop-content:latest'
       - '.'
 
-  # Paso 2: Subir imagen a Artifact Registry
+  # Paso 2: Subir imagen a Container Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content:$COMMIT_SHA'
-
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'push'
-      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content:latest'
+      - 'gcr.io/$PROJECT_ID/ecomshop-content:latest'
 
   # Paso 3: Desplegar en Cloud Run (europe-west1)
-  # IMPORTANTE: La Service Account debe tener roles/aiplatform.user para Vertex AI / Imagen 3
-  # Comando para asignar el rol (ejecutar una vez manualmente):
-  #   gcloud projects add-iam-policy-binding $PROJECT_ID \
-  #     --member="serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
-  #     --role="roles/aiplatform.user"
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
       - 'ecomshop-content'
-      - '--image=europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content:$COMMIT_SHA'
+      - '--image=gcr.io/$PROJECT_ID/ecomshop-content:latest'
       - '--region=europe-west1'
       - '--platform=managed'
       - '--allow-unauthenticated'
@@ -40,15 +28,10 @@ steps:
       - '--max-instances=5'
       - '--memory=1Gi'
       - '--cpu=1'
-      # Variables de entorno explícitas para Vertex AI / Imagen 3
-      - '--update-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GCP_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=europe-west1,VERTEX_LOCATION=europe-west1,GOOGLE_GENAI_USE_VERTEXAI=true'
-      # Imagen 3 solo funciona en us-central1 o europe-west4
-      # El código prueba ambas regiones automáticamente (IMAGEN_LOCATION es opcional)
-      # - '--set-env-vars=IMAGEN_LOCATION=us-central1'
+      - '--update-env-vars=GOOGLE_CLOUD_PROJECT=ecomshop-marketing-prod,GOOGLE_CLOUD_LOCATION=europe-west1,VERTEX_LOCATION=us-central1,GOOGLE_GENAI_USE_VERTEXAI=true'
 
 images:
-  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content:$COMMIT_SHA'
-  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content:latest'
+  - 'gcr.io/$PROJECT_ID/ecomshop-content:latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY
