@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { authenticateServerRequest, authorizePermission } from "@/server/security/auth";
 import { PersistenceService } from "@/server/services/persistence-service";
 
@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
     const result = await service.syncFromLocalStorage({
       historyItems: body.historyItems,
       finopsRecords: body.finopsRecords,
+      generatedImages: body.generatedImages,
       workspaceId: user.workspaceId,
       userId: user.uid,
       userEmail: user.email

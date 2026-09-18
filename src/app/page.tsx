@@ -33,7 +33,8 @@ import {
   Upload,
   Shield,
   LogOut,
-  User as UserIcon
+  User as UserIcon,
+  Maximize2
 } from "lucide-react";
 import { PRESET_TOPICS, ECOM_BRAND, STAR_PRODUCTS, CAMPAIGN_IDEAS, B2B_CTA_OPTIONS } from "@/lib/knowledge";
 import { ContentOutput } from "@/lib/schema";
@@ -44,6 +45,7 @@ import { NotebookState, OFFICIAL_NOTEBOOK } from "@/lib/notebooklm";
 import { MultimodalAdvisor } from "@/components/MultimodalAdvisor";
 import { CampaignRecommendation } from "@/lib/multimodal-advisor";
 import { ImageInterrogatorModal } from "@/components/ImageInterrogatorModal";
+import { ImageDetailModal, ImageDetailItem } from "@/components/ImageDetailModal";
 import { ProductIntelligenceView } from "@/components/product-intelligence-view";
 import { EvidenceAuditDrawer } from "@/components/evidence-audit-drawer";
 import { ProductIntelligenceCard } from "@/lib/types/product-intelligence";
@@ -309,6 +311,7 @@ export default function ContentDashboard() {
   const [generatedImagesList, setGeneratedImagesList] = useState<
     { id: string; url: string; prompt: string; createdAt: string; sourceType?: string; warning?: string }[]
   >([]);
+  const [selectedImageForDetail, setSelectedImageForDetail] = useState<ImageDetailItem | null>(null);
 
   const [activeTab, setActiveTab] = useState<"blog" | "mailchimp" | "whatsapp" | "linkedin">("blog");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -2134,13 +2137,27 @@ export default function ContentDashboard() {
                         key={prod.id}
                         className="bg-white border border-emerald-200/80 rounded-lg p-2 flex flex-col justify-between hover:shadow-xs transition"
                       >
-                        <div className="relative aspect-video bg-slate-50 rounded overflow-hidden mb-1.5 flex items-center justify-center border border-slate-100">
+                        <div 
+                          className="relative aspect-video bg-slate-50 rounded overflow-hidden mb-1.5 flex items-center justify-center border border-slate-100 cursor-zoom-in group/thumb"
+                          onClick={() => setSelectedImageForDetail({
+                            id: prod.id,
+                            url: prod.imageUrl,
+                            prompt: `${prod.name} (${prod.model}) — ${prod.description}. Especificaciones Oficiales: ${prod.specs.join(", ")}`,
+                            createdAt: "Catálogo Oficial",
+                            sourceType: "official_product"
+                          })}
+                          title="Clic para ampliar y ver fotografía oficial en detalle"
+                        >
                           <img
                             src={prod.imageUrl}
                             alt={prod.name}
-                            className="object-contain w-full h-full p-1"
+                            className="object-contain w-full h-full p-1 group-hover/thumb:scale-105 transition duration-200"
                             loading="lazy"
                           />
+                          <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover/thumb:opacity-100 transition flex items-center justify-center gap-1 text-[10px] text-white font-medium">
+                            <Maximize2 className="w-3.5 h-3.5" />
+                            <span>Ampliar</span>
+                          </div>
                         </div>
                         <div className="text-[11px] font-bold text-slate-900 truncate mb-0.5" title={prod.name}>
                           {prod.model}
@@ -2276,11 +2293,19 @@ export default function ContentDashboard() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto max-h-[650px]">
                   {generatedImagesList.map((img) => (
-                    <div key={img.id} className="bg-slate-50 border border-slate-200 rounded-lg overflow-hidden group">
-                      <div className="relative aspect-video bg-slate-900 flex items-center justify-center overflow-hidden">
-                        <img src={img.url} alt={img.prompt} className="object-cover w-full h-full group-hover:scale-105 transition duration-300" />
+                    <div key={img.id} className="bg-slate-50 border border-slate-200 rounded-lg overflow-hidden group hover:shadow-md transition duration-200 flex flex-col justify-between">
+                      <div 
+                        className="relative aspect-video bg-slate-900 flex items-center justify-center overflow-hidden cursor-zoom-in"
+                        onClick={() => setSelectedImageForDetail(img)}
+                        title="Haz clic para ampliar la foto y ver detalles de generación"
+                      >
+                        <img 
+                          src={img.url} 
+                          alt={img.prompt} 
+                          className="object-cover w-full h-full group-hover:scale-105 transition duration-300" 
+                        />
                         {img.sourceType && (
-                          <span className={`absolute top-2 left-2 text-[9px] px-2 py-0.5 rounded font-mono font-medium backdrop-blur-xs ${
+                          <span className={`absolute top-2 left-2 text-[9px] px-2 py-0.5 rounded font-mono font-medium backdrop-blur-xs z-10 ${
                             img.sourceType === "official_product"
                               ? "bg-emerald-700/95 text-emerald-100 border border-emerald-500/30"
                               : "bg-slate-900/80 text-white"
@@ -2294,12 +2319,32 @@ export default function ContentDashboard() {
                               : "Stock Variado"}
                           </span>
                         )}
+                        {/* Overlay para ampliar */}
+                        <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5 text-white font-medium text-xs backdrop-blur-2xs">
+                          <Maximize2 className="w-4 h-4 text-sky-300" />
+                          <span>Ampliar en Detalle</span>
+                        </div>
                       </div>
-                      <div className="p-3 flex flex-col gap-2">
-                        <p className="text-[11px] text-slate-600 line-clamp-2">{img.prompt}</p>
+                      <div className="p-3 flex flex-col gap-2 flex-1 justify-between">
+                        <p 
+                          className="text-[11px] text-slate-600 line-clamp-2 cursor-pointer hover:text-slate-900"
+                          onClick={() => setSelectedImageForDetail(img)}
+                          title="Clic para ver prompt completo"
+                        >
+                          {img.prompt}
+                        </p>
                         <div className="flex items-center justify-between pt-2 border-t border-slate-200">
                           <span className="text-[10px] text-slate-400">{img.createdAt}</span>
                           <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedImageForDetail(img)}
+                              className="bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-800 px-2 py-1 rounded text-[10px] font-semibold flex items-center gap-1 transition"
+                              title="Ampliar imagen a pantalla completa con zoom"
+                            >
+                              <Maximize2 className="w-3 h-3 text-sky-600" />
+                              Ampliar
+                            </button>
                             <button
                               type="button"
                               onClick={() => {
@@ -2316,9 +2361,10 @@ export default function ContentDashboard() {
                               download={`ecomshop-${img.id}.jpg`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 px-2.5 py-1 rounded text-[11px] font-medium flex items-center gap-1 transition shadow-2xs"
+                              className="bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 px-2 py-1 rounded text-[10px] font-medium flex items-center gap-1 transition shadow-2xs"
+                              title="Descargar imagen"
                             >
-                              <Download className="w-3 h-3 text-purple-600" />
+                              <Download className="w-3 h-3 text-slate-600" />
                               Descargar
                             </a>
                           </div>
@@ -3030,6 +3076,16 @@ export default function ContentDashboard() {
           if (baseImg !== undefined) {
             setImageBase(baseImg);
           }
+        }}
+      />
+
+      {/* Modal de Detalle y Zoom de Imagen */}
+      <ImageDetailModal
+        image={selectedImageForDetail}
+        onClose={() => setSelectedImageForDetail(null)}
+        onUseAsBase={(url) => {
+          setImageBase(url);
+          window.scrollTo({ top: 0, behavior: "smooth" });
         }}
       />
     </div>

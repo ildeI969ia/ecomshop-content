@@ -50,13 +50,47 @@ export class ContentRepository {
     return snapshot.docs.map((d: QueryDocumentSnapshot) => d.data() as ContentItem);
   }
 
-  async listRecent(limitCount = 50): Promise<ContentItem[]> {
-    const snapshot = await this.collection().orderBy("createdAt", "desc").limit(limitCount).get();
-    return snapshot.docs.map((d: QueryDocumentSnapshot) => d.data() as ContentItem);
+  async listRecent(limitCount = 50, workspaceId?: string): Promise<ContentItem[]> {
+    try {
+      let query: any = this.collection();
+      if (workspaceId) {
+        query = query.where("workspaceId", "==", workspaceId);
+      }
+      const snapshot = await query.orderBy("createdAt", "desc").limit(limitCount).get();
+      return snapshot.docs.map((d: QueryDocumentSnapshot) => d.data() as ContentItem);
+    } catch (err) {
+      console.warn("[ContentRepository] orderBy createdAt falló, recurriendo a sort en memoria:", err);
+      try {
+        let query: any = this.collection();
+        if (workspaceId) {
+          query = query.where("workspaceId", "==", workspaceId);
+        }
+        const snapshot = await query.limit(limitCount).get();
+        const items = snapshot.docs.map((d: QueryDocumentSnapshot) => d.data() as ContentItem);
+        return items.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+      } catch (fallbackErr) {
+        console.error("[ContentRepository] Fallback query error:", fallbackErr);
+        return [];
+      }
+    }
   }
 
   async save(content: ContentItem): Promise<void> {
     await this.collection().doc(content.id).set(content);
+  }
+
+  async update(id: string, updates: Partial<ContentItem>): Promise<void> {
+    await this.collection().doc(id).update({
+      ...updates,
+      updatedAt: new Date().toISOString()
+    });
+  }
+
+  async updateStatus(id: string, status: ContentItem["status"]): Promise<void> {
+    await this.collection().doc(id).update({
+      status,
+      updatedAt: new Date().toISOString()
+    });
   }
 
   async saveVariant(contentId: string, variant: ContentVariant): Promise<void> {
@@ -132,12 +166,27 @@ export class AssetRepository {
   }
 
   async listByWorkspace(workspaceId: string, limitCount = 50): Promise<Asset[]> {
-    const snapshot = await this.collection()
-      .where("workspaceId", "==", workspaceId)
-      .orderBy("createdAt", "desc")
-      .limit(limitCount)
-      .get();
-    return snapshot.docs.map((d) => d.data() as Asset);
+    try {
+      const snapshot = await this.collection()
+        .where("workspaceId", "==", workspaceId)
+        .orderBy("createdAt", "desc")
+        .limit(limitCount)
+        .get();
+      return snapshot.docs.map((d) => d.data() as Asset);
+    } catch (err) {
+      console.warn("[AssetRepository] orderBy createdAt falló (posible falta de índice compuesto), aplicando sort en memoria:", err);
+      try {
+        const snapshot = await this.collection()
+          .where("workspaceId", "==", workspaceId)
+          .limit(limitCount)
+          .get();
+        const items = snapshot.docs.map((d) => d.data() as Asset);
+        return items.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+      } catch (fallbackErr) {
+        console.error("[AssetRepository] Fallback listByWorkspace falló:", fallbackErr);
+        return [];
+      }
+    }
   }
 
   async listByCampaign(campaignId: string): Promise<Asset[]> {
