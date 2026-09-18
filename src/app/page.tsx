@@ -60,6 +60,9 @@ import { EditorialControls } from "@/lib/types/editorial-controls";
 import { SuggestedTopics } from "@/components/suggested-topics";
 import { EditorialTopicCard } from "@/lib/types/editorial-topics";
 import { compressImageToDataUrl } from "@/lib/image-compressor";
+import { OutlineEditorModal } from "@/components/outline-editor-modal";
+import { ArticleOutline } from "@/lib/types/article-outline";
+import { PromptRefinementCard, PromptRefinementData } from "@/components/PromptRefinementCard";
 
 export default function ContentDashboard() {
   const [selectedPresetId, setSelectedPresetId] = useState(PRESET_TOPICS[0].id);
@@ -88,6 +91,16 @@ export default function ContentDashboard() {
   const [opportunities, setOpportunities] = useState<ProductOpportunityRecord[]>([]);
   const [loadingOpportunities, setLoadingOpportunities] = useState(false);
 
+  // Historial de Contenidos y Estados (Persistente en Firestore)
+  interface ArticleHistoryItem {
+    id: string;
+    title: string;
+    category: string;
+    status: "draft" | "reviewed" | "approved" | "published";
+    createdAt: string;
+    content: ContentOutput;
+  }
+
   // Ciclo de vida y orquestación de Campaña
   const [campaignStage, setCampaignStage] = useState<GenerationStage>("IDLE");
   const [campaignOpportunity, setCampaignOpportunity] = useState<ProductOpportunityRecord | null>(null);
@@ -102,6 +115,11 @@ export default function ContentDashboard() {
     technicalDeepDiveLevel: "HIGH_TECHNICAL",
     customInstructions: ""
   });
+
+  // Estado para Junia Engine (Fase 09 Multi-Paso)
+  const [isGeneratingOutline, setIsGeneratingOutline] = useState(false);
+  const [currentOutline, setCurrentOutline] = useState<ArticleOutline | null>(null);
+  const [showOutlineModal, setShowOutlineModal] = useState(false);
 
   const [currentUser, setCurrentUser] = useState<{
     uid: string;
@@ -272,6 +290,7 @@ export default function ContentDashboard() {
         localStorage.setItem("ecomshop_article_history", JSON.stringify(updated.slice(0, 50)));
         return updated;
       });
+      persistArticleToDatabase(historyEntry);
     } catch (err: any) {
       console.error("Error al lanzar campaña:", err);
       setCampaignStage("ERROR");
@@ -290,16 +309,134 @@ export default function ContentDashboard() {
   const [mainView, setMainView] = useState<"generator" | "advisor" | "history" | "image_studio" | "finops">("generator");
 
   // Historial de Contenidos y Estados
-  interface ArticleHistoryItem {
-    id: string;
-    title: string;
-    category: string;
-    status: "draft" | "reviewed" | "approved" | "published";
-    createdAt: string;
-    content: ContentOutput;
-  }
   const [historyItems, setHistoryItems] = useState<ArticleHistoryItem[]>([]);
   const [searchHistory, setSearchHistory] = useState("");
+
+  // Estado de sincronización y carga con Firestore
+  const [loadingDatabaseContents, setLoadingDatabaseContents] = useState(false);
+  const [loadingDatabaseAssets, setLoadingDatabaseAssets] = useState(false);
+  const [isSyncingWithDatabase, setIsSyncingWithDatabase] = useState(false);
+
+  // Persistir un artículo en Firestore inmediatamente tras su generación
+  async function persistArticleToDatabase(entry: ArticleHistoryItem) {
+    try {
+      await apiFetch("/api/contents", {
+        method: "POST",
+        body: JSON.stringify({
+          id: entry.id,
+          title: entry.title,
+          category: entry.category,
+          status: entry.status,
+          content: entry.content,
+          createdAt: new Date().toISOString()
+        })
+      });
+    } catch (err) {
+      console.warn("[Database] No se pudo guardar artículo en Firestore:", err);
+    }
+  }
+
+  // Cargar todos los artículos compartidos desde Firestore
+  const loadDatabaseContents = async () => {
+    setLoadingDatabaseContents(true);
+    try {
+      const res = await apiFetch<{ contents?: ArticleHistoryItem[] }>("/api/contents");
+      if (res?.contents && Array.isArray(res.contents)) {
+        setHistoryItems((prev) => {
+          const existingIds = new Set(res.contents!.map((c) => c.id));
+          const existingSlugs = new Set(res.contents!.map((c) => c.content?.blog?.slug).filter(Boolean));
+          const merged = [...res.contents!];
+          for (const localItem of prev) {
+            const rawId = localItem.id;
+            const localSlug = localItem.content?.blog?.slug;
+            if (
+              !existingIds.has(rawId) &&
+              !existingIds.has(`content-${rawId}`) &&
+              (!localSlug || !existingSlugs.has(localSlug))
+            ) {
+              merged.push(localItem);
+              existingIds.add(rawId);
+            }
+          }
+          try {
+            localStorage.setItem("ecomshop_article_history", JSON.stringify(merged.slice(0, 50)));
+          } catch {}
+          return merged;
+        });
+      }
+    } catch (err) {
+      console.warn("[Database] No se pudo cargar contenidos de Firestore:", err);
+    } finally {
+      setLoadingDatabaseContents(false);
+    }
+  };
+
+  // Cargar todas las imágenes compartidas desde Firestore
+  const loadDatabaseAssets = async () => {
+    setLoadingDatabaseAssets(true);
+    try {
+      const res = await apiFetch<{ assets?: Array<any> }>("/api/assets");
+      if (res?.assets && Array.isArray(res.assets)) {
+        const dbImages = res.assets
+          .filter((a) => a.type === "image" || a.mimeType?.startsWith("image/"))
+          .map((a) => ({
+            id: a.id,
+            url: a.publicUrl || a.storagePath,
+            prompt: a.filename ? a.filename.replace(/^AI:\s*/, "") : "Imagen generada",
+            createdAt: a.createdAt ? new Date(a.createdAt).toLocaleTimeString("es-ES") : new Date().toLocaleTimeString("es-ES"),
+            sourceType: a.aiProvenance?.model || "imagen3"
+          }))
+          .filter((a) => Boolean(a.url));
+
+        setGeneratedImagesList((prev) => {
+          const existingUrls = new Set(dbImages.map((i) => i.url));
+          const merged: Array<{ id: string; url: string; prompt: string; createdAt: string; sourceType?: string; warning?: string }> = [...dbImages];
+          for (const localImg of prev) {
+            if (localImg.url && !existingUrls.has(localImg.url)) {
+              merged.push(localImg);
+              existingUrls.add(localImg.url);
+            }
+          }
+          safeSaveGeneratedImages(merged);
+          return merged;
+        });
+      }
+    } catch (err) {
+      console.warn("[Database] No se pudo cargar assets de Firestore:", err);
+    } finally {
+      setLoadingDatabaseAssets(false);
+    }
+  };
+
+  // Sincronizar elementos previos de localStorage hacia Firestore
+  const syncLocalToDatabase = async () => {
+    try {
+      const savedHist = localStorage.getItem("ecomshop_article_history");
+      const savedImgs = localStorage.getItem("ecomshop_generated_images");
+      const savedFinops = localStorage.getItem("ecomshop_finops_records");
+
+      const historyList = savedHist ? JSON.parse(savedHist) : [];
+      const imagesList = savedImgs ? JSON.parse(savedImgs) : [];
+      const finopsList = savedFinops ? JSON.parse(savedFinops) : [];
+
+      if (historyList.length > 0 || imagesList.length > 0 || finopsList.length > 0) {
+        setIsSyncingWithDatabase(true);
+        await apiFetch("/api/sync", {
+          method: "POST",
+          body: JSON.stringify({
+            historyItems: historyList,
+            generatedImages: imagesList,
+            finopsRecords: finopsList
+          })
+        });
+      }
+    } catch (err) {
+      console.warn("[Database] Error al sincronizar almacenamiento local con Firestore:", err);
+    } finally {
+      setIsSyncingWithDatabase(false);
+      await Promise.all([loadDatabaseContents(), loadDatabaseAssets()]);
+    }
+  };
 
   // Estudio de Imágenes (Imagen 3 & Multimodal)
   const [imagePrompt, setImagePrompt] = useState(PRESET_IMAGE_PROMPTS[0].prompt);
@@ -402,6 +539,30 @@ export default function ContentDashboard() {
   useEffect(() => {
     if (mainView === "finops" && currentUser && !cloudCosts && !loadingCloudCosts) {
       fetchCloudCosts();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mainView, currentUser]);
+
+  // Cuando el usuario inicia sesión o se detecta la sesión corporativa, sincronizar y cargar BBDD
+  useEffect(() => {
+    if (currentUser) {
+      syncLocalToDatabase();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
+
+  // Sincronizar contenidos cuando se abre la vista Historial
+  useEffect(() => {
+    if (mainView === "history" && currentUser) {
+      loadDatabaseContents();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mainView, currentUser]);
+
+  // Sincronizar imágenes cuando se abre el Estudio de Imágenes
+  useEffect(() => {
+    if (mainView === "image_studio" && currentUser) {
+      loadDatabaseAssets();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mainView, currentUser]);
@@ -832,6 +993,7 @@ export default function ContentDashboard() {
         localStorage.setItem("ecomshop_article_history", JSON.stringify(updated.slice(0, 50)));
         return updated;
       });
+      persistArticleToDatabase(historyEntry);
     } catch (err: any) {
       console.error(err);
       if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
@@ -842,6 +1004,75 @@ export default function ContentDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Apertura y orquestación de The Junia Engine (Fase 09)
+  const handleOpenJuniaEngine = async () => {
+    setIsGeneratingOutline(true);
+    try {
+      const res = await apiFetch<{ outline: ArticleOutline }>("/api/editorial/outline", {
+        method: "POST",
+        body: JSON.stringify({
+          topicOrProduct: topicTitle || "Solución de Conectividad y Networking B2B",
+          targetAudience,
+          vertical: editorialControls.targetSector,
+          category,
+          apiKey: geminiApiKey || undefined
+        })
+      });
+
+      if (res?.outline) {
+        setCurrentOutline(res.outline);
+        setShowOutlineModal(true);
+      } else {
+        throw new Error("No se pudo construir el outline técnico");
+      }
+    } catch (err: any) {
+      console.error("[JuniaEngine] Error al generar outline:", err);
+      if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+        setShowSignInModal(true);
+      } else {
+        alert(`Error al generar el outline con Junia Engine: ${err?.message || err}`);
+      }
+    } finally {
+      setIsGeneratingOutline(false);
+    }
+  };
+
+  const handleJuniaArticleGenerated = (generatedContent: ContentOutput) => {
+    setContent(generatedContent);
+    setActiveTab("blog");
+
+    addFinopsRecord({
+      action: "gemini_generation",
+      details: `The Junia Engine (Deep Section Writer): ${generatedContent.topicTitle.substring(0, 35)}...`,
+      tokensInput: 3200,
+      tokensOutput: 4800
+    });
+
+    const historyEntry: ArticleHistoryItem = {
+      id: `junia-${Date.now()}`,
+      title: generatedContent.topicTitle,
+      category,
+      status: "draft",
+      createdAt: new Date().toLocaleDateString("es-ES", {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      content: generatedContent
+    };
+
+    setHistoryItems((prev) => {
+      const updated = [historyEntry, ...prev];
+      try {
+        localStorage.setItem("ecomshop_article_history", JSON.stringify(updated.slice(0, 50)));
+      } catch {}
+      return updated;
+    });
+
+    persistArticleToDatabase(historyEntry);
   };
 
   const handleGenerateImage = async (mode: "ai" | "curated" = "ai") => {
@@ -869,7 +1100,7 @@ export default function ContentDashboard() {
           setImageNotice(data.warning);
         }
         const newImg = {
-          id: Math.random().toString(36).substring(2, 9),
+          id: (data as any).assetId || Math.random().toString(36).substring(2, 9),
           url: data.imageUrl,
           prompt: data.refinedPrompt || imagePrompt,
           createdAt: new Date().toLocaleTimeString("es-ES"),
@@ -881,6 +1112,7 @@ export default function ContentDashboard() {
           safeSaveGeneratedImages(updated);
           return updated;
         });
+        loadDatabaseAssets();
 
         // Registrar coste en FinOps (0,00 € si es stock gratuito, o tarifa reducida ~0.0038 € si es IA Flash)
         if (data.sourceType !== "curated_varied") {
@@ -920,12 +1152,21 @@ export default function ContentDashboard() {
     setImageNotice(`Fotografía oficial de ${product.name} cargada directamente desde el catálogo / NotebookLM. Producto 100% real sin alucinaciones (Coste: 0,00 €).`);
   };
 
-  const updateArticleStatus = (id: string, newStatus: ArticleHistoryItem["status"]) => {
+  const updateArticleStatus = async (id: string, newStatus: ArticleHistoryItem["status"]) => {
     setHistoryItems((prev) => {
       const updated = prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item));
-      localStorage.setItem("ecomshop_article_history", JSON.stringify(updated));
+      try { localStorage.setItem("ecomshop_article_history", JSON.stringify(updated)); } catch {}
       return updated;
     });
+
+    try {
+      await apiFetch("/api/contents", {
+        method: "PATCH",
+        body: JSON.stringify({ id, status: newStatus })
+      });
+    } catch (err) {
+      console.warn("[Database] Error al actualizar estado en Firestore:", err);
+    }
   };
 
   const copyToClipboard = (text: string, key: string) => {
@@ -1433,23 +1674,45 @@ export default function ContentDashboard() {
                 />
               </div>
 
-              <button
-                onClick={handleGenerate}
-                disabled={loading}
-                className="w-full bg-[#0f172a] hover:bg-slate-800 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition shadow-sm"
-              >
-                {loading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Componiendo Edición Multicanal...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 text-sky-400" />
-                    Generar Paquete Multicanal
-                  </>
-                )}
-              </button>
+              <div className="flex flex-col gap-2 pt-1">
+                {/* The Junia Engine (Fase 09 Multi-Paso Recomendado) */}
+                <button
+                  onClick={handleOpenJuniaEngine}
+                  disabled={isGeneratingOutline || loading}
+                  className="w-full bg-gradient-to-r from-indigo-600 via-indigo-700 to-blue-600 hover:from-indigo-700 hover:to-blue-700 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-md hover:shadow-indigo-500/25 border border-indigo-400/20"
+                >
+                  {isGeneratingOutline ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Consultando NotebookLM y Creando Outline...
+                    </>
+                  ) : (
+                    <>
+                      <Layers className="w-4 h-4 text-indigo-200" />
+                      <span>Outline Interactivo (The Junia Engine)</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Generación Rápida One-Shot Clásica */}
+                <button
+                  onClick={handleGenerate}
+                  disabled={loading || isGeneratingOutline}
+                  className="w-full bg-slate-100 hover:bg-slate-200/90 border border-slate-300/80 text-slate-700 font-semibold py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-2 transition"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-slate-700 rounded-full animate-spin" />
+                      Componiendo One-Shot...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Generación Rápida (One-Shot Directo)</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1935,6 +2198,15 @@ export default function ContentDashboard() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => loadDatabaseContents()}
+                disabled={loadingDatabaseContents}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 transition shadow-2xs"
+                title="Recargar artículos desde Firestore"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingDatabaseContents ? "animate-spin text-indigo-600" : "text-slate-500"}`} />
+                <span>{loadingDatabaseContents ? "Sincronizando..." : "Sincronizar BBDD"}</span>
+              </button>
               <div className="relative">
                 <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
                 <input
@@ -1955,12 +2227,22 @@ export default function ContentDashboard() {
               <p className="text-xs text-slate-500 mt-1 max-w-sm">
                 Genera tu primer artículo en el Generador Multicanal y se guardará automáticamente en este panel editorial compartido.
               </p>
-              <button
-                onClick={() => setMainView("generator")}
-                className="mt-4 bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-xs"
-              >
-                Ir al Generador
-              </button>
+              <div className="flex items-center gap-2 mt-4">
+                <button
+                  onClick={() => setMainView("generator")}
+                  className="bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-xs"
+                >
+                  Ir al Generador
+                </button>
+                <button
+                  onClick={() => loadDatabaseContents()}
+                  disabled={loadingDatabaseContents}
+                  className="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg transition flex items-center gap-1.5 shadow-xs"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingDatabaseContents ? "animate-spin text-indigo-600" : ""}`} />
+                  Cargar desde BBDD
+                </button>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3">
@@ -1977,16 +2259,19 @@ export default function ContentDashboard() {
                       </div>
                       <div>
                         <h4 className="text-sm font-bold text-slate-900 hover:text-sky-600 cursor-pointer font-editorial" onClick={() => {
-                          setContent(item.content);
-                          setTopicTitle(item.title);
-                          setMainView("generator");
+                          if (item.content) {
+                            setContent(item.content);
+                            setTopicTitle(item.title);
+                            setCategory(item.category as any || "general");
+                            setMainView("generator");
+                          }
                         }}>
                           {item.title}
                         </h4>
                         <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
                           <span>Fecha: {item.createdAt}</span>
                           <span>&bull;</span>
-                          <span>Slug: /{item.content.blog.slug}</span>
+                          <span>Slug: /{item.content?.blog?.slug || "general"}</span>
                         </div>
                       </div>
                     </div>
@@ -2280,7 +2565,21 @@ export default function ContentDashboard() {
 
           <div className="lg:col-span-7 flex flex-col gap-4">
             <div className="bg-white border border-slate-200/80 rounded-xl p-5 flex-1 flex flex-col shadow-xs">
-              <h3 className="font-editorial text-sm font-bold text-slate-900 mb-3">Galería de Imágenes Generadas</h3>
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="font-editorial text-sm font-bold text-slate-900">Galería de Imágenes Generadas</h3>
+                  <p className="text-[11px] text-slate-500">Catálogo compartido de activos visuales en Firestore</p>
+                </div>
+                <button
+                  onClick={() => loadDatabaseAssets()}
+                  disabled={loadingDatabaseAssets}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-semibold text-slate-700 transition shadow-2xs"
+                  title="Recargar imágenes desde Firestore"
+                >
+                  <RefreshCw className={`w-3 h-3 ${loadingDatabaseAssets ? "animate-spin text-purple-600" : "text-slate-500"}`} />
+                  <span>{loadingDatabaseAssets ? "Cargando..." : "Recargar BBDD"}</span>
+                </button>
+              </div>
 
               {generatedImagesList.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-slate-400">
@@ -3088,6 +3387,17 @@ export default function ContentDashboard() {
           window.scrollTo({ top: 0, behavior: "smooth" });
         }}
       />
+
+      {/* Modal de The Junia Engine: Outline Interactivo y Redacción Profunda (Fase 09) */}
+      {showOutlineModal && currentOutline && (
+        <OutlineEditorModal
+          isOpen={showOutlineModal}
+          onClose={() => setShowOutlineModal(false)}
+          initialOutline={currentOutline}
+          category={category}
+          onArticleGenerated={handleJuniaArticleGenerated}
+        />
+      )}
     </div>
   );
 }
