@@ -449,6 +449,8 @@ export default function ContentDashboard() {
     { id: string; url: string; prompt: string; createdAt: string; sourceType?: string; warning?: string }[]
   >([]);
   const [selectedImageForDetail, setSelectedImageForDetail] = useState<ImageDetailItem | null>(null);
+  const [promptRefinement, setPromptRefinement] = useState<PromptRefinementData | null>(null);
+  const [refiningPrompt, setRefiningPrompt] = useState(false);
 
   const [activeTab, setActiveTab] = useState<"blog" | "mailchimp" | "whatsapp" | "linkedin">("blog");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -1075,8 +1077,55 @@ export default function ContentDashboard() {
     persistArticleToDatabase(historyEntry);
   };
 
-  const handleGenerateImage = async (mode: "ai" | "curated" = "ai") => {
-    if (!imagePrompt) return;
+  const handleRefinePrompt = async () => {
+    if (!imagePrompt.trim()) return;
+    setRefiningPrompt(true);
+    try {
+      const res = await fetch("/api/images/refine-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: imagePrompt,
+          baseImage: imageBase || undefined,
+          aspectRatio: imageAspectRatio,
+          apiKey: geminiApiKey || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.improvedPrompt) {
+        setPromptRefinement(data);
+      } else {
+        alert("No se pudo cualificar el prompt: " + (data.error || "Error al analizar"));
+      }
+    } catch (err: any) {
+      console.error("[RefinePrompt] Error:", err);
+      alert("Error de conexión al cualificar el prompt: " + (err?.message || err));
+    } finally {
+      setRefiningPrompt(false);
+    }
+  };
+
+  const handleApplyRefinedPrompt = (newPrompt: string, newRatio?: "16:9" | "1:1" | "4:3") => {
+    setImagePrompt(newPrompt);
+    if (newRatio) setImageAspectRatio(newRatio);
+    setPromptRefinement(null);
+  };
+
+  const handleApplyAndGenerateRefinedPrompt = async (newPrompt: string, newRatio?: "16:9" | "1:1" | "4:3") => {
+    setImagePrompt(newPrompt);
+    if (newRatio) setImageAspectRatio(newRatio);
+    setPromptRefinement(null);
+    handleGenerateImage("ai", newPrompt, newRatio);
+  };
+
+  const handleGenerateImage = async (
+    mode: "ai" | "curated" = "ai",
+    customPrompt?: string,
+    customRatio?: "16:9" | "1:1" | "4:3"
+  ) => {
+    const promptToUse = customPrompt || imagePrompt;
+    const ratioToUse = customRatio || imageAspectRatio;
+    if (!promptToUse) return;
     setGeneratingImage(true);
     setImageNotice(null);
     try {
@@ -1088,8 +1137,8 @@ export default function ContentDashboard() {
       }>("/api/images/generate", {
         method: "POST",
         body: JSON.stringify({
-          prompt: imagePrompt,
-          aspectRatio: imageAspectRatio,
+          prompt: promptToUse,
+          aspectRatio: ratioToUse,
           baseImage: imageBase || undefined,
           apiKey: geminiApiKey || undefined,
           mode
@@ -2497,13 +2546,53 @@ export default function ContentDashboard() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Prompt de Generación (Inglés recomendado)</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-slate-700">
+                      Prompt de Generación (Inglés recomendado)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleRefinePrompt}
+                      disabled={refiningPrompt || !imagePrompt.trim()}
+                      className="text-[11px] text-purple-700 hover:text-purple-800 font-bold flex items-center gap-1 bg-purple-50 hover:bg-purple-100 border border-purple-200/80 px-2 py-0.5 rounded transition disabled:opacity-40"
+                      title="Analizar y cualificar el prompt actual con IA"
+                    >
+                      {refiningPrompt ? (
+                        <>
+                          <div className="w-2.5 h-2.5 border-2 border-purple-600/30 border-t-purple-600 rounded-full animate-spin" />
+                          <span>Cualificando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3 h-3 text-purple-600" />
+                          <span>✨ Cualificar con IA</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                   <textarea
                     rows={4}
                     value={imagePrompt}
-                    onChange={(e) => setImagePrompt(e.target.value)}
+                    onChange={(e) => {
+                      setImagePrompt(e.target.value);
+                      if (promptRefinement) setPromptRefinement(null);
+                    }}
+                    placeholder="Describe tu idea en español o inglés (ej: switch de 24 puertos en rack con luces led azule y cables ordenados)..."
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:border-purple-600 focus:bg-white resize-none font-mono"
                   />
+
+                  {/* Asistente y Comparativa de Prompt Cualificado */}
+                  <div className="mt-2">
+                    <PromptRefinementCard
+                      refinement={promptRefinement}
+                      loading={refiningPrompt}
+                      currentPrompt={imagePrompt}
+                      onRequestRefine={handleRefinePrompt}
+                      onApply={handleApplyRefinedPrompt}
+                      onApplyAndGenerate={handleApplyAndGenerateRefinedPrompt}
+                      onDismiss={() => setPromptRefinement(null)}
+                    />
+                  </div>
                 </div>
 
                 <div>
