@@ -1071,16 +1071,19 @@ export default function ContentDashboard() {
   };
 
   // Apertura y orquestación de The Junia Engine (Fase 09)
-  const handleOpenJuniaEngine = async () => {
+  const handleOpenJuniaEngine = async (topicOverride?: string, categoryOverride?: string) => {
     setIsGeneratingOutline(true);
+    const targetTopic = topicOverride || topicTitle || "Solución de Conectividad y Networking B2B";
+    const targetCat = categoryOverride || category;
+
     try {
       const res = await apiFetch<{ outline: ArticleOutline }>("/api/editorial/outline", {
         method: "POST",
         body: JSON.stringify({
-          topicOrProduct: topicTitle || "Solución de Conectividad y Networking B2B",
+          topicOrProduct: targetTopic,
           targetAudience,
           vertical: editorialControls.targetSector,
-          category,
+          category: targetCat,
           apiKey: geminiApiKey || undefined
         })
       });
@@ -1553,6 +1556,10 @@ export default function ContentDashboard() {
           <MultimodalAdvisor
             apiKey={geminiApiKey}
             onApplyRecommendation={handleApplyMultimodalRecommendation}
+            onLaunchJuniaEngine={(rec) => {
+              handleApplyMultimodalRecommendation(rec);
+              handleOpenJuniaEngine(rec.title, rec.category);
+            }}
             onRecordFinops={addFinopsRecord}
           />
         </div>
@@ -1848,7 +1855,7 @@ export default function ContentDashboard() {
               <div className="flex flex-col gap-2 pt-1">
                 {/* The Junia Engine (Fase 09 Multi-Paso Recomendado) */}
                 <button
-                  onClick={handleOpenJuniaEngine}
+                  onClick={() => handleOpenJuniaEngine()}
                   disabled={isGeneratingOutline || loading}
                   className="w-full bg-gradient-to-r from-indigo-600 via-indigo-700 to-blue-600 hover:from-indigo-700 hover:to-blue-700 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-md hover:shadow-indigo-500/25 border border-indigo-400/20"
                 >

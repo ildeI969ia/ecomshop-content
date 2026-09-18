@@ -87,7 +87,7 @@ export async function analyzeMultimodalInput(params: {
 
       contents.push(promptText);
 
-      const res = await ai.models.generateContent({
+      const generatePromise = ai.models.generateContent({
         model: activeModel,
         contents: contents,
         config: {
@@ -96,7 +96,13 @@ export async function analyzeMultimodalInput(params: {
         }
       });
 
-      let rawText = res.text || "{}";
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("[MultimodalAdvisor] Timeout superado (12s)")), 12000)
+      );
+
+      const res = await Promise.race([generatePromise, timeoutPromise]);
+
+      let rawText = (res as any).text || "{}";
       rawText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
 
       const parsed = JSON.parse(rawText);
@@ -110,11 +116,10 @@ export async function analyzeMultimodalInput(params: {
         };
       }
     } catch (err) {
-      console.warn("Error en llamada Gemini multimodal, usando motor de asesoría heurístico:", err);
+      console.warn("[MultimodalAdvisor] Error/Timeout invocando Gemini, aplicando síntesis determinista garantizada:", err);
     }
   }
 
-  // Asesor de contingencia heurístico cuando no hay key configurada en servidor
   return generateDeterministicAdvisorResponse(params);
 }
 
@@ -153,7 +158,7 @@ function generateDeterministicAdvisorResponse(params: {
         title: "¿Cuellos de botella en horas punta? Soluciona la saturación de red con topología híbrida",
         suggestedAngle: "Técnico / Solución a Problema Crítico",
         detectedContext: "Caídas de rendimiento por congestión de canales o falta de caudal en uplinks",
-        recommendedProducts: ["EnGenius ECW336 WiFi 6E", "Switch Cloud ECS1528FP PoE+"],
+        recommendedProducts: ["EnGenius ECW536 Wi-Fi 7", "Switch Cloud ECS1528FP PoE+"],
         recommendedCtaText: "Solicitar Asesoramiento Preventa Gratuito",
         hookText: "¿Tus clientes culpan a su conexión a Internet cuando el problema está en la saturación del switch de acceso? Cambia las reglas del juego.",
         whyThisWorks: "Ataca el punto de mayor fricción entre integradores y clientes finales, posicionando a EcomShop como el aliado técnico preventa."
