@@ -18,7 +18,8 @@ import {
   Download, 
   Eye, 
   ArrowLeft,
-  ImageIcon
+  ImageIcon,
+  ShieldAlert
 } from "lucide-react";
 import { ContentOutput } from "@/lib/schema";
 import { ProductOpportunityRecord } from "@/lib/services/opportunity-radar";
@@ -129,6 +130,38 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
           activeAngle={opportunity?.recommendedAngle}
         />
       </div>
+
+      {/* Veto / Ajuste Absoluto del EvidenceEngine (NotebookLM) */}
+      {content?.evidenceEngineAdjustments && content.evidenceEngineAdjustments.length > 0 && (
+        <div className="bg-amber-950/20 border-b border-amber-500/30 px-6 py-3.5 flex items-start gap-3">
+          <div className="p-1.5 bg-amber-500/20 text-amber-300 rounded-lg border border-amber-500/30 shrink-0">
+            <ShieldAlert className="w-4 h-4" />
+          </div>
+          <div className="space-y-1 text-xs">
+            <div className="font-bold text-amber-300 flex items-center gap-2">
+              <span>🛡️ Ajustes aplicados por Veto Absoluto del EvidenceEngine (NotebookLM)</span>
+              <span className="text-[10px] bg-amber-500/20 text-amber-200 px-1.5 py-0.5 rounded font-mono">
+                59 Fuentes Master
+              </span>
+            </div>
+            <p className="text-amber-200/90 text-[11px]">
+              El motor contrastó las directivas contra el catálogo y manuales oficiales, anulando parámetros incompatibles:
+            </p>
+            <div className="space-y-1.5 mt-1">
+              {content.evidenceEngineAdjustments.map((adj, i) => (
+                <div key={i} className="bg-amber-950/40 border border-amber-500/20 rounded p-2 text-[11px] text-amber-200">
+                  <div className="font-semibold text-amber-300">
+                    ⚠️ {adj.corrected} <span className="text-[10px] text-amber-400 font-mono">[{adj.sourceId}]</span>
+                  </div>
+                  <div className="text-amber-300/70 text-[10px] mt-0.5">
+                    <span className="line-through text-amber-400/50 mr-1">{adj.original}</span> &rarr; {adj.reason}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Contenedor Interactivo con Pestañas de Canales (Una vez completado o con contenido disponible) */}
       {content && (

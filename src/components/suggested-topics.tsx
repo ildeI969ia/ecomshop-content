@@ -92,23 +92,23 @@ export function SuggestedTopics({
   };
 
   return (
-    <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-xs flex flex-col gap-3.5">
+    <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col gap-4">
       {/* Encabezado y Barra de Herramientas */}
-      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
         <div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-sky-600">
+          <span className="text-xs font-bold uppercase tracking-wider text-sky-600">
             Edición Semanal Dinámica
           </span>
-          <h2 className="font-editorial text-base font-bold text-slate-900">
+          <h2 className="font-editorial text-lg font-bold text-slate-900 mt-0.5">
             Líneas Editoriales B2B
           </h2>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => fetchTopics(activeCategory)}
             disabled={loading}
             title="Generar 4 nuevas propuestas frescas con IA"
-            className="text-[11px] font-semibold bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition disabled:opacity-50"
+            className="text-xs font-semibold bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-sky-600" : "text-sky-600"}`} />
             <span className="hidden sm:inline">Nuevas Ideas IA</span>
@@ -117,7 +117,7 @@ export function SuggestedTopics({
           <button
             onClick={() => setIsModalOpen(true)}
             title="Crear una línea editorial propia a medida"
-            className="text-[11px] font-semibold bg-[#0f172a] text-white hover:bg-slate-800 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-2xs"
+            className="text-xs font-semibold bg-[#0f172a] text-white hover:bg-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-2xs"
           >
             <Plus className="w-3.5 h-3.5 text-sky-400" />
             <span>Crear Propia</span>
@@ -126,14 +126,14 @@ export function SuggestedTopics({
       </div>
 
       {/* Controles de Segmentación Rápida */}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2.5">
         {/* Categorías (Chips) */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           {CATEGORY_TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => handleCategoryChange(tab.id)}
-              className={`text-[10px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap transition ${
+              className={`text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap transition ${
                 activeCategory === tab.id
                   ? "bg-slate-900 text-white shadow-2xs"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200/80"
@@ -145,15 +145,15 @@ export function SuggestedTopics({
         </div>
 
         {/* Arquetipo Selector */}
-        <div className="flex items-center justify-between text-[10px] text-slate-500 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-150">
-          <span className="font-semibold text-slate-600 flex items-center gap-1">
-            <SlidersHorizontal className="w-3 h-3 text-slate-400" />
+        <div className="flex items-center justify-between text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200">
+          <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
             Enfoque:
           </span>
           <select
             value={archetype}
             onChange={(e) => setArchetype(e.target.value as TopicArchetype)}
-            className="bg-transparent font-medium text-slate-800 focus:outline-none cursor-pointer"
+            className="bg-transparent font-medium text-slate-900 focus:outline-none cursor-pointer text-xs"
           >
             <option value="TROUBLESHOOTING">Troubleshooting & Errores de Obra</option>
             <option value="DIMENSIONAMIENTO">Dimensionamiento Eléctrico PoE</option>
@@ -177,49 +177,49 @@ export function SuggestedTopics({
               <button
                 key={topic.id}
                 onClick={() => onSelectTopic(topic)}
-                className={`text-left p-3 rounded-xl border text-xs transition flex flex-col gap-1.5 relative overflow-hidden group ${
+                className={`text-left p-4 rounded-xl border transition flex flex-col gap-2 relative overflow-hidden group ${
                   isSelected
                     ? "bg-sky-50/70 border-sky-400 text-sky-950 shadow-2xs ring-1 ring-sky-300"
                     : "bg-white border-slate-200/70 text-slate-700 hover:border-slate-300 hover:bg-slate-50/80"
                 }`}
               >
                 {isSelected && (
-                  <div className="absolute top-0 left-0 bottom-0 w-1 bg-sky-500" />
+                  <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-sky-500" />
                 )}
 
                 <div className="flex items-center justify-between">
-                  <span className="uppercase tracking-wider text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                  <span className="uppercase tracking-wider text-xs font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
                     {topic.badge}
                   </span>
                   <div className="flex items-center gap-1.5">
                     {topic.isCustom && (
-                      <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">
+                      <span className="text-xs font-bold uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-800">
                         A Medida
                       </span>
                     )}
                     <ChevronRight
-                      className={`w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 ${
+                      className={`w-4 h-4 transition-transform group-hover:translate-x-0.5 ${
                         isSelected ? "text-sky-600" : "text-slate-400"
                       }`}
                     />
                   </div>
                 </div>
 
-                <span className="font-semibold text-xs leading-snug text-slate-900">
+                <span className="font-bold text-sm leading-snug text-slate-900">
                   {topic.title}
                 </span>
 
-                <p className="text-[11px] text-slate-500 line-clamp-1">
+                <p className="text-xs text-slate-600 line-clamp-1">
                   🎯 {topic.targetAudience}
                 </p>
 
                 {topic.suggestedSKUs && topic.suggestedSKUs.length > 0 && (
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <span className="text-[9px] font-mono text-slate-400">SKUs:</span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-xs font-mono text-slate-400 font-semibold">SKUs:</span>
                     {topic.suggestedSKUs.slice(0, 3).map((sku) => (
                       <span
                         key={sku}
-                        className="text-[9px] font-mono bg-slate-100/90 text-slate-700 px-1.5 py-0.2 rounded"
+                        className="text-xs font-mono bg-slate-100 text-slate-800 px-2 py-0.5 rounded font-medium border border-slate-200/60"
                       >
                         {sku}
                       </span>

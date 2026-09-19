@@ -65,7 +65,15 @@ export const ContentOutputSchema = z.object({
     callToAction: z.string(),
     hashtags: z.array(z.string()),
     fullPostText: z.string()
-  })
+  }),
+
+  // Veto y Ajustes del EvidenceEngine (Fase 10 - NotebookLM)
+  evidenceEngineAdjustments: z.array(z.object({
+    original: z.string(),
+    corrected: z.string(),
+    reason: z.string(),
+    sourceId: z.string()
+  })).optional()
 });
 
 export type ContentOutput = z.infer<typeof ContentOutputSchema>;
@@ -91,7 +99,16 @@ export const GenerateRequestSchema = z.object({
   syncLinkedIn: z.boolean().optional(),
 
   // Controles Editoriales Personalizables (Fase 08.6)
-  editorialControls: EditorialControlsSchema.optional()
+  editorialControls: EditorialControlsSchema.optional(),
+
+  // Hilo Conductor Narrativo y Objetivo Comercial (Fase 10)
+  businessGoal: z.string().optional(),
+  narrativeAnchor: z.object({
+    pitch30s: z.string(),
+    commercialObjection: z.string(),
+    counterArgument: z.string(),
+    targetSegment: z.string()
+  }).optional()
 });
 
 export type GenerateRequest = z.infer<typeof GenerateRequestSchema>;

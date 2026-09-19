@@ -40,10 +40,14 @@ async function generateWithGeminiAPI(
   const ai = getGenAIClient(apiKey);
   const activeModel = getActiveGeminiModel(apiKey);
   const controls = req.editorialControls || {
+    businessGoal: "ALL_OPPORTUNITIES",
     targetSector: "ENTERPRISE_OFFICE",
     includePricing: false,
     emphasizeUplinkSwitching: true,
     technicalDeepDiveLevel: "HIGH_TECHNICAL",
+    editorialTone: "ENGINEERING_PREVENTA",
+    competitorFocus: "MERAKI",
+    strategicCta: "FREE_SURVEY",
     customInstructions: ""
   };
 
@@ -52,19 +56,31 @@ Eres el Director de Estrategia de Contenidos y Jefe de Ingeniería Preventa de $
 Tu misión es redactar artículos técnicos de blog y campañas multicanal con altísimo rigor técnico, novedad y relevancia para 4 perfiles clave de clientes:
 1. INSTALADORES DE TELECOMUNICACIONES: Preocupados por tiempos de despliegue, aprovisionamiento cloud con QR, presupuesto PoE 802.3bt, certificación de cableado y evitar visitas recurrentes de soporte.
 2. DIRECTORES DE TIC / RESPONSABLES DE SISTEMAS: Preocupados por seguridad WPA3 Enterprise, latencia, VLANs, control centralizado y CERO LICENCIAS recurrentes obligatorias (ventaja competitiva de EnGenius Cloud).
-3. JEFES DE COMPRAS: Preocupados por márgenes comerciales netos, TCO a 3-5 años frente a marcas con suscripciones abusivas (Cisco Meraki, etc.), stock permanente en España y entregas en 24h.
+3. JEFES DE COMPRAS: Preocupados por márgenes comerciales netos, TCO a 3-5 años frente a marcas con suscripciones abusivas (Cisco Meraki, etc.), stock permanente en España y entregas en 24/48h.
 4. DISTRIBUIDORES / MAYORISTAS: Preocupados por condiciones profesionales de distribución, rotación de producto y escalabilidad de gama.
+
+🚨 REGLA ESTRICTA DE PRECIOS B2B (TOLERANCIA CERO A PRECIOS NUMÉRICOS INVENTADOS):
+- Queda TERMINANTEMENTE PROHIBIDO inventar precios numéricos en euros (PVP, costes de producto inventados o cifras fijas) en cualquiera de los canales.
+- Toda referencia a precios, promociones o condiciones de compra debe formularse OBLIGATORIAMENTE bajo la fórmula canónica B2B:
+  "Consultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h".
+- Esto protege los márgenes comerciales de los instaladores profesionales frente al cliente final.
 
 🚨 HARDWARE BLACKLIST ESTRICTA (TOLERANCIA CERO):
 - Queda TERMINANTEMENTE PROHIBIDO mencionar o sugerir cualquier gama descatalogada o en desuso: "EnGenius Fit", "FitController", "FitXpress" o controladores locales heredados.
 - El estándar oficial de gestión es EXCLUSIVAMENTE EnGenius Cloud o Standalone/MESH.
 - Si detectas una referencia previa a Fit o controladores locales, sustitúyela de inmediato por EnGenius Cloud.
 
-⚡ DIRECTRICES DE PROFUNDIDAD TÉCNICA E INGENIERÍA REAL:
-- Cuellos de botella en Uplinks: Explica que conectar un AP Wi-Fi 7 (capaz de superar varios Gbps agregados) a un enlace Ethernet de 1 GbE crea un estrangulamiento severo de red; es indispensable conmutación 2.5G/10G (switches multi-gigabit como ECS2512FP o uplinks 10G SFP+ en ECS1528FP).
-- Multi-Link Operation (MLO): Aborda cómo los enlaces simultáneos en 5 GHz y 6 GHz reducen la latencia a menos de 3ms y garantizan redundancia sin desconexión de clientes.
-- Punzonado de Preámbulo (Preamble Puncturing): Explica cómo Wi-Fi 7 aprovecha canales anchos de 160/320 MHz incluso cuando hay frecuencias ocupadas por radar o interferencias, evitando degradar el canal a 20/40 MHz.
-- Presupuesto PoE y Gestión Térmica: Detalla el cálculo de PoE+ (802.3at) vs PoE++ (802.3bt), disipación térmica y balance energético en racks.
+🎯 ADAPTACIÓN INTELIGENTE DE DENSIDAD TÉCNICA POR CANAL:
+1. BLOG (Durable CMS): Máxima profundidad de ingeniería. Analiza Multi-Link Operation (MLO), Punzonado de Preámbulo (Preamble Puncturing), cálculo de PoE Budget 802.3at vs 802.3bt y cuellos de botella 1G vs conmutación 2.5G/10G SFP+. Incluye cajas photo-recommendation-box y cta-placement-box.
+2. WHATSAPP BROADCAST: Formato "Pitch 30s de taller/instalador". Conciso, enérgico, directo al grano. Cero palabrería teórica innecesaria. Enfocado en tiempo de montaje (código QR en 2 min desde el móvil), cero cuotas recurrentes y sustitución en 24h por EcomSpain si falla en obra.
+3. LINKEDIN B2B: Formato "Debate de Arquitectura B2B para CIOs/Directores TIC". Plantea un dilema real sobre TCO frente a Cisco Meraki, bloqueo de hardware por impago de licencias, y propiedad real de la infraestructura sin costes recurrentes.
+4. MAILCHIMP: Formato comercial para canal. Presenta el bundle con su sinergia técnica y llamada clara a consultar condiciones mayoristas en ecomshop.es.
+
+🔗 PERSISTENCIA DEL HILO CONDUCTOR NARRATIVO:
+- Si se proporciona un "narrativeAnchor" (pitch30s y objeción comercial frecuente), es OBLIGATORIO que todos los canales utilicen ese argumento central como hilo conductor y resuelvan explícitamente esa objeción.
+
+🛡️ VETO Y AJUSTES DEL EVIDENCEENGINE (MASTER NOTEBOOKLM):
+- Si alguna directiva personalizada del usuario contradice principios físicos o normas de hardware (ej. conectar Wi-Fi 7 a un puerto 100M, intentar alimentar PoE++ con switch 802.3af, o usar FitController), debes corregir el copy y detallar el ajuste en el array "evidenceEngineAdjustments".
 
 DIRECTRICES EDITORIALES PARA EL BLOG (DURABLE CMS):
 1. El HTML del blog debe ser semántico, limpio y visualmente atractivo.
@@ -77,9 +93,9 @@ DIRECTRICES EDITORIALES PARA EL BLOG (DURABLE CMS):
      </div>
    - Bloque de CTA destacada en el punto de máxima atención:
      <div class="cta-placement-box" style="background:#f8fafc;border:1px solid #bae6fd;border-left:5px solid #0284c7;border-radius:8px;padding:18px;margin:28px 0;">
-       <h4 style="margin:0 0 6px 0;color:#0369a1;font-size:15px;">🎯 LLAMADA A LA ACCIÓN RECOMENDADA:</h4>
-       <p style="margin:0 0 12px 0;color:#334155;font-size:13px;">[Explicación de valor para el instalador o jefe de compras]</p>
-       <a href="[URL]" target="_blank" style="display:inline-block;background:#0284c7;color:#fff;font-size:13px;font-weight:bold;padding:10px 20px;border-radius:6px;text-decoration:none;">[TEXTO CTA] &rarr;</a>
+       <h4 style="margin:0 0 6px 0;color:#0369a1;font-size:15px;">🎯 CONDICIONES MAYORISTAS DISTRIBUIDOR:</h4>
+       <p style="margin:0 0 12px 0;color:#334155;font-size:13px;">Consultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h.</p>
+       <a href="https://www.ecomshop.es" target="_blank" style="display:inline-block;background:#0284c7;color:#fff;font-size:13px;font-weight:bold;padding:10px 20px;border-radius:6px;text-decoration:none;">Consultar Tarifa Distribuidor &rarr;</a>
      </div>
 3. Debes proveer además el objeto "editorialLayout" con los 4 perfiles B2B, las recomendaciones de fotos con sus prompts en inglés listos para Google Imagen 3 y los puntos de inserción de CTAs.
 
@@ -92,13 +108,25 @@ Genera el paquete de contenido multicanal con guía editorial para:
 - Categoría: ${req.category}
 - Sector Objetivo: ${controls.targetSector}
 - Nivel de Profundidad Técnica: ${controls.technicalDeepDiveLevel}
+- Tono y Perfil Editorial: ${controls.editorialTone || "ENGINEERING_PREVENTA"}
+- Competidor/Objeción Prioritaria a Desbancar: ${controls.competitorFocus || "MERAKI"}
+- CTA Estratégica: ${controls.strategicCta || "FREE_SURVEY"}
+- Objetivo Comercial de Negocio: ${req.businessGoal || controls.businessGoal || "ALL_OPPORTUNITIES"}
 - Énfasis en Switching / Uplinks 10G: ${controls.emphasizeUplinkSwitching ? "SÍ (Obligatorio destacar switches PoE Multi-Gigabit y enlaces 10G SFP+)" : "NO"}
-- Incluir Precios / Condiciones B2B: ${controls.includePricing ? "SÍ (Citar márgenes y condiciones comerciales ventajosas)" : "NO (Enfoque puramente técnico/operativo)"}
+- Condiciones B2B: TOLERANCIA CERO A PRECIOS NUMÉRICOS. Indicar siempre: "Consultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h".
 ${controls.customInstructions ? `- Directivas Personalizadas del Usuario: "${controls.customInstructions}"` : ""}
-- Público objetivo: Instaladores, Directores TIC, Jefes de Compras y Distribuidores
+${req.narrativeAnchor ? `
+🔗 HILO CONDUCTOR NARRATIVO CANÓNICO (OBLIGATORIO EN TODOS LOS CANALES):
+- Pitch 30s de taller / instalador: "${req.narrativeAnchor.pitch30s}"
+- Objeción Comercial Frecuente: "${req.narrativeAnchor.commercialObjection}"
+- Refutación de Ingeniería: "${req.narrativeAnchor.counterArgument}"
+- Target Principal: "${req.narrativeAnchor.targetSegment}"
+INSTRUCCIÓN: El gancho de apertura y el desarrollo deben resolver frontalmente esta objeción con este pitch.
+` : ""}
+- Público objetivo: ${req.narrativeAnchor?.targetSegment || "Instaladores, Directores TIC, Jefes de Compras y Distribuidores"}
 - Notas adicionales / Productos destacados: ${req.customNotes || "Enfocarse en ventajas operativas, disponibilidad inmediata, cero licencias EnGenius Cloud y soporte preventa de EcomShop"}
 - URL de producto / enlace de referencia: ${req.productUrl || (intel?.product?.url) || ECOM_BRAND.storeUrl}
-- CTA Propuesto: ${req.ctaButtonText || "Solicitar Condiciones Especiales B2B"} (${req.ctaUrl || ECOM_BRAND.storeUrl})
+- CTA Propuesto: "Consultar Tarifa Distribuidor" (${req.ctaUrl || ECOM_BRAND.storeUrl})
 ${intel ? `
 FICHA DE INTELIGENCIA TÉCNICA VERIFICADA (CALIDAD Y ANTI-ALUCINACIÓN OBLIGATORIA):
 - Producto: ${intel.product.brand} ${intel.product.model} (SKU: ${intel.product.sku})
@@ -191,7 +219,15 @@ JSON Schema requerido:
     "callToAction": "string",
     "hashtags": ["#WiFi", "#Networking", "#EnGenius"],
     "fullPostText": "Texto completo del post para copiar y pegar"
-  }
+  },
+  "evidenceEngineAdjustments": [
+    {
+      "original": "Directiva o concepto que requirió corrección",
+      "corrected": "Corrección técnica fundamentada",
+      "reason": "Motivo basado en estándares y Master Notebook",
+      "sourceId": "src-1"
+    }
+  ]
 }
 `;
 
@@ -346,58 +382,49 @@ function generateDeterministicFallback(req: GenerateRequest, intel?: ProductInte
 </table>
 `.trim();
 
-  // WhatsApp
+  // WhatsApp: Pitch 30s de taller para instaladores (Fase 10)
+  const pitchAnchor = req.narrativeAnchor?.pitch30s || "Aprovisionamiento ágil en 2 minutos con código QR, cero licencias obligatorias y sustitución en 24h.";
   let whatsappMessage = `
-*📡 NOVEDAD TÉCNICA ECOMSHOP | ${effectiveTitle.toUpperCase()}*
+*⚡ PITCH EXPRESS B2B | ${effectiveTitle.toUpperCase()}*
 
-Hola compañero/a de profesión 👋
+Hola compañero 👋
 
-Si estás diseñando o ejecutando despliegues de conectividad empresarial, acabamos de publicar una guía técnica clave:
+${pitchAnchor}
 
-🔹 *Punto clave:* ${matchedPreset.keyPoints[0]}
-🔹 *Rendimiento:* ${matchedPreset.keyPoints[1]}
-🔹 *Gestión:* ${matchedPreset.keyPoints[2]}
-`;
+*Claves de obra:*
+• Aprovisionamiento rápido desde el móvil (App Cloud To-Go)
+• Sin cuotas anuales obligatorias que te aten al fabricante
+• Stock con entrega inmediata en 24/48h desde EcomSpain
 
-  if (req.syncWhatsApp && featuredProductNames.length > 0) {
-    whatsappMessage += `\n*Equipos destacados para este proyecto:*\n${featuredProductNames.map(p => `• ${p}`).join("\n")}\n`;
-  }
-
-  whatsappMessage += `
-💡 _Disponible con stock permanente y soporte preventa en EcomShop._
-
-👉 *${ctaBtnText}:*
+👉 *Tarifa Distribuidor Profesional:*
+Consultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h.
 ${ctaDestination}?utm_source=whatsapp&utm_medium=broadcast
-
-¿Necesitas presupuesto para un proyecto en marcha? Responde a este mensaje y nuestro equipo de ingeniería te asesora.
 `.trim();
 
-  // LinkedIn
+  // LinkedIn: Debate de Arquitectura B2B para CIOs/TIC (Fase 10)
+  const objectionAnchor = req.narrativeAnchor?.commercialObjection || "¿Realmente compensa seguir pagando renovaciones anuales de licencias cloud por cada dispositivo de red?";
+  const counterAnchor = req.narrativeAnchor?.counterArgument || "Con EnGenius Cloud en EcomShop el hardware es tuyo de por vida: 0€ en cuotas y hasta un 42% de ahorro en TCO a 3 años frente a modelos cautivos.";
+  
   let linkedinPost = `
-¿Estás sobredimensionando o quedándote corto en tus despliegues de conectividad empresarial?
+${objectionAnchor}
 
-${effectiveTitle} es hoy uno de los mayores focos de duda para integradores y responsables de sistemas.
+En proyectos corporativos e infraestructuras críticas, muchos directores de sistemas se enfrentan a costes ocultos de licenciamiento que encarecen el TCO.
 
-En proyectos corporativos e industriales, la diferencia entre una red estable y visitas recurrentes por soporte está en los detalles de ingeniería:
+💡 La respuesta de ingeniería:
+${counterAnchor}
 
-📌 ${matchedPreset.keyPoints[0]}
-📌 ${matchedPreset.keyPoints[1]}
-📌 ${matchedPreset.keyPoints[2]}
-`;
+📌 Puntos clave de despliegue:
+• Conmutación Multi-Gigabit y troncales 10G SFP+ sin estrangulamiento
+• Aprovisionamiento centralizado multisede sin pagar suscripción anual
+• Garantía oficial y sustitución avanzada en 24/48h desde España
 
-  if (req.syncLinkedIn && featuredProductNames.length > 0) {
-    linkedinPost += `\nEquipos que estamos prescribiendo para este escenario:\n${featuredProductNames.map(p => `✅ ${p}`).join("\n")}\n`;
-  }
-
-  linkedinPost += `
-En EcomShop / EcomSpain ayudamos a ingenierías e instaladores a elegir la solución precisa, con stock inmediato y soporte técnico de preventa sin costes ocultos.
-
-🔗 ${ctaBtnText}:
+🔗 Condiciones comerciales para distribuidores e ingenierías:
+Consultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h.
 ${ctaDestination}
 
-¿Qué reto te estás encontrando con más frecuencia en tus últimos despliegues? Te leo en comentarios 👇
+¿Cómo estás gestionando el balance entre costes de licencias cloud y rendimiento en tus sedes? Abro debate en comentarios 👇
 
-#Networking #WiFi7 #Switches #EnGenius #FibraOptica #Telecomunicaciones #EcomShop #IntegradoresIT
+#Networking #WiFi7 #Switches #EnGenius #TCO #CeroLicencias #EcomShop #IntegradoresIT
 `.trim();
 
   return {
@@ -405,6 +432,7 @@ ${ctaDestination}
     topicTitle: effectiveTitle,
     category: req.category,
     generatedAt: now,
+    evidenceEngineAdjustments: [],
     blog: {
       title: effectiveTitle,
       metaDescription: `Guía técnica para instaladores, directores TIC y jefes de compras sobre ${effectiveTitle}. Buenas prácticas y catálogo oficial en EcomShop.`,

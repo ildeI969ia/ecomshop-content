@@ -57,7 +57,7 @@ import { apiFetch, ApiError } from "@/lib/api-client";
 import { CampaignWorkspace } from "@/components/campaign-workspace";
 import { GenerationStage } from "@/components/campaign-stepper";
 import { EditorialControlsBar } from "@/components/editorial-controls-bar";
-import { EditorialControls } from "@/lib/types/editorial-controls";
+import { EditorialControls, BusinessGoal } from "@/lib/types/editorial-controls";
 import { SuggestedTopics } from "@/components/suggested-topics";
 import { EditorialTopicCard } from "@/lib/types/editorial-topics";
 import { compressImageToDataUrl } from "@/lib/image-compressor";
@@ -117,12 +117,21 @@ export default function ContentDashboard() {
 
   // Controles Editoriales Personalizables (Fase 08.6)
   const [editorialControls, setEditorialControls] = useState<EditorialControls>({
+    businessGoal: "ALL_OPPORTUNITIES",
     targetSector: "ENTERPRISE_OFFICE",
     includePricing: false,
     emphasizeUplinkSwitching: true,
     technicalDeepDiveLevel: "HIGH_TECHNICAL",
+    editorialTone: "ENGINEERING_PREVENTA",
+    competitorFocus: "MERAKI",
+    strategicCta: "FREE_SURVEY",
     customInstructions: ""
   });
+
+  const [selectedBusinessGoal, setSelectedBusinessGoal] = useState<BusinessGoal>("ALL_OPPORTUNITIES");
+  const [isRegeneratingRadar, setIsRegeneratingRadar] = useState(false);
+  const [isReplacingSku, setIsReplacingSku] = useState<string | null>(null);
+  const [excludedSkus, setExcludedSkus] = useState<string[]>([]);
 
   // Estado para Junia Engine (Fase 09 Multi-Paso)
   const [isGeneratingOutline, setIsGeneratingOutline] = useState(false);
@@ -169,23 +178,115 @@ export default function ContentDashboard() {
     }
   };
 
-  useEffect(() => {
-    async function loadOpportunities() {
-      if (!currentUser) return;
-      setLoadingOpportunities(true);
-      try {
-        const data = await apiFetch<{ opportunities?: ProductOpportunityRecord[] }>("/api/opportunities?limit=3");
-        if (data.opportunities) {
-          setOpportunities(data.opportunities);
-        }
-      } catch (err) {
-        console.warn("Radar de oportunidades requiere autenticación o no devolvió datos:", err);
-      } finally {
-        setLoadingOpportunities(false);
+  const loadOpportunities = async (
+    controls?: EditorialControls,
+    excluded?: string[],
+    directive?: string,
+    shuffle?: number,
+    goal?: BusinessGoal
+  ) => {
+    if (!currentUser) return;
+    setLoadingOpportunities(true);
+    try {
+      const activeGoal = goal || selectedBusinessGoal;
+      const data = await apiFetch<{ opportunities?: ProductOpportunityRecord[] }>("/api/opportunities", {
+        method: "POST",
+        body: JSON.stringify({
+          limit: 3,
+          businessGoal: activeGoal,
+          editorialControls: controls || editorialControls,
+          excludedSkus: excluded || excludedSkus,
+          customDirective: directive,
+          shuffleSeed: shuffle || 0
+        })
+      });
+      if (data.opportunities) {
+        setOpportunities(data.opportunities);
       }
+    } catch (err) {
+      console.warn("Radar de oportunidades requiere autenticación o no devolvió datos:", err);
+    } finally {
+      setLoadingOpportunities(false);
     }
+  };
+
+  useEffect(() => {
     loadOpportunities();
   }, [currentUser]);
+
+  const handleRegenerateRadar = async () => {
+    setIsRegeneratingRadar(true);
+    const randomSeed = Math.floor(Math.random() * 100) + 1;
+    await loadOpportunities(editorialControls, excludedSkus, undefined, randomSeed, selectedBusinessGoal);
+    setIsRegeneratingRadar(false);
+  };
+
+  const handleReplaceOpportunity = async (
+    opp: ProductOpportunityRecord,
+    newSku?: string,
+    customDirective?: string,
+    newAngle?: "ROI" | "PERFORMANCE" | "OPERATIONS"
+  ) => {
+    if (newAngle && !newSku && !customDirective) {
+      setOpportunities(prev => prev.map(item => {
+        if (item.id === opp.id) {
+          return {
+            ...item,
+            recommendedAngle: newAngle,
+            actionTitle: newAngle === "ROI" 
+              ? `Oportunidad TCO & 0€ Cuotas: Pack ${item.model}`
+              : newAngle === "PERFORMANCE"
+              ? `Oportunidad Máximo Rendimiento: Despliegue de ${item.model}`
+              : `Oportunidad Operativa: Despliegue Express 24h de ${item.model}`
+          };
+        }
+        return item;
+      }));
+      return;
+    }
+
+    setIsReplacingSku(opp.sku);
+    try {
+      const currentSkus = opportunities.map(o => o.sku);
+      const updatedExcluded = Array.from(new Set([...excludedSkus, opp.sku]));
+      setExcludedSkus(updatedExcluded);
+
+      if (newSku) {
+        const res = await apiFetch<{ opportunities?: ProductOpportunityRecord[] }>("/api/opportunities", {
+          method: "POST",
+          body: JSON.stringify({
+            limit: 1,
+            businessGoal: selectedBusinessGoal,
+            editorialControls,
+            excludedSkus: currentSkus.filter(s => s !== newSku),
+            customDirective: newSku
+          })
+        });
+        if (res.opportunities && res.opportunities.length > 0) {
+          const replacement = res.opportunities[0];
+          setOpportunities(prev => prev.map(item => item.id === opp.id ? replacement : item));
+        }
+      } else {
+        const res = await apiFetch<{ replacement?: ProductOpportunityRecord }>("/api/opportunities", {
+          method: "POST",
+          body: JSON.stringify({
+            replaceSku: opp.sku,
+            businessGoal: selectedBusinessGoal,
+            currentSkus,
+            editorialControls,
+            customDirective
+          })
+        });
+        if (res.replacement) {
+          setOpportunities(prev => prev.map(item => item.id === opp.id ? res.replacement! : item));
+        }
+      }
+    } catch (err) {
+      console.error("Error al reemplazar oportunidad:", err);
+    } finally {
+      setIsReplacingSku(null);
+    }
+  };
 
   const handleSelectOpportunity = (opp: ProductOpportunityRecord) => {
     setInputMode("ecomshop_url");
@@ -257,6 +358,8 @@ export default function ContentDashboard() {
           syncLinkedIn: true,
           customAngle: opp.recommendedAngle,
           editorialControls,
+          businessGoal: selectedBusinessGoal,
+          narrativeAnchor: opp.narrativeAnchor,
           apiKey: geminiApiKey || undefined
         })
       });
@@ -1573,7 +1676,7 @@ export default function ContentDashboard() {
 
       {/* Contenido según Módulo Seleccionado */}
       {mainView === "advisor" && (
-        <div className="flex-1 p-6 max-w-7xl mx-auto w-full">
+        <div className="flex-1 p-6 sm:p-8 max-w-[1780px] 2xl:max-w-[1920px] mx-auto w-full">
           <MultimodalAdvisor
             apiKey={geminiApiKey}
             onApplyRecommendation={handleApplyMultimodalRecommendation}
@@ -1587,7 +1690,7 @@ export default function ContentDashboard() {
       )}
 
       {mainView === "generator" && (
-        <div className="flex-1 p-6 max-w-7xl mx-auto w-full">
+        <div className="flex-1 p-6 sm:p-8 max-w-[1780px] 2xl:max-w-[1920px] mx-auto w-full">
           {/* Radar de Oportunidades Diarias (Fase 08 Marketing Autopilot) */}
           <OpportunityRadarWidget
             opportunities={opportunities}
@@ -1595,12 +1698,23 @@ export default function ContentDashboard() {
             onSelectOpportunity={handleSelectOpportunity}
             onLaunchCampaign={handleLaunchCampaign}
             launchingSku={launchingSku}
+            onRegenerateRadar={handleRegenerateRadar}
+            isRegeneratingRadar={isRegeneratingRadar}
+            onReplaceOpportunity={handleReplaceOpportunity}
+            isReplacingSku={isReplacingSku}
+            selectedBusinessGoal={selectedBusinessGoal}
+            onSelectBusinessGoal={(goal) => {
+              setSelectedBusinessGoal(goal);
+              loadOpportunities(editorialControls, excludedSkus, undefined, undefined, goal);
+            }}
           />
 
           {/* Barra de Controles Editoriales Personalizables (Fase 08.6) */}
           <EditorialControlsBar
             controls={editorialControls}
             onChange={setEditorialControls}
+            onApplyToRadar={handleRegenerateRadar}
+            isApplying={isRegeneratingRadar}
           />
 
           {/* Campaign Workspace Interactivo (Pipeline Stepper + Contenido Multicanal Grounded) */}
@@ -1634,64 +1748,64 @@ export default function ContentDashboard() {
             />
 
             {/* 3 Ángulos Estratégicos (Agente Gemini) */}
-            <div className="bg-white border border-indigo-200/80 rounded-xl p-5 shadow-xs relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-indigo-500 via-sky-500 to-emerald-500" />
+            <div className="bg-white border border-indigo-200/80 rounded-2xl p-6 shadow-xs relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-indigo-500 via-sky-500 to-emerald-500" />
               <div className="flex items-center justify-between mb-3 pt-1">
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">IA Copilot</span>
-                  <h3 className="font-editorial text-sm font-bold text-slate-900">Ángulos Estratégicos</h3>
+                  <span className="text-xs font-bold uppercase tracking-wider text-indigo-600">IA Copilot</span>
+                  <h3 className="font-editorial text-base font-bold text-slate-900 mt-0.5">Ángulos Estratégicos</h3>
                 </div>
                 <button
                   onClick={handleFetchStrategicAngles}
                   disabled={loadingAngles}
-                  className="text-xs bg-[#0f172a] hover:bg-slate-800 disabled:opacity-50 text-white font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-2xs"
+                  className="text-xs bg-[#0f172a] hover:bg-slate-800 disabled:opacity-50 text-white font-semibold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition shadow-2xs"
                 >
                   {loadingAngles ? (
                     <>
-                      <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       Analizando...
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-3 h-3 text-sky-400" />
+                      <Sparkles className="w-3.5 h-3.5 text-sky-400" />
                       Sugerir 3 Ángulos
                     </>
                   )}
                 </button>
               </div>
 
-              <p className="text-[11px] text-slate-500 mb-3">
+              <p className="text-xs text-slate-600 mb-3.5 leading-relaxed">
                 Selecciona la tesis de valor comercial o técnica para guiar la redacción:
               </p>
 
               {strategicAngles.length > 0 ? (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2.5">
                   {strategicAngles.map((angle) => (
                     <button
                       key={angle.id}
                       onClick={() => handleApplyAngle(angle)}
-                      className={`text-left p-3 rounded-lg border text-xs transition flex flex-col gap-1.5 ${
+                      className={`text-left p-3.5 rounded-xl border transition flex flex-col gap-2 ${
                         selectedAngleId === angle.id
-                          ? "bg-indigo-50/70 border-indigo-500 text-indigo-950 shadow-2xs"
+                          ? "bg-indigo-50/70 border-indigo-500 text-indigo-950 shadow-2xs ring-1 ring-indigo-400"
                           : "bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50"
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900 text-xs">{angle.title}</span>
-                        <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800">
+                        <span className="font-bold text-slate-900 text-sm">{angle.title}</span>
+                        <span className="text-xs uppercase font-mono font-semibold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">
                           {angle.type}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-600 line-clamp-2">{angle.hook}</p>
-                      <div className="text-[10px] text-emerald-700 font-semibold mt-0.5 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                      <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">{angle.hook}</p>
+                      <div className="text-xs text-emerald-700 font-semibold mt-0.5 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
                         CTA: {angle.recommendedCta}
                       </div>
                     </button>
                   ))}
                 </div>
               ) : (
-                <div className="bg-slate-50 border border-slate-200/80 rounded-lg p-3.5 text-center text-xs text-slate-500">
+                <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 text-center text-xs text-slate-600 leading-relaxed">
                   Haz clic en <strong>"Sugerir 3 Ángulos"</strong> para que el agente extraiga enfoques de ROI/Costes, Rendimiento 10G o Casos de Éxito.
                 </div>
               )}
@@ -2383,7 +2497,7 @@ export default function ContentDashboard() {
 
       {/* VISTA 2: HISTORIAL Y ESTADOS */}
       {mainView === "history" && (
-        <div className="flex-1 max-w-7xl mx-auto w-full p-6 flex flex-col gap-6">
+        <div className="flex-1 max-w-[1780px] 2xl:max-w-[1920px] mx-auto w-full p-6 sm:p-8 flex flex-col gap-6">
           <div className="flex items-center justify-between bg-white border border-slate-200/80 rounded-xl p-5 shadow-xs">
             <div>
               <div className="flex items-center gap-2">
@@ -2537,7 +2651,7 @@ export default function ContentDashboard() {
 
       {/* VISTA 3: ESTUDIO DE IMÁGENES (IMAGEN 3) */}
       {mainView === "image_studio" && (
-        <div className="flex-1 max-w-7xl mx-auto w-full p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="flex-1 max-w-[1780px] 2xl:max-w-[1920px] mx-auto w-full p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-5 flex flex-col gap-4">
             <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-xs">
               <h2 className="font-editorial text-base font-bold text-slate-900 flex items-center gap-2 mb-1">
@@ -2970,7 +3084,7 @@ export default function ContentDashboard() {
 
       {/* VISTA 4: MONITOR FINOPS & VALORACIÓN DE COSTES */}
       {mainView === "finops" && (
-        <div className="flex-1 max-w-7xl mx-auto w-full p-6 flex flex-col gap-6">
+        <div className="flex-1 max-w-[1780px] 2xl:max-w-[1920px] mx-auto w-full p-6 sm:p-8 flex flex-col gap-6">
           <div className="flex items-center justify-between bg-white border border-slate-200/80 rounded-xl p-5 shadow-xs">
             <div>
               <div className="flex items-center gap-2">
