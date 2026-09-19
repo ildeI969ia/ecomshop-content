@@ -132,6 +132,28 @@ export async function deleteImageFromIndexedDB(id: string): Promise<boolean> {
 }
 
 /**
+ * Elimina múltiples imágenes por sus IDs en una única transacción
+ */
+export async function deleteImagesBulkFromIndexedDB(ids: string[]): Promise<boolean> {
+  if (!ids || ids.length === 0) return true;
+  try {
+    const db = await openDatabase();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const store = tx.objectStore(STORE_NAME);
+      for (const id of ids) {
+        store.delete(id);
+      }
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    console.warn("[IndexedDB] Error al eliminar imágenes en bloque:", err);
+    return false;
+  }
+}
+
+/**
  * Elimina todas las imágenes de sesiones anteriores
  */
 export async function clearAllImagesFromIndexedDB(): Promise<boolean> {
@@ -149,3 +171,4 @@ export async function clearAllImagesFromIndexedDB(): Promise<boolean> {
     return false;
   }
 }
+

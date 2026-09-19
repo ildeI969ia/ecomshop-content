@@ -100,6 +100,24 @@ export class ContentRepository {
       .doc(variant.id)
       .set(variant);
   }
+
+  async delete(id: string): Promise<void> {
+    await this.collection().doc(id).delete();
+  }
+
+  async deleteBulk(ids: string[]): Promise<void> {
+    if (!ids || ids.length === 0) return;
+    const db = getAdminFirestore();
+    const BATCH_LIMIT = 450;
+    for (let i = 0; i < ids.length; i += BATCH_LIMIT) {
+      const chunk = ids.slice(i, i + BATCH_LIMIT);
+      const batch = db.batch();
+      for (const id of chunk) {
+        batch.delete(this.collection().doc(id));
+      }
+      await batch.commit();
+    }
+  }
 }
 
 export class FinOpsRepository {
@@ -208,6 +226,20 @@ export class AssetRepository {
 
   async delete(id: string): Promise<void> {
     await this.collection().doc(id).delete();
+  }
+
+  async deleteBulk(ids: string[]): Promise<void> {
+    if (!ids || ids.length === 0) return;
+    const db = getAdminFirestore();
+    const BATCH_LIMIT = 450;
+    for (let i = 0; i < ids.length; i += BATCH_LIMIT) {
+      const chunk = ids.slice(i, i + BATCH_LIMIT);
+      const batch = db.batch();
+      for (const id of chunk) {
+        batch.delete(this.collection().doc(id));
+      }
+      await batch.commit();
+    }
   }
 }
 

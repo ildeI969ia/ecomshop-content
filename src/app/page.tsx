@@ -35,7 +35,9 @@ import {
   LogOut,
   User as UserIcon,
   Maximize2,
-  Trash2
+  Trash2,
+  FileText,
+  CheckSquare
 } from "lucide-react";
 import { PRESET_TOPICS, ECOM_BRAND, STAR_PRODUCTS, CAMPAIGN_IDEAS, B2B_CTA_OPTIONS } from "@/lib/knowledge";
 import { ContentOutput } from "@/lib/schema";
@@ -47,6 +49,8 @@ import { MultimodalAdvisor } from "@/components/MultimodalAdvisor";
 import { CampaignRecommendation } from "@/lib/multimodal-advisor";
 import { ImageInterrogatorModal } from "@/components/ImageInterrogatorModal";
 import { ImageDetailModal, ImageDetailItem } from "@/components/ImageDetailModal";
+import { BulkActionToolbar } from "@/components/media/BulkActionToolbar";
+import { DocumentDetailModal } from "@/components/media/DocumentDetailModal";
 import { ProductIntelligenceView } from "@/components/product-intelligence-view";
 import { EvidenceAuditDrawer } from "@/components/evidence-audit-drawer";
 import { ProductIntelligenceCard } from "@/lib/types/product-intelligence";
@@ -69,6 +73,7 @@ import {
   saveImagesBulkToIndexedDB,
   getAllImagesFromIndexedDB,
   deleteImageFromIndexedDB,
+  deleteImagesBulkFromIndexedDB,
   clearAllImagesFromIndexedDB
 } from "@/lib/image-db";
 
@@ -422,6 +427,9 @@ export default function ContentDashboard() {
   // Historial de Contenidos y Estados
   const [historyItems, setHistoryItems] = useState<ArticleHistoryItem[]>([]);
   const [searchHistory, setSearchHistory] = useState("");
+  const [selectedArticleIds, setSelectedArticleIds] = useState<string[]>([]);
+  const [selectedDocumentForDetail, setSelectedDocumentForDetail] = useState<ArticleHistoryItem | null>(null);
+  const [isBulkDeletingArticles, setIsBulkDeletingArticles] = useState(false);
 
   // Estado de sincronización y carga con Firestore
   const [loadingDatabaseContents, setLoadingDatabaseContents] = useState(false);
@@ -588,6 +596,8 @@ export default function ContentDashboard() {
     { id: string; url: string; prompt: string; createdAt: string; sourceType?: string; warning?: string }[]
   >([]);
   const [selectedImageForDetail, setSelectedImageForDetail] = useState<ImageDetailItem | null>(null);
+  const [selectedImageIds, setSelectedImageIds] = useState<string[]>([]);
+  const [isBulkDeletingImages, setIsBulkDeletingImages] = useState(false);
   const [promptRefinement, setPromptRefinement] = useState<PromptRefinementData | null>(null);
   const [refiningPrompt, setRefiningPrompt] = useState(false);
 
@@ -1397,7 +1407,10 @@ export default function ContentDashboard() {
     try {
       await deleteImageFromIndexedDB(id);
       try {
-        await apiFetch(`/api/assets?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+        await apiFetch(`/api/assets?id=${encodeURIComponent(id)}`, { 
+          method: "DELETE",
+          body: JSON.stringify({ ids: [id] })
+        });
       } catch {
         // Silencioso si no está en backend
       }
@@ -1406,11 +1419,210 @@ export default function ContentDashboard() {
         safeSaveGeneratedImages(updated);
         return updated;
       });
+      setSelectedImageIds((prev) => prev.filter((i) => i !== id));
       if (selectedImageForDetail?.id === id) {
         setSelectedImageForDetail(null);
       }
     } catch (err) {
       console.error("Error al eliminar imagen:", err);
+    }
+  };
+
+  const handleBulkDeleteImages = async () => {
+    if (selectedImageIds.length === 0) return;
+    if (!confirm(`¿Eliminar permanentemente las ${selectedImageIds.length} imágenes seleccionadas de IndexedDB y Firestore?`)) return;
+    setIsBulkDeletingImages(true);
+    try {
+      await deleteImagesBulkFromIndexedDB(selectedImageIds);
+      try {
+        await apiFetch("/api/assets", {
+          method: "DELETE",
+          body: JSON.stringify({ ids: selectedImageIds })
+        });
+      } catch {
+        // Silencioso si no está en backend
+      }
+      setGeneratedImagesList((prev) => {
+        const idSet = new Set(selectedImageIds);
+        const updated = prev.filter((img) => !idSet.has(img.id));
+        safeSaveGeneratedImages(updated);
+        return updated;
+      });
+      if (selectedImageForDetail && selectedImageIds.includes(selectedImageForDetail.id)) {
+        setSelectedImageForDetail(null);
+      }
+      setSelectedImageIds([]);
+    } catch (err) {
+      console.error("Error al eliminar imágenes en bloque:", err);
+      alert("Error al eliminar imágenes en bloque");
+    } finally {
+      setIsBulkDeletingImages(false);
+    }
+  };
+
+  const handleDeleteArticle = async (id: string) => {
+    if (!confirm("¿Deseas eliminar este artículo del archivo editorial?")) return;
+    try {
+      await apiFetch(`/api/contents?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        body: JSON.stringify({ ids: [id] })
+      });
+      setHistoryItems((prev) => {
+        const updated = prev.filter((item) => item.id !== id);
+        try { localStorage.setItem("ecomshop_article_history", JSON.stringify(updated.slice(0, 50))); } catch {}
+        return updated;
+      });
+      setSelectedArticleIds((prev) => prev.filter((i) => i !== id));
+      if (selectedDocumentForDetail?.id === id) {
+        setSelectedDocumentForDetail(null);
+      }
+    } catch (err) {
+      console.error("Error al eliminar artículo:", err);
+      alert("Error al eliminar artículo");
+    }
+  };
+
+  const handleBulkDeleteArticles = async () => {
+    if (selectedArticleIds.length === 0) return;
+    if (!confirm(`¿Eliminar los ${selectedArticleIds.length} artículos seleccionados del archivo? Esta acción no se puede deshacer.`)) return;
+    setIsBulkDeletingArticles(true);
+    try {
+      await apiFetch("/api/contents", {
+        method: "DELETE",
+        body: JSON.stringify({ ids: selectedArticleIds })
+      });
+      setHistoryItems((prev) => {
+        const idSet = new Set(selectedArticleIds);
+        const updated = prev.filter((item) => !idSet.has(item.id));
+        try { localStorage.setItem("ecomshop_article_history", JSON.stringify(updated.slice(0, 50))); } catch {}
+        return updated;
+      });
+      if (selectedDocumentForDetail && selectedArticleIds.includes(selectedDocumentForDetail.id)) {
+        setSelectedDocumentForDetail(null);
+      }
+      setSelectedArticleIds([]);
+    } catch (err) {
+      console.error("Error al eliminar artículos en lote:", err);
+      alert("Error al eliminar artículos en lote");
+    } finally {
+      setIsBulkDeletingArticles(false);
+    }
+  };
+
+  const handleInsertImageIntoArticle = (img: { url: string; prompt: string }, mode: "hero" | "body" = "body") => {
+    const figureHtml = `<figure class="my-6"><img src="${img.url}" alt="${img.prompt}" class="rounded-xl shadow-lg w-full max-h-[500px] object-cover" /><figcaption class="text-xs text-slate-500 mt-2 text-center">${img.prompt.substring(0, 80)}</figcaption></figure>\n`;
+
+    if (!content) {
+      const initialContent: ContentOutput = {
+        topicId: "custom-" + Date.now(),
+        topicTitle: img.prompt.substring(0, 60),
+        category: category,
+        generatedAt: new Date().toISOString(),
+        blog: {
+          title: img.prompt.substring(0, 60),
+          metaDescription: img.prompt,
+          slug: "articulo-" + Date.now(),
+          readingTimeMinutes: 5,
+          targetKeywords: [category, "redes-b2b"],
+          htmlContent: figureHtml + "<p>Introduce aquí el contenido redactado del artículo...</p>",
+          cleanPlainTextExcerpt: img.prompt
+        },
+        mailchimp: {
+          subjectA: img.prompt.substring(0, 50),
+          subjectB: "Novedad B2B: " + img.prompt.substring(0, 40),
+          previewText: img.prompt,
+          ctaButtonText: "Ver Detalles",
+          ctaUrl: ECOM_BRAND.storeUrl,
+          newsletterHtml: `<p>${img.prompt}</p><img src="${img.url}" style="width:100%;max-width:600px;border-radius:8px;" />`,
+          plainText: img.prompt
+        },
+        whatsapp: {
+          headline: img.prompt.substring(0, 50),
+          formattedMessage: `*${img.prompt.substring(0, 50)}*\n\n${img.prompt}\n\nMás info: ${ECOM_BRAND.storeUrl}`,
+          callToAction: "Ver Equipamiento",
+          targetUrl: ECOM_BRAND.storeUrl
+        },
+        linkedin: {
+          hook: `🚀 ${img.prompt.substring(0, 80)}...`,
+          body: img.prompt,
+          takeaways: ["Fiabilidad empresarial", "Despliegue ágil"],
+          callToAction: "Consulta disponibilidad y cotización B2B.",
+          hashtags: ["#Networking", "#Wifi7", "#B2B"],
+          fullPostText: `🚀 ${img.prompt.substring(0, 80)}...\n\n${img.prompt}\n\n[📸 Visual: ${img.url}]\n\n#Networking #B2B`
+        }
+      };
+      setContent(initialContent);
+      setTopicTitle(img.prompt.substring(0, 60));
+      setMainView("generator");
+      setActiveTab("blog");
+      return;
+    }
+
+    const currentHtml = content.blog?.htmlContent || "";
+    const updatedHtml = mode === "hero" ? figureHtml + currentHtml : currentHtml + "\n" + figureHtml;
+
+    setContent({
+      ...content,
+      blog: {
+        ...content.blog,
+        htmlContent: updatedHtml
+      }
+    });
+
+    setMainView("generator");
+    setActiveTab("blog");
+  };
+
+  const handleReuseInLinkedIn = (img: { url: string; prompt: string }) => {
+    if (!content) {
+      handleInsertImageIntoArticle(img, "hero");
+      setActiveTab("linkedin");
+      return;
+    }
+
+    const currentLinkedin = content.linkedin || {
+      hook: `🚀 ${img.prompt.substring(0, 80)}...`,
+      body: img.prompt,
+      takeaways: ["Rendimiento B2B"],
+      callToAction: "Contáctanos.",
+      hashtags: ["#Networking"],
+      fullPostText: ""
+    };
+
+    const visualNote = `\n\n[📸 Activo Visual: ${img.url}]`;
+    const updatedFullPost = currentLinkedin.fullPostText
+      ? (currentLinkedin.fullPostText.includes(img.url) ? currentLinkedin.fullPostText : currentLinkedin.fullPostText + visualNote)
+      : `🚀 ${img.prompt.substring(0, 80)}...\n\n${img.prompt}${visualNote}\n\n#B2B #Networking`;
+
+    setContent({
+      ...content,
+      linkedin: {
+        ...currentLinkedin,
+        fullPostText: updatedFullPost
+      }
+    });
+
+    setMainView("generator");
+    setActiveTab("linkedin");
+  };
+
+  const handleReuseImageInCampaign = (image: ImageDetailItem, channel: "linkedin" | "newsletter") => {
+    if (channel === "linkedin") {
+      handleReuseInLinkedIn(image);
+    } else {
+      if (content?.mailchimp) {
+        const currentHtml = content.mailchimp.newsletterHtml || "";
+        const imgBanner = `<div style="margin:20px 0;text-align:center;"><img src="${image.url}" alt="${image.prompt}" style="width:100%;max-width:580px;border-radius:8px;display:block;margin:0 auto;" /></div>`;
+        setContent({
+          ...content,
+          mailchimp: {
+            ...content.mailchimp,
+            newsletterHtml: currentHtml + imgBanner
+          }
+        });
+      }
+      setMainView("generator");
+      setActiveTab("mailchimp");
     }
   };
 
@@ -1424,6 +1636,7 @@ export default function ContentDashboard() {
         // Silencioso si no está en backend
       }
       setGeneratedImagesList([]);
+      setSelectedImageIds([]);
       try { localStorage.removeItem("ecomshop_generated_images"); } catch {}
       setSelectedImageForDetail(null);
     } catch (err) {
@@ -2511,6 +2724,26 @@ export default function ContentDashboard() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              {historyItems.length > 0 && (
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer select-none bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition">
+                  <input
+                    type="checkbox"
+                    checked={
+                      historyItems.length > 0 &&
+                      historyItems.every(item => selectedArticleIds.includes(item.id))
+                    }
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedArticleIds(historyItems.map(item => item.id));
+                      } else {
+                        setSelectedArticleIds([]);
+                      }
+                    }}
+                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
+                  />
+                  <span>Seleccionar todos</span>
+                </label>
+              )}
               <button
                 onClick={() => loadDatabaseContents()}
                 disabled={loadingDatabaseContents}
@@ -2574,27 +2807,38 @@ export default function ContentDashboard() {
                   const itemDate = item?.createdAt || "Fecha no disponible";
                   const itemSlug = item?.content?.blog?.slug || "general";
                   const itemStatus = item?.status || "draft";
+                  const isSelected = selectedArticleIds.includes(itemId);
 
                   return (
                     <div
                       key={itemId}
-                      className="bg-white border border-slate-200/80 rounded-xl p-4 flex items-center justify-between hover:border-slate-300 hover:shadow-2xs transition"
+                      className={`bg-white border rounded-xl p-4 flex items-center justify-between hover:shadow-2xs transition ${
+                        isSelected ? "border-indigo-500 ring-1 ring-indigo-500/30 bg-indigo-50/20" : "border-slate-200/80 hover:border-slate-300"
+                      }`}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-xs uppercase text-slate-800 border border-slate-200">
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            if (e.target.checked) {
+                              setSelectedArticleIds(prev => [...prev, itemId]);
+                            } else {
+                              setSelectedArticleIds(prev => prev.filter(id => id !== itemId));
+                            }
+                          }}
+                          className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer shrink-0"
+                          title="Seleccionar para acción masiva"
+                        />
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-xs uppercase text-slate-800 border border-slate-200 shrink-0">
                           {itemCat.substring(0, 3)}
                         </div>
                         <div>
                           <h4
                             className="text-sm font-bold text-slate-900 hover:text-sky-600 cursor-pointer font-editorial"
-                            onClick={() => {
-                              if (item?.content) {
-                                setContent(item.content);
-                                setTopicTitle(itemTitle);
-                                setCategory((item?.category as any) || "general");
-                                setMainView("generator");
-                              }
-                            }}
+                            onClick={() => setSelectedDocumentForDetail(item)}
+                            title="Clic para ver detalle del documento"
                           >
                             {itemTitle}
                           </h4>
@@ -2606,7 +2850,7 @@ export default function ContentDashboard() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         {/* Selector de Estado */}
                         <select
                           value={itemStatus}
@@ -2622,23 +2866,46 @@ export default function ContentDashboard() {
                           }`}
                         >
                           <option value="draft">🟡 Borrador</option>
-                          <option value="reviewed">🔵 Revisado Preventa</option>
+                          <option value="reviewed">🔵 Revisado</option>
                           <option value="approved">🟢 Aprobado</option>
-                          <option value="published">🟣 Publicado en Durable</option>
+                          <option value="published">🟣 Publicado</option>
                         </select>
 
                         <button
+                          type="button"
+                          onClick={() => setSelectedDocumentForDetail(item)}
+                          className="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition border border-indigo-200 font-semibold"
+                          title="Inspeccionar documento en detalle (HTML, Markdown, Metadatos)"
+                        >
+                          <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                          <span className="hidden sm:inline">Ver Documento</span>
+                        </button>
+
+                        <button
+                          type="button"
                           onClick={() => {
                             if (item?.content) {
                               setContent(item.content);
                               setTopicTitle(itemTitle);
+                              setCategory((item?.category as any) || "general");
                               setMainView("generator");
                             }
                           }}
-                          className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition border border-slate-200"
+                          className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition border border-slate-200 font-medium"
+                          title="Cargar en el lienzo de edición"
                         >
                           <Eye className="w-3.5 h-3.5 text-sky-600" />
-                          Cargar en Editor
+                          <span className="hidden md:inline">Cargar en Editor</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteArticle(itemId)}
+                          className="bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-300 text-slate-400 hover:text-rose-600 px-2 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition shadow-2xs"
+                          title="Eliminar este artículo del archivo"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                          <span className="hidden lg:inline">Borrar</span>
                         </button>
                       </div>
                     </div>
@@ -2947,6 +3214,26 @@ export default function ContentDashboard() {
                 </div>
                 <div className="flex items-center gap-2">
                   {generatedImagesList.length > 0 && (
+                    <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 cursor-pointer select-none bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-md hover:bg-slate-100 transition">
+                      <input
+                        type="checkbox"
+                        checked={
+                          generatedImagesList.length > 0 &&
+                          generatedImagesList.every((img) => selectedImageIds.includes(img.id))
+                        }
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedImageIds(generatedImagesList.map((img) => img.id));
+                          } else {
+                            setSelectedImageIds([]);
+                          }
+                        }}
+                        className="w-3.5 h-3.5 rounded text-purple-600 focus:ring-purple-500 border-slate-300 cursor-pointer"
+                      />
+                      <span>Seleccionar todas</span>
+                    </label>
+                  )}
+                  {generatedImagesList.length > 0 && (
                     <button
                       onClick={handleClearAllImages}
                       className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-rose-200 bg-rose-50 hover:bg-rose-100 text-[11px] font-semibold text-rose-700 transition shadow-2xs"
@@ -2978,103 +3265,147 @@ export default function ContentDashboard() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto max-h-[650px]">
-                  {generatedImagesList.map((img) => (
-                    <div key={img.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden group hover:shadow-md transition duration-200 flex flex-col justify-between shadow-2xs">
+                  {generatedImagesList.map((img) => {
+                    const isSelected = selectedImageIds.includes(img.id);
+                    return (
                       <div 
-                        className="relative w-full h-44 sm:h-48 bg-slate-950 flex items-center justify-center overflow-hidden cursor-zoom-in shrink-0"
-                        onClick={() => setSelectedImageForDetail(img)}
-                        title="Haz clic para ampliar la foto y ver detalles de generación"
+                        key={img.id} 
+                        className={`bg-white border rounded-xl overflow-hidden group hover:shadow-md transition duration-200 flex flex-col justify-between shadow-2xs ${
+                          isSelected ? "border-purple-500 ring-2 ring-purple-500/30 bg-purple-50/10" : "border-slate-200"
+                        }`}
                       >
-                        {img.url ? (
-                          <img 
-                            src={img.url} 
-                            alt={img.prompt} 
-                            className="object-cover w-full h-full group-hover:scale-105 transition duration-300"
-                            loading="lazy" 
-                          />
-                        ) : (
-                          <div className="flex flex-col items-center justify-center text-slate-500 gap-1.5 p-4 text-center">
-                            <ImageIcon className="w-8 h-8 text-slate-600 mb-1" />
-                            <span className="text-[11px] font-medium text-slate-400">Miniatura no disponible</span>
-                          </div>
-                        )}
-                        {img.sourceType && (
-                          <span className={`absolute top-2 left-2 text-[9px] px-2 py-0.5 rounded font-mono font-medium backdrop-blur-xs z-10 ${
-                            img.sourceType === "official_product"
-                              ? "bg-emerald-700/95 text-emerald-100 border border-emerald-500/30"
-                              : "bg-slate-900/80 text-white border border-white/10"
-                          }`}>
-                            {img.sourceType === "official_product"
-                              ? "✓ Foto Oficial (NotebookLM)"
-                              : img.sourceType === "imagen3"
-                              ? "Google Imagen 3"
-                              : img.sourceType === "gemini_multimodal"
-                              ? "Multimodal Gemini"
-                              : "Stock Variado"}
-                          </span>
-                        )}
-                        {/* Overlay para ampliar */}
-                        <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5 text-white font-medium text-xs backdrop-blur-2xs">
-                          <Maximize2 className="w-4 h-4 text-sky-300" />
-                          <span>Ampliar en Detalle</span>
-                        </div>
-                      </div>
-                      <div className="p-3 flex flex-col gap-2 flex-1 justify-between">
-                        <p 
-                          className="text-[11px] text-slate-600 line-clamp-2 cursor-pointer hover:text-slate-900"
+                        <div 
+                          className="relative w-full h-44 sm:h-48 bg-slate-950 flex items-center justify-center overflow-hidden cursor-zoom-in shrink-0"
                           onClick={() => setSelectedImageForDetail(img)}
-                          title="Clic para ver prompt completo"
+                          title="Haz clic para ampliar la foto y ver detalles de generación"
                         >
-                          {img.prompt}
-                        </p>
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                          <span className="text-[10px] text-slate-400">{img.createdAt}</span>
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedImageForDetail(img)}
-                              className="bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-800 px-2 py-1 rounded text-[10px] font-semibold flex items-center gap-1 transition"
-                              title="Ampliar imagen a pantalla completa con zoom"
-                            >
-                              <Maximize2 className="w-3 h-3 text-sky-600" />
-                              Ampliar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setImageBase(img.url);
-                                window.scrollTo({ top: 0, behavior: "smooth" });
+                          {/* Checkbox de Selección Masiva */}
+                          <div 
+                            className="absolute top-2 right-2 z-20"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedImageIds(prev => [...prev, img.id]);
+                                } else {
+                                  setSelectedImageIds(prev => prev.filter(id => id !== img.id));
+                                }
                               }}
-                              className="bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 px-2 py-1 rounded text-[10px] font-semibold transition"
-                              title="Usar esta imagen como referencia base"
-                            >
-                              Usar como base
-                            </button>
-                            <a
-                              href={img.url}
-                              download={`ecomshop-${img.id}.jpg`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 px-2 py-1 rounded text-[10px] font-medium flex items-center gap-1 transition shadow-2xs"
-                              title="Descargar imagen"
-                            >
-                              <Download className="w-3 h-3 text-slate-600" />
-                              Descargar
-                            </a>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteImage(img.id)}
-                              className="bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-300 text-slate-400 hover:text-rose-600 px-2 py-1 rounded text-[10px] font-medium flex items-center gap-1 transition shadow-2xs"
-                              title="Eliminar esta imagen del historial"
-                            >
-                              <Trash2 className="w-3 h-3 text-rose-500" />
-                              <span className="hidden sm:inline">Borrar</span>
-                            </button>
+                              className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-400 bg-slate-900/80 cursor-pointer shadow-md"
+                              title="Seleccionar para acción masiva"
+                            />
+                          </div>
+
+                          {img.url ? (
+                            <img 
+                              src={img.url} 
+                              alt={img.prompt} 
+                              className="object-cover w-full h-full group-hover:scale-105 transition duration-300"
+                              loading="lazy" 
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center justify-center text-slate-500 gap-1.5 p-4 text-center">
+                              <ImageIcon className="w-8 h-8 text-slate-600 mb-1" />
+                              <span className="text-[11px] font-medium text-slate-400">Miniatura no disponible</span>
+                            </div>
+                          )}
+                          {img.sourceType && (
+                            <span className={`absolute top-2 left-2 text-[9px] px-2 py-0.5 rounded font-mono font-medium backdrop-blur-xs z-10 ${
+                              img.sourceType === "official_product"
+                                ? "bg-emerald-700/95 text-emerald-100 border border-emerald-500/30"
+                                : "bg-slate-900/80 text-white border border-white/10"
+                            }`}>
+                              {img.sourceType === "official_product"
+                                ? "✓ Foto Oficial (NotebookLM)"
+                                : img.sourceType === "imagen3"
+                                ? "Google Imagen 3"
+                                : img.sourceType === "gemini_multimodal"
+                                ? "Multimodal Gemini"
+                                : "Stock Variado"}
+                            </span>
+                          )}
+                          {/* Overlay para ampliar */}
+                          <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5 text-white font-medium text-xs backdrop-blur-2xs">
+                            <Maximize2 className="w-4 h-4 text-sky-300" />
+                            <span>Ampliar en Detalle</span>
+                          </div>
+                        </div>
+                        <div className="p-3 flex flex-col gap-2 flex-1 justify-between">
+                          <p 
+                            className="text-[11px] text-slate-600 line-clamp-2 cursor-pointer hover:text-slate-900"
+                            onClick={() => setSelectedImageForDetail(img)}
+                            title="Clic para ver prompt completo"
+                          >
+                            {img.prompt}
+                          </p>
+                          <div className="flex items-center justify-between pt-2 border-t border-slate-200 flex-wrap gap-1.5">
+                            <span className="text-[10px] text-slate-400">{img.createdAt}</span>
+                            <div className="flex items-center gap-1 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => handleInsertImageIntoArticle(img, "body")}
+                                className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-800 px-2 py-1 rounded text-[10px] font-semibold flex items-center gap-1 transition"
+                                title="Insertar en el artículo activo del generador"
+                              >
+                                <FileText className="w-3 h-3 text-indigo-600" />
+                                <span>En Artículo</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleReuseInLinkedIn(img)}
+                                className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 px-2 py-1 rounded text-[10px] font-semibold flex items-center gap-1 transition"
+                                title="Vincular con la publicación de LinkedIn"
+                              >
+                                <Share2 className="w-3 h-3 text-emerald-600" />
+                                <span>LinkedIn</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedImageForDetail(img)}
+                                className="bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-800 px-2 py-1 rounded text-[10px] font-semibold flex items-center gap-1 transition"
+                                title="Ampliar imagen a pantalla completa con zoom"
+                              >
+                                <Maximize2 className="w-3 h-3 text-sky-600" />
+                                <span>Ampliar</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setImageBase(img.url);
+                                  window.scrollTo({ top: 0, behavior: "smooth" });
+                                }}
+                                className="bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 px-2 py-1 rounded text-[10px] font-semibold transition"
+                                title="Usar esta imagen como referencia base"
+                              >
+                                Como base
+                              </button>
+                              <a
+                                href={img.url}
+                                download={`ecomshop-${img.id}.jpg`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 px-2 py-1 rounded text-[10px] font-medium flex items-center gap-1 transition shadow-2xs"
+                                title="Descargar imagen"
+                              >
+                                <Download className="w-3 h-3 text-slate-600" />
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteImage(img.id)}
+                                className="bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-300 text-slate-400 hover:text-rose-600 px-2 py-1 rounded text-[10px] font-medium flex items-center gap-1 transition shadow-2xs"
+                                title="Eliminar esta imagen del historial"
+                              >
+                                <Trash2 className="w-3 h-3 text-rose-500" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -3779,6 +4110,43 @@ export default function ContentDashboard() {
         }}
       />
 
+      {/* Barra Flotante de Acciones Masivas (Artículos en Archivo) */}
+      {mainView === "history" && selectedArticleIds.length > 0 && (
+        <BulkActionToolbar
+          selectedCount={selectedArticleIds.length}
+          itemType="documents"
+          onClearSelection={() => setSelectedArticleIds([])}
+          onBulkDelete={handleBulkDeleteArticles}
+          isDeleting={isBulkDeletingArticles}
+        />
+      )}
+
+      {/* Barra Flotante de Acciones Masivas (Imágenes en Galería) */}
+      {mainView === "image_studio" && selectedImageIds.length > 0 && (
+        <BulkActionToolbar
+          selectedCount={selectedImageIds.length}
+          itemType="images"
+          onClearSelection={() => setSelectedImageIds([])}
+          onBulkDelete={handleBulkDeleteImages}
+          isDeleting={isBulkDeletingImages}
+        />
+      )}
+
+      {/* Modal de Detalle Completo de Documento */}
+      <DocumentDetailModal
+        document={selectedDocumentForDetail}
+        onClose={() => setSelectedDocumentForDetail(null)}
+        onLoadInEditor={(doc) => {
+          if (doc?.content) {
+            setContent(doc.content);
+            setTopicTitle(doc.title);
+            setCategory((doc.category as any) || "general");
+            setMainView("generator");
+          }
+        }}
+        onDelete={handleDeleteArticle}
+      />
+
       {/* Modal de Detalle y Zoom de Imagen */}
       <ImageDetailModal
         image={selectedImageForDetail}
@@ -3788,6 +4156,8 @@ export default function ContentDashboard() {
           window.scrollTo({ top: 0, behavior: "smooth" });
         }}
         onDelete={handleDeleteImage}
+        onInsertIntoArticle={handleInsertImageIntoArticle}
+        onReuseInCampaign={handleReuseImageInCampaign}
       />
 
       {/* Modal de The Junia Engine: Outline Interactivo y Redacción Profunda (Fase 09) */}

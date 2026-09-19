@@ -220,42 +220,92 @@ export async function DELETE(req: NextRequest) {
     const clearAll = searchParams.get("clearAll") === "true";
 
     const repo = new AssetRepository();
+    const storage = new GoogleCloudStorageProvider();
+    const auditRepo = new AuditRepository();
+
+    let idsToDelete: string[] = [];
 
     if (clearAll) {
       const allAssets = await repo.listRecent(200, user.workspaceId);
-      for (const a of allAssets) {
-        if (a.aiGenerated || a.id.startsWith("asset-")) {
-          await repo.delete(a.id).catch(() => {});
-        }
+      idsToDelete = allAssets
+        .filter((a) => a.aiGenerated || a.id.startsWith("asset-"))
+        .map((a) => a.id);
+
+      if (idsToDelete.length === 0) {
+        return NextResponse.json({ success: true, deletedIds: [] });
       }
-      return NextResponse.json({ success: true, message: "Todos los activos AI eliminados" });
+    } else if (assetId) {
+      idsToDelete = [assetId];
+    } else {
+      try {
+        const body = await req.json();
+        if (body?.ids && Array.isArray(body.ids)) {
+          idsToDelete = body.ids.filter((id: unknown) => typeof id === "string" && id.trim().length > 0);
+        } else if (body?.id && typeof body.id === "string") {
+          idsToDelete = [body.id.trim()];
+        }
+      } catch {
+        // Body may be empty if using query params
+      }
     }
 
-    if (!assetId) {
-      return NextResponse.json({ error: "Falta el ID del activo a eliminar" }, { status: 400 });
+    idsToDelete = Array.from(new Set(idsToDelete.filter(Boolean)));
+
+    if (idsToDelete.length === 0) {
+      return NextResponse.json({ error: "Falta el ID o IDs del activo a eliminar" }, { status: 400 });
     }
 
-    await repo.delete(assetId);
+    const deletedIds: string[] = [];
+    const nowIso = new Date().toISOString();
 
-    // Auditoría
-    const auditRepo = new AuditRepository();
-    await auditRepo.record({
-      id: `audit-del-${Date.now()}`,
-      workspaceId: user.workspaceId,
-      timestamp: new Date().toISOString(),
-      userId: user.uid,
-      userEmail: user.email,
-      action: "DELETE",
-      entity: "ASSET",
-      entityId: assetId,
-      diff: { assetId },
-      source: "UI"
-    }).catch(() => {});
+    for (const id of idsToDelete) {
+      try {
+        // 1. Obtener el asset para extraer storagePath
+        const asset = await repo.findById(id);
 
-    return NextResponse.json({ success: true, deletedId: assetId });
-  } catch (err: any) {
+        // 2. Si storagePath existe, eliminar binario físico de GCS
+        if (asset?.storagePath) {
+          try {
+            await storage.deleteFile(asset.storagePath);
+          } catch (storageErr) {
+            console.warn(`[api/assets DELETE] Error al eliminar binario en storage para ${id}:`, storageErr);
+          }
+        }
+
+        // 3. Eliminar documento de Firestore
+        await repo.delete(id);
+
+        // 4. Registrar auditoría inmutable
+        await auditRepo.record({
+          id: `audit-del-asset-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          workspaceId: user.workspaceId,
+          timestamp: nowIso,
+          userId: user.uid,
+          userEmail: user.email,
+          action: "DELETE",
+          entity: "ASSET",
+          entityId: id,
+          diff: {
+            id,
+            filename: asset?.filename,
+            storagePath: asset?.storagePath
+          },
+          source: "UI"
+        }).catch((auditErr) => {
+          console.warn(`[api/assets DELETE] Error al registrar auditoría para asset ${id}:`, auditErr);
+        });
+
+        deletedIds.push(id);
+      } catch (assetErr) {
+        console.error(`[api/assets DELETE] Error procesando eliminación de asset ${id}:`, assetErr);
+      }
+    }
+
+    return NextResponse.json({ success: true, deletedIds });
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : "Error al eliminar activo";
     console.error("[api/assets DELETE] Error:", err);
-    return NextResponse.json({ error: err.message || "Error al eliminar activo" }, { status: 500 });
+    return NextResponse.json({ error: errorMsg }, { status: 500 });
   }
 }
 

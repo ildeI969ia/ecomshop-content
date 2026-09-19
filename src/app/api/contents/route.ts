@@ -199,3 +199,90 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
+export async function DELETE(req: NextRequest) {
+  const user = await authenticateServerRequest(req);
+  if (!user) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
+  if (!authorizePermission(user, "content:create") && user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Permisos insuficientes para eliminar contenidos" }, { status: 403 });
+  }
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const queryId = searchParams.get("id");
+
+    let idsToDelete: string[] = [];
+
+    if (queryId) {
+      idsToDelete.push(queryId);
+    } else {
+      try {
+        const body = await req.json();
+        if (body?.ids && Array.isArray(body.ids)) {
+          idsToDelete.push(...body.ids);
+        } else if (body?.id && typeof body.id === "string") {
+          idsToDelete.push(body.id);
+        }
+      } catch {
+        // Body may be empty if using query params
+      }
+    }
+
+    idsToDelete = Array.from(new Set(idsToDelete.filter((id) => typeof id === "string" && id.trim().length > 0)));
+
+    if (idsToDelete.length === 0) {
+      return NextResponse.json({ error: "Faltan IDs de contenidos a eliminar" }, { status: 400 });
+    }
+
+    const repo = new ContentRepository();
+    const auditRepo = new AuditRepository();
+
+    // Normalizar o expandir IDs para asegurar la eliminación sin importar el formato del prefijo
+    const expandedIds = Array.from(
+      new Set(
+        idsToDelete.flatMap((id) => [
+          id,
+          id.startsWith("content-") ? id.replace(/^content-/, "") : `content-${id}`
+        ])
+      )
+    );
+
+    if (expandedIds.length === 1) {
+      await repo.delete(expandedIds[0]);
+    } else {
+      await repo.deleteBulk(expandedIds);
+    }
+
+    // Registrar auditoría por cada contenido eliminado
+    const nowIso = new Date().toISOString();
+    await Promise.all(
+      idsToDelete.map((id) =>
+        auditRepo.record({
+          id: `audit-del-content-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          workspaceId: user.workspaceId,
+          timestamp: nowIso,
+          userId: user.uid,
+          userEmail: user.email,
+          action: "DELETE",
+          entity: "CONTENT",
+          entityId: id,
+          diff: { id },
+          source: "UI"
+        }).catch((auditErr) => {
+          console.warn(`[api/contents DELETE] Error registrando auditoría para ${id}:`, auditErr);
+        })
+      )
+    );
+
+    return NextResponse.json({ success: true, deletedIds: idsToDelete });
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : "Error al eliminar contenido";
+    console.error("[api/contents DELETE] Error:", err);
+    return NextResponse.json({ error: errorMsg }, { status: 500 });
+  }
+}
+
+
+

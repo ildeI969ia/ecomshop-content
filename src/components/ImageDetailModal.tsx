@@ -14,7 +14,13 @@ import {
   Minimize2,
   Clock,
   Cpu,
-  Trash2
+  Trash2,
+  FileText,
+  Share2,
+  Mail,
+  ChevronDown,
+  Layout,
+  Image as ImageIcon
 } from "lucide-react";
 
 export interface ImageDetailItem {
@@ -31,16 +37,33 @@ interface ImageDetailModalProps {
   onClose: () => void;
   onUseAsBase?: (url: string) => void;
   onDelete?: (id: string) => void;
+  onInsertIntoArticle?: (image: ImageDetailItem, mode: "hero" | "body") => void;
+  onReuseInCampaign?: (image: ImageDetailItem, channel: "linkedin" | "newsletter") => void;
 }
 
-export function ImageDetailModal({ image, onClose, onUseAsBase, onDelete }: ImageDetailModalProps) {
+export function ImageDetailModal({ 
+  image, 
+  onClose, 
+  onUseAsBase, 
+  onDelete,
+  onInsertIntoArticle,
+  onReuseInCampaign
+}: ImageDetailModalProps) {
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [showInsertMenu, setShowInsertMenu] = useState(false);
+  const [showReuseMenu, setShowReuseMenu] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [actionFeedback, setActionFeedback] = useState<string | null>(null);
 
-  // Reset zoom on open new image
+  // Reset states on open new image
   useEffect(() => {
     setZoomLevel(1);
     setCopiedPrompt(false);
+    setShowInsertMenu(false);
+    setShowReuseMenu(false);
+    setIsConfirmingDelete(false);
+    setActionFeedback(null);
   }, [image?.id]);
 
   // Handle ESC key to close
@@ -50,11 +73,11 @@ export function ImageDetailModal({ image, onClose, onUseAsBase, onDelete }: Imag
     };
     if (image) {
       window.addEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "hidden";
+      window.document.body.style.overflow = "hidden";
     }
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "auto";
+      window.document.body.style.overflow = "auto";
     };
   }, [image, onClose]);
 
@@ -106,7 +129,11 @@ export function ImageDetailModal({ image, onClose, onUseAsBase, onDelete }: Imag
       {/* Modal Container */}
       <div 
         className="relative w-full max-w-6xl max-h-[95vh] bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowInsertMenu(false);
+          setShowReuseMenu(false);
+        }}
       >
         {/* Header Bar */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-900/90">
@@ -123,6 +150,11 @@ export function ImageDetailModal({ image, onClose, onUseAsBase, onDelete }: Imag
               <Clock className="w-3 h-3 text-slate-500" />
               {image.createdAt}
             </span>
+            {actionFeedback && (
+              <span className="text-xs text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-2.5 py-0.5 rounded-full animate-in fade-in">
+                {actionFeedback}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -165,7 +197,7 @@ export function ImageDetailModal({ image, onClose, onUseAsBase, onDelete }: Imag
         </div>
 
         {/* Center Viewer: Image with Pan/Zoom Area */}
-        <div className="flex-1 relative overflow-auto bg-slate-950 min-h-[380px] max-h-[62vh] flex items-center justify-center p-4">
+        <div className="flex-1 relative overflow-auto bg-slate-950 min-h-[380px] max-h-[60vh] flex items-center justify-center p-4">
           <div 
             className="transition-transform duration-150 ease-out flex items-center justify-center"
             style={{ transform: `scale(${zoomLevel})` }}
@@ -173,29 +205,29 @@ export function ImageDetailModal({ image, onClose, onUseAsBase, onDelete }: Imag
             <img
               src={image.url}
               alt={image.prompt}
-              className="max-w-full max-h-[58vh] object-contain rounded-lg shadow-2xl border border-slate-800"
+              className="max-w-full max-h-[56vh] object-contain rounded-lg shadow-2xl border border-slate-800"
             />
           </div>
         </div>
 
         {/* Footer Bar: Prompt details & Actions */}
-        <div className="p-4 bg-slate-900 border-t border-slate-800 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-          <div className="flex-1 pr-4">
-            <div className="flex items-center gap-1.5 mb-1">
-              <Cpu className="w-3.5 h-3.5 text-sky-400" />
-              <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                Prompt & Contexto de Generación:
-              </span>
+        <div className="p-4 bg-slate-900 border-t border-slate-800 flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Cpu className="w-3.5 h-3.5 text-sky-400" />
+                <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                  Prompt & Contexto de Generación:
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed font-mono bg-slate-950/70 p-2.5 rounded-lg border border-slate-800/80 max-h-16 overflow-y-auto select-all">
+                {image.prompt}
+              </p>
             </div>
-            <p className="text-xs text-slate-300 leading-relaxed font-mono bg-slate-950/70 p-2.5 rounded-lg border border-slate-800/80 max-h-20 overflow-y-auto select-all">
-              {image.prompt}
-            </p>
-          </div>
 
-          <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
             <button
               onClick={handleCopyPrompt}
-              className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-sm"
+              className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-sm shrink-0 self-center"
               title="Copiar prompt al portapapeles"
             >
               {copiedPrompt ? (
@@ -210,45 +242,200 @@ export function ImageDetailModal({ image, onClose, onUseAsBase, onDelete }: Imag
                 </>
               )}
             </button>
+          </div>
 
-            {onUseAsBase && (
-              <button
-                onClick={() => {
-                  onUseAsBase(image.url);
-                  onClose();
-                }}
-                className="bg-purple-600/90 hover:bg-purple-600 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
-                title="Usar como imagen de referencia en el Director de Arte"
+          {/* Action Row */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
+            {/* Left: Delete */}
+            <div>
+              {isConfirmingDelete ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-rose-300 font-medium">¿Confirmar borrado definitivo?</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onDelete) {
+                        onDelete(image.id);
+                        onClose();
+                      }
+                    }}
+                    className="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm"
+                  >
+                    Borrar Definitivo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsConfirmingDelete(false)}
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1.5 rounded-lg text-xs font-medium transition"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                onDelete && (
+                  <button
+                    type="button"
+                    onClick={() => setIsConfirmingDelete(true)}
+                    className="bg-rose-950/60 hover:bg-rose-900 border border-rose-800/80 text-rose-300 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
+                    title="Eliminar esta imagen de la base de datos y del almacenamiento permanentemente"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Borrar Definitivo</span>
+                  </button>
+                )
+              )}
+            </div>
+
+            {/* Right: Insert, Reuse, Base, Download */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Insertar en Artículo */}
+              {onInsertIntoArticle && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowReuseMenu(false);
+                      setShowInsertMenu(!showInsertMenu);
+                    }}
+                    className="bg-indigo-600/90 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
+                    title="Insertar esta imagen en el artículo activo"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-sky-300" />
+                    <span>Insertar en Artículo</span>
+                    <ChevronDown className="w-3 h-3 text-indigo-200" />
+                  </button>
+
+                  {showInsertMenu && (
+                    <div 
+                      className="absolute bottom-full right-0 mb-2 w-56 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl py-1 z-30 animate-in fade-in zoom-in-95 duration-150"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onInsertIntoArticle(image, "hero");
+                          setShowInsertMenu(false);
+                          setActionFeedback("✓ Insertada como imagen de portada (Hero)");
+                          setTimeout(() => setActionFeedback(null), 3000);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 hover:text-white flex items-center gap-2 transition"
+                      >
+                        <Layout className="w-4 h-4 text-sky-400" />
+                        <div>
+                          <div className="font-semibold">Como Imagen Hero</div>
+                          <div className="text-[10px] text-slate-400">Portada principal del artículo</div>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onInsertIntoArticle(image, "body");
+                          setShowInsertMenu(false);
+                          setActionFeedback("✓ Insertada en el contenido del artículo");
+                          setTimeout(() => setActionFeedback(null), 3000);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 hover:text-white flex items-center gap-2 transition border-t border-slate-800"
+                      >
+                        <ImageIcon className="w-4 h-4 text-purple-400" />
+                        <div>
+                          <div className="font-semibold">En Cuerpo del Artículo</div>
+                          <div className="text-[10px] text-slate-400">Etiqueta &lt;img&gt; en el texto HTML</div>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Reusar en Campaña */}
+              {onReuseInCampaign && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowInsertMenu(false);
+                      setShowReuseMenu(!showReuseMenu);
+                    }}
+                    className="bg-emerald-600/90 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
+                    title="Reutilizar esta imagen en canales de campaña"
+                  >
+                    <Share2 className="w-3.5 h-3.5 text-emerald-200" />
+                    <span>Reusar en Campaña</span>
+                    <ChevronDown className="w-3 h-3 text-emerald-200" />
+                  </button>
+
+                  {showReuseMenu && (
+                    <div 
+                      className="absolute bottom-full right-0 mb-2 w-56 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl py-1 z-30 animate-in fade-in zoom-in-95 duration-150"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onReuseInCampaign(image, "linkedin");
+                          setShowReuseMenu(false);
+                          setActionFeedback("✓ Vinculada a la publicación de LinkedIn");
+                          setTimeout(() => setActionFeedback(null), 3000);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 hover:text-white flex items-center gap-2 transition"
+                      >
+                        <Share2 className="w-4 h-4 text-sky-400" />
+                        <div>
+                          <div className="font-semibold">Publicación LinkedIn</div>
+                          <div className="text-[10px] text-slate-400">Adjuntar a post B2B</div>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onReuseInCampaign(image, "newsletter");
+                          setShowReuseMenu(false);
+                          setActionFeedback("✓ Vinculada al boletín Mailchimp");
+                          setTimeout(() => setActionFeedback(null), 3000);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 hover:text-white flex items-center gap-2 transition border-t border-slate-800"
+                      >
+                        <Mail className="w-4 h-4 text-amber-400" />
+                        <div>
+                          <div className="font-semibold">Newsletter Mailchimp</div>
+                          <div className="text-[10px] text-slate-400">Banner o bloque de email</div>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Usar como base */}
+              {onUseAsBase && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onUseAsBase(image.url);
+                    onClose();
+                  }}
+                  className="bg-purple-600/90 hover:bg-purple-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
+                  title="Usar como imagen de referencia en el Director de Arte"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Usar como Base</span>
+                </button>
+              )}
+
+              {/* Descargar HD */}
+              <a
+                href={image.url}
+                download={`ecomshop-${image.id}.jpg`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>Usar como Base</span>
-              </button>
-            )}
-
-            <a
-              href={image.url}
-              download={`ecomshop-${image.id}.jpg`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-sky-600 hover:bg-sky-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Descargar HD</span>
-            </a>
-
-            {onDelete && (
-              <button
-                onClick={() => {
-                  onDelete(image.id);
-                  onClose();
-                }}
-                className="bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
-                title="Eliminar esta imagen permanentemente"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                <span>Eliminar</span>
-              </button>
-            )}
+                <Download className="w-3.5 h-3.5" />
+                <span>Descargar HD</span>
+              </a>
+            </div>
           </div>
         </div>
       </div>
