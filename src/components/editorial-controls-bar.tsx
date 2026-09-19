@@ -22,6 +22,7 @@ interface EditorialControlsBarProps {
   onChange: (updated: EditorialControls) => void;
   onApplyToRadar?: () => void;
   isApplying?: boolean;
+  embedded?: boolean;
 }
 
 const QUICK_DIRECTIVE_CHIPS = [
@@ -36,7 +37,8 @@ export const EditorialControlsBar: React.FC<EditorialControlsBarProps> = ({
   controls,
   onChange,
   onApplyToRadar,
-  isApplying = false
+  isApplying = false,
+  embedded = false
 }) => {
   const updateField = <K extends keyof EditorialControls>(field: K, value: EditorialControls[K]) => {
     onChange({
@@ -53,7 +55,7 @@ export const EditorialControlsBar: React.FC<EditorialControlsBarProps> = ({
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 text-white shadow-md mb-6">
+    <div className={embedded ? "p-4 text-white space-y-4 bg-slate-900/60 rounded-xl border border-slate-800/80" : "bg-slate-900 border border-slate-800 rounded-xl p-5 text-white shadow-md mb-6"}>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3 mb-4">
         <div className="flex items-center space-x-3">
           <div className="p-2 bg-sky-500/20 text-sky-400 rounded-lg border border-sky-500/30">
@@ -62,14 +64,14 @@ export const EditorialControlsBar: React.FC<EditorialControlsBarProps> = ({
           <div>
             <div className="flex items-center space-x-2">
               <h4 className="text-sm font-bold text-slate-100 uppercase tracking-wider">
-                Controles Editoriales Personalizados (Fase 08.6)
+                Controles Editoriales Personalizados
               </h4>
               <span className="text-xs bg-slate-800 text-slate-300 font-mono px-2.5 py-0.5 rounded border border-slate-700 font-semibold">
                 Strict EnGenius Cloud
               </span>
             </div>
             <p className="text-xs text-slate-300 mt-0.5">
-              Ajusta el perfil de audiencia, densidad técnica, competidor a desbancar y directivas previas a la generación
+              Ajusta sector, profundidad técnica y competidor a desbancar
             </p>
           </div>
         </div>
@@ -79,17 +81,17 @@ export const EditorialControlsBar: React.FC<EditorialControlsBarProps> = ({
             type="button"
             onClick={onApplyToRadar}
             disabled={isApplying}
-            className="px-4 py-2 bg-sky-600 hover:bg-sky-500 active:scale-95 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center space-x-2 shadow-md transition"
+            className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 active:scale-95 disabled:opacity-50 text-white rounded-lg text-xs font-bold flex items-center space-x-1.5 shadow-md transition"
           >
             {isApplying ? (
               <>
                 <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Aplicando al Radar...</span>
+                <span>Aplicando...</span>
               </>
             ) : (
               <>
                 <Zap className="w-3.5 h-3.5 text-amber-300" />
-                <span>⚡ Aplicar al Radar y Regenerar</span>
+                <span>⚡ Aplicar al Radar</span>
               </>
             )}
           </button>
@@ -97,7 +99,7 @@ export const EditorialControlsBar: React.FC<EditorialControlsBarProps> = ({
       </div>
 
       {/* Grid Principal de Controles */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+      <div className={embedded ? "grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm"}>
         {/* Sector Objetivo */}
         <div>
           <label className="block text-xs font-semibold text-slate-200 mb-1.5 flex items-center gap-1.5">
@@ -170,7 +172,7 @@ export const EditorialControlsBar: React.FC<EditorialControlsBarProps> = ({
       </div>
 
       {/* Fila Secundaria: CTA, Checkboxes */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mt-3.5 text-sm">
+      <div className={embedded ? "grid grid-cols-1 gap-3 mt-3 text-sm" : "grid grid-cols-1 sm:grid-cols-3 gap-3.5 mt-3.5 text-sm"}>
         {/* Llamada a la acción estratégica */}
         <div>
           <label className="block text-xs font-semibold text-slate-200 mb-1.5 flex items-center gap-1.5">

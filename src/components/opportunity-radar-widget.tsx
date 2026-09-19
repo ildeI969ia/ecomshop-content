@@ -23,7 +23,8 @@ import {
   Send,
   X,
   FileText,
-  DollarSign
+  DollarSign,
+  Zap
 } from "lucide-react";
 import { ProductOpportunityRecord } from "@/lib/services/opportunity-radar";
 import { BusinessGoal } from "@/lib/types/editorial-controls";
@@ -53,6 +54,7 @@ interface OpportunityRadarWidgetProps {
   isReplacingSku?: string | null;
   selectedBusinessGoal?: BusinessGoal;
   onSelectBusinessGoal?: (goal: BusinessGoal) => void;
+  compact?: boolean;
 }
 
 export const OpportunityRadarWidget: React.FC<OpportunityRadarWidgetProps> = ({
@@ -66,7 +68,8 @@ export const OpportunityRadarWidget: React.FC<OpportunityRadarWidgetProps> = ({
   onReplaceOpportunity,
   isReplacingSku = null,
   selectedBusinessGoal = "ALL_OPPORTUNITIES",
-  onSelectBusinessGoal
+  onSelectBusinessGoal,
+  compact = false
 }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [replacingCardId, setReplacingCardId] = useState<string | null>(null);
@@ -74,14 +77,14 @@ export const OpportunityRadarWidget: React.FC<OpportunityRadarWidgetProps> = ({
 
   if (isLoading) {
     return (
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 mb-6 animate-pulse">
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="w-6 h-6 bg-slate-800 rounded-full" />
-          <div className="h-5 bg-slate-800 rounded w-48" />
+      <div className={`bg-slate-900 border border-slate-800 rounded-xl animate-pulse ${compact ? "p-4 space-y-3" : "p-5 mb-6"}`}>
+        <div className="flex items-center space-x-3 mb-3">
+          <div className="w-5 h-5 bg-slate-800 rounded-full" />
+          <div className="h-4 bg-slate-800 rounded w-40" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className={compact ? "flex flex-col gap-3" : "grid grid-cols-1 md:grid-cols-3 gap-4"}>
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-32 bg-slate-800/60 rounded-lg" />
+            <div key={i} className={`${compact ? "h-24" : "h-32"} bg-slate-800/60 rounded-lg`} />
           ))}
         </div>
       </div>
@@ -89,6 +92,210 @@ export const OpportunityRadarWidget: React.FC<OpportunityRadarWidgetProps> = ({
   }
 
   if (!opportunities || opportunities.length === 0) return null;
+
+  if (compact) {
+    return (
+      <div className="bg-slate-950/90 border border-indigo-500/20 rounded-2xl p-4 text-white shadow-lg space-y-3.5">
+        {/* Header Compacto */}
+        <div className="flex items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+          <div className="flex items-center space-x-2">
+            <div className="p-1.5 bg-indigo-500/20 text-indigo-400 rounded-lg border border-indigo-500/30">
+              <Radar className="w-4 h-4 animate-spin" style={{ animationDuration: "12s" }} />
+            </div>
+            <div>
+              <div className="flex items-center space-x-1.5">
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                  Radar de Oportunidades
+                </h3>
+                <span className="bg-indigo-500/20 text-indigo-300 text-[9px] px-1.5 py-0.2 rounded-full border border-indigo-400/30 font-mono">
+                  Autopilot
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-400">Master Notebook + Stock</p>
+            </div>
+          </div>
+
+          {onRegenerateRadar && (
+            <button
+              type="button"
+              onClick={onRegenerateRadar}
+              disabled={isRegeneratingRadar || isLoading}
+              title="Regenerar Radar con IA y NotebookLM"
+              className="bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-200 hover:text-white px-2 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition active:scale-95 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3 h-3 text-indigo-300 ${isRegeneratingRadar ? "animate-spin" : ""}`} />
+              <span>{isRegeneratingRadar ? "..." : "Refrescar"}</span>
+            </button>
+          )}
+        </div>
+
+        {/* Selector de Objetivo B2B en Compacto */}
+        <div className="flex items-center gap-2">
+          <label className="text-[11px] text-slate-400 font-semibold shrink-0">Objetivo:</label>
+          <select
+            value={selectedBusinessGoal}
+            onChange={(e) => onSelectBusinessGoal?.(e.target.value as BusinessGoal)}
+            className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1 text-xs text-slate-200 font-medium focus:outline-none focus:border-indigo-500 transition"
+          >
+            {BUSINESS_GOAL_PILLS.map((pill) => (
+              <option key={pill.id} value={pill.id}>
+                {pill.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Lista Vertical de Oportunidades */}
+        <div className="flex flex-col gap-3">
+          {opportunities.map((opp, idx) => {
+            const isExpanded = expandedId === opp.id;
+            const isReplacing = replacingCardId === opp.id;
+            const score = opp.scores.totalScore;
+            const isThisSkuReplacing = isReplacingSku === opp.sku;
+
+            return (
+              <div
+                key={opp.id}
+                className={`bg-slate-900/80 hover:bg-slate-900 border rounded-xl p-3.5 transition flex flex-col justify-between gap-2.5 ${
+                  isReplacing ? "border-amber-500/60 ring-1 ring-amber-500/30" : "border-slate-800 hover:border-indigo-500/40"
+                }`}
+              >
+                <div>
+                  {/* Top Bar: SKU, Ángulo y Score */}
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="bg-indigo-950 text-indigo-200 text-[10px] font-mono font-bold px-2 py-0.5 rounded border border-indigo-800/80">
+                        #{idx + 1} {opp.sku}
+                      </span>
+                      <span className="text-[10px] font-semibold uppercase text-emerald-300 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60">
+                        {opp.recommendedAngle}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Flame className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="text-xs font-bold text-white font-mono">{score}</span>
+                    </div>
+                  </div>
+
+                  {/* Título de Campaña */}
+                  <h4 className="text-xs font-bold text-slate-100 line-clamp-2 leading-tight mb-1">
+                    {opp.actionTitle}
+                  </h4>
+
+                  <div className="flex items-center justify-between text-[11px] text-slate-300 mb-1">
+                    <span className="truncate max-w-[180px]">Target: <strong className="text-white">{opp.targetSegment}</strong></span>
+                    <span className="text-[10px] font-mono text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-1.5 py-0.2 rounded shrink-0">
+                      {opp.pricingCondition || "Tarifa B2B"}
+                    </span>
+                  </div>
+
+                  {/* Detalle Desplegable */}
+                  {isExpanded && (
+                    <div className="mt-2 pt-2 border-t border-slate-800/80 text-[11px] space-y-2 animate-fadeIn">
+                      {/* Bundle Cruzado */}
+                      <div className="bg-slate-950/60 rounded p-2 border border-slate-800">
+                        <div className="text-indigo-300 font-semibold flex items-center gap-1 text-[10px]">
+                          <Package className="w-3 h-3" />
+                          Bundle: {opp.suggestedBundle.accessorySku}
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+                          {opp.suggestedBundle.rationale}
+                        </p>
+                      </div>
+
+                      {/* Ancla Narrativa */}
+                      {opp.narrativeAnchor && (
+                        <div className="bg-indigo-950/40 border border-indigo-800/40 p-2 rounded text-[10px] text-indigo-200">
+                          ⚓ {opp.narrativeAnchor.pitch30s.slice(0, 95)}...
+                        </div>
+                      )}
+
+                      {/* Alternativas de sustitución */}
+                      {opp.alternativeOptions && opp.alternativeOptions.length > 0 && (
+                        <div className="pt-1">
+                          <span className="text-[10px] text-slate-400 block mb-1">Sustituir por:</span>
+                          <div className="flex flex-col gap-1">
+                            {opp.alternativeOptions.map(alt => (
+                              <button
+                                key={alt.sku}
+                                type="button"
+                                disabled={Boolean(isThisSkuReplacing)}
+                                onClick={() => {
+                                  if (onReplaceOpportunity) {
+                                    onReplaceOpportunity(opp, alt.sku);
+                                  }
+                                }}
+                                className="text-left bg-slate-950 hover:bg-slate-800 border border-slate-800 p-1.5 rounded text-[10px] text-slate-200 flex items-center justify-between group"
+                              >
+                                <span className="font-semibold text-amber-300">{alt.sku} - {alt.model}</span>
+                                <ArrowRight className="w-2.5 h-2.5 text-slate-500 group-hover:text-amber-300 shrink-0" />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Botonera de Acción Rápida */}
+                <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-800/60">
+                  <button
+                    type="button"
+                    disabled={Boolean(launchingSku) || Boolean(isThisSkuReplacing)}
+                    onClick={() => {
+                      if (onLaunchCampaign) {
+                        onLaunchCampaign(opp);
+                      } else if (onSelectOpportunity) {
+                        onSelectOpportunity(opp);
+                      }
+                    }}
+                    className={`flex-1 font-bold text-xs py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition shadow-sm active:scale-95 ${
+                      launchingSku === opp.sku
+                        ? "bg-indigo-700 text-indigo-100 cursor-wait"
+                        : "bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white"
+                    }`}
+                  >
+                    {launchingSku === opp.sku ? (
+                      <>
+                        <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Lanzando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-3 h-3 text-amber-300 fill-amber-300" />
+                        <span>Lanzar Campaña</span>
+                      </>
+                    )}
+                  </button>
+
+                  {onSelectOpportunity && (
+                    <button
+                      type="button"
+                      onClick={() => onSelectOpportunity(opp)}
+                      title="Cargar parámetros en el panel de entrada"
+                      className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-2 py-1.5 rounded-lg text-xs font-semibold border border-slate-700 transition"
+                    >
+                      Cargar
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setExpandedId(isExpanded ? null : opp.id)}
+                    title="Ver más o menos detalles"
+                    className="p-1.5 text-slate-400 hover:text-slate-200 rounded hover:bg-slate-800 transition"
+                  >
+                    {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 rounded-xl p-5 mb-8 shadow-xl">

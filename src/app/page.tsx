@@ -13,6 +13,9 @@ import {
   Share2, 
   ExternalLink, 
   ChevronRight, 
+  ChevronDown,
+  ChevronUp,
+  ArrowRight,
   BookOpen, 
   Key, 
   Bot, 
@@ -38,7 +41,11 @@ import {
   Maximize2,
   Trash2,
   FileText,
-  CheckSquare
+  CheckSquare,
+  Save,
+  Package,
+  ShieldAlert,
+  ShieldCheck
 } from "lucide-react";
 import { PRESET_TOPICS, ECOM_BRAND, STAR_PRODUCTS, CAMPAIGN_IDEAS, B2B_CTA_OPTIONS } from "@/lib/knowledge";
 import { ContentOutput } from "@/lib/schema";
@@ -60,7 +67,7 @@ import { ProductOpportunityRecord } from "@/lib/services/opportunity-radar";
 import { CorporateSignIn } from "@/components/auth/CorporateSignIn";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { CampaignWorkspace } from "@/components/campaign-workspace";
-import { GenerationStage } from "@/components/campaign-stepper";
+import { CampaignStepper, GenerationStage } from "@/components/campaign-stepper";
 import { EditorialControlsBar } from "@/components/editorial-controls-bar";
 import { EditorialControls, BusinessGoal } from "@/lib/types/editorial-controls";
 import { SuggestedTopics } from "@/components/suggested-topics";
@@ -143,6 +150,13 @@ export default function ContentDashboard() {
   const [isGeneratingOutline, setIsGeneratingOutline] = useState(false);
   const [currentOutline, setCurrentOutline] = useState<ArticleOutline | null>(null);
   const [showOutlineModal, setShowOutlineModal] = useState(false);
+
+  // Unified Workspace State (Selector de Origen y Selección de Tarjeta)
+  const [entryOrigin, setEntryOrigin] = useState<"radar" | "url" | "topic">("radar");
+  const [selectedRadarOppId, setSelectedRadarOppId] = useState<string | null>(null);
+  const [canvasActiveTab, setCanvasActiveTab] = useState<"blog" | "linkedin" | "mailchimp" | "whatsapp" | "intel">("blog");
+  const [isSavingArticle, setIsSavingArticle] = useState(false);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
 
   const [currentUser, setCurrentUser] = useState<{
     uid: string;
@@ -295,6 +309,7 @@ export default function ContentDashboard() {
   };
 
   const handleSelectOpportunity = (opp: ProductOpportunityRecord) => {
+    setSelectedRadarOppId(opp.id);
     setInputMode("ecomshop_url");
     setProductUrl(opp.url);
     setTopicTitle(opp.actionTitle);
@@ -419,6 +434,45 @@ export default function ContentDashboard() {
       }
     } finally {
       setLaunchingSku(null);
+    }
+  };
+
+  const handleUnifiedLaunch = async () => {
+    if (entryOrigin === "radar") {
+      const activeOpp = opportunities.find(o => o.id === selectedRadarOppId) || opportunities[0];
+      if (activeOpp) {
+        await handleLaunchCampaign(activeOpp);
+        return;
+      }
+    }
+    await handleGenerate();
+  };
+
+  const handleSaveToFirestore = async (status: "approved" | "published" = "approved") => {
+    if (!content) return;
+    setIsSavingArticle(true);
+    try {
+      const entry: ArticleHistoryItem = {
+        id: Math.random().toString(36).substring(2, 9),
+        title: content.blog.title || topicTitle,
+        category,
+        status,
+        createdAt: new Date().toLocaleDateString("es-ES", {
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit"
+        }),
+        content
+      };
+      await persistArticleToDatabase(entry);
+      setHistoryItems(prev => [entry, ...prev]);
+      setSaveSuccessMessage("¡Guardado y Aprobado en Firestore con éxito!");
+      setTimeout(() => setSaveSuccessMessage(null), 3000);
+    } catch (err) {
+      console.error("Error guardando en Firestore:", err);
+    } finally {
+      setIsSavingArticle(false);
     }
   };
 
@@ -1151,7 +1205,28 @@ export default function ContentDashboard() {
   };
 
   const handleGenerate = async () => {
+    if (!currentUser) {
+      setShowSignInModal(true);
+      return;
+    }
+
     setLoading(true);
+    setCampaignOpportunity(null);
+    setCampaignErrorMessage(null);
+    setCampaignStage("EXTRACTING");
+
+    const t1 = setTimeout(() => {
+      setCampaignStage((prev) => (prev === "EXTRACTING" ? "NOTEBOOK_GROUNDING" : prev));
+    }, 1200);
+
+    const t2 = setTimeout(() => {
+      setCampaignStage((prev) => (prev === "NOTEBOOK_GROUNDING" ? "GENERATING_CHANNELS" : prev));
+    }, 2600);
+
+    const t3 = setTimeout(() => {
+      setCampaignStage((prev) => (prev === "GENERATING_CHANNELS" ? "FACT_CHECKING" : prev));
+    }, 5200);
+
     try {
       const data = await apiFetch<ContentOutput & { intelligenceCard?: ProductIntelligenceCard }>("/api/generate", {
         method: "POST",
@@ -1171,15 +1246,21 @@ export default function ContentDashboard() {
           syncLinkedIn,
           customAngle,
           editorialControls,
+          businessGoal: selectedBusinessGoal,
           apiKey: geminiApiKey || undefined
         })
       });
+
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
 
       setContent(data);
       if (data.intelligenceCard) {
         setIntelligenceCard(data.intelligenceCard);
       }
       setActiveTab("blog");
+      setCampaignStage("COMPLETED");
 
       // Registrar métrica en FinOps
       addFinopsRecord({
@@ -1210,6 +1291,11 @@ export default function ContentDashboard() {
       });
       persistArticleToDatabase(historyEntry);
     } catch (err: any) {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      setCampaignStage("ERROR");
+      setCampaignErrorMessage(err?.message || "Error al procesar la campaña multicanal.");
       console.error(err);
       if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
         setShowSignInModal(true);
@@ -2001,186 +2087,205 @@ export default function ContentDashboard() {
       )}
 
       {mainView === "generator" && (
-        <div className="flex-1 p-6 sm:p-8 max-w-[1780px] 2xl:max-w-[1920px] mx-auto w-full">
-          {/* Radar de Oportunidades Diarias (Fase 08 Marketing Autopilot) */}
-          <OpportunityRadarWidget
-            opportunities={opportunities}
-            isLoading={loadingOpportunities}
-            onSelectOpportunity={handleSelectOpportunity}
-            onLaunchCampaign={handleLaunchCampaign}
-            launchingSku={launchingSku}
-            onRegenerateRadar={handleRegenerateRadar}
-            isRegeneratingRadar={isRegeneratingRadar}
-            onReplaceOpportunity={handleReplaceOpportunity}
-            isReplacingSku={isReplacingSku}
-            selectedBusinessGoal={selectedBusinessGoal}
-            onSelectBusinessGoal={(goal) => {
-              setSelectedBusinessGoal(goal);
-              loadOpportunities(editorialControls, excludedSkus, undefined, undefined, goal);
-            }}
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 min-h-[calc(100vh-4rem)] max-w-[1920px] mx-auto w-full">
+          {/* ========================================================================= */}
+          {/* PANEL IZQUIERDO: EL HUB DE ENTRADA (35% Ancho / 4 Columnas en Desktop)     */}
+          {/* ========================================================================= */}
+          <aside className="lg:col-span-4 xl:col-span-4 flex flex-col gap-4">
+            {/* 1. Selector de Origen de Campaña (Tabs Superiores) */}
+            <div className="bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 flex items-center gap-1 text-xs shadow-md">
+              <button
+                type="button"
+                onClick={() => setEntryOrigin("radar")}
+                className={`flex-1 py-2 px-2.5 rounded-xl font-bold transition flex items-center justify-center gap-1.5 ${
+                  entryOrigin === "radar"
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
+                <span className="truncate">Radar Oportunidades</span>
+              </button>
 
-          {/* Barra de Controles Editoriales Personalizables (Fase 08.6) */}
-          <EditorialControlsBar
-            controls={editorialControls}
-            onChange={setEditorialControls}
-            onApplyToRadar={handleRegenerateRadar}
-            isApplying={isRegeneratingRadar}
-          />
+              <button
+                type="button"
+                onClick={() => setEntryOrigin("url")}
+                className={`flex-1 py-2 px-2.5 rounded-xl font-bold transition flex items-center justify-center gap-1.5 ${
+                  entryOrigin === "url"
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                }`}
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-sky-300 shrink-0" />
+                <span className="truncate">URL EcomShop</span>
+              </button>
 
-          {/* Campaign Workspace Interactivo (Pipeline Stepper + Contenido Multicanal Grounded) */}
-          {campaignStage !== "IDLE" && (
-            <CampaignWorkspace
-              stage={campaignStage}
-              opportunity={campaignOpportunity}
-              content={content}
-              intelligenceCard={intelligenceCard}
-              errorMessage={campaignErrorMessage}
-              onRetry={() => campaignOpportunity && handleLaunchCampaign(campaignOpportunity)}
-              onReset={() => {
-                setCampaignStage("IDLE");
-                setCampaignOpportunity(null);
-                setCampaignErrorMessage(null);
-              }}
-              onOpenImageStudio={(prompt) => {
-                setImagePrompt(prompt);
-                setMainView("image_studio");
-              }}
-            />
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Columna Izquierda: Configuración del Tema */}
-            <div className="lg:col-span-4 flex flex-col gap-5">
-            <SuggestedTopics
-              selectedTopicId={selectedPresetId}
-              onSelectTopic={handleSelectEditorialTopic}
-              geminiApiKey={geminiApiKey || undefined}
-            />
-
-            {/* 3 Ángulos Estratégicos (Agente Gemini) */}
-            <div className="bg-white border border-indigo-200/80 rounded-2xl p-6 shadow-xs relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-indigo-500 via-sky-500 to-emerald-500" />
-              <div className="flex items-center justify-between mb-3 pt-1">
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-indigo-600">IA Copilot</span>
-                  <h3 className="font-editorial text-base font-bold text-slate-900 mt-0.5">Ángulos Estratégicos</h3>
-                </div>
-                <button
-                  onClick={handleFetchStrategicAngles}
-                  disabled={loadingAngles}
-                  className="text-xs bg-[#0f172a] hover:bg-slate-800 disabled:opacity-50 text-white font-semibold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition shadow-2xs"
-                >
-                  {loadingAngles ? (
-                    <>
-                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Analizando...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-                      Sugerir 3 Ángulos
-                    </>
-                  )}
-                </button>
-              </div>
-
-              <p className="text-xs text-slate-600 mb-3.5 leading-relaxed">
-                Selecciona la tesis de valor comercial o técnica para guiar la redacción:
-              </p>
-
-              {strategicAngles.length > 0 ? (
-                <div className="flex flex-col gap-2.5">
-                  {strategicAngles.map((angle) => (
-                    <button
-                      key={angle.id}
-                      onClick={() => handleApplyAngle(angle)}
-                      className={`text-left p-3.5 rounded-xl border transition flex flex-col gap-2 ${
-                        selectedAngleId === angle.id
-                          ? "bg-indigo-50/70 border-indigo-500 text-indigo-950 shadow-2xs ring-1 ring-indigo-400"
-                          : "bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900 text-sm">{angle.title}</span>
-                        <span className="text-xs uppercase font-mono font-semibold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">
-                          {angle.type}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">{angle.hook}</p>
-                      <div className="text-xs text-emerald-700 font-semibold mt-0.5 flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                        CTA: {angle.recommendedCta}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 text-center text-xs text-slate-600 leading-relaxed">
-                  Haz clic en <strong>"Sugerir 3 Ángulos"</strong> para que el agente extraiga enfoques de ROI/Costes, Rendimiento 10G o Casos de Éxito.
-                </div>
-              )}
+              <button
+                type="button"
+                onClick={() => setEntryOrigin("topic")}
+                className={`flex-1 py-2 px-2.5 rounded-xl font-bold transition flex items-center justify-center gap-1.5 ${
+                  entryOrigin === "topic"
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                <span className="truncate">Línea / Libre</span>
+              </button>
             </div>
 
-            <div className="bg-white border border-slate-200/80 rounded-xl p-5 flex flex-col gap-4 shadow-xs">
-              <div className="border-b border-slate-100 pb-2 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Configuración</span>
-                  <h2 className="font-editorial text-base font-bold text-slate-900">Entrada de Campaña</h2>
-                </div>
-                {/* Selector de Modo */}
-                <div className="flex bg-slate-100 p-1 rounded-lg">
-                  <button
-                    type="button"
-                    onClick={() => setInputMode("ecomshop_url")}
-                    className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition ${
-                      inputMode === "ecomshop_url"
-                        ? "bg-white text-blue-700 shadow-xs"
-                        : "text-slate-600 hover:text-slate-900"
-                    }`}
-                  >
-                    EcomShop URL
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setInputMode("prompt_libre")}
-                    className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition ${
-                      inputMode === "prompt_libre"
-                        ? "bg-white text-slate-900 shadow-xs"
-                        : "text-slate-600 hover:text-slate-900"
-                    }`}
-                  >
-                    Prompt Libre
-                  </button>
-                </div>
-              </div>
-
-              {inputMode === "ecomshop_url" && (
-                <div className="space-y-3 bg-blue-50/50 p-3.5 rounded-lg border border-blue-100">
-                  <div>
-                    <label className="text-xs font-bold text-blue-950 block mb-1">
-                      URL de Producto en EcomShop.es (Extracción Automática):
-                    </label>
-                    <input
-                      type="text"
-                      value={productUrl}
-                      onChange={(e) => setProductUrl(e.target.value)}
-                      placeholder="https://www.ecomshop.es/..."
-                      className="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-600 transition"
-                    />
+            {/* 2. Contenido según el Tab seleccionado */}
+            {/* TAB A: RADAR OPORTUNIDADES */}
+            {entryOrigin === "radar" && (
+              <div className="bg-slate-950/80 border border-slate-800/90 rounded-2xl p-4 text-white shadow-lg flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                      Oportunidades Product Brain
+                    </span>
+                    <span className="bg-indigo-500/20 text-indigo-300 text-[10px] px-2 py-0.5 rounded-full font-mono">
+                      Autopilot
+                    </span>
                   </div>
 
-                  {/* Ejemplos rápidos */}
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[10px] text-slate-500 font-medium">Ejemplos rápidos:</span>
+                  <button
+                    type="button"
+                    onClick={handleRegenerateRadar}
+                    disabled={isRegeneratingRadar || loadingOpportunities}
+                    title="Ver otras oportunidades del catálogo"
+                    className="text-[11px] text-indigo-300 hover:text-white bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-500/30 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition active:scale-95 disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${isRegeneratingRadar ? "animate-spin" : ""}`} />
+                    <span>{isRegeneratingRadar ? "Cargando..." : "Ver otras"}</span>
+                  </button>
+                </div>
+
+                {/* Filtro de Objetivo */}
+                <div className="flex items-center gap-2">
+                  <label className="text-[11px] text-slate-400 font-semibold shrink-0">Objetivo:</label>
+                  <select
+                    value={selectedBusinessGoal}
+                    onChange={(e) => {
+                      const goal = e.target.value as BusinessGoal;
+                      setSelectedBusinessGoal(goal);
+                      loadOpportunities(editorialControls, excludedSkus, undefined, undefined, goal);
+                    }}
+                    className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1 text-xs text-slate-200 font-medium focus:outline-none focus:border-indigo-500 transition"
+                  >
+                    <option value="ALL_OPPORTUNITIES">⚡ Todas las Oportunidades</option>
+                    <option value="WIFI7_MULTIGIG_EXPANSION">🚀 Expansión Wi-Fi 7 & Multi-Gig</option>
+                    <option value="HOSPITALITY_SOLUTIONS">🏨 Soluciones Hospitality & Hoteles</option>
+                    <option value="SWITCHING_POE_BACKBONE">🔌 Switching PoE & Backbone</option>
+                    <option value="STOCK_CLEARANCE_PROMO">📦 Liquidación & Alta Rotación</option>
+                  </select>
+                </div>
+
+                {/* 3 Tarjetas de Oportunidad Compactas */}
+                <div className="flex flex-col gap-2.5 mt-1">
+                  {opportunities.map((opp, idx) => {
+                    const isSelected = selectedRadarOppId === opp.id;
+                    const score = opp.scores.totalScore;
+
+                    return (
+                      <div
+                        key={opp.id}
+                        onClick={() => {
+                          setSelectedRadarOppId(opp.id);
+                          handleSelectOpportunity(opp);
+                        }}
+                        className={`cursor-pointer rounded-xl p-3.5 border transition-all duration-200 flex flex-col gap-2 ${
+                          isSelected
+                            ? "bg-slate-900 border-blue-500 ring-2 ring-blue-500/50 shadow-md"
+                            : "bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/90"
+                        }`}
+                      >
+                        {/* Cabecera Tarjeta: SKU, Ángulo y Score */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span className="bg-indigo-950 text-indigo-200 text-[10px] font-mono font-bold px-2 py-0.5 rounded border border-indigo-800/80">
+                              #{idx + 1} {opp.sku}
+                            </span>
+                            <span className="text-[10px] font-semibold uppercase text-emerald-300 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60">
+                              {opp.recommendedAngle}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            {isSelected && (
+                              <span className="text-[10px] text-blue-400 font-bold bg-blue-950/70 border border-blue-800/60 px-1.5 py-0.2 rounded flex items-center gap-1">
+                                <Check className="w-2.5 h-2.5" /> Seleccionada
+                              </span>
+                            )}
+                            <div className="flex items-center gap-1 text-amber-400 font-mono text-xs font-bold">
+                              <Zap className="w-3 h-3 fill-amber-400" />
+                              <span>{score}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Título de Campaña y Target */}
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-100 line-clamp-1 leading-snug">
+                            {opp.actionTitle}
+                          </h4>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            Target: <strong className="text-slate-200">{opp.targetSegment}</strong>
+                          </p>
+                        </div>
+
+                        {/* Bundle y Pitch en 2 líneas */}
+                        <div className="bg-slate-950/60 rounded p-2 border border-slate-800/80 text-[11px] text-slate-300 leading-relaxed">
+                          {opp.suggestedBundle ? (
+                            <div className="truncate">
+                              <span className="text-indigo-300 font-semibold">Bundle:</span> + {opp.suggestedBundle.accessorySku} ({opp.suggestedBundle.accessoryName})
+                            </div>
+                          ) : (
+                            <div className="truncate">
+                              <span className="text-sky-300 font-semibold">Pitch:</span> {opp.narrativeAnchor?.pitch30s || "Enfoque Enterprise 10G"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* TAB B: URL EcomShop */}
+            {entryOrigin === "url" && (
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 flex flex-col gap-3.5 shadow-xs">
+                <div>
+                  <label className="text-xs font-bold text-slate-900 block mb-1">
+                    URL de Producto en EcomShop.es
+                  </label>
+                  <p className="text-[11px] text-slate-500 mb-2">
+                    Pega el enlace de la tienda para extraer fichas técnicas y modelos en vivo:
+                  </p>
+                  <input
+                    type="text"
+                    value={productUrl}
+                    onChange={(e) => setProductUrl(e.target.value)}
+                    placeholder="https://www.ecomshop.es/..."
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white transition"
+                  />
+                </div>
+
+                {/* Ejemplos rápidos */}
+                <div className="space-y-1.5 pt-1">
+                  <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block">
+                    Ejemplos Rápidos:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
                     <button
                       type="button"
                       onClick={() => {
                         setProductUrl("https://www.ecomshop.es/engenius-ecw536");
                         setTopicTitle("EnGenius ECW536 Cloud WiFi 7 AP");
                         setCategory("engenius");
+                        setCustomAngle("ROI");
                       }}
-                      className="text-[10px] bg-white border border-slate-200 hover:border-blue-300 text-slate-700 px-2 py-0.5 rounded shadow-2xs"
+                      className="text-[10px] bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-2 py-1 rounded shadow-2xs font-medium transition"
                     >
                       ⚡ ECW536 WiFi 7
                     </button>
@@ -2190,8 +2295,9 @@ export default function ContentDashboard() {
                         setProductUrl("https://www.ecomshop.es/engenius-ecs1528fp");
                         setTopicTitle("Switch EnGenius ECS1528FP Cloud PoE+");
                         setCategory("switches");
+                        setCustomAngle("PERFORMANCE");
                       }}
-                      className="text-[10px] bg-white border border-slate-200 hover:border-blue-300 text-slate-700 px-2 py-0.5 rounded shadow-2xs"
+                      className="text-[10px] bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-2 py-1 rounded shadow-2xs font-medium transition"
                     >
                       ⚡ ECS1528FP PoE+
                     </button>
@@ -2201,608 +2307,711 @@ export default function ContentDashboard() {
                         setProductUrl("https://www.ecomshop.es/engenius-esg510");
                         setTopicTitle("Gateway EnGenius ESG510 Cloud Security 2.5G");
                         setCategory("engenius");
+                        setCustomAngle("OPERATIONS");
                       }}
-                      className="text-[10px] bg-white border border-slate-200 hover:border-blue-300 text-slate-700 px-2 py-0.5 rounded shadow-2xs"
+                      className="text-[10px] bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-2 py-1 rounded shadow-2xs font-medium transition"
                     >
                       ⚡ Gateway ESG510
                     </button>
                   </div>
+                </div>
 
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Público Objetivo</label>
-                      <select
-                        value={targetAudience}
-                        onChange={(e) => setTargetAudience(e.target.value)}
-                        className="w-full bg-white border border-slate-200 rounded px-2 py-1.5 text-xs text-slate-800"
-                      >
-                        <option value="Instaladores de telecomunicaciones e integradores IT">Instaladores & Integradores IT</option>
-                        <option value="Directores de TIC y responsables de sistemas">Directores de Sistemas / CIO</option>
-                        <option value="Jefes de compras y directores de operaciones">Jefes de Compras / TCO</option>
-                        <option value="Sector Hospitality y Hoteles">Sector Hospitality / Hoteles</option>
-                        <option value="Operadores locales y WISP">Operadores WISP / Telco</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Ángulo Estratégico</label>
-                      <select
-                        value={customAngle}
-                        onChange={(e) => setCustomAngle(e.target.value as any)}
-                        className="w-full bg-white border border-slate-200 rounded px-2 py-1.5 text-xs text-slate-800"
-                      >
-                        <option value="ROI">ROI & Cero Licencias</option>
-                        <option value="PERFORMANCE">Rendimiento Técnico & 10G</option>
-                        <option value="OPERATIONS">Despliegue Rápido & Soporte</option>
-                        <option value="GENERAL">Equilibrado General</option>
-                      </select>
-                    </div>
+                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Público Objetivo</label>
+                    <select
+                      value={targetAudience}
+                      onChange={(e) => setTargetAudience(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs text-slate-800 font-medium"
+                    >
+                      <option value="Instaladores de telecomunicaciones e integradores IT">Instaladores & Integradores IT</option>
+                      <option value="Directores de TIC y responsables de sistemas">Directores de Sistemas / CIO</option>
+                      <option value="Jefes de compras y directores de operaciones">Jefes de Compras / TCO</option>
+                      <option value="Sector Hospitality y Hoteles">Sector Hospitality / Hoteles</option>
+                      <option value="Operadores locales y WISP">Operadores WISP / Telco</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Ángulo Estratégico</label>
+                    <select
+                      value={customAngle}
+                      onChange={(e) => setCustomAngle(e.target.value as any)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs text-slate-800 font-medium"
+                    >
+                      <option value="ROI">ROI & Cero Licencias</option>
+                      <option value="PERFORMANCE">Rendimiento Técnico & 10G</option>
+                      <option value="OPERATIONS">Despliegue Rápido & Soporte</option>
+                      <option value="GENERAL">Equilibrado General</option>
+                    </select>
                   </div>
                 </div>
-              )}
-
-              <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Título del Artículo / Cobertura</label>
-                <input
-                  type="text"
-                  value={topicTitle}
-                  onChange={(e) => setTopicTitle(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-sky-600 focus:bg-white transition"
-                />
               </div>
+            )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Categoría</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value as any)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-sky-600 focus:bg-white transition"
-                  >
-                    <option value="engenius">EnGenius Networks</option>
-                    <option value="wifi">WiFi Profesional / WiFi 7</option>
-                    <option value="switches">Switches & PoE</option>
-                    <option value="fibra">Fibra Óptica</option>
-                    <option value="general">Networking General</option>
-                  </select>
+            {/* TAB C: Línea / Tema Libre */}
+            {entryOrigin === "topic" && (
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 flex flex-col gap-3.5 shadow-xs">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <span className="text-xs font-bold text-slate-900">
+                    Líneas Editoriales & Tema Libre
+                  </span>
+                  <div className="flex bg-slate-100 p-0.5 rounded-lg text-[10px]">
+                    <button
+                      type="button"
+                      onClick={() => setInputMode("ecomshop_url")}
+                      className={`px-2 py-0.5 rounded font-medium transition ${
+                        inputMode === "ecomshop_url" ? "bg-white text-indigo-700 shadow-2xs font-bold" : "text-slate-600"
+                      }`}
+                    >
+                      Sugeridas
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInputMode("prompt_libre")}
+                      className={`px-2 py-0.5 rounded font-medium transition ${
+                        inputMode === "prompt_libre" ? "bg-white text-indigo-700 shadow-2xs font-bold" : "text-slate-600"
+                      }`}
+                    >
+                      Texto Libre
+                    </button>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Público Objetivo</label>
-                  <input
-                    type="text"
-                    value={targetAudience}
-                    onChange={(e) => setTargetAudience(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-sky-600 focus:bg-white transition"
+                {inputMode === "ecomshop_url" ? (
+                  <SuggestedTopics
+                    selectedTopicId={selectedPresetId}
+                    onSelectTopic={handleSelectEditorialTopic}
+                    geminiApiKey={geminiApiKey || undefined}
                   />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">URL de Producto Destacado</label>
-                <input
-                  type="text"
-                  value={productUrl}
-                  onChange={(e) => setProductUrl(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-sky-600 focus:bg-white transition"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Notas Clave / Especificaciones</label>
-                <textarea
-                  rows={3}
-                  value={customNotes}
-                  onChange={(e) => setCustomNotes(e.target.value)}
-                  placeholder="Añade detalles técnicos específicos, modelos o promociones..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-sky-600 focus:bg-white transition resize-none"
-                />
-              </div>
-
-              <div className="flex flex-col gap-2 pt-1">
-                {/* The Junia Engine (Fase 09 Multi-Paso Recomendado) */}
-                <button
-                  onClick={() => handleOpenJuniaEngine()}
-                  disabled={isGeneratingOutline || loading}
-                  className="w-full bg-gradient-to-r from-indigo-600 via-indigo-700 to-blue-600 hover:from-indigo-700 hover:to-blue-700 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-md hover:shadow-indigo-500/25 border border-indigo-400/20"
-                >
-                  {isGeneratingOutline ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Consultando NotebookLM y Creando Outline...
-                    </>
-                  ) : (
-                    <>
-                      <Layers className="w-4 h-4 text-indigo-200" />
-                      <span>Outline Interactivo (The Junia Engine)</span>
-                    </>
-                  )}
-                </button>
-
-                {/* Generación Rápida One-Shot Clásica */}
-                <button
-                  onClick={handleGenerate}
-                  disabled={loading || isGeneratingOutline}
-                  className="w-full bg-slate-100 hover:bg-slate-200/90 border border-slate-300/80 text-slate-700 font-semibold py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-2 transition"
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-slate-700 rounded-full animate-spin" />
-                      Componiendo One-Shot...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Generación Rápida (One-Shot Directo)</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-        {/* Columna Derecha: Previsualización & Derivación Multicanal */}
-        <div className="lg:col-span-8 flex flex-col gap-4">
-          {/* Ficha de Inteligencia de Producto & Evidence Drawer si están disponibles */}
-          {intelligenceCard && (
-            <div className="space-y-4">
-              <ProductIntelligenceView card={intelligenceCard} />
-              <EvidenceAuditDrawer
-                score={95}
-                evidenceLedger={intelligenceCard.evidenceLedger}
-                productName={intelligenceCard.product.model}
-              />
-            </div>
-          )}
-
-          {content ? (
-            <div className="bg-white border border-slate-200/80 rounded-xl flex flex-col h-full shadow-xs overflow-hidden">
-              {/* Tab Navigation */}
-              <div className="flex items-center justify-between border-b border-slate-200/80 bg-slate-50/70 px-4 py-2.5">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setActiveTab("blog")}
-                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-                      activeTab === "blog"
-                        ? "bg-white text-slate-950 border border-slate-200 shadow-2xs font-bold"
-                        : "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
-                    }`}
-                  >
-                    <Globe className="w-3.5 h-3.5 text-sky-600" />
-                    Blog Durable (HTML)
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab("mailchimp")}
-                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-                      activeTab === "mailchimp"
-                        ? "bg-white text-slate-950 border border-slate-200 shadow-2xs font-bold"
-                        : "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
-                    }`}
-                  >
-                    <Mail className="w-3.5 h-3.5 text-amber-600" />
-                    Mailchimp B2B
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab("whatsapp")}
-                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-                      activeTab === "whatsapp"
-                        ? "bg-white text-slate-950 border border-slate-200 shadow-2xs font-bold"
-                        : "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
-                    }`}
-                  >
-                    <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-                    WhatsApp Broadcast
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab("linkedin")}
-                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-                      activeTab === "linkedin"
-                        ? "bg-white text-slate-950 border border-slate-200 shadow-2xs font-bold"
-                        : "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
-                    }`}
-                  >
-                    <Share2 className="w-3.5 h-3.5 text-blue-600" />
-                    LinkedIn B2B
-                  </button>
-                </div>
-
-                <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-500 font-medium">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                  <span>AEO / GEO Calibrado</span>
-                </div>
-              </div>
-
-              {/* Tab Contents */}
-              <div className="p-6 flex-1 overflow-y-auto max-h-[750px]">
-                {/* 1. BLOG DURABLE TAB */}
-                {activeTab === "blog" && (
-                  <div className="flex flex-col gap-5">
-                    <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200">
-                      <div>
-                        <span className="text-[10px] uppercase tracking-wider font-bold text-sky-600">Título SEO & Cabecera</span>
-                        <h3 className="font-editorial text-lg font-bold text-slate-950 mt-0.5">{content.blog.title}</h3>
-                        <p className="text-xs text-slate-500 mt-1 flex items-center gap-2">
-                          <span>Slug: <code className="text-sky-700 font-mono bg-sky-50 px-1 py-0.5 rounded border border-sky-200">/{content.blog.slug}</code></span>
-                          <span>•</span>
-                          <span>Lectura: <strong>{content.blog.readingTimeMinutes} min</strong></span>
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => copyToClipboard(content.blog.htmlContent, "blog-html")}
-                        className="flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition shadow-xs shrink-0"
-                      >
-                        {copiedKey === "blog-html" ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-sky-400" />}
-                        {copiedKey === "blog-html" ? "¡Copiado!" : "Copiar HTML Durable"}
-                      </button>
-                    </div>
-
-                    {/* Ficha de Novedad e Interés por Perfil B2B */}
-                    {content.blog.editorialLayout?.targetProfiles && content.blog.editorialLayout.targetProfiles.length > 0 && (
-                      <div className="bg-white border border-slate-200 rounded-xl p-4.5 shadow-xs">
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="w-2 h-2 rounded-full bg-sky-600" />
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                            Propuesta de Valor y Novedad por Perfil (4 Clientes Clave)
-                          </h4>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                          {content.blog.editorialLayout.targetProfiles.map((p, idx) => (
-                            <div key={idx} className="bg-slate-50 rounded-lg p-3 border border-slate-200/80 flex flex-col justify-between">
-                              <span className="text-[10px] font-bold uppercase text-sky-700 bg-sky-100/70 px-2 py-0.5 rounded w-fit mb-1.5">
-                                {p.profile}
-                              </span>
-                              <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                                {p.keyTakeaway}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Guía Editorial: Dónde Ubicar Fotos y CTAs + Botón Generar Imagen 3 */}
-                    {content.blog.editorialLayout?.photoPlacements && content.blog.editorialLayout.photoPlacements.length > 0 && (
-                      <div className="bg-gradient-to-r from-purple-50/70 via-indigo-50/50 to-purple-50/70 border border-purple-200/80 rounded-xl p-4.5 shadow-xs">
-                        <div className="flex items-center justify-between mb-3 border-b border-purple-200/60 pb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="p-1 rounded bg-purple-600 text-white">
-                              <ImageIcon className="w-3.5 h-3.5" />
-                            </span>
-                            <div>
-                              <h4 className="text-xs font-bold uppercase tracking-wider text-purple-950">
-                                Guía de Ubicación de Fotos Recomendadas (Durable CMS)
-                              </h4>
-                              <p className="text-[11px] text-purple-700">
-                                El sistema define la ubicación idónea y genera el prompt optimizado para Imagen 3.
-                              </p>
-                            </div>
-                          </div>
-                          <span className="text-[10px] font-bold text-purple-800 bg-purple-200/60 px-2 py-0.5 rounded">
-                            {content.blog.editorialLayout.photoPlacements.length} Fotos Sugeridas
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                          {content.blog.editorialLayout.photoPlacements.map((photo, i) => (
-                            <div key={photo.id || i} className="bg-white rounded-lg p-3.5 border border-purple-200 shadow-2xs flex flex-col justify-between gap-3">
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-bold text-slate-700 uppercase bg-slate-100 px-2 py-0.5 rounded">
-                                    Foto #{i + 1} &bull; Tras: {photo.placementAfterHeading}
-                                  </span>
-                                  <span className="text-[10px] font-semibold text-purple-600">
-                                    {photo.photoType}
-                                  </span>
-                                </div>
-                                <p className="text-xs text-slate-800 font-medium mt-1">
-                                  {photo.description}
-                                </p>
-                                <p className="text-[11px] text-slate-500 font-mono bg-slate-50 p-2 rounded border border-slate-100 line-clamp-2">
-                                  "{photo.imagen3Prompt}"
-                                </p>
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setImagePrompt(photo.imagen3Prompt);
-                                  setMainView("image_studio");
-                                }}
-                                className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition shadow-2xs"
-                              >
-                                <Sparkles className="w-3.5 h-3.5 text-purple-200" />
-                                Generar esta foto en Estudio Imagen 3 &rarr;
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="border border-slate-200 rounded-xl p-8 bg-white text-slate-900 shadow-xs overflow-x-auto">
-                      <div 
-                        className="prose max-w-none text-sm font-sans"
-                        dangerouslySetInnerHTML={{ __html: content.blog.htmlContent }}
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 block mb-1">
+                        Título o Tesis de la Campaña:
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={topicTitle}
+                        onChange={(e) => setTopicTitle(e.target.value)}
+                        placeholder="Ej: Despliegue de red Wi-Fi 7 y PoE++ en oficinas corporativas sin licencias recurrentes..."
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white transition resize-none"
                       />
                     </div>
-
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col gap-2">
-                      <span className="text-xs font-bold text-slate-700">Código HTML Puro (para pegar en el bloque de código de Durable):</span>
-                      <pre className="text-[11px] text-slate-700 bg-white p-3 rounded-lg overflow-x-auto font-mono max-h-48 border border-slate-200">
-                        {content.blog.htmlContent}
-                      </pre>
-                    </div>
-                  </div>
-                )}
-
-                {/* 2. MAILCHIMP TAB (Asistente Interactivo) */}
-                {activeTab === "mailchimp" && (
-                  <div className="flex flex-col gap-6">
-                    {/* Asistente Paso a Paso */}
-                    <div className="bg-white border border-amber-200/80 rounded-xl p-5 shadow-xs">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                        <div className="flex items-center gap-2">
-                          <span className="bg-amber-100 text-amber-900 text-xs px-2.5 py-1 rounded-md font-bold uppercase tracking-wider">
-                            Asistente de Campaña Mailchimp
-                          </span>
-                          <span className="text-xs text-slate-500">Personaliza la oferta técnica y el CTA antes de generar</span>
-                        </div>
-                        <button
-                          onClick={handleGenerate}
-                          disabled={loading}
-                          className="bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition shadow-2xs"
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-700 block mb-1">Categoría</label>
+                        <select
+                          value={category}
+                          onChange={(e) => setCategory(e.target.value as any)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs text-slate-800"
                         >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          Regenerar Email con estos Equipos
-                        </button>
+                          <option value="engenius">EnGenius Networks</option>
+                          <option value="wifi">WiFi Profesional / WiFi 7</option>
+                          <option value="switches">Switches & PoE</option>
+                          <option value="fibra">Fibra Óptica</option>
+                          <option value="general">Networking General</option>
+                        </select>
                       </div>
-
-                      {/* Paso 1: Ideas de Campaña */}
-                      <div className="mb-5">
-                        <label className="text-xs font-bold text-slate-800 block mb-2">
-                          Paso 1: Selecciona una Idea o Enfoque de Campaña B2B
-                        </label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                          {CAMPAIGN_IDEAS.map((idea) => (
-                            <button
-                              key={idea.id}
-                              onClick={() => handleSelectIdea(idea.id)}
-                              className={`text-left p-3 rounded-lg border text-xs transition flex flex-col gap-1 ${
-                                selectedCampaignIdea === idea.id
-                                  ? "bg-amber-50/80 border-amber-500 text-amber-950 shadow-2xs"
-                                  : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100/70"
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="font-semibold text-slate-900">{idea.title}</span>
-                                <span className="text-[10px] text-amber-700 font-mono font-bold">Paso 1</span>
-                              </div>
-                              <p className="text-[11px] text-slate-500">{idea.angle}</p>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Paso 2: Equipos a Promocionar */}
-                      <div className="mb-5">
-                        <label className="text-xs font-bold text-slate-800 block mb-2">
-                          Paso 2: ¿Qué equipo o equipos quieres promocionar en este correo?
-                        </label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-3">
-                          {STAR_PRODUCTS.map((prod) => {
-                            const isChecked = selectedProducts.includes(prod.id);
-                            return (
-                              <div
-                                key={prod.id}
-                                onClick={() => toggleProductSelection(prod.id)}
-                                className={`cursor-pointer p-3 rounded-lg border text-xs transition flex items-start gap-3 ${
-                                  isChecked
-                                    ? "bg-amber-50/60 border-amber-500 text-slate-900 shadow-2xs"
-                                    : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => {}}
-                                  className="mt-0.5 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
-                                />
-                                <div>
-                                  <div className="font-semibold text-slate-900">{prod.name}</div>
-                                  <div className="text-[11px] text-slate-500">{prod.model} &bull; {prod.category}</div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Paso 3: Llamada a la Acción (CTA) */}
-                      <div className="mb-4">
-                        <label className="text-xs font-bold text-slate-800 block mb-2">
-                          Paso 3: Objetivo y Botón de Conversión (CTA B2B)
-                        </label>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-                          {B2B_CTA_OPTIONS.map((cta) => (
-                            <button
-                              key={cta.id}
-                              onClick={() => handleCtaOptionChange(cta.id)}
-                              className={`text-left p-2.5 rounded-lg border text-xs transition ${
-                                selectedCtaId === cta.id
-                                  ? "bg-amber-100/70 border-amber-500 text-amber-950 font-bold shadow-2xs"
-                                  : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
-                              }`}
-                            >
-                              <div className="font-semibold">{cta.label}</div>
-                            </button>
-                          ))}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                          <div>
-                            <label className="text-[11px] text-slate-600 font-semibold block mb-1">Texto en el botón:</label>
-                            <input
-                              type="text"
-                              value={customCtaText}
-                              onChange={(e) => setCustomCtaText(e.target.value)}
-                              className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-amber-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[11px] text-slate-600 font-semibold block mb-1">URL de destino:</label>
-                            <input
-                              type="text"
-                              value={customCtaUrl}
-                              onChange={(e) => setCustomCtaUrl(e.target.value)}
-                              className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-amber-500"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Sincronización Multicanal */}
-                      <div className="pt-2 border-t border-slate-100 flex items-center gap-6 text-xs text-slate-600 font-medium">
-                        <span className="font-bold text-slate-800">Sincronizar con otros canales:</span>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={syncWhatsApp}
-                            onChange={(e) => setSyncWhatsApp(e.target.checked)}
-                            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                          />
-                          <span>Incluir en difusiones de WhatsApp</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={syncLinkedIn}
-                            onChange={(e) => setSyncLinkedIn(e.target.checked)}
-                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                          />
-                          <span>Mencionar equipos en post de LinkedIn</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* Previsualización del Correo */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-                        <span className="text-xs text-amber-700 font-bold block mb-1">Asunto A (A/B Testing):</span>
-                        <p className="text-xs text-slate-900 font-medium">{content.mailchimp.subjectA}</p>
-                      </div>
-                      <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-                        <span className="text-xs text-amber-700 font-bold block mb-1">Asunto B (A/B Testing):</span>
-                        <p className="text-xs text-slate-900 font-medium">{content.mailchimp.subjectB}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200">
                       <div>
-                        <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500">Preheader / Vista previa inbox:</span>
-                        <p className="text-xs text-slate-800 font-medium mt-0.5">{content.mailchimp.previewText}</p>
-                      </div>
-                      <button
-                        onClick={() => copyToClipboard(content.mailchimp.newsletterHtml, "mailchimp-html")}
-                        className="flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition shadow-xs"
-                      >
-                        {copiedKey === "mailchimp-html" ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-amber-400" />}
-                        {copiedKey === "mailchimp-html" ? "¡Copiado!" : "Copiar HTML Newsletter"}
-                      </button>
-                    </div>
-
-                    <div className="border border-slate-200 rounded-xl p-8 bg-slate-100 shadow-xs flex justify-center">
-                      <div 
-                        className="max-w-xl w-full"
-                        dangerouslySetInnerHTML={{ __html: content.mailchimp.newsletterHtml }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* 3. WHATSAPP TAB */}
-                {activeTab === "whatsapp" && (
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200">
-                      <div>
-                        <span className="text-xs text-emerald-700 font-bold uppercase tracking-wider">Formato móvil con negritas y emojis:</span>
-                        <p className="text-xs text-slate-500 mt-0.5">Listo para listas de difusión y comunidades de WhatsApp B2B</p>
-                      </div>
-                      <button
-                        onClick={() => copyToClipboard(content.whatsapp.formattedMessage, "whatsapp-text")}
-                        className="flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition shadow-xs"
-                      >
-                        {copiedKey === "whatsapp-text" ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-emerald-400" />}
-                        {copiedKey === "whatsapp-text" ? "¡Copiado!" : "Copiar Texto Formateado"}
-                      </button>
-                    </div>
-
-                    <div className="bg-[#0b141a] p-6 rounded-xl border border-emerald-950/60 max-w-md mx-auto w-full shadow-lg">
-                      <div className="bg-[#202c33] text-[#e9edef] p-4 rounded-lg text-xs leading-relaxed whitespace-pre-line border-l-4 border-emerald-500">
-                        {content.whatsapp.formattedMessage}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 4. LINKEDIN TAB */}
-                {activeTab === "linkedin" && (
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200">
-                      <div>
-                        <span className="text-xs text-blue-700 font-bold uppercase tracking-wider">Post B2B con Hook + Valor Técnico:</span>
-                        <p className="text-xs text-slate-500 mt-0.5">Optimizado para el algoritmo de LinkedIn (debate y lectura)</p>
-                      </div>
-                      <button
-                        onClick={() => copyToClipboard(content.linkedin.fullPostText, "linkedin-text")}
-                        className="flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition shadow-xs"
-                      >
-                        {copiedKey === "linkedin-text" ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-blue-400" />}
-                        {copiedKey === "linkedin-text" ? "¡Copiado!" : "Copiar Post para LinkedIn"}
-                      </button>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 max-w-xl mx-auto w-full shadow-xs">
-                      <div className="flex items-center gap-3 mb-4 border-b border-slate-100 pb-3">
-                        <div className="w-10 h-10 rounded-full bg-[#0f172a] flex items-center justify-center font-bold text-white text-sm">
-                          ES
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold text-slate-900">EcomShop / EcomSpain &bull; B2B Networking</div>
-                          <div className="text-[11px] text-slate-500">Mayorista en redes y telecomunicaciones</div>
-                        </div>
-                      </div>
-
-                      <div className="text-xs text-slate-800 whitespace-pre-line leading-relaxed font-sans">
-                        {content.linkedin.fullPostText}
+                        <label className="text-[11px] font-bold text-slate-700 block mb-1">Público</label>
+                        <input
+                          type="text"
+                          value={targetAudience}
+                          onChange={(e) => setTargetAudience(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs text-slate-800"
+                        />
                       </div>
                     </div>
                   </div>
                 )}
               </div>
-            </div>
-          ) : (
-            <div className="bg-slate-900 border border-slate-800 rounded-xl h-full flex flex-col items-center justify-center p-12 text-center text-slate-400">
-              <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-sky-400 mb-4 shadow-inner">
-                <Sparkles className="w-8 h-8" />
+            )}
+
+            {/* 3. Acordeón Colapsable "⚙️ Ajustes Editoriales Avanzados" */}
+            <details className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xs group">
+              <summary className="p-3.5 flex items-center justify-between text-xs font-bold text-slate-200 cursor-pointer hover:bg-slate-800/60 transition list-none select-none">
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-sky-400" />
+                  <span>⚙️ Ajustes Editoriales Avanzados</span>
+                  <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
+                    ({editorialControls.targetSector.replace("_", " ")} &bull; {editorialControls.competitorFocus})
+                  </span>
+                </div>
+                <ChevronDown className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform duration-200" />
+              </summary>
+              <div className="p-3 border-t border-slate-800 bg-slate-950/40">
+                <EditorialControlsBar
+                  controls={editorialControls}
+                  onChange={setEditorialControls}
+                  onApplyToRadar={handleRegenerateRadar}
+                  isApplying={isRegeneratingRadar}
+                  embedded={true}
+                />
               </div>
-              <h3 className="text-base font-bold text-white mb-1">Sin contenido generado aún</h3>
-              <p className="text-xs max-w-sm mb-6 text-slate-400">
-                Selecciona uno de los temas semanales predefinidos o personaliza los parámetros a la izquierda y pulsa en "Generar Paquete Multicanal".
-              </p>
+            </details>
+
+            {/* 4. Botón Único de Acción Principal (Sticky al pie del panel izquierdo) */}
+            <div className="sticky bottom-4 z-20 bg-slate-950/95 backdrop-blur-md p-3.5 rounded-2xl border border-slate-800 shadow-2xl space-y-2 mt-auto">
               <button
-                onClick={handleGenerate}
-                disabled={loading}
-                className="bg-sky-600 hover:bg-sky-500 text-white px-5 py-2.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition shadow-lg shadow-sky-600/20"
+                type="button"
+                onClick={handleUnifiedLaunch}
+                disabled={loading || (campaignStage !== "IDLE" && campaignStage !== "COMPLETED" && campaignStage !== "ERROR")}
+                className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-indigo-600/30 active:scale-95 cursor-pointer"
               >
-                <Sparkles className="w-4 h-4" />
-                Generar primer artículo piloto
+                {loading || (campaignStage !== "IDLE" && campaignStage !== "COMPLETED" && campaignStage !== "ERROR") ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Generando Campaña en Directo...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 text-amber-300" />
+                    <span>🚀 Generar Campaña Multicanal</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleOpenJuniaEngine()}
+                disabled={isGeneratingOutline || loading}
+                className="w-full bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white font-semibold py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-2 transition"
+              >
+                {isGeneratingOutline ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-slate-200 rounded-full animate-spin" />
+                    <span>Creando Outline Técnico...</span>
+                  </>
+                ) : (
+                  <>
+                    <Layers className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>📋 Planificar Outline (The Junia Engine)</span>
+                  </>
+                )}
               </button>
             </div>
-          )}
-        </div>
-          </div>
+          </aside>
+
+          {/* ========================================================================= */}
+          {/* PANEL DERECHO: EL CANVAS DE RESULTADOS (65% Ancho / 8 Columnas)            */}
+          {/* ========================================================================= */}
+          <main className="lg:col-span-8 xl:col-span-8 bg-slate-900/60 border border-slate-800 rounded-2xl p-6 flex flex-col min-h-[calc(100vh-6rem)] shadow-sm overflow-hidden">
+            {/* ESTADO 1: VACÍO (IDLE) */}
+            {campaignStage === "IDLE" && !content && (
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-6 sm:p-10 text-slate-300">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-950/80 border border-indigo-500/30 text-indigo-300 text-xs font-semibold mb-5 shadow-lg shadow-indigo-950/50">
+                  <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Lienzo de Trabajo Activo • Marketing Copilot B2B</span>
+                </div>
+
+                <h2 className="font-editorial text-2xl sm:text-3xl font-bold text-white tracking-tight max-w-xl mb-3">
+                  Generador Multicanal Fundamentado con NotebookLM
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-400 max-w-lg mb-8 leading-relaxed">
+                  Selecciona una oportunidad a la izquierda o introduce una URL para desplegar la campaña completa.
+                </p>
+
+                {/* 3 Pasos Visuales del Motor Editorial */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-3xl mb-8 text-left">
+                  <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2">
+                    <div className="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-400 font-mono font-bold text-xs flex items-center justify-center border border-sky-500/30">
+                      01
+                    </div>
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                      Selección o URL
+                    </h4>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Elige una oportunidad algorítmica del radar o pega la URL de un equipo de ecomshop.es a la izquierda.
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2">
+                    <div className="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 font-mono font-bold text-xs flex items-center justify-center border border-indigo-500/30">
+                      02
+                    </div>
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                      Grounding Oficial
+                    </h4>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      NotebookLM extrae fichas técnicas EnGenius (Wi-Fi 7, PoE+, 10G) y audita compatibilidades en tiempo real.
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 font-mono font-bold text-xs flex items-center justify-center border border-emerald-500/30">
+                      03
+                    </div>
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                      Despliegue Omnicanal
+                    </h4>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Revisa y copia con 1 clic los 4 formatos calibrados con directivas comerciales y fotos recomendadas.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Tarjetas de Acceso Rápido de Prueba */}
+                <div className="bg-slate-950/90 border border-slate-800/90 rounded-xl p-5 max-w-2xl w-full text-left space-y-3">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span className="font-semibold text-slate-300">Probar con equipos estrella (1-clic):</span>
+                    <span className="text-[11px] font-mono text-emerald-400">● 100% Cero Licencias</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProductUrl("https://www.ecomshop.es/engenius-ecw536");
+                        setTopicTitle("EnGenius ECW536 Cloud WiFi 7 AP");
+                        setCategory("engenius");
+                        setCustomAngle("ROI");
+                        handleGenerate();
+                      }}
+                      className="p-3 bg-slate-900 hover:bg-slate-800/90 border border-slate-700/80 hover:border-sky-500/60 rounded-lg text-left transition group space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-sky-400 group-hover:text-sky-300">ECW536</span>
+                        <Zap className="w-3 h-3 text-amber-400" />
+                      </div>
+                      <p className="text-[11px] text-slate-300 font-medium">Wi-Fi 7 Enterprise 4x4</p>
+                      <span className="text-[10px] text-slate-500 block">Probar campaña &rarr;</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProductUrl("https://www.ecomshop.es/engenius-ecs1528fp");
+                        setTopicTitle("Switch EnGenius ECS1528FP Cloud PoE+");
+                        setCategory("switches");
+                        setCustomAngle("PERFORMANCE");
+                        handleGenerate();
+                      }}
+                      className="p-3 bg-slate-900 hover:bg-slate-800/90 border border-slate-700/80 hover:border-indigo-500/60 rounded-lg text-left transition group space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-indigo-400 group-hover:text-indigo-300">ECS1528FP</span>
+                        <Zap className="w-3 h-3 text-amber-400" />
+                      </div>
+                      <p className="text-[11px] text-slate-300 font-medium">Switch 24p PoE+ 410W</p>
+                      <span className="text-[10px] text-slate-500 block">Probar campaña &rarr;</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProductUrl("https://www.ecomshop.es/engenius-esg510");
+                        setTopicTitle("Gateway EnGenius ESG510 Cloud Security 2.5G");
+                        setCategory("engenius");
+                        setCustomAngle("OPERATIONS");
+                        handleGenerate();
+                      }}
+                      className="p-3 bg-slate-900 hover:bg-slate-800/90 border border-slate-700/80 hover:border-emerald-500/60 rounded-lg text-left transition group space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-emerald-400 group-hover:text-emerald-300">ESG510</span>
+                        <Zap className="w-3 h-3 text-amber-400" />
+                      </div>
+                      <p className="text-[11px] text-slate-300 font-medium">Gateway 2.5G Security</p>
+                      <span className="text-[10px] text-slate-500 block">Probar campaña &rarr;</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ESTADO 2: PROGRESO EN VIVO (GENERATING / STEPPER) */}
+            {campaignStage !== "IDLE" && campaignStage !== "COMPLETED" && (
+              <div className="flex-1 flex flex-col justify-center p-6 sm:p-10">
+                <div className="max-w-2xl mx-auto w-full space-y-6">
+                  <div className="text-center space-y-2">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center mx-auto mb-2 animate-bounce">
+                      <Sparkles className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-lg font-bold text-white tracking-wide">
+                      Pipeline de Campaña en Ejecución
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Extrayendo datos de EcomShop, cotejando con Master NotebookLM y aplicando Quality Gate:
+                    </p>
+                  </div>
+
+                  <CampaignStepper
+                    currentStage={campaignStage}
+                    errorMessage={campaignErrorMessage}
+                    onRetry={handleUnifiedLaunch}
+                    activeSku={campaignOpportunity?.sku || "SKU EcomShop"}
+                    activeAngle={campaignOpportunity?.recommendedAngle || customAngle}
+                  />
+
+                  {campaignErrorMessage && (
+                    <div className="p-4 bg-rose-950/60 border border-rose-500/50 rounded-xl text-center space-y-3">
+                      <p className="text-xs text-rose-200 font-medium">{campaignErrorMessage}</p>
+                      <button
+                        type="button"
+                        onClick={handleUnifiedLaunch}
+                        className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg transition"
+                      >
+                        Reintentar Generación
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ESTADO 3: WORKSPACE DE CONTENIDOS (COMPLETED) */}
+            {content && (campaignStage === "COMPLETED" || campaignStage === "IDLE") && (
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Cabecera del Workspace de Contenidos */}
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-md">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="bg-emerald-950 text-emerald-300 text-xs px-2.5 py-0.5 rounded font-bold border border-emerald-800 flex items-center gap-1">
+                        <ShieldCheck className="w-3.5 h-3.5" /> Quality Gate: 95/100
+                      </span>
+                      {campaignOpportunity?.sku && (
+                        <span className="bg-slate-800 text-sky-400 text-xs px-2 py-0.5 rounded font-mono border border-slate-700">
+                          SKU: {campaignOpportunity.sku}
+                        </span>
+                      )}
+                      <span className="bg-indigo-950 text-indigo-300 text-xs px-2 py-0.5 rounded font-mono border border-indigo-800">
+                        {category.toUpperCase()}
+                      </span>
+                    </div>
+                    <h3 className="text-base font-bold text-white line-clamp-1">
+                      {content.blog?.title || topicTitle}
+                    </h3>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCampaignStage("IDLE");
+                        setContent(null);
+                        setCampaignOpportunity(null);
+                      }}
+                      className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 border border-slate-700 transition"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Nueva Campaña</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Veto del EvidenceEngine si hubo ajustes */}
+                {content.evidenceEngineAdjustments && content.evidenceEngineAdjustments.length > 0 && (
+                  <div className="bg-amber-950/30 border border-amber-500/40 rounded-xl p-3.5 mb-4 text-xs flex items-start gap-2.5">
+                    <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <span className="font-bold text-amber-300 block">
+                        🛡️ Ajustes aplicados por Veto Absoluto del EvidenceEngine:
+                      </span>
+                      {content.evidenceEngineAdjustments.map((adj, i) => (
+                        <p key={i} className="text-amber-200 text-[11px]">
+                          <strong>{adj.corrected}</strong>: {adj.reason}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Selector de Pestañas Horizontales */}
+                <div className="bg-slate-950/80 p-1.5 rounded-xl border border-slate-800 flex items-center gap-1 text-xs mb-4 overflow-x-auto">
+                  <button
+                    type="button"
+                    onClick={() => setCanvasActiveTab("blog")}
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg font-bold transition shrink-0 ${
+                      canvasActiveTab === "blog"
+                        ? "bg-sky-600 text-white shadow-sm"
+                        : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <Globe className="w-3.5 h-3.5 text-sky-300" />
+                    <span>📝 Blog Técnico SEO</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCanvasActiveTab("linkedin")}
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg font-bold transition shrink-0 ${
+                      canvasActiveTab === "linkedin"
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <Share2 className="w-3.5 h-3.5 text-blue-300" />
+                    <span>💼 LinkedIn B2B</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCanvasActiveTab("mailchimp")}
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg font-bold transition shrink-0 ${
+                      canvasActiveTab === "mailchimp"
+                        ? "bg-amber-600 text-white shadow-sm"
+                        : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <Mail className="w-3.5 h-3.5 text-amber-300" />
+                    <span>📧 Mailchimp HTML</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCanvasActiveTab("whatsapp")}
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg font-bold transition shrink-0 ${
+                      canvasActiveTab === "whatsapp"
+                        ? "bg-emerald-600 text-white shadow-sm"
+                        : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 text-emerald-300" />
+                    <span>💬 WhatsApp Comercial</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCanvasActiveTab("intel")}
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg font-bold transition shrink-0 ${
+                      canvasActiveTab === "intel"
+                        ? "bg-indigo-600 text-white shadow-sm"
+                        : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-300" />
+                    <span>🔍 Evidencias Auditadas</span>
+                  </button>
+                </div>
+
+                {/* Toast de Guardado Exitoso */}
+                {saveSuccessMessage && (
+                  <div className="mb-3 p-2.5 bg-emerald-950/80 border border-emerald-500/50 rounded-lg text-emerald-300 text-xs font-semibold flex items-center justify-between animate-fadeIn">
+                    <span>{saveSuccessMessage}</span>
+                    <Check className="w-4 h-4 text-emerald-400" />
+                  </div>
+                )}
+
+                {/* Contenido de Cada Pestaña */}
+                <div className="flex-1 overflow-y-auto pr-1">
+                  {/* PESTAÑA 1: BLOG TÉCNICO SEO */}
+                  {canvasActiveTab === "blog" && (
+                    <div className="space-y-4">
+                      {/* Barra de Acciones Superior */}
+                      <div className="flex flex-wrap items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800 gap-3">
+                        <div className="text-xs text-slate-400">
+                          Slug: <code className="text-sky-400 font-mono">/{content.blog?.slug}</code> &bull; Lectura: <strong className="text-white">{content.blog?.readingTimeMinutes} min</strong>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(content.blog?.htmlContent || "", "blog-html")}
+                            className="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-sm"
+                          >
+                            {copiedKey === "blog-html" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedKey === "blog-html" ? "¡Copiado!" : "📋 Copiar al Portapapeles"}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveToFirestore("approved")}
+                            disabled={isSavingArticle}
+                            className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-slate-700 transition"
+                          >
+                            <Save className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>{isSavingArticle ? "Guardando..." : "💾 Guardar / Aprobar en Firestore"}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Guía de Fotos para Imagen 3 */}
+                      {content.blog?.editorialLayout?.photoPlacements && content.blog.editorialLayout.photoPlacements.length > 0 && (
+                        <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
+                              <ImageIcon className="w-3.5 h-3.5" /> Fotos Sugeridas para Imagen 3 & Durable CMS
+                            </span>
+                            <span className="text-[10px] bg-purple-950 text-purple-300 px-2 py-0.5 rounded font-mono border border-purple-800">
+                              {content.blog.editorialLayout.photoPlacements.length} Prompts
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {content.blog.editorialLayout.photoPlacements.map((photo, i) => (
+                              <div key={i} className="bg-slate-900 rounded-lg p-3 border border-slate-800 flex flex-col justify-between gap-2">
+                                <p className="text-xs text-slate-300 font-medium line-clamp-2">
+                                  {photo.description}
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setImagePrompt(photo.imagen3Prompt);
+                                    setMainView("image_studio");
+                                  }}
+                                  className="w-full text-center bg-purple-900/60 hover:bg-purple-800 text-purple-200 text-[11px] font-bold py-1 px-2 rounded transition border border-purple-700/60"
+                                >
+                                  🎨 Generar en Estudio Imagen 3 &rarr;
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Visor HTML Renderizado */}
+                      <div className="bg-white rounded-xl p-6 text-slate-900 shadow-md border border-slate-200">
+                        <div
+                          className="prose max-w-none text-sm font-sans leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: content.blog?.htmlContent || "" }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PESTAÑA 2: LINKEDIN B2B */}
+                  {canvasActiveTab === "linkedin" && (
+                    <div className="space-y-4 max-w-2xl mx-auto">
+                      <div className="flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <span className="text-xs text-blue-400 font-bold uppercase tracking-wider">
+                          Post con Gancho y Valor Técnico
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(content.linkedin?.fullPostText || "", "li-post")}
+                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-sm"
+                          >
+                            {copiedKey === "li-post" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedKey === "li-post" ? "¡Copiado!" : "📋 Copiar al Portapapeles"}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveToFirestore("approved")}
+                            disabled={isSavingArticle}
+                            className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-slate-700 transition"
+                          >
+                            <Save className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>💾 Guardar</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-950 rounded-xl p-5 border border-slate-800 text-slate-200 text-xs leading-relaxed whitespace-pre-line font-sans shadow-md">
+                        {content.linkedin?.fullPostText}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PESTAÑA 3: MAILCHIMP HTML */}
+                  {canvasActiveTab === "mailchimp" && (
+                    <div className="space-y-4">
+                      <div className="flex flex-wrap items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800 gap-3">
+                        <div className="text-xs text-amber-300 font-medium">
+                          Preheader: <span className="text-slate-300">{content.mailchimp?.previewText}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(content.mailchimp?.newsletterHtml || "", "mailchimp-html")}
+                            className="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-sm"
+                          >
+                            {copiedKey === "mailchimp-html" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedKey === "mailchimp-html" ? "¡Copiado!" : "📋 Copiar Template HTML"}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveToFirestore("approved")}
+                            disabled={isSavingArticle}
+                            className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-slate-700 transition"
+                          >
+                            <Save className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>💾 Guardar</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Variantes A/B */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs">
+                          <span className="text-amber-400 font-bold block mb-1">Asunto Variante A:</span>
+                          <p className="text-slate-200">{content.mailchimp?.subjectA}</p>
+                        </div>
+                        <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs">
+                          <span className="text-amber-400 font-bold block mb-1">Asunto Variante B:</span>
+                          <p className="text-slate-200">{content.mailchimp?.subjectB}</p>
+                        </div>
+                      </div>
+
+                      {/* Vista previa newsletter */}
+                      <div className="bg-white rounded-xl p-6 text-slate-900 shadow-md border border-slate-200">
+                        <div
+                          className="prose max-w-none text-sm font-sans"
+                          dangerouslySetInnerHTML={{ __html: content.mailchimp?.newsletterHtml || "" }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PESTAÑA 4: WHATSAPP COMERCIAL */}
+                  {canvasActiveTab === "whatsapp" && (
+                    <div className="space-y-4 max-w-lg mx-auto">
+                      <div className="flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <span className="text-xs text-emerald-400 font-bold uppercase tracking-wider">
+                          Formato Móvil con Emojis
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(content.whatsapp?.formattedMessage || "", "wa-msg")}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-sm"
+                          >
+                            {copiedKey === "wa-msg" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedKey === "wa-msg" ? "¡Copiado!" : "📋 Copiar al Portapapeles"}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveToFirestore("approved")}
+                            disabled={isSavingArticle}
+                            className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-slate-700 transition"
+                          >
+                            <Save className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>💾 Guardar</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Bocadillo de WhatsApp */}
+                      <div className="bg-[#0b141a] p-5 rounded-2xl border border-emerald-950/60 shadow-xl">
+                        <div className="bg-[#202c33] text-[#e9edef] p-4 rounded-xl text-xs leading-relaxed whitespace-pre-line border-l-4 border-emerald-500 font-sans">
+                          {content.whatsapp?.formattedMessage}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PESTAÑA 5: EVIDENCIAS AUDITADAS */}
+                  {canvasActiveTab === "intel" && (
+                    <div className="space-y-4">
+                      {intelligenceCard ? (
+                        <>
+                          <ProductIntelligenceView card={intelligenceCard} />
+                          <EvidenceAuditDrawer
+                            score={95}
+                            evidenceLedger={intelligenceCard.evidenceLedger}
+                            productName={intelligenceCard.product?.model || "EnGenius"}
+                          />
+                        </>
+                      ) : (
+                        <div className="p-8 text-center text-slate-400 bg-slate-950 rounded-xl border border-slate-800">
+                          <ShieldCheck className="w-8 h-8 text-indigo-400 mx-auto mb-2" />
+                          <p className="text-xs">Ficha de inteligencia generada con validación de catálogo EnGenius.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </main>
         </div>
       )}
 
