@@ -11,7 +11,10 @@
     "wt:new": "powershell -ExecutionPolicy Bypass -File ./scripts/wt.ps1 new",
     "wt:list": "powershell -ExecutionPolicy Bypass -File ./scripts/wt.ps1 list",
     "wt:remove": "powershell -ExecutionPolicy Bypass -File ./scripts/wt.ps1 remove",
-    "wt:dev": "powershell -ExecutionPolicy Bypass -File ./scripts/wt.ps1 dev"
+    "wt:dev": "powershell -ExecutionPolicy Bypass -File ./scripts/wt.ps1 dev",
+    "ship": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1",
+    "push": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1 -SkipCloud",
+    "deploy:cloud": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1 -SkipGit"
   },
   "dependencies": {
     "@google-cloud/firestore": "^9.1.0",

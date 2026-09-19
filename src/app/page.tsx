@@ -25,6 +25,7 @@ import {
   Download,
   Eye,
   RefreshCw,
+  RotateCcw,
   Search,
   Filter,
   Plus,
@@ -591,6 +592,9 @@ export default function ContentDashboard() {
   const [imageBase, setImageBase] = useState<string | null>(null);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [imageNotice, setImageNotice] = useState<string | null>(null);
+  const [presetTemplates, setPresetTemplates] = useState<Array<{ id: string; title: string; prompt: string; aspectRatio: "16:9" | "1:1" | "4:3" }>>(PRESET_IMAGE_PROMPTS);
+  const [isRegeneratingTemplates, setIsRegeneratingTemplates] = useState(false);
+  const [varyingTemplateId, setVaryingTemplateId] = useState<string | null>(null);
   const [showInterrogatorModal, setShowInterrogatorModal] = useState(false);
   const [generatedImagesList, setGeneratedImagesList] = useState<
     { id: string; url: string; prompt: string; createdAt: string; sourceType?: string; warning?: string }[]
@@ -730,6 +734,19 @@ export default function ContentDashboard() {
     } catch (err) {
       console.warn("[Storage] Error parseando imágenes guardadas, limpiando:", err);
       try { localStorage.removeItem("ecomshop_generated_images"); } catch {}
+    }
+
+    // Cargar plantillas de imagen personalizadas si existen en localStorage
+    try {
+      const savedTemplates = localStorage.getItem("ecomshop_image_templates");
+      if (savedTemplates) {
+        const parsedTemplates = JSON.parse(savedTemplates);
+        if (Array.isArray(parsedTemplates) && parsedTemplates.length > 0) {
+          setPresetTemplates(parsedTemplates);
+        }
+      }
+    } catch (err) {
+      console.warn("[Storage] Error cargando plantillas de imagen:", err);
     }
   }, []);
 
@@ -1458,6 +1475,87 @@ export default function ContentDashboard() {
     } finally {
       setIsBulkDeletingImages(false);
     }
+  };
+
+  const handleRegenerateAllTemplates = async () => {
+    try {
+      setIsRegeneratingTemplates(true);
+      const res = await fetch("/api/images/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "full_set" })
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      const newTemplates = data.templates || (Array.isArray(data) ? data : null);
+      if (newTemplates && Array.isArray(newTemplates) && newTemplates.length > 0) {
+        setPresetTemplates(newTemplates);
+        try {
+          localStorage.setItem("ecomshop_image_templates", JSON.stringify(newTemplates));
+        } catch {
+          // Silencioso ante cuotas locales
+        }
+        setImageNotice("¡Plantillas técnicas regeneradas con éxito mediante IA!");
+      }
+    } catch (err) {
+      console.error("Error al regenerar plantillas con IA:", err);
+      setImageNotice("No se pudieron regenerar las plantillas con IA en este momento.");
+    } finally {
+      setIsRegeneratingTemplates(false);
+    }
+  };
+
+  const handleVarySingleTemplate = async (
+    templateToVary: (typeof PRESET_IMAGE_PROMPTS)[number],
+    e?: React.MouseEvent
+  ) => {
+    if (e) e.stopPropagation();
+    try {
+      setVaryingTemplateId(templateToVary.id);
+      const res = await fetch("/api/images/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "single_variation", currentTemplate: templateToVary })
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      const varied: (typeof PRESET_IMAGE_PROMPTS)[number] | undefined = data.template || data;
+      if (varied && varied.prompt) {
+        setPresetTemplates((prev) => {
+          const updated = prev.map((item) =>
+            item.id === templateToVary.id ? { ...item, ...varied, id: templateToVary.id } : item
+          );
+          try {
+            localStorage.setItem("ecomshop_image_templates", JSON.stringify(updated));
+          } catch {
+            // Silencioso
+          }
+          return updated;
+        });
+        if (imagePrompt === templateToVary.prompt) {
+          setImagePrompt(varied.prompt);
+          setImageAspectRatio(varied.aspectRatio);
+        }
+      }
+    } catch (err) {
+      console.error("Error al variar plantilla:", err);
+    } finally {
+      setVaryingTemplateId(null);
+    }
+  };
+
+  const handleRestoreDefaultTemplates = () => {
+    setPresetTemplates(PRESET_IMAGE_PROMPTS);
+    try {
+      localStorage.removeItem("ecomshop_image_templates");
+    } catch (err) {
+      console.warn("Error al limpiar plantillas guardadas:", err);
+    }
+    setImageNotice("Plantillas restauradas a los valores de catálogo originales.");
   };
 
   const handleDeleteArticle = async (id: string) => {
@@ -3036,7 +3134,7 @@ export default function ContentDashboard() {
                           <img
                             src={prod.imageUrl}
                             alt={prod.name}
-                            className="object-contain w-full h-full p-1 group-hover/thumb:scale-105 transition duration-200"
+                            className="object-contain w-full h-full p-1.5 group-hover/thumb:scale-105 transition duration-200"
                             loading="lazy"
                           />
                           <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover/thumb:opacity-100 transition flex items-center justify-center gap-1 text-[10px] text-white font-medium">
@@ -3078,21 +3176,84 @@ export default function ContentDashboard() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Plantillas Técnicas Preconfiguradas</label>
-                  <div className="grid grid-cols-1 gap-2">
-                    {PRESET_IMAGE_PROMPTS.map((p) => (
+                  <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
+                    <label className="text-xs font-semibold text-slate-700">
+                      Plantillas Técnicas Preconfiguradas
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      {JSON.stringify(presetTemplates) !== JSON.stringify(PRESET_IMAGE_PROMPTS) && (
+                        <button
+                          type="button"
+                          onClick={handleRestoreDefaultTemplates}
+                          className="text-[10px] text-slate-600 hover:text-slate-900 font-medium px-2 py-0.5 rounded border border-slate-200 bg-white hover:bg-slate-100 transition flex items-center gap-1"
+                          title="Restaurar a las plantillas técnicas originales de fábrica"
+                        >
+                          <RotateCcw className="w-2.5 h-2.5" />
+                          <span>Restaurar</span>
+                        </button>
+                      )}
                       <button
-                        key={p.id}
-                        onClick={() => {
-                          setImagePrompt(p.prompt);
-                          setImageAspectRatio(p.aspectRatio);
-                        }}
-                        className="text-left p-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs text-slate-700 transition"
+                        type="button"
+                        onClick={handleRegenerateAllTemplates}
+                        disabled={isRegeneratingTemplates}
+                        className="text-[10px] text-purple-700 hover:text-purple-800 font-semibold px-2 py-0.5 rounded border border-purple-200 bg-purple-50 hover:bg-purple-100 transition flex items-center gap-1 disabled:opacity-50"
+                        title="Regenerar con IA el juego completo de plantillas técnicas"
                       >
-                        <div className="font-semibold text-slate-900">{p.title}</div>
-                        <div className="text-[10px] text-purple-700 font-mono font-semibold mt-0.5">{p.aspectRatio}</div>
+                        {isRegeneratingTemplates ? (
+                          <>
+                            <RefreshCw className="w-2.5 h-2.5 animate-spin text-purple-600" />
+                            <span>Regenerando...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-2.5 h-2.5 text-purple-600" />
+                            <span>Regenerar con IA</span>
+                          </>
+                        )}
                       </button>
-                    ))}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {presetTemplates.map((p) => {
+                      const isSelected = imagePrompt === p.prompt;
+                      const isVarying = varyingTemplateId === p.id;
+                      return (
+                        <div
+                          key={p.id}
+                          onClick={() => {
+                            setImagePrompt(p.prompt);
+                            setImageAspectRatio(p.aspectRatio);
+                          }}
+                          className={`text-left p-2.5 rounded-lg border text-xs transition cursor-pointer flex items-center justify-between gap-2.5 ${
+                            isSelected
+                              ? "border-purple-500 bg-purple-50/60 shadow-2xs ring-1 ring-purple-400/20"
+                              : "border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700"
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-slate-900 truncate">{p.title}</div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[10px] text-purple-700 font-mono font-semibold bg-purple-100/60 px-1 py-0.2 rounded shrink-0">
+                                {p.aspectRatio}
+                              </span>
+                              <span className="text-[10px] text-slate-500 truncate" title={p.prompt}>
+                                {p.prompt}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => handleVarySingleTemplate(p, e)}
+                            disabled={isVarying || isRegeneratingTemplates}
+                            className="shrink-0 p-1.5 rounded-md hover:bg-purple-100/80 text-slate-500 hover:text-purple-700 border border-slate-200/60 hover:border-purple-300 transition flex items-center gap-1 text-[10px] font-medium bg-white/70 disabled:opacity-40"
+                            title="Variar esta plantilla con IA"
+                          >
+                            <RefreshCw className={`w-3 h-3 ${isVarying ? "animate-spin text-purple-600" : "text-slate-400"}`} />
+                            <span className="hidden sm:inline">Variar</span>
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -3275,7 +3436,7 @@ export default function ContentDashboard() {
                         }`}
                       >
                         <div 
-                          className="relative w-full h-44 sm:h-48 bg-slate-950 flex items-center justify-center overflow-hidden cursor-zoom-in shrink-0"
+                          className="relative w-full h-48 bg-gradient-to-b from-slate-900 to-slate-950 flex items-center justify-center overflow-hidden cursor-zoom-in shrink-0"
                           onClick={() => setSelectedImageForDetail(img)}
                           title="Haz clic para ampliar la foto y ver detalles de generación"
                         >
@@ -3303,7 +3464,7 @@ export default function ContentDashboard() {
                             <img 
                               src={img.url} 
                               alt={img.prompt} 
-                              className="object-cover w-full h-full group-hover:scale-105 transition duration-300"
+                              className="object-contain w-full h-full p-2 group-hover:scale-105 transition duration-300"
                               loading="lazy" 
                             />
                           ) : (
