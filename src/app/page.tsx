@@ -84,6 +84,7 @@ import {
   deleteImagesBulkFromIndexedDB,
   clearAllImagesFromIndexedDB
 } from "@/lib/image-db";
+import { ImageStudioView } from "@/components/image-studio-view";
 
 export default function ContentDashboard() {
   const [selectedPresetId, setSelectedPresetId] = useState(PRESET_TOPICS[0].id);
@@ -3223,564 +3224,60 @@ export default function ContentDashboard() {
         </div>
       )}
 
-      {/* VISTA 3: ESTUDIO DE IMÁGENES (IMAGEN 3) */}
+      {/* VISTA 3: ESTUDIO DE IMÁGENES (IMAGEN 3 & GALERÍA RESPONSIVA) */}
       {mainView === "image_studio" && (
-        <div className="flex-1 max-w-[1780px] 2xl:max-w-[1920px] mx-auto w-full p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-5 flex flex-col gap-4">
-            <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-xs">
-              <h2 className="font-editorial text-base font-bold text-slate-900 flex items-center gap-2 mb-1">
-                <ImageIcon className="w-4 h-4 text-purple-600" />
-                Estudio Visual con Google Imagen 3
-              </h2>
-              <p className="text-xs text-slate-500 mb-4">
-                Genera imágenes fotorrealistas de infraestructuras IT, racks, APs y fibra óptica para el blog y redes sociales.
-              </p>
-
-              <div className="flex flex-col gap-3">
-                {/* Botón Destacado: Agente Interrogador */}
-                <button
-                  type="button"
-                  onClick={() => setShowInterrogatorModal(true)}
-                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold p-3 rounded-xl text-xs flex items-center justify-between shadow-xs transition"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center">
-                      <Camera className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-bold">Director de Arte IA (Interrogatorio)</div>
-                      <div className="text-[10px] text-purple-100 font-normal">
-                        Responde preguntas clave o perfila desde una foto base
-                      </div>
-                    </div>
-                  </div>
-                  <Sparkles className="w-4 h-4 text-amber-300" />
-                </button>
-
-                {/* Subida / Visualización de Imagen Base */}
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-                      <Upload className="w-3.5 h-3.5 text-purple-600" />
-                      Imagen Base de Referencia (Opcional)
-                    </label>
-                    {imageBase && (
-                      <button
-                        type="button"
-                        onClick={() => setImageBase(null)}
-                        className="text-[10px] text-rose-600 hover:underline font-semibold"
-                      >
-                        Quitar
-                      </button>
-                    )}
-                  </div>
-
-                  {imageBase ? (
-                    <div className="relative aspect-video bg-slate-900 rounded-lg overflow-hidden border border-purple-300 group">
-                      <img src={imageBase} alt="Base" className="w-full h-full object-contain" />
-                      <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                        <span className="text-white text-[11px] font-medium">Referencia activa para variaciones</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <label className="border border-dashed border-slate-300 hover:border-purple-400 bg-white hover:bg-purple-50/30 rounded-lg p-2.5 flex items-center justify-center gap-2 cursor-pointer transition">
-                      <Upload className="w-4 h-4 text-slate-400" />
-                      <span className="text-xs text-slate-600">Subir imagen base para guiar la generación</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          try {
-                            const compressed = await compressImageToDataUrl(file);
-                            setImageBase(compressed);
-                          } catch {
-                            const reader = new FileReader();
-                            reader.onload = (ev) => {
-                              setImageBase(ev.target?.result as string);
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                      />
-                    </label>
-                  )}
-                </div>
-
-                {/* Bloque de Fotos Reales de Producto (NotebookLM - 100% Sin Alucinaciones) */}
-                <div className="border border-emerald-200 bg-emerald-50/50 rounded-xl p-3">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <Shield className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <label className="text-xs font-bold text-emerald-950">Fotos Reales Oficiales (NotebookLM)</label>
-                    </div>
-                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded border border-emerald-200">
-                      0 Alucinaciones · 0€
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-emerald-800/80 mb-2.5 leading-snug">
-                    Hardware exacto del catálogo oficial sin manipulación por IA. Fotos de fabricante para tienda y blog:
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 max-h-[320px] overflow-y-auto pr-1">
-                    {STAR_PRODUCTS.map((prod) => (
-                      <div
-                        key={prod.id}
-                        className="bg-white border border-emerald-200/80 rounded-lg p-2 flex flex-col justify-between hover:shadow-xs transition"
-                      >
-                        <div 
-                          className="relative aspect-video bg-slate-50 rounded overflow-hidden mb-1.5 flex items-center justify-center border border-slate-100 cursor-zoom-in group/thumb"
-                          onClick={() => setSelectedImageForDetail({
-                            id: prod.id,
-                            url: prod.imageUrl,
-                            prompt: `${prod.name} (${prod.model}) — ${prod.description}. Especificaciones Oficiales: ${prod.specs.join(", ")}`,
-                            createdAt: "Catálogo Oficial",
-                            sourceType: "official_product"
-                          })}
-                          title="Clic para ampliar y ver fotografía oficial en detalle"
-                        >
-                          <img
-                            src={prod.imageUrl}
-                            alt={prod.name}
-                            className="object-contain w-full h-full p-1.5 group-hover/thumb:scale-105 transition duration-200"
-                            loading="lazy"
-                          />
-                          <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover/thumb:opacity-100 transition flex items-center justify-center gap-1 text-[10px] text-white font-medium">
-                            <Maximize2 className="w-3.5 h-3.5" />
-                            <span>Ampliar</span>
-                          </div>
-                        </div>
-                        <div className="text-[11px] font-bold text-slate-900 truncate mb-0.5" title={prod.name}>
-                          {prod.model}
-                        </div>
-                        <div className="text-[10px] text-slate-500 line-clamp-1 mb-2">
-                          {prod.description}
-                        </div>
-                        <div className="grid grid-cols-2 gap-1 mt-auto">
-                          <button
-                            type="button"
-                            onClick={() => handleUseRealProductPhoto(prod)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-1 rounded text-[10px] transition text-center"
-                            title="Añadir fotografía real a la galería (Coste: 0€)"
-                          >
-                            Usar (0€)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setImageBase(prod.imageUrl);
-                              setImagePrompt(`Corporate architectural placement of ${prod.name} (${prod.model}) in an enterprise office`);
-                              window.scrollTo({ top: 0, behavior: "smooth" });
-                            }}
-                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-1 px-1 rounded text-[10px] transition text-center"
-                            title="Usar como base de referencia visual"
-                          >
-                            Como Base
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
-                    <label className="text-xs font-semibold text-slate-700">
-                      Plantillas Técnicas Preconfiguradas
-                    </label>
-                    <div className="flex items-center gap-1.5">
-                      {JSON.stringify(presetTemplates) !== JSON.stringify(PRESET_IMAGE_PROMPTS) && (
-                        <button
-                          type="button"
-                          onClick={handleRestoreDefaultTemplates}
-                          className="text-[10px] text-slate-600 hover:text-slate-900 font-medium px-2 py-0.5 rounded border border-slate-200 bg-white hover:bg-slate-100 transition flex items-center gap-1"
-                          title="Restaurar a las plantillas técnicas originales de fábrica"
-                        >
-                          <RotateCcw className="w-2.5 h-2.5" />
-                          <span>Restaurar</span>
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={handleRegenerateAllTemplates}
-                        disabled={isRegeneratingTemplates}
-                        className="text-[10px] text-purple-700 hover:text-purple-800 font-semibold px-2 py-0.5 rounded border border-purple-200 bg-purple-50 hover:bg-purple-100 transition flex items-center gap-1 disabled:opacity-50"
-                        title="Regenerar con IA el juego completo de plantillas técnicas"
-                      >
-                        {isRegeneratingTemplates ? (
-                          <>
-                            <RefreshCw className="w-2.5 h-2.5 animate-spin text-purple-600" />
-                            <span>Regenerando...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-2.5 h-2.5 text-purple-600" />
-                            <span>Regenerar con IA</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {presetTemplates.map((p) => {
-                      const isSelected = imagePrompt === p.prompt;
-                      const isVarying = varyingTemplateId === p.id;
-                      return (
-                        <div
-                          key={p.id}
-                          onClick={() => {
-                            setImagePrompt(p.prompt);
-                            setImageAspectRatio(p.aspectRatio);
-                          }}
-                          className={`text-left p-2.5 rounded-lg border text-xs transition cursor-pointer flex items-center justify-between gap-2.5 ${
-                            isSelected
-                              ? "border-purple-500 bg-purple-50/60 shadow-2xs ring-1 ring-purple-400/20"
-                              : "border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700"
-                          }`}
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="font-semibold text-slate-900 truncate">{p.title}</div>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-[10px] text-purple-700 font-mono font-semibold bg-purple-100/60 px-1 py-0.2 rounded shrink-0">
-                                {p.aspectRatio}
-                              </span>
-                              <span className="text-[10px] text-slate-500 truncate" title={p.prompt}>
-                                {p.prompt}
-                              </span>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => handleVarySingleTemplate(p, e)}
-                            disabled={isVarying || isRegeneratingTemplates}
-                            className="shrink-0 p-1.5 rounded-md hover:bg-purple-100/80 text-slate-500 hover:text-purple-700 border border-slate-200/60 hover:border-purple-300 transition flex items-center gap-1 text-[10px] font-medium bg-white/70 disabled:opacity-40"
-                            title="Variar esta plantilla con IA"
-                          >
-                            <RefreshCw className={`w-3 h-3 ${isVarying ? "animate-spin text-purple-600" : "text-slate-400"}`} />
-                            <span className="hidden sm:inline">Variar</span>
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700">
-                      Prompt de Generación (Inglés recomendado)
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleRefinePrompt}
-                      disabled={refiningPrompt || !imagePrompt.trim()}
-                      className="text-[11px] text-purple-700 hover:text-purple-800 font-bold flex items-center gap-1 bg-purple-50 hover:bg-purple-100 border border-purple-200/80 px-2 py-0.5 rounded transition disabled:opacity-40"
-                      title="Analizar y cualificar el prompt actual con IA"
-                    >
-                      {refiningPrompt ? (
-                        <>
-                          <div className="w-2.5 h-2.5 border-2 border-purple-600/30 border-t-purple-600 rounded-full animate-spin" />
-                          <span>Cualificando...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-3 h-3 text-purple-600" />
-                          <span>✨ Cualificar con IA</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                  <textarea
-                    rows={4}
-                    value={imagePrompt}
-                    onChange={(e) => {
-                      setImagePrompt(e.target.value);
-                      if (promptRefinement) setPromptRefinement(null);
-                    }}
-                    placeholder="Describe tu idea en español o inglés (ej: switch de 24 puertos en rack con luces led azule y cables ordenados)..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:border-purple-600 focus:bg-white resize-none font-mono"
-                  />
-
-                  {/* Asistente y Comparativa de Prompt Cualificado */}
-                  <div className="mt-2">
-                    <PromptRefinementCard
-                      refinement={promptRefinement}
-                      loading={refiningPrompt}
-                      currentPrompt={imagePrompt}
-                      onRequestRefine={handleRefinePrompt}
-                      onApply={handleApplyRefinedPrompt}
-                      onApplyAndGenerate={handleApplyAndGenerateRefinedPrompt}
-                      onDismiss={() => setPromptRefinement(null)}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Formato / Relación de Aspecto</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(["16:9", "1:1", "4:3"] as const).map((ratio) => (
-                      <button
-                        key={ratio}
-                        onClick={() => setImageAspectRatio(ratio)}
-                        className={`py-1.5 rounded-lg border text-xs font-semibold transition ${
-                          imageAspectRatio === ratio
-                            ? "bg-purple-100 border-purple-500 text-purple-950 shadow-2xs"
-                            : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
-                        }`}
-                      >
-                        {ratio}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {imageNotice && (
-                  <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-[11px] leading-snug flex items-start gap-1.5">
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                    <span>{imageNotice}</span>
-                  </div>
-                )}
-
-                <div className="flex flex-col gap-2 mt-2">
-                  <button
-                    onClick={() => handleGenerateImage("ai")}
-                    disabled={generatingImage}
-                    className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-2.5 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition shadow-xs"
-                  >
-                    {generatingImage ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>Generando con IA Flash (~0,004 €)...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4" />
-                        <span>Generar con IA Flash (~0,004 €)</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => handleGenerateImage("curated")}
-                    disabled={generatingImage}
-                    className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg text-xs flex items-center justify-center gap-1.5 transition"
-                  >
-                    <span>🖼️ Usar Banco de Stock Web (Gratis 0,00 €)</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="lg:col-span-7 flex flex-col gap-4">
-            <div className="bg-white border border-slate-200/80 rounded-xl p-5 flex-1 flex flex-col shadow-xs">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h3 className="font-editorial text-sm font-bold text-slate-900">
-                    Galería de Imágenes Generadas ({generatedImagesList.length})
-                  </h3>
-                  <p className="text-[11px] text-slate-500">Historial persistente de activos visuales en IndexedDB y Firestore</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {generatedImagesList.length > 0 && (
-                    <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 cursor-pointer select-none bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-md hover:bg-slate-100 transition">
-                      <input
-                        type="checkbox"
-                        checked={
-                          generatedImagesList.length > 0 &&
-                          generatedImagesList.every((img) => selectedImageIds.includes(img.id))
-                        }
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedImageIds(generatedImagesList.map((img) => img.id));
-                          } else {
-                            setSelectedImageIds([]);
-                          }
-                        }}
-                        className="w-3.5 h-3.5 rounded text-purple-600 focus:ring-purple-500 border-slate-300 cursor-pointer"
-                      />
-                      <span>Seleccionar todas</span>
-                    </label>
-                  )}
-                  {generatedImagesList.length > 0 && (
-                    <button
-                      onClick={handleClearAllImages}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-rose-200 bg-rose-50 hover:bg-rose-100 text-[11px] font-semibold text-rose-700 transition shadow-2xs"
-                      title="Eliminar todas las imágenes del historial"
-                    >
-                      <Trash2 className="w-3 h-3 text-rose-500" />
-                      <span>Borrar todas</span>
-                    </button>
-                  )}
-                  <button
-                    onClick={() => loadDatabaseAssets()}
-                    disabled={loadingDatabaseAssets}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-semibold text-slate-700 transition shadow-2xs"
-                    title="Recargar imágenes desde Firestore"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${loadingDatabaseAssets ? "animate-spin text-purple-600" : "text-slate-500"}`} />
-                    <span>{loadingDatabaseAssets ? "Cargando..." : "Recargar BBDD"}</span>
-                  </button>
-                </div>
-              </div>
-
-              {generatedImagesList.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-slate-400">
-                  <ImageIcon className="w-12 h-12 text-slate-300 mb-2" />
-                  <p className="text-xs font-medium text-slate-600">No hay imágenes generadas en esta sesión.</p>
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Selecciona una plantilla, sube una foto base o activa el Director IA a la izquierda para generar activos visuales únicos.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto max-h-[650px]">
-                  {generatedImagesList.map((img) => {
-                    const isSelected = selectedImageIds.includes(img.id);
-                    return (
-                      <div 
-                        key={img.id} 
-                        className={`bg-white border rounded-xl overflow-hidden group hover:shadow-md transition duration-200 flex flex-col justify-between shadow-2xs ${
-                          isSelected ? "border-purple-500 ring-2 ring-purple-500/30 bg-purple-50/10" : "border-slate-200"
-                        }`}
-                      >
-                        <div 
-                          className="relative w-full h-48 bg-gradient-to-b from-slate-900 to-slate-950 flex items-center justify-center overflow-hidden cursor-zoom-in shrink-0"
-                          onClick={() => setSelectedImageForDetail(img)}
-                          title="Haz clic para ampliar la foto y ver detalles de generación"
-                        >
-                          {/* Checkbox de Selección Masiva */}
-                          <div 
-                            className="absolute top-2 right-2 z-20"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedImageIds(prev => [...prev, img.id]);
-                                } else {
-                                  setSelectedImageIds(prev => prev.filter(id => id !== img.id));
-                                }
-                              }}
-                              className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-400 bg-slate-900/80 cursor-pointer shadow-md"
-                              title="Seleccionar para acción masiva"
-                            />
-                          </div>
-
-                          {img.url ? (
-                            <img 
-                              src={img.url} 
-                              alt={img.prompt} 
-                              className="object-contain w-full h-full p-2 group-hover:scale-105 transition duration-300"
-                              loading="lazy" 
-                            />
-                          ) : (
-                            <div className="flex flex-col items-center justify-center text-slate-500 gap-1.5 p-4 text-center">
-                              <ImageIcon className="w-8 h-8 text-slate-600 mb-1" />
-                              <span className="text-[11px] font-medium text-slate-400">Miniatura no disponible</span>
-                            </div>
-                          )}
-                          {img.sourceType && (
-                            <span className={`absolute top-2 left-2 text-[9px] px-2 py-0.5 rounded font-mono font-medium backdrop-blur-xs z-10 ${
-                              img.sourceType === "official_product"
-                                ? "bg-emerald-700/95 text-emerald-100 border border-emerald-500/30"
-                                : "bg-slate-900/80 text-white border border-white/10"
-                            }`}>
-                              {img.sourceType === "official_product"
-                                ? "✓ Foto Oficial (NotebookLM)"
-                                : img.sourceType === "imagen3"
-                                ? "Google Imagen 3"
-                                : img.sourceType === "gemini_multimodal"
-                                ? "Multimodal Gemini"
-                                : "Stock Variado"}
-                            </span>
-                          )}
-                          {/* Overlay para ampliar */}
-                          <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5 text-white font-medium text-xs backdrop-blur-2xs">
-                            <Maximize2 className="w-4 h-4 text-sky-300" />
-                            <span>Ampliar en Detalle</span>
-                          </div>
-                        </div>
-                        <div className="p-3 flex flex-col gap-2 flex-1 justify-between">
-                          <p 
-                            className="text-[11px] text-slate-600 line-clamp-2 cursor-pointer hover:text-slate-900"
-                            onClick={() => setSelectedImageForDetail(img)}
-                            title="Clic para ver prompt completo"
-                          >
-                            {img.prompt}
-                          </p>
-                          <div className="flex items-center justify-between pt-2 border-t border-slate-200 flex-wrap gap-1.5">
-                            <span className="text-[10px] text-slate-400">{img.createdAt}</span>
-                            <div className="flex items-center gap-1 flex-wrap">
-                              <button
-                                type="button"
-                                onClick={() => handleInsertImageIntoArticle(img, "body")}
-                                className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-800 px-2 py-1 rounded text-[10px] font-semibold flex items-center gap-1 transition"
-                                title="Insertar en el artículo activo del generador"
-                              >
-                                <FileText className="w-3 h-3 text-indigo-600" />
-                                <span>En Artículo</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleReuseInLinkedIn(img)}
-                                className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 px-2 py-1 rounded text-[10px] font-semibold flex items-center gap-1 transition"
-                                title="Vincular con la publicación de LinkedIn"
-                              >
-                                <Share2 className="w-3 h-3 text-emerald-600" />
-                                <span>LinkedIn</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setSelectedImageForDetail(img)}
-                                className="bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-800 px-2 py-1 rounded text-[10px] font-semibold flex items-center gap-1 transition"
-                                title="Ampliar imagen a pantalla completa con zoom"
-                              >
-                                <Maximize2 className="w-3 h-3 text-sky-600" />
-                                <span>Ampliar</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setImageBase(img.url);
-                                  window.scrollTo({ top: 0, behavior: "smooth" });
-                                }}
-                                className="bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 px-2 py-1 rounded text-[10px] font-semibold transition"
-                                title="Usar esta imagen como referencia base"
-                              >
-                                Como base
-                              </button>
-                              <a
-                                href={img.url}
-                                download={`ecomshop-${img.id}.jpg`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 px-2 py-1 rounded text-[10px] font-medium flex items-center gap-1 transition shadow-2xs"
-                                title="Descargar imagen"
-                              >
-                                <Download className="w-3 h-3 text-slate-600" />
-                              </a>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteImage(img.id)}
-                                className="bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-300 text-slate-400 hover:text-rose-600 px-2 py-1 rounded text-[10px] font-medium flex items-center gap-1 transition shadow-2xs"
-                                title="Eliminar esta imagen del historial"
-                              >
-                                <Trash2 className="w-3 h-3 text-rose-500" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <ImageStudioView
+          images={generatedImagesList}
+          selectedImageIds={selectedImageIds}
+          onSelectImage={(id, selected) => {
+            if (selected) {
+              setSelectedImageIds((prev) => [...prev, id]);
+            } else {
+              setSelectedImageIds((prev) => prev.filter((itemId) => itemId !== id));
+            }
+          }}
+          onSelectAll={(all) => {
+            if (all) {
+              setSelectedImageIds(generatedImagesList.map((img) => img.id));
+            } else {
+              setSelectedImageIds([]);
+            }
+          }}
+          onClearAll={handleClearAllImages}
+          onRefreshDatabase={loadDatabaseAssets}
+          loadingDatabaseAssets={loadingDatabaseAssets}
+          onOpenLightbox={(img) => setSelectedImageForDetail(img)}
+          onDeleteImage={handleDeleteImage}
+          onApplyToCampaignBlog={(img) => handleInsertImageIntoArticle(img, "body")}
+          onUseAsBase={(url) => {
+            setImageBase(url);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          onReuseInLinkedIn={handleReuseInLinkedIn}
+          imagePrompt={imagePrompt}
+          onChangePrompt={setImagePrompt}
+          imageAspectRatio={imageAspectRatio}
+          onChangeAspectRatio={setImageAspectRatio}
+          imageBase={imageBase}
+          onSetImageBase={setImageBase}
+          generatingImage={generatingImage}
+          onGenerateImage={handleGenerateImage}
+          imageNotice={imageNotice}
+          onOpenInterrogatorModal={() => setShowInterrogatorModal(true)}
+          refiningPrompt={refiningPrompt}
+          promptRefinement={promptRefinement}
+          onRefinePrompt={handleRefinePrompt}
+          onApplyRefinedPrompt={handleApplyRefinedPrompt}
+          onApplyAndGenerateRefinedPrompt={handleApplyAndGenerateRefinedPrompt}
+          onDismissRefinement={() => setPromptRefinement(null)}
+          presetTemplates={presetTemplates}
+          onVarySingleTemplate={handleVarySingleTemplate}
+          varyingTemplateId={varyingTemplateId}
+          isRegeneratingTemplates={isRegeneratingTemplates}
+          onRegenerateAllTemplates={handleRegenerateAllTemplates}
+          onRestoreDefaultTemplates={handleRestoreDefaultTemplates}
+          onUseRealProductPhoto={handleUseRealProductPhoto}
+        />
       )}
 
       {/* VISTA 4: MONITOR FINOPS & VALORACIÓN DE COSTES */}

@@ -18,69 +18,20 @@ import {
   Layers,
   Dices,
   AlertTriangle,
-  Network
+  Network,
+  RefreshCw,
+  Shuffle,
+  Lightbulb
 } from "lucide-react";
 import { CampaignRecommendation, MultimodalAdvisorResponse } from "@/lib/multimodal-advisor";
+import { 
+  CURATED_FIELD_SCENARIOS_POOL, 
+  FieldScenarioInspiration 
+} from "@/lib/services/field-scenarios-service";
 
-export interface FieldScenarioInspiration {
-  id: string;
-  badge: string;
-  title: string;
-  prompt: string;
-  suggestedCategory: "wifi" | "switches" | "fibra" | "engenius";
-  icon: "zap" | "warning" | "network" | "layers" | "file";
-}
+export type { FieldScenarioInspiration };
+export const FIELD_SCENARIOS = CURATED_FIELD_SCENARIOS_POOL;
 
-export const FIELD_SCENARIOS: FieldScenarioInspiration[] = [
-  {
-    id: "sc-bottleneck-wifi7",
-    badge: "CUELLO DE BOTELLA 1G",
-    title: "APs Wi-Fi 7 conectados a switches antiguos 1 GbE",
-    prompt: "El cliente ha adquirido puntos de acceso Wi-Fi 7 pero los mantiene conectados a switches antiguos de 1 GbE, limitando el caudal a 940 Mbps netos. Necesita justificación técnica para migrar la conmutación a puertos 2.5G/10G PoE++ (ECS2512FP) para no estrangular la modulación 4096-QAM.",
-    suggestedCategory: "switches",
-    icon: "zap"
-  },
-  {
-    id: "sc-poe-drop",
-    badge: "CAÍDA DE TENSIÓN POE++",
-    title: "Reinicios cíclicos en cámaras PTZ o APs en tiradas largas",
-    prompt: "El instalador reporta reinicios aleatorios en cámaras domo PTZ y APs de 4 cadenas en tiradas de más de 60 metros. Sospecha de caída de tensión por cableado de cobre fino (AWG 26) y déficit en el PoE Budget. Necesita cálculo de PoE++ 802.3bt y recomendación de switches con margen holgado.",
-    suggestedCategory: "switches",
-    icon: "warning"
-  },
-  {
-    id: "sc-dfs-radar",
-    badge: "SATURACIÓN DFS",
-    title: "Cortes de señal en naves industriales por radares meteorológicos",
-    prompt: "En una nave logística próxima a aeropuerto o costa, las radios de 5 GHz sufren desconexiones continuas porque el radar meteorológico fuerza el salto de canales DFS. Explicar cómo Wi-Fi 7 con banda limpia de 6 GHz y Preamble Puncturing elimina las caídas sin perder ancho de banda.",
-    suggestedCategory: "wifi",
-    icon: "network"
-  },
-  {
-    id: "sc-meraki-tco",
-    badge: "AHORRO 42% TCO",
-    title: "Fuga de presupuesto por licencias anuales tipo Cisco Meraki",
-    prompt: "Director TIC con parque de 35 puntos de acceso cuyas licencias anuales de suscripción cloud vencen en 3 meses con costes abusivos. Busca migrar a EnGenius Cloud Enterprise para obtener gestión en la nube profesional con 0€ en licencias recurrentes y sustitución en 24h de EcomSpain.",
-    suggestedCategory: "engenius",
-    icon: "layers"
-  },
-  {
-    id: "sc-roaming-hospitality",
-    badge: "ROAMING & LATENCIA",
-    title: "Microcortes en telefonía VoIP y tablets al moverse entre plantas",
-    prompt: "En un hotel y oficinas corporativas, el personal reporta microcortes en llamadas de voz IP y tablets al desplazarse entre coberturas de APs. Explicar cómo configurar roaming 802.11k/v/r y la ventaja de Multi-Link Operation (MLO) en EnGenius Cloud para evitar caídas de sesión.",
-    suggestedCategory: "wifi",
-    icon: "network"
-  },
-  {
-    id: "sc-fiber-sfp",
-    badge: "TRONCAL 10G",
-    title: "Saturación del enlace troncal entre racks y plantas",
-    prompt: "Saturación severa en el enlace troncal entre el rack principal y la planta de producción en horas punta. Explicar cómo desplegar un enlace troncal con módulos transceptores 10G SFP+ y fibra óptica OM3/OM4 junto al switch de agregación ECS5512FP sin interrupción del servicio.",
-    suggestedCategory: "fibra",
-    icon: "file"
-  }
-];
 
 interface MultimodalAdvisorProps {
   apiKey?: string;
@@ -250,15 +201,88 @@ export function MultimodalAdvisor({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // Inspiraciones dinámicas de campo
+  const [scenarios, setScenarios] = useState<FieldScenarioInspiration[]>(CURATED_FIELD_SCENARIOS_POOL);
+  const [activeCategory, setActiveCategory] = useState<string>("ALL");
+  const [generatingMoreScenarios, setGeneratingMoreScenarios] = useState(false);
+  const [scenarioFeedback, setScenarioFeedback] = useState<string | null>(null);
+
+  const getScenarioIcon = (iconName: string) => {
+    switch (iconName) {
+      case "warning":
+        return <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />;
+      case "network":
+        return <Network className="w-3.5 h-3.5 text-indigo-500 shrink-0" />;
+      case "layers":
+        return <Layers className="w-3.5 h-3.5 text-purple-500 shrink-0" />;
+      case "file":
+        return <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" />;
+      case "zap":
+      default:
+        return <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0" />;
+    }
+  };
+
+  const filteredScenarios = scenarios.filter((sc) => {
+    if (activeCategory === "ALL") return true;
+    return sc.suggestedCategory === activeCategory;
+  });
+
   const handleSelectScenario = (scenario: FieldScenarioInspiration) => {
     setSelectedScenarioId(scenario.id);
     setOperatorPrompt(scenario.prompt);
     setErrorMsg(null);
   };
 
+  const handleGenerateMoreScenarios = async () => {
+    setGeneratingMoreScenarios(true);
+    setScenarioFeedback(null);
+    try {
+      const res = await fetch("/api/advisor/scenarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: activeCategory,
+          apiKey: apiKey || undefined
+        })
+      });
+      const data = await res.json();
+      if (data.scenarios && Array.isArray(data.scenarios) && data.scenarios.length > 0) {
+        const newItems: FieldScenarioInspiration[] = data.scenarios;
+        setScenarios((prev) => {
+          const newIds = new Set(newItems.map((n) => n.id));
+          const rest = prev.filter((p) => !newIds.has(p.id));
+          return [...newItems, ...rest];
+        });
+        setSelectedScenarioId(newItems[0].id);
+        setOperatorPrompt(newItems[0].prompt);
+        setScenarioFeedback(`✨ ${newItems.length} nuevas ideas técnicas sintetizadas con el Master NotebookLM.`);
+        
+        onRecordFinops({
+          action: "gemini_multimodal_advisor",
+          details: `Generación de ideas de campo IA (${activeCategory}): ${newItems.length} casos de obra`,
+          tokensInput: 650,
+          tokensOutput: 450
+        });
+      }
+    } catch (err: any) {
+      console.error("Error al generar escenarios:", err);
+      setScenarioFeedback("Aviso: usando pool curado local por latencia de red.");
+    } finally {
+      setGeneratingMoreScenarios(false);
+    }
+  };
+
+  const handleShuffleScenarios = () => {
+    setScenarios((prev) => [...prev].sort(() => 0.5 - Math.random()));
+  };
+
   const handleSurpriseMe = () => {
-    const randomScenario = FIELD_SCENARIOS[Math.floor(Math.random() * FIELD_SCENARIOS.length)];
-    handleSelectScenario(randomScenario);
+    const pool = filteredScenarios.length > 0 ? filteredScenarios : scenarios;
+    const randomScenario = pool[Math.floor(Math.random() * pool.length)];
+    if (randomScenario) {
+      handleSelectScenario(randomScenario);
+    }
   };
 
   const handleSubmit = async () => {
@@ -322,54 +346,148 @@ export function MultimodalAdvisor({
       </div>
 
       {/* Selector de Inspiraciones de Obra cuando no se sabe qué escribir */}
-      <div className="bg-white rounded-xl border border-indigo-100 p-5 shadow-xs space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="p-1 rounded bg-indigo-50 text-indigo-600">
-              <Sparkles className="w-4 h-4" />
-            </span>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-              Inspiraciones Rápidas de Campo (Diagnósticos Reales de Obra B2B)
-            </h3>
+      <div className="bg-white rounded-xl border border-indigo-100 p-5 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="p-1 rounded bg-indigo-50 text-indigo-600">
+                <Sparkles className="w-4 h-4" />
+              </span>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                Inspiraciones Rápidas de Campo (Diagnósticos Reales de Obra B2B)
+              </h3>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              ¿No tienes material ni notas a mano? Explora o genera casos cotidianos de ingeniería de telecomunicaciones:
+            </p>
           </div>
-          <button
-            type="button"
-            onClick={handleSurpriseMe}
-            className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 transition-colors self-start sm:self-auto"
-          >
-            <Dices className="w-3.5 h-3.5" />
-            <span>🎲 Sorpréndeme</span>
-          </button>
+
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            {/* Botón Generar Más Ideas con IA */}
+            <button
+              type="button"
+              onClick={handleGenerateMoreScenarios}
+              disabled={generatingMoreScenarios}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-xs transition-all active:scale-95"
+              title="Consultar al Master NotebookLM para sintetizar nuevos dolores técnicos de obra"
+            >
+              {generatingMoreScenarios ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Sintetizando ideas...</span>
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Generar Más Ideas con IA</span>
+                </>
+              )}
+            </button>
+
+            {/* Botón Mezclar */}
+            <button
+              type="button"
+              onClick={handleShuffleScenarios}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 transition-colors"
+              title="Mezclar el orden de las inspiraciones"
+            >
+              <Shuffle className="w-3.5 h-3.5 text-slate-500" />
+              <span className="hidden md:inline">Mezclar</span>
+            </button>
+
+            {/* Botón Sorpréndeme */}
+            <button
+              type="button"
+              onClick={handleSurpriseMe}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 transition-colors"
+              title="Elegir un escenario aleatorio"
+            >
+              <Dices className="w-3.5 h-3.5" />
+              <span>Sorpréndeme</span>
+            </button>
+          </div>
         </div>
 
-        <p className="text-xs text-slate-500">
-          ¿No tienes material ni notas a mano? Selecciona un escenario habitual en instalaciones de telecomunicaciones:
-        </p>
+        {/* Pestañas de Filtrado por Categoría Técnica */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs border-b border-slate-100">
+          {[
+            { id: "ALL", label: "Todas las áreas", count: scenarios.length },
+            { id: "wifi", label: "Wi-Fi 7 & Roaming", count: scenarios.filter(s => s.suggestedCategory === "wifi").length },
+            { id: "switches", label: "Switches & PoE++", count: scenarios.filter(s => s.suggestedCategory === "switches").length },
+            { id: "fibra", label: "Fibra 10G & SFP+", count: scenarios.filter(s => s.suggestedCategory === "fibra").length },
+            { id: "engenius", label: "TCO & Zero Licencias", count: scenarios.filter(s => s.suggestedCategory === "engenius").length }
+          ].map((cat) => {
+            const isActive = activeCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setActiveCategory(cat.id)}
+                className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+                  isActive
+                    ? "bg-slate-900 text-white font-semibold shadow-xs"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                }`}
+              >
+                <span>{cat.label}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  isActive ? "bg-slate-800 text-slate-300" : "bg-slate-200 text-slate-600"
+                }`}>
+                  {cat.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
+        {/* Feedback Banner cuando se generan nuevas ideas */}
+        {scenarioFeedback && (
+          <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between animate-fadeIn">
+            <span className="font-medium">{scenarioFeedback}</span>
+            <button
+              type="button"
+              onClick={() => setScenarioFeedback(null)}
+              className="text-emerald-600 hover:text-emerald-900 font-bold ml-2"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* Grid de Escenarios Filtrados */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
-          {FIELD_SCENARIOS.map((sc) => {
+          {filteredScenarios.map((sc) => {
             const isSelected = selectedScenarioId === sc.id;
             return (
               <button
                 key={sc.id}
                 type="button"
                 onClick={() => handleSelectScenario(sc)}
-                className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between gap-2 ${
+                className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between gap-2.5 group ${
                   isSelected
-                    ? "bg-indigo-50/80 border-indigo-500 ring-2 ring-indigo-400/30 shadow-xs"
-                    : "bg-slate-50/60 hover:bg-slate-100/80 border-slate-200 hover:border-indigo-300"
+                    ? "bg-indigo-50/90 border-indigo-500 ring-2 ring-indigo-400/30 shadow-xs"
+                    : "bg-slate-50/70 hover:bg-white border-slate-200 hover:border-indigo-300 hover:shadow-xs"
                 }`}
               >
                 <div className="flex items-center justify-between w-full">
-                  <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700">
-                    {sc.badge}
-                  </span>
-                  {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />}
+                  <div className="flex items-center gap-1.5">
+                    {getScenarioIcon(sc.icon)}
+                    <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700">
+                      {sc.badge}
+                    </span>
+                  </div>
+                  {isSelected ? (
+                    <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                  ) : (
+                    <span className="text-[10px] font-semibold text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                      Usar caso →
+                    </span>
+                  )}
                 </div>
                 <h4 className="text-xs font-bold text-slate-900 leading-snug line-clamp-2">
                   {sc.title}
                 </h4>
-                <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed">
+                <p className="text-[11px] text-slate-600 line-clamp-3 leading-relaxed">
                   {sc.prompt}
                 </p>
               </button>
