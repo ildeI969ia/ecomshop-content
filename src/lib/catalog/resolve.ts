@@ -8,10 +8,7 @@
 
 // src/lib/catalog/resolve.ts
 
-// No external imports needed in this file
-
-/*** Allowed hostnames ... (unchanged) ***/
-
+import * as cheerio from "cheerio";
 
 /** Allowed hostnames for ecomshop URLs */
 const ALLOWED_HOSTNAMES = new Set(["ecomshop.es", "www.ecomshop.es"]);
@@ -143,23 +140,22 @@ export interface ExtractedProductData {
 }
 
 export function extractProductFromHtml(html: string): ExtractedProductData {
-  const { parse } = require("node-html-parser");
-  const root = parse(html);
+  const $ = cheerio.load(html);
   const data: ExtractedProductData = { warnings: [] };
 
-  const ogTitle = root.querySelector('meta[property="og:title"]')?.getAttribute("content");
+  const ogTitle = $('meta[property="og:title"]').attr("content");
   if (ogTitle) data.name = ogTitle;
 
-  const ogImage = root.querySelector('meta[property="og:image"]')?.getAttribute("content");
+  const ogImage = $('meta[property="og:image"]').attr("content");
   if (ogImage) data.imageUrl = ogImage;
 
-  const ogDesc = root.querySelector('meta[property="og:description"]')?.getAttribute("content");
+  const ogDesc = $('meta[property="og:description"]').attr("content");
   if (ogDesc) data.description = ogDesc;
 
-  const jsonLd = root.querySelector('script[type="application/ld+json"]');
-  if (jsonLd) {
+  const jsonLdScript = $('script[type="application/ld+json"]').first().html();
+  if (jsonLdScript) {
     try {
-      const json = JSON.parse(jsonLd.innerHTML);
+      const json = JSON.parse(jsonLdScript);
       if (json && typeof json === "object") {
         if (json.sku) data.sku = String(json.sku);
         if (json.brand?.name) data.brand = String(json.brand.name);
@@ -174,19 +170,18 @@ export function extractProductFromHtml(html: string): ExtractedProductData {
     }
   }
 
-  const skuElem = root.querySelector("#sku, .sku, [data-sku]");
-  if (skuElem && !data.sku) data.sku = skuElem.text.trim();
+  const skuElem = $("#sku, .sku, [data-sku]").first();
+  if (skuElem.length && !data.sku) data.sku = skuElem.text().trim();
 
-  const brandElem = root.querySelector(".brand, [data-brand]");
-  if (brandElem && !data.brand) data.brand = brandElem.text.trim();
+  const brandElem = $(".brand, [data-brand]").first();
+  if (brandElem.length && !data.brand) data.brand = brandElem.text().trim();
 
   const specs: Record<string, string> = {};
-  const specRows = root.querySelectorAll("table.specs tr, .specs-table tr");
-  specRows.forEach((row: any) => {
-    const cells = row.querySelectorAll("td, th");
+  $("table.specs tr, .specs-table tr").each((_, row) => {
+    const cells = $(row).find("td, th");
     if (cells.length >= 2) {
-      const key = cells[0].text.trim();
-      const val = cells[1].text.trim();
+      const key = $(cells[0]).text().trim();
+      const val = $(cells[1]).text().trim();
       if (key && val) specs[key] = val;
     }
   });
