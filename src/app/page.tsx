@@ -2106,7 +2106,7 @@ export default function ContentDashboard() {
               <h1 className="font-editorial text-lg sm:text-xl font-bold tracking-tight text-white">
                 ECOMSHOP EDITORIAL
               </h1>
-              <span className="text-[9px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-slate-800 text-indigo-300 border border-slate-700 font-mono">
+              <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-slate-800 text-indigo-300 border border-slate-700 font-mono">
                 SUITE B2B
               </span>
             </div>
@@ -2171,7 +2171,7 @@ export default function ContentDashboard() {
                 : "text-slate-400 hover:text-white hover:bg-slate-800/60"
             }`}
           >
-            <ImageIcon className="w-3.5 h-3.5 text-purple-300" />
+            <ImageIcon className="w-3.5 h-3.5 text-indigo-400" />
             <span>Estudio Imagen 3</span>
           </button>
 
@@ -2195,12 +2195,12 @@ export default function ContentDashboard() {
           <button
             type="button"
             onClick={() => setShowNotebookModal(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border font-medium transition shadow-xs bg-slate-950/80 border-slate-800 text-slate-300 hover:border-purple-500/40 hover:text-purple-200 cursor-pointer"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border font-medium transition shadow-xs bg-slate-950/80 border-slate-800 text-slate-300 hover:border-indigo-500/40 hover:text-indigo-200 cursor-pointer"
             title="NotebookLM EcomShop Knowledge Base"
           >
-            <BookOpen className="w-3.5 h-3.5 text-purple-400" />
+            <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
             <span className="font-semibold text-xs">
-              NotebookLM: <span className="text-purple-300 font-mono font-bold">{notebookState.sources.length}</span>
+              NotebookLM: <span className="text-indigo-300 font-mono font-bold">{notebookState.sources.length}</span>
             </span>
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           </button>
@@ -2213,7 +2213,7 @@ export default function ContentDashboard() {
                 <span className="font-medium text-xs truncate max-w-[120px] sm:max-w-[160px] text-slate-200">
                   {currentUser.email}
                 </span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950/60 text-emerald-300 font-mono font-bold border border-emerald-800/50 uppercase">
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 font-mono font-bold border border-emerald-800/50 uppercase">
                   {currentUser.role}
                 </span>
               </div>
@@ -2881,7 +2881,7 @@ export default function ContentDashboard() {
                               {itemTitle}
                             </h4>
                             {channelsCount > 1 && (
-                              <span className="text-[9px] font-mono font-semibold bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded border border-slate-700">
+                              <span className="text-[10px] font-mono font-semibold bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded border border-slate-700">
                                 {channelsCount} Canales
                               </span>
                             )}
@@ -2901,7 +2901,7 @@ export default function ContentDashboard() {
                           onChange={(e) => updateArticleStatus(itemId, e.target.value as any)}
                           className={`text-xs px-2.5 py-1.5 rounded-lg border font-semibold focus:outline-none cursor-pointer ${
                             itemStatus === "published"
-                              ? "bg-purple-950/60 border-purple-800 text-purple-300"
+                              ? "bg-indigo-950/60 border-indigo-800 text-indigo-300"
                               : itemStatus === "approved"
                               ? "bg-emerald-950/60 border-emerald-800 text-emerald-300"
                               : itemStatus === "reviewed"
@@ -2912,7 +2912,7 @@ export default function ContentDashboard() {
                           <option value="draft" className="bg-slate-900 text-amber-300">🟡 Borrador</option>
                           <option value="reviewed" className="bg-slate-900 text-sky-300">🔵 Revisado</option>
                           <option value="approved" className="bg-slate-900 text-emerald-300">🟢 Aprobado</option>
-                          <option value="published" className="bg-slate-900 text-purple-300">🟣 Publicado</option>
+                          <option value="published" className="bg-slate-900 text-indigo-300">🟣 Publicado</option>
                         </select>
 
                         <button
@@ -3087,7 +3087,7 @@ export default function ContentDashboard() {
 
             <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-xs">
               <span className="text-xs text-slate-400 font-medium block mb-1">Google Imagen 3</span>
-              <div className="font-editorial text-2xl font-bold text-purple-400 font-mono">
+              <div className="font-editorial text-2xl font-bold text-indigo-400 font-mono">
                 {usageRecords.filter(r => r.action === "imagen_image").length} <span className="text-xs font-normal text-slate-400">imágenes</span>
               </div>
               <span className="text-[10px] text-slate-400 font-mono">~0.028€ por imagen generada</span>
@@ -3236,7 +3236,7 @@ export default function ContentDashboard() {
                             r.action.startsWith("gemini")
                               ? "bg-sky-950 text-sky-300 border border-sky-800"
                               : r.action === "imagen_image"
-                              ? "bg-purple-950 text-purple-300 border border-purple-800"
+                              ? "bg-indigo-950 text-indigo-300 border border-indigo-800"
                               : "bg-emerald-950 text-emerald-300 border border-emerald-800"
                           }`}>
                             {r.action}
@@ -3261,29 +3261,29 @@ export default function ContentDashboard() {
 
       {/* Modal de Configuración Gemini API */}
       {showKeyModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-xl flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-indigo-50 text-indigo-700">
+                <div className="p-2 rounded-xl bg-indigo-950/80 text-indigo-400 border border-indigo-800/50">
                   <Key className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-editorial text-base font-bold text-slate-900">Configuración Agente Gemini</h3>
-                  <p className="text-[11px] text-slate-500">Gemini 2.5 Flash B2B Strategist</p>
+                  <h3 className="font-editorial text-base font-bold text-white">Configuración Agente Gemini</h3>
+                  <p className="text-[11px] text-slate-400">Gemini 2.5 Flash B2B Strategist</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowKeyModal(false)}
-                className="text-slate-400 hover:text-slate-700 text-xs px-2 py-1"
+                className="text-slate-400 hover:text-slate-200 text-xs px-2 py-1 rounded-lg hover:bg-slate-800 transition cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <div className="text-xs text-slate-600 flex flex-col gap-2">
+            <div className="text-xs text-slate-300 flex flex-col gap-2">
               <p>
-                Introduce tu <strong>Google Gemini API Key</strong> para que el agente estratégico genere contenido dinámico B2B con razonamiento avanzado.
+                Introduce tu <strong className="text-white">Google Gemini API Key</strong> para que el agente estratégico genere contenido dinámico B2B con razonamiento avanzado.
               </p>
               <p className="text-slate-400 text-[11px]">
                 La clave se almacena de forma segura en tu navegador (localStorage) y se utiliza para las peticiones al motor de generación.
@@ -3291,7 +3291,7 @@ export default function ContentDashboard() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold text-slate-700">Gemini API Key</label>
+              <label className="text-xs font-semibold text-slate-200">Gemini API Key</label>
               <input
                 type="password"
                 value={geminiApiKey}
@@ -3300,49 +3300,49 @@ export default function ContentDashboard() {
                   setKeyStatus("unchecked");
                 }}
                 placeholder="AQ... o AIzaSy..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 font-mono"
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 font-mono"
               />
             </div>
 
             {/* Estado de la Key */}
             <div className="flex items-center gap-2 text-xs">
               {validatingKey ? (
-                <span className="text-sky-600 flex items-center gap-1.5">
-                  <div className="w-3 h-3 border-2 border-sky-600/30 border-t-sky-600 rounded-full animate-spin" />
+                <span className="text-sky-400 flex items-center gap-1.5">
+                  <div className="w-3 h-3 border-2 border-sky-400/30 border-t-sky-400 rounded-full animate-spin" />
                   Comprobando conexión con Gemini...
                 </span>
               ) : keyStatus === "valid" ? (
-                <span className="text-emerald-700 font-medium flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  API Key válida. Modelo <strong>{connectedModel}</strong> conectado.
+                <span className="text-emerald-400 font-medium flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  API Key válida. Modelo <strong className="text-white">{connectedModel}</strong> conectado.
                 </span>
               ) : keyStatus === "invalid" ? (
-                <span className="text-rose-700 font-medium flex items-center gap-1">
-                  <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                <span className="text-rose-400 font-medium flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
                   <span>{keyErrorMessage || "Clave inválida o sin permisos en Google Cloud."}</span>
                 </span>
               ) : (
-                <span className="text-slate-500 text-[11px]">
+                <span className="text-slate-400 text-[11px]">
                   Introduce la clave y haz clic en Validar.
                 </span>
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
               <button
                 onClick={() => {
                   setGeminiApiKey("");
                   localStorage.removeItem("ecomshop_gemini_key");
                   setKeyStatus("unchecked");
                 }}
-                className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-800 transition"
+                className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition cursor-pointer"
               >
                 Limpiar
               </button>
               <button
                 onClick={() => checkKeyValidity(geminiApiKey)}
                 disabled={!geminiApiKey || validatingKey}
-                className="bg-[#0f172a] hover:bg-slate-800 disabled:opacity-50 text-white font-semibold px-4 py-1.5 rounded-lg text-xs transition shadow-2xs"
+                className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold px-4 py-2 rounded-xl text-xs transition shadow-xs cursor-pointer"
               >
                 Validar y Guardar
               </button>
@@ -3353,35 +3353,35 @@ export default function ContentDashboard() {
 
       {/* Modal de NotebookLM */}
       {showNotebookModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200/90 rounded-2xl max-w-2xl w-full p-6 shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-purple-50 text-purple-700 border border-purple-200/80">
+                <div className="p-2 rounded-xl bg-indigo-950/80 text-indigo-400 border border-indigo-800/50">
                   <BookOpen className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-editorial text-base font-bold text-slate-900">Estado de Google NotebookLM</h3>
-                  <p className="text-[11px] text-slate-500">ID: {notebookState.notebookId} &bull; Sincronizado: {notebookState.lastSync}</p>
+                  <h3 className="font-editorial text-base font-bold text-white">Estado de Google NotebookLM</h3>
+                  <p className="text-[11px] text-slate-400">ID: {notebookState.notebookId} &bull; Sincronizado: {notebookState.lastSync}</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowNotebookModal(false)}
-                className="text-slate-400 hover:text-slate-700 text-sm p-1"
+                className="text-slate-400 hover:text-slate-200 text-sm p-1 rounded-lg hover:bg-slate-800 transition cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             {/* Pestañas del Modal */}
-            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+            <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
               <button
                 type="button"
                 onClick={() => setNotebookTab("sources")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
                   notebookTab === "sources"
-                    ? "bg-purple-100 text-purple-900 border border-purple-200"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800"
                 }`}
               >
                 📚 Fuentes Sincronizadas ({notebookState.sources.length})
@@ -3389,13 +3389,13 @@ export default function ContentDashboard() {
               <button
                 type="button"
                 onClick={() => setNotebookTab("ask")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                   notebookTab === "ask"
-                    ? "bg-purple-600 text-white shadow-xs"
-                    : "text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200/70"
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "text-indigo-300 bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-800/50"
                 }`}
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
                 Cuestionar al Notebook & Sugerir Fuentes
               </button>
             </div>
@@ -3404,17 +3404,17 @@ export default function ContentDashboard() {
             {notebookTab === "sources" && (
               <div className="space-y-4">
                 {/* Banner de Enlace Oficial */}
-                <div className="bg-purple-50/60 border border-purple-200/80 rounded-xl p-4 flex items-center justify-between">
+                <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700">Notebook Oficial en Google</span>
-                    <p className="text-xs font-semibold text-slate-800 mt-0.5">{notebookState.title}</p>
-                    <span className="text-[11px] text-slate-500">El Agente Gemini consulta este repositorio de conocimiento para generar contenidos B2B.</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">Notebook Oficial en Google</span>
+                    <p className="text-xs font-semibold text-slate-200 mt-0.5">{notebookState.title}</p>
+                    <span className="text-[11px] text-slate-400">El Agente Gemini consulta este repositorio de conocimiento para generar contenidos B2B.</span>
                   </div>
                   <a
                     href={notebookState.officialUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition shadow-2xs shrink-0"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition shadow-xs shrink-0"
                   >
                     Abrir NotebookLM
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -3423,36 +3423,36 @@ export default function ContentDashboard() {
 
                 {/* Lista de Fuentes Cargadas */}
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
                     Fuentes y Whitepapers Sincronizados ({notebookState.sources.length})
                   </h4>
                   <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto pr-1">
                     {notebookState.sources.map((src) => (
-                      <div key={src.id} className="p-3 rounded-lg border border-slate-200/70 bg-slate-50/60 flex items-start justify-between gap-3">
+                      <div key={src.id} className="p-3 rounded-xl border border-slate-800 bg-slate-950/60 flex items-start justify-between gap-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-xs text-slate-900">{src.title}</span>
-                            <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-purple-100 text-purple-800">
+                            <span className="font-semibold text-xs text-white">{src.title}</span>
+                            <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
                               {src.type}
                             </span>
                           </div>
-                          <p className="text-[11px] text-slate-600 mt-1">{src.description}</p>
+                          <p className="text-[11px] text-slate-400 mt-1">{src.description}</p>
                           {src.url && (
-                            <a href={src.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-sky-600 hover:underline mt-1 inline-block">
+                            <a href={src.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-sky-400 hover:underline mt-1 inline-block">
                               {src.url}
                             </a>
                           )}
                         </div>
-                        <span className="text-[10px] text-slate-400 shrink-0 font-mono">{src.addedAt}</span>
+                        <span className="text-[10px] text-slate-500 shrink-0 font-mono">{src.addedAt}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {/* Formulario para Registrar Nueva Fuente */}
-                <form onSubmit={handleAddNotebookSource} className="bg-slate-50/80 border border-slate-200/80 rounded-xl p-4 flex flex-col gap-3">
-                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <Plus className="w-3.5 h-3.5 text-purple-600" />
+                <form onSubmit={handleAddNotebookSource} className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+                  <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                    <Plus className="w-3.5 h-3.5 text-indigo-400" />
                     Registrar Nueva Fuente / Documento Técnico
                   </span>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -3461,13 +3461,13 @@ export default function ContentDashboard() {
                       placeholder="Título de la fuente (ej: Datasheet EnGenius Cloud Switch...)"
                       value={newSourceTitle}
                       onChange={(e) => setNewSourceTitle(e.target.value)}
-                      className="bg-white border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-purple-500"
+                      className="bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
                       required
                     />
                     <select
                       value={newSourceType}
                       onChange={(e) => setNewSourceType(e.target.value as any)}
-                      className="bg-white border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-purple-500"
+                      className="bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
                     >
                       <option value="datasheet">Datasheet Técnico</option>
                       <option value="pdf">Whitepaper / PDF</option>
@@ -3480,7 +3480,7 @@ export default function ContentDashboard() {
                     placeholder="Breve resumen del contenido y especificaciones..."
                     value={newSourceDesc}
                     onChange={(e) => setNewSourceDesc(e.target.value)}
-                    className="bg-white border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-purple-500"
+                    className="bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
                     required
                   />
                   <div className="flex items-center gap-2">
@@ -3489,12 +3489,12 @@ export default function ContentDashboard() {
                       placeholder="URL oficial (opcional: https://www.ecomshop.es/...)"
                       value={newSourceUrl}
                       onChange={(e) => setNewSourceUrl(e.target.value)}
-                      className="flex-1 bg-white border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-purple-500"
+                      className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
                     />
                     <button
                       type="submit"
                       disabled={addingSource}
-                      className="bg-purple-700 hover:bg-purple-800 disabled:opacity-50 text-white font-bold text-xs px-4 py-1.5 rounded transition shrink-0"
+                      className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs px-4 py-2 rounded-xl transition shrink-0 cursor-pointer shadow-xs"
                     >
                       {addingSource ? "Añadiendo..." : "Añadir Fuente"}
                     </button>
@@ -3506,8 +3506,8 @@ export default function ContentDashboard() {
             {/* VISTA 2: CUESTIONAR AL NOTEBOOK & SUGERIR FUENTES */}
             {notebookTab === "ask" && (
               <div className="space-y-4">
-                <div className="bg-gradient-to-r from-purple-900 to-slate-900 text-white p-4 rounded-xl shadow-xs">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-purple-300">
+                <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 border border-slate-800 text-white p-4 rounded-xl shadow-xs">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-indigo-400">
                     Analista Preventa & Documentalista IA
                   </span>
                   <h4 className="text-sm font-bold mt-0.5">
@@ -3520,26 +3520,26 @@ export default function ContentDashboard() {
 
                 {/* Preguntas Sugeridas Rápidas */}
                 <div className="space-y-1.5">
-                  <span className="text-[11px] font-semibold text-slate-500">Preguntas sugeridas frecuentes:</span>
+                  <span className="text-[11px] font-semibold text-slate-400">Preguntas sugeridas frecuentes:</span>
                   <div className="flex flex-wrap gap-1.5">
                     <button
                       type="button"
                       onClick={() => handleAskNotebook("¿Qué switch EnGenius recomendamos para alimentar puntos de acceso WiFi 7 PoE++?")}
-                      className="text-[11px] bg-slate-100 hover:bg-purple-50 hover:text-purple-700 border border-slate-200 px-2.5 py-1 rounded-full text-slate-700 transition"
+                      className="text-[11px] bg-slate-950 hover:bg-indigo-950/60 hover:text-indigo-300 border border-slate-800 px-2.5 py-1 rounded-full text-slate-300 transition cursor-pointer"
                     >
                       ⚡ Switches PoE++ para WiFi 7
                     </button>
                     <button
                       type="button"
                       onClick={() => handleAskNotebook("¿Cuáles son las principales ventajas de TCO de EnGenius Cloud frente a Cisco Meraki a 3 años?")}
-                      className="text-[11px] bg-slate-100 hover:bg-purple-50 hover:text-purple-700 border border-slate-200 px-2.5 py-1 rounded-full text-slate-700 transition"
+                      className="text-[11px] bg-slate-950 hover:bg-indigo-950/60 hover:text-indigo-300 border border-slate-800 px-2.5 py-1 rounded-full text-slate-300 transition cursor-pointer"
                     >
                       💰 Ahorro TCO vs Meraki
                     </button>
                     <button
                       type="button"
                       onClick={() => handleAskNotebook("Analiza nuestras 20 fuentes e indica qué novedades de 2026 nos faltan por cubrir.")}
-                      className="text-[11px] bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 px-2.5 py-1 rounded-full font-semibold transition"
+                      className="text-[11px] bg-indigo-950/60 hover:bg-indigo-900/70 text-indigo-300 border border-indigo-800/60 px-2.5 py-1 rounded-full font-semibold transition cursor-pointer"
                     >
                       🔍 ¿Qué fuentes de 2026 nos faltan?
                     </button>
@@ -3554,17 +3554,17 @@ export default function ContentDashboard() {
                       value={notebookQuestion}
                       onChange={(e) => setNotebookQuestion(e.target.value)}
                       placeholder="Escribe tu consulta técnica o pide sugerencias de fuentes para 2026..."
-                      className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-slate-900 resize-none"
+                      className="w-full text-xs p-3 rounded-xl border border-slate-700 bg-slate-950 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 resize-none"
                     />
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
+                    <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={suggestNewSources}
                         onChange={(e) => setSuggestNewSources(e.target.checked)}
-                        className="rounded text-purple-600 focus:ring-purple-500"
+                        className="rounded text-indigo-600 focus:ring-indigo-500"
                       />
                       <span>Sugerir nuevas fuentes faltantes si aplica</span>
                     </label>
@@ -3573,7 +3573,7 @@ export default function ContentDashboard() {
                       type="button"
                       onClick={() => handleAskNotebook()}
                       disabled={askingNotebook || !notebookQuestion.trim()}
-                      className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 transition shadow-xs"
+                      className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 transition shadow-xs cursor-pointer"
                     >
                       {askingNotebook ? (
                         <>
@@ -3582,7 +3582,7 @@ export default function ContentDashboard() {
                         </>
                       ) : (
                         <>
-                          <Sparkles className="w-3.5 h-3.5 text-purple-200" />
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
                           Cuestionar al Notebook
                         </>
                       )}
@@ -3592,17 +3592,17 @@ export default function ContentDashboard() {
 
                 {/* Resultados de la Consulta */}
                 {notebookAnswer && (
-                  <div className="border border-purple-200 bg-purple-50/30 rounded-xl p-4 space-y-3.5 animate-in fade-in">
+                  <div className="border border-slate-800 bg-slate-950/80 rounded-xl p-4 space-y-3.5 animate-in fade-in">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="p-1 rounded bg-purple-600 text-white">
+                        <span className="p-1 rounded-lg bg-indigo-600 text-white">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                         </span>
-                        <h5 className="text-xs font-bold uppercase tracking-wider text-purple-950">
+                        <h5 className="text-xs font-bold uppercase tracking-wider text-indigo-300">
                           Respuesta Fundamentada en NotebookLM
                         </h5>
                       </div>
-                      <p className="text-xs text-slate-800 leading-relaxed font-medium bg-white p-3 rounded-lg border border-purple-100">
+                      <p className="text-xs text-slate-300 leading-relaxed font-medium bg-slate-900 p-3 rounded-lg border border-slate-800">
                         {notebookAnswer.answer}
                       </p>
                     </div>
@@ -3610,10 +3610,10 @@ export default function ContentDashboard() {
                     {/* Fuentes Citadas */}
                     {notebookAnswer.citedSources && notebookAnswer.citedSources.length > 0 && (
                       <div className="space-y-1">
-                        <span className="text-[11px] font-bold text-slate-600">Fuentes consultadas en el cuaderno:</span>
+                        <span className="text-[11px] font-bold text-slate-400">Fuentes consultadas en el cuaderno:</span>
                         <div className="flex flex-wrap gap-1.5">
                           {notebookAnswer.citedSources.map((cs) => (
-                            <span key={cs.id} className="text-[10px] font-semibold bg-white border border-purple-200 text-purple-900 px-2 py-0.5 rounded shadow-2xs">
+                            <span key={cs.id} className="text-[10px] font-semibold bg-slate-900 border border-slate-700 text-slate-300 px-2 py-0.5 rounded shadow-2xs">
                               📌 {cs.title}
                             </span>
                           ))}
@@ -3623,28 +3623,28 @@ export default function ContentDashboard() {
 
                     {/* Nuevas Fuentes Sugeridas para incorporar */}
                     {notebookAnswer.suggestedNewSources && notebookAnswer.suggestedNewSources.length > 0 && (
-                      <div className="space-y-2 border-t border-purple-200/60 pt-2.5">
-                        <span className="text-[11px] font-bold text-purple-900 flex items-center gap-1.5">
-                          <Plus className="w-3.5 h-3.5 text-purple-600" />
+                      <div className="space-y-2 border-t border-slate-800 pt-2.5">
+                        <span className="text-[11px] font-bold text-indigo-300 flex items-center gap-1.5">
+                          <Plus className="w-3.5 h-3.5 text-indigo-400" />
                           Nuevas Fuentes Recomendadas para Incorporar al Cuaderno:
                         </span>
                         <div className="grid grid-cols-1 gap-2">
                           {notebookAnswer.suggestedNewSources.map((ns, idx) => (
-                            <div key={idx} className="bg-white p-2.5 rounded-lg border border-purple-200 flex items-start justify-between gap-3 shadow-2xs">
+                            <div key={idx} className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 flex items-start justify-between gap-3 shadow-2xs">
                               <div>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs font-bold text-slate-900">{ns.title}</span>
-                                  <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-purple-100 text-purple-800">
+                                  <span className="text-xs font-bold text-white">{ns.title}</span>
+                                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
                                     {ns.type}
                                   </span>
                                 </div>
-                                <p className="text-[11px] text-slate-600 mt-0.5">{ns.description}</p>
+                                <p className="text-[11px] text-slate-400 mt-0.5">{ns.description}</p>
                               </div>
                               <button
                                 type="button"
                                 onClick={() => handleAddSuggestedSource(ns)}
                                 disabled={addingSource}
-                                className="shrink-0 text-[11px] bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold px-2.5 py-1 rounded border border-purple-200 transition"
+                                className="shrink-0 text-[11px] bg-indigo-950/60 hover:bg-indigo-900/70 text-indigo-300 font-bold px-2.5 py-1 rounded-lg border border-indigo-800/60 transition cursor-pointer"
                               >
                                 + Añadir al Notebook
                               </button>
@@ -3656,15 +3656,15 @@ export default function ContentDashboard() {
 
                     {/* Botón Transferir al Generador de Contenido */}
                     {notebookAnswer.transferableTopic && (
-                      <div className="border-t border-purple-200/60 pt-3 flex items-center justify-between">
+                      <div className="border-t border-slate-800 pt-3 flex items-center justify-between">
                         <div>
-                          <span className="text-[10px] uppercase font-bold text-slate-500">¿Quieres redactar sobre esto?</span>
-                          <p className="text-xs font-bold text-slate-900">{notebookAnswer.transferableTopic.title}</p>
+                          <span className="text-[10px] uppercase font-bold text-slate-400">¿Quieres redactar sobre esto?</span>
+                          <p className="text-xs font-bold text-white">{notebookAnswer.transferableTopic.title}</p>
                         </div>
                         <button
                           type="button"
                           onClick={() => handleTransferNotebookTopic(notebookAnswer.transferableTopic!)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition shadow-xs"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
                         >
                           <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
                           Transferir al Generador &rarr;
@@ -3681,11 +3681,11 @@ export default function ContentDashboard() {
 
       {/* Modal de Autenticación Corporativa */}
       {showSignInModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 overflow-hidden">
             <button
               onClick={() => setShowSignInModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-sm font-bold z-10 w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center transition"
+              className="absolute top-4 right-4 text-slate-400 hover:text-white text-sm font-bold z-10 w-8 h-8 rounded-full hover:bg-slate-800 flex items-center justify-center transition cursor-pointer"
             >
               ✕
             </button>

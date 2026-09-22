@@ -292,7 +292,7 @@ export const ImageStudioView: React.FC<ImageStudioViewProps> = ({
                 type="button"
                 onClick={() => onGenerateImage("ai")}
                 disabled={generatingImage}
-                className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-md shadow-indigo-900/30"
+                className="w-full bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 disabled:opacity-50 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-md shadow-indigo-900/30 cursor-pointer"
               >
                 {generatingImage ? (
                   <>
@@ -338,7 +338,7 @@ export const ImageStudioView: React.FC<ImageStudioViewProps> = ({
               </summary>
               <div className="p-3 pt-0 border-t border-slate-800/60 mt-2 space-y-2.5">
                 <p className="text-[11px] text-slate-400 leading-snug">
-                  Hardware oficial de EcomShop (8 modelos canónicos). Selecciona un producto para importar su fotografía de fabricante libre de alucinaciones (0€) y ficha técnica:
+                  Hardware oficial integrado en EcomShop (12 productos homologados). Selecciona un producto para importar su fotografía de fabricante libre de alucinaciones (0€) y ficha técnica:
                 </p>
                 <div className="flex items-center gap-2">
                   <select
@@ -426,14 +426,14 @@ export const ImageStudioView: React.FC<ImageStudioViewProps> = ({
 
             {/* Acordeón B: Director de Arte & Imagen Base de Referencia */}
             <details className="group bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
-              <summary className="p-3 text-xs font-semibold text-purple-400 hover:text-purple-300 cursor-pointer flex items-center justify-between list-none select-none transition">
+              <summary className="p-3 text-xs font-semibold text-indigo-400 hover:text-indigo-300 cursor-pointer flex items-center justify-between list-none select-none transition">
                 <div className="flex items-center gap-2">
-                  <Camera className="w-3.5 h-3.5 text-purple-400" />
+                  <Camera className="w-3.5 h-3.5 text-indigo-400" />
                   <span>🎨 Director de Arte IA & Referencia</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {imageBase && (
-                    <span className="text-[10px] bg-purple-950 border border-purple-800 text-purple-300 font-bold px-1.5 py-0.2 rounded">
+                    <span className="text-[10px] bg-indigo-950 border border-indigo-800 text-indigo-300 font-bold px-1.5 py-0.5 rounded">
                       Base activa
                     </span>
                   )}
@@ -445,15 +445,15 @@ export const ImageStudioView: React.FC<ImageStudioViewProps> = ({
                 <button
                   type="button"
                   onClick={onOpenInterrogatorModal}
-                  className="w-full bg-gradient-to-r from-purple-900/60 to-indigo-900/60 hover:from-purple-800/80 hover:to-indigo-800/80 border border-purple-500/40 text-purple-200 font-bold p-2.5 rounded-xl text-xs flex items-center justify-between transition"
+                  className="w-full bg-gradient-to-r from-indigo-950/80 to-slate-900 hover:from-indigo-900/80 hover:to-slate-800 border border-indigo-500/40 text-indigo-200 font-bold p-2.5 rounded-xl text-xs flex items-center justify-between transition cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-300">
+                    <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-300">
                       <Camera className="w-3.5 h-3.5" />
                     </div>
                     <div className="text-left">
                       <div className="font-bold">Director de Arte IA</div>
-                      <div className="text-[10px] text-purple-300/80 font-normal">
+                      <div className="text-[10px] text-indigo-300/80 font-normal">
                         Interrogatorio fotográfico guiado
                       </div>
                     </div>

@@ -7,8 +7,7 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
     | "cyan"         // Tech specs, connectivity, Multi-Gig
     | "success"      // Approved, connected, verified (emerald)
     | "warning"      // Draft, pending, attention (amber)
-    | "danger"       // Error, invalid, critical (rose)
-    | "purple";      // NotebookLM, AI vision, special
+    | "danger";      // Error, invalid, critical (rose)
   size?: "xs" | "sm" | "md";
   dot?: boolean;
 }
@@ -22,8 +21,8 @@ export const Badge: React.FC<BadgeProps> = ({
   ...props
 }) => {
   const sizeClasses = {
-    xs: "text-[9px] px-1.5 py-0.2 font-mono",
-    sm: "text-[10px] px-2 py-0.5",
+    xs: "text-[10px] px-1.5 py-0.5 font-mono",
+    sm: "text-[11px] px-2 py-0.5",
     md: "text-xs px-2.5 py-1"
   }[size];
 
@@ -39,9 +38,7 @@ export const Badge: React.FC<BadgeProps> = ({
     warning:
       "bg-amber-950/60 text-amber-300 border border-amber-700/50",
     danger:
-      "bg-rose-950/60 text-rose-300 border border-rose-700/50",
-    purple:
-      "bg-purple-950/60 text-purple-300 border border-purple-700/50"
+      "bg-rose-950/60 text-rose-300 border border-rose-700/50"
   }[variant];
 
   const dotClasses = {
@@ -50,8 +47,7 @@ export const Badge: React.FC<BadgeProps> = ({
     cyan: "bg-sky-400",
     success: "bg-emerald-400",
     warning: "bg-amber-400",
-    danger: "bg-rose-400",
-    purple: "bg-purple-400"
+    danger: "bg-rose-400"
   }[variant];
 
   return (

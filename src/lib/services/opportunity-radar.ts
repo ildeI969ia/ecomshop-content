@@ -1,11 +1,10 @@
 import { ContentRepository, ProductRepository } from "@/server/repositories";
 import { ProductEntity, ContentItem } from "@/server/domain/types";
-import { STAR_PRODUCTS } from "../knowledge";
 import { ProductBrainService, ProductBrainProfile } from "./product-brain";
 import { EditorialControls, BusinessGoal } from "../types/editorial-controls";
 import { OFFICIAL_NOTEBOOK } from "../notebooklm";
-import { ECOMSHOP_FULL_CATALOG, findCatalogProduct, CatalogProduct } from "../data/ecomshop-catalog";
-import { ECOMSHOP_CATALOG, getCatalogDevice, CatalogDevice } from "../catalog";
+import { ECOMSHOP_FULL_CATALOG, CatalogProduct } from "../data/ecomshop-catalog";
+
 
 export interface OpportunityScoreBreakdown {
   stockScore: number;       // 0-25: Disponibilidad inmediata en almacén EcomSpain
@@ -85,7 +84,7 @@ export class OpportunityRadarService {
   private productBrain = new ProductBrainService();
 
   /**
-   * Catálogo unificado obtenido directamente desde ECOMSHOP_CATALOG
+   * Catálogo unificado obtenido directamente desde la fuente canónica ECOMSHOP_FULL_CATALOG
    */
   private get MASTER_CATALOG_DEFINITIONS(): Array<{
     sku: string;

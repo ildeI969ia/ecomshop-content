@@ -49,8 +49,8 @@ export const EvidenceAuditDrawer: React.FC<EvidenceAuditDrawerProps> = ({
               }`}>
                 {passed ? "Quality Gate Passed" : "Revisión Recomendada"}
               </span>
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                <BookOpen className="w-2.5 h-2.5 text-purple-400" />
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                <BookOpen className="w-2.5 h-2.5 text-indigo-400" />
                 EcomShop NotebookLM Grounded
               </span>
             </div>
@@ -120,7 +120,7 @@ export const EvidenceAuditDrawer: React.FC<EvidenceAuditDrawerProps> = ({
                         Fuente:{" "}
                         <span className={`font-semibold px-1.5 py-0.5 rounded text-[10px] ${
                           claimItem.sourceType === "DATASHEET" 
-                            ? "bg-purple-900/60 text-purple-300 border border-purple-800"
+                            ? "bg-indigo-900/60 text-indigo-300 border border-indigo-800"
                             : "bg-blue-900/60 text-blue-300 border border-blue-800"
                         }`}>
                           {claimItem.sourceType === "DATASHEET" ? "📖 Notebook Datasheet" : "🌐 EcomShop Web"}

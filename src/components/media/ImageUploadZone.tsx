@@ -69,7 +69,7 @@ export const ImageUploadZone: React.FC<ImageUploadZoneProps> = ({
     <div className="space-y-2">
       <div className="flex items-center justify-between mb-1.5">
         <label className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
-          <Upload className="w-3 h-3 text-purple-400" />
+          <Upload className="w-3 h-3 text-indigo-400" />
           Imagen Base de Referencia
         </label>
         {imageBase && (
@@ -94,17 +94,17 @@ export const ImageUploadZone: React.FC<ImageUploadZoneProps> = ({
       )}
 
       {imageBase ? (
-        <div className="relative aspect-video bg-slate-900 rounded-lg overflow-hidden border border-purple-500/40 group">
+        <div className="relative aspect-video bg-slate-900 rounded-lg overflow-hidden border border-indigo-500/40 group">
           <img src={imageBase} alt="Referencia activa" className="w-full h-full object-contain" />
           <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
             <span className="text-white text-[11px] font-medium">Referencia activa para variaciones</span>
           </div>
         </div>
       ) : (
-        <label className="border border-dashed border-slate-700 hover:border-purple-500 bg-slate-900 hover:bg-purple-950/20 rounded-lg p-2.5 flex flex-col items-center justify-center gap-1 cursor-pointer transition text-center">
+        <label className="border border-dashed border-slate-700 hover:border-indigo-500 bg-slate-900 hover:bg-indigo-950/20 rounded-lg p-2.5 flex flex-col items-center justify-center gap-1 cursor-pointer transition text-center">
           <div className="flex items-center gap-2">
             {isProcessing ? (
-              <div className="w-4 h-4 border-2 border-purple-400/30 border-t-purple-400 rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
             ) : (
               <Upload className="w-4 h-4 text-slate-500" />
             )}

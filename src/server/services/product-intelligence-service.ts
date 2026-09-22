@@ -4,8 +4,8 @@ import { ProductEntity, ProductIntelligenceRecord } from "../domain/types";
 import { ProductRepository, ProductIntelligenceRepository } from "../repositories";
 import { OFFICIAL_NOTEBOOK } from "@/lib/notebooklm";
 import { STAR_PRODUCTS } from "@/lib/knowledge";
-import { findCatalogProduct, CatalogProduct, ECOMSHOP_FULL_CATALOG } from "@/lib/data/ecomshop-catalog";
-import { getCatalogDevice, CatalogDevice, ECOMSHOP_CATALOG } from "@/lib/catalog";
+import { findCatalogProduct } from "@/lib/data/ecomshop-catalog";
+
 
 export class ProductIntelligenceService {
   private productRepo = new ProductRepository();

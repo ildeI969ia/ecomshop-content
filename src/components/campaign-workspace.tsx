@@ -34,6 +34,7 @@ import { EvidenceAuditDrawer } from "./evidence-audit-drawer";
 import { CampaignStepper, GenerationStage } from "./campaign-stepper";
 import { SourceDrawer, CitationDetail } from "./source-drawer";
 import { ECOMSHOP_CATALOG, getCatalogDevice, getAllCatalogDevices } from "@/lib/catalog";
+import { Button, Badge, Card, CardHeader, CardTitle, CardDescription } from "@/components/ui";
 
 interface CampaignWorkspaceProps {
   stage: GenerationStage;
@@ -119,7 +120,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
       angle: "Máxima densidad y canales de 320 MHz con puerto 10GbE PoE++",
       bundle: "ECS2512FP",
       specsSnippet: "4x4:4 Tri-Banda | 18.7 Gbps | 10GbE PoE++ 802.3bt",
-      color: "from-purple-600 to-pink-700"
+      color: "from-indigo-600 to-sky-600"
     }
   ];
 
@@ -214,13 +215,13 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
         <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 border border-slate-800/90 rounded-xl p-5 text-white flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-md">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="bg-indigo-600/30 text-indigo-300 text-xs px-2.5 py-0.5 rounded-full font-mono border border-indigo-500/40 uppercase tracking-wider">
+              <Badge variant="indigo" size="xs">
                 Workspace Omnicanal
-              </span>
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                <BookOpen className="w-3 h-3 text-purple-400" />
+              </Badge>
+              <Badge variant="neutral" size="xs">
+                <BookOpen className="w-3 h-3 text-indigo-400" />
                 59 Fuentes Oficiales NotebookLM
-              </span>
+              </Badge>
             </div>
             <h2 className="text-lg font-bold text-white tracking-tight">
               Panel de Activación y Grounding Oficial
@@ -231,14 +232,15 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
           </div>
 
           {selectedSku && onLaunchWithSku && (
-            <button
+            <Button
               type="button"
+              variant="primary"
+              size="md"
               onClick={() => onLaunchWithSku(selectedSku)}
-              className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer"
+              leftIcon={<Zap className="w-3.5 h-3.5 text-amber-300" />}
             >
-              <Zap className="w-3.5 h-3.5 text-amber-300" />
-              <span>🚀 Lanzar Campaña ({selectedSku})</span>
-            </button>
+              🚀 Lanzar Campaña ({selectedSku})
+            </Button>
           )}
         </div>
 
@@ -319,13 +321,13 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             })}
           </div>
 
-          {/* Selector Rápido Catálogo Completo ECOMSHOP_CATALOG (8 Modelos Canónicos) */}
+          {/* Selector Rápido Catálogo Canónico Integrado (12 Modelos Oficiales) */}
           <div className="mt-3.5 bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Package className="w-3.5 h-3.5 text-indigo-400" />
                 <h4 className="text-xs font-bold text-slate-200">
-                  Catálogo Canónico EcomShop (8 Equipos Oficiales)
+                  Catálogo EcomShop integrado (12 productos)
                 </h4>
               </div>
               <span className="text-[11px] text-slate-400 font-mono">
@@ -333,7 +335,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
               {getAllCatalogDevices().map((device) => {
                 const isSelected = selectedSku === device.sku;
                 return (
@@ -350,16 +352,18 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                   >
                     <div className="flex items-center justify-between w-full mb-1">
                       <span className="font-mono font-bold text-[11px]">{device.sku}</span>
-                      <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${
-                        device.type === "ACCESS_POINT" ? "bg-blue-950 text-blue-300 border border-blue-800" :
-                        device.type === "SWITCH" ? "bg-emerald-950 text-emerald-300 border border-emerald-800" :
-                        device.type === "GATEWAY" ? "bg-amber-950 text-amber-300 border border-amber-800" :
-                        "bg-purple-950 text-purple-300 border border-purple-800"
-                      }`}>
+                      <Badge 
+                        variant={
+                          device.type === "ACCESS_POINT" ? "cyan" :
+                          device.type === "SWITCH" ? "success" :
+                          device.type === "GATEWAY" ? "warning" : "neutral"
+                        }
+                        size="xs"
+                      >
                         {device.type === "ACCESS_POINT" ? "AP" :
                          device.type === "SWITCH" ? "SW" :
                          device.type === "GATEWAY" ? "GW" : "ACC"}
-                      </span>
+                      </Badge>
                     </div>
                     <span className="text-[10px] text-slate-400 truncate w-full">
                       {device.name.replace("EnGenius Cloud ", "").replace("EnGenius ", "")}
@@ -464,23 +468,23 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="bg-indigo-600/30 text-indigo-300 text-xs px-2.5 py-0.5 rounded-full font-mono border border-indigo-500/40 uppercase tracking-wider">
+              <Badge variant="indigo" size="xs">
                 Campaign Workspace
-              </span>
+              </Badge>
               {opportunity?.sku && (
-                <span className="bg-slate-800 text-sky-400 text-xs px-2.5 py-0.5 rounded-full font-mono border border-slate-700">
+                <Badge variant="cyan" size="xs">
                   SKU: {opportunity.sku}
-                </span>
+                </Badge>
               )}
               {opportunity?.recommendedAngle && (
-                <span className="bg-emerald-950 text-emerald-300 text-xs px-2 py-0.5 rounded font-semibold border border-emerald-800">
+                <Badge variant="success" size="xs">
                   {opportunity.recommendedAngle}
-                </span>
+                </Badge>
               )}
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                <BookOpen className="w-3 h-3 text-purple-400" />
+              <Badge variant="neutral" size="xs">
+                <BookOpen className="w-3 h-3 text-indigo-400" />
                 NotebookLM Grounded
-              </span>
+              </Badge>
             </div>
 
             <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
@@ -496,21 +500,24 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
           </div>
 
           <div className="flex items-center gap-2 shrink-0 flex-wrap">
-            <div className="bg-emerald-950/80 text-emerald-300 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-emerald-700/60 font-mono font-bold">
+            <Badge variant="success" size="sm" className="font-mono font-bold">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Fidelidad: {content?.factCheckScore || 98}/100</span>
-            </div>
+              Fidelidad: {content?.factCheckScore || 98}/100
+            </Badge>
 
             {onSaveToFirestore && (
-              <button
+              <Button
                 type="button"
+                variant="primary"
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-500 border-emerald-500/50"
                 disabled={isSavingArticle}
+                isLoading={isSavingArticle}
                 onClick={() => onSaveToFirestore("approved")}
-                className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition font-semibold shadow-xs cursor-pointer active:scale-95"
+                leftIcon={!isSavingArticle ? <Save className="w-3.5 h-3.5" /> : undefined}
               >
-                <Save className="w-3.5 h-3.5" />
-                <span>{isSavingArticle ? "Guardando..." : "Guardar en Firestore"}</span>
-              </button>
+                {isSavingArticle ? "Guardando..." : "Guardar en Firestore"}
+              </Button>
             )}
 
             {opportunity?.url && (
@@ -518,21 +525,22 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 href={opportunity.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition border border-slate-700"
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition border border-slate-700"
               >
                 <ExternalLink className="w-3.5 h-3.5 text-sky-400" />
                 <span>Ver en ecomshop.es</span>
               </a>
             )}
             {onReset && (
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={handleSafeReset}
-                className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition border border-slate-700 cursor-pointer"
+                leftIcon={<ArrowLeft className="w-3.5 h-3.5" />}
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Cerrar</span>
-              </button>
+                Cerrar
+              </Button>
             )}
           </div>
         </div>
@@ -620,10 +628,10 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
 
       {/* Barra de Citaciones Interactivas si hay fuentes citadas */}
       {content?.citations && Object.keys(content.citations).length > 0 && (
-        <div className="bg-indigo-50 border-b border-indigo-100 px-6 py-2.5 flex items-center justify-between flex-wrap gap-2 text-xs">
+        <div className="bg-slate-950 border-b border-slate-800 px-6 py-2.5 flex items-center justify-between flex-wrap gap-2 text-xs">
           <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-indigo-600" />
-            <span className="font-bold text-slate-800">
+            <BookOpen className="w-4 h-4 text-indigo-400" />
+            <span className="font-bold text-slate-200">
               Evidencias Citadas de NotebookLM ({Object.keys(content.citations).length}):
             </span>
           </div>
@@ -633,10 +641,10 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 key={id}
                 type="button"
                 onClick={() => handleOpenCitation(id, cit)}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg font-mono text-[11px] font-bold bg-white hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-200 shadow-2xs transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono text-[11px] font-bold bg-slate-900 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-900/60 shadow-2xs transition cursor-pointer"
               >
                 <span>[{id.toUpperCase()}]</span>
-                <span className="font-sans font-medium max-w-[140px] truncate">{cit.title}</span>
+                <span className="font-sans font-medium max-w-[140px] truncate text-slate-300">{cit.title}</span>
               </button>
             ))}
           </div>
@@ -752,113 +760,120 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 {/* 1. BLOG TAB */}
             {activeTab === "blog" && (
               <div className="flex flex-col gap-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-slate-50 p-4 rounded-xl border border-slate-200 gap-4">
+                <Card variant="default" padding="md" className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-sky-600">Título SEO & Slug</span>
-                    <h3 className="text-base font-bold text-slate-950 mt-0.5">{content.blog.title}</h3>
-                    <p className="text-xs text-slate-500 mt-1 flex items-center gap-2">
-                      <span>Slug: <code className="text-sky-700 font-mono bg-sky-50 px-1 py-0.5 rounded border border-sky-200">/{content.blog.slug}</code></span>
+                    <span className="text-[11px] uppercase tracking-wider font-bold text-sky-400">Título SEO & Slug</span>
+                    <h3 className="text-base font-bold text-white mt-0.5">{content.blog.title}</h3>
+                    <p className="text-xs text-slate-400 mt-1 flex items-center gap-2">
+                      <span>Slug: <code className="text-sky-300 font-mono bg-slate-950 px-1 py-0.5 rounded border border-slate-800">/{content.blog.slug}</code></span>
                       <span>•</span>
-                      <span>Lectura: <strong>{content.blog.readingTimeMinutes} min</strong></span>
+                      <span>Lectura: <strong className="text-slate-200">{content.blog.readingTimeMinutes} min</strong></span>
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {onSaveToFirestore && (
-                      <button
+                      <Button
                         type="button"
+                        variant="primary"
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-500 border-emerald-500/50"
                         disabled={isSavingArticle}
+                        isLoading={isSavingArticle}
                         onClick={() => onSaveToFirestore("approved")}
-                        className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition shadow-xs cursor-pointer disabled:opacity-50"
+                        leftIcon={!isSavingArticle ? <Save className="w-3.5 h-3.5" /> : undefined}
                       >
-                        <Save className="w-3.5 h-3.5 text-emerald-200" />
-                        <span>{isSavingArticle ? "Guardando..." : "Guardar en Firestore"}</span>
-                      </button>
+                        {isSavingArticle ? "Guardando..." : "Guardar en Firestore"}
+                      </Button>
                     )}
-                    <button
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
                       onClick={() => copyToClipboard(content.blog.htmlContent, "blog-html")}
-                      className="flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-xs font-semibold transition shadow-xs shrink-0 cursor-pointer"
+                      leftIcon={copiedKey === "blog-html" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-sky-400" />}
                     >
-                      {copiedKey === "blog-html" ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-sky-400" />}
-                      <span>{copiedKey === "blog-html" ? "¡HTML Copiado!" : "Copiar HTML Durable"}</span>
-                    </button>
+                      {copiedKey === "blog-html" ? "¡HTML Copiado!" : "Copiar HTML Durable"}
+                    </Button>
                   </div>
-                </div>
+                </Card>
 
                 {/* Perfiles B2B */}
                 {content.blog.editorialLayout?.targetProfiles && content.blog.editorialLayout.targetProfiles.length > 0 && (
-                  <div className="bg-white border border-slate-200 rounded-xl p-4.5 shadow-xs">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-sky-600" />
+                  <Card variant="subtle" padding="md">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-3 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-sky-400" />
                       Propuesta de Valor por Perfil Comercial
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                       {content.blog.editorialLayout.targetProfiles.map((p, idx) => (
-                        <div key={idx} className="bg-slate-50 rounded-lg p-3 border border-slate-200/80 flex flex-col justify-between">
-                          <span className="text-[10px] font-bold uppercase text-sky-700 bg-sky-100/70 px-2 py-0.5 rounded w-fit mb-1.5">
+                        <div key={idx} className="bg-slate-900/90 rounded-xl p-3 border border-slate-800 flex flex-col justify-between gap-2">
+                          <Badge variant="cyan" size="xs">
                             {p.profile}
-                          </span>
-                          <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                          </Badge>
+                          <p className="text-xs text-slate-300 leading-relaxed font-medium">
                             {p.keyTakeaway}
                           </p>
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </Card>
                 )}
 
                 {/* Fotos para Imagen 3 */}
                 {content.blog.editorialLayout?.photoPlacements && content.blog.editorialLayout.photoPlacements.length > 0 && (
-                  <div className="bg-gradient-to-r from-purple-50/70 via-indigo-50/50 to-purple-50/70 border border-purple-200/80 rounded-xl p-4.5 shadow-xs">
-                    <div className="flex items-center justify-between mb-3 border-b border-purple-200/60 pb-2">
+                  <Card variant="default" padding="md" className="border-indigo-900/60 bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950/40">
+                    <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
                       <div className="flex items-center gap-2">
-                        <span className="p-1 rounded bg-purple-600 text-white">
+                        <span className="p-1 rounded-lg bg-indigo-600 text-white">
                           <ImageIcon className="w-3.5 h-3.5" />
                         </span>
                         <div>
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-purple-950">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-200">
                             Fotos Sugeridas para Imagen 3 & Durable CMS
                           </h4>
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold text-purple-800 bg-purple-200/60 px-2 py-0.5 rounded">
+                      <Badge variant="neutral" size="xs">
                         {content.blog.editorialLayout.photoPlacements.length} Prompts
-                      </span>
+                      </Badge>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                       {content.blog.editorialLayout.photoPlacements.map((photo, i) => (
-                        <div key={photo.id || i} className="bg-white rounded-lg p-3.5 border border-purple-200 shadow-2xs flex flex-col justify-between gap-3">
+                        <div key={photo.id || i} className="bg-slate-950/90 rounded-xl p-3.5 border border-slate-800 shadow-2xs flex flex-col justify-between gap-3">
                           <div className="space-y-1">
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-bold text-slate-700 uppercase bg-slate-100 px-2 py-0.5 rounded">
+                              <Badge variant="neutral" size="xs">
                                 Foto #{i + 1} &bull; Tras: {photo.placementAfterHeading}
-                              </span>
-                              <span className="text-[10px] font-semibold text-purple-600">
+                              </Badge>
+                              <Badge variant="cyan" size="xs">
                                 {photo.photoType}
-                              </span>
+                              </Badge>
                             </div>
-                            <p className="text-xs text-slate-800 font-medium mt-1">
+                            <p className="text-xs text-slate-200 font-medium mt-1">
                               {photo.description}
                             </p>
-                            <p className="text-[11px] text-slate-500 font-mono bg-slate-50 p-2 rounded border border-slate-100 line-clamp-2">
+                            <p className="text-[11px] text-slate-400 font-mono bg-slate-900/80 p-2 rounded-lg border border-slate-800 line-clamp-2">
                               "{photo.imagen3Prompt}"
                             </p>
                           </div>
 
                           {onOpenImageStudio && (
-                            <button
+                            <Button
                               type="button"
+                              variant="primary"
+                              size="sm"
                               onClick={() => onOpenImageStudio(photo.imagen3Prompt)}
-                              className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer"
+                              leftIcon={<Sparkles className="w-3.5 h-3.5 text-indigo-200" />}
+                              className="w-full"
                             >
-                              <Sparkles className="w-3.5 h-3.5 text-purple-200" />
                               Generar esta foto en Estudio Imagen 3 &rarr;
-                            </button>
+                            </Button>
                           )}
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </Card>
                 )}
 
                 {/* Vista previa de HTML con delegación de clic para citas */}
@@ -878,58 +893,71 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             {activeTab === "mailchimp" && (
               <div className="flex flex-col gap-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-amber-50/60 border border-amber-200/80 rounded-xl p-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 block mb-1">
+                  <Card variant="subtle" padding="md" className="border-amber-900/40 bg-amber-950/20">
+                    <Badge variant="warning" size="xs" className="mb-2">
                       Asunto Variante A
-                    </span>
-                    <p className="text-sm font-semibold text-slate-900">{content.mailchimp.subjectA}</p>
-                    <button
+                    </Badge>
+                    <p className="text-sm font-semibold text-slate-100">{content.mailchimp.subjectA}</p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="xs"
                       onClick={() => copyToClipboard(content.mailchimp.subjectA, "sub-a")}
-                      className="mt-2 text-xs text-amber-800 hover:text-amber-950 font-medium flex items-center gap-1 cursor-pointer"
+                      className="mt-2 text-amber-300 hover:text-amber-200"
+                      leftIcon={<Copy className="w-3 h-3 text-amber-400" />}
                     >
-                      <Copy className="w-3 h-3" /> {copiedKey === "sub-a" ? "Copiado" : "Copiar Asunto A"}
-                    </button>
-                  </div>
+                      {copiedKey === "sub-a" ? "Copiado" : "Copiar Asunto A"}
+                    </Button>
+                  </Card>
 
-                  <div className="bg-amber-50/60 border border-amber-200/80 rounded-xl p-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 block mb-1">
+                  <Card variant="subtle" padding="md" className="border-amber-900/40 bg-amber-950/20">
+                    <Badge variant="warning" size="xs" className="mb-2">
                       Asunto Variante B
-                    </span>
-                    <p className="text-sm font-semibold text-slate-900">{content.mailchimp.subjectB}</p>
-                    <button
+                    </Badge>
+                    <p className="text-sm font-semibold text-slate-100">{content.mailchimp.subjectB}</p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="xs"
                       onClick={() => copyToClipboard(content.mailchimp.subjectB, "sub-b")}
-                      className="mt-2 text-xs text-amber-800 hover:text-amber-950 font-medium flex items-center gap-1 cursor-pointer"
+                      className="mt-2 text-amber-300 hover:text-amber-200"
+                      leftIcon={<Copy className="w-3 h-3 text-amber-400" />}
                     >
-                      <Copy className="w-3 h-3" /> {copiedKey === "sub-b" ? "Copiado" : "Copiar Asunto B"}
-                    </button>
-                  </div>
+                      {copiedKey === "sub-b" ? "Copiado" : "Copiar Asunto B"}
+                    </Button>
+                  </Card>
                 </div>
 
-                <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200">
-                  <span className="text-xs text-slate-600">
-                    Preview Text: <strong>{content.mailchimp.previewText}</strong>
+                <Card variant="default" padding="sm" className="flex items-center justify-between">
+                  <span className="text-xs text-slate-300">
+                    Preview Text: <strong className="text-white">{content.mailchimp.previewText}</strong>
                   </span>
                   <div className="flex items-center gap-2">
                     {onSaveToFirestore && (
-                      <button
+                      <Button
                         type="button"
+                        variant="primary"
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-500 border-emerald-500/50"
                         disabled={isSavingArticle}
+                        isLoading={isSavingArticle}
                         onClick={() => onSaveToFirestore("approved")}
-                        className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow-xs cursor-pointer disabled:opacity-50"
+                        leftIcon={!isSavingArticle ? <Save className="w-3.5 h-3.5" /> : undefined}
                       >
-                        <Save className="w-3.5 h-3.5 text-emerald-200" />
-                        <span>{isSavingArticle ? "Guardando..." : "Guardar"}</span>
-                      </button>
+                        {isSavingArticle ? "Guardando..." : "Guardar"}
+                      </Button>
                     )}
-                    <button
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
                       onClick={() => copyToClipboard(content.mailchimp.newsletterHtml, "mailchimp-html")}
-                      className="flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition shadow-xs cursor-pointer"
+                      leftIcon={copiedKey === "mailchimp-html" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-400" />}
                     >
-                      {copiedKey === "mailchimp-html" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-400" />}
-                      <span>{copiedKey === "mailchimp-html" ? "¡HTML Copiado!" : "Copiar Template Mailchimp"}</span>
-                    </button>
+                      {copiedKey === "mailchimp-html" ? "¡HTML Copiado!" : "Copiar Template Mailchimp"}
+                    </Button>
                   </div>
-                </div>
+                </Card>
 
                 <div 
                   onClick={handleContainerClick}
@@ -946,30 +974,35 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             {/* 3. WHATSAPP TAB */}
             {activeTab === "whatsapp" && (
               <div className="flex flex-col gap-4 max-w-2xl mx-auto">
-                <div className="bg-emerald-900 text-white p-4 rounded-t-xl flex items-center justify-between shadow-xs">
+                <div className="bg-emerald-950 border border-emerald-800/80 text-white p-4 rounded-t-xl flex items-center justify-between shadow-xs">
                   <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-emerald-300" />
+                    <MessageSquare className="w-4 h-4 text-emerald-400" />
                     <span className="text-xs font-bold tracking-wide uppercase">WhatsApp Broadcast B2B</span>
                   </div>
                   <div className="flex items-center gap-2">
                     {onSaveToFirestore && (
-                      <button
+                      <Button
                         type="button"
+                        variant="secondary"
+                        size="xs"
                         disabled={isSavingArticle}
+                        isLoading={isSavingArticle}
                         onClick={() => onSaveToFirestore("approved")}
-                        className="bg-emerald-800 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                        leftIcon={!isSavingArticle ? <Save className="w-3.5 h-3.5 text-emerald-300" /> : undefined}
                       >
-                        <Save className="w-3.5 h-3.5 text-emerald-200" />
-                        <span>{isSavingArticle ? "Guardando..." : "Guardar"}</span>
-                      </button>
+                        {isSavingArticle ? "Guardando..." : "Guardar"}
+                      </Button>
                     )}
-                    <button
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="xs"
+                      className="bg-emerald-700 hover:bg-emerald-600 border-emerald-600"
                       onClick={() => copyToClipboard(content.whatsapp.formattedMessage, "wa-msg")}
-                      className="bg-emerald-800 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                      leftIcon={copiedKey === "wa-msg" ? <Check className="w-3.5 h-3.5 text-emerald-200" /> : <Copy className="w-3.5 h-3.5" />}
                     >
-                      {copiedKey === "wa-msg" ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copiedKey === "wa-msg" ? "¡Copiado!" : "Copiar Mensaje"}</span>
-                    </button>
+                      {copiedKey === "wa-msg" ? "¡Copiado!" : "Copiar Mensaje"}
+                    </Button>
                   </div>
                 </div>
                 <div className="bg-emerald-50/50 border border-emerald-200 p-6 rounded-b-xl">
@@ -983,30 +1016,34 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             {/* 4. LINKEDIN TAB */}
             {activeTab === "linkedin" && (
               <div className="flex flex-col gap-4 max-w-2xl mx-auto">
-                <div className="bg-blue-900 text-white p-4 rounded-t-xl flex items-center justify-between shadow-xs">
+                <div className="bg-slate-950 border border-slate-800 text-white p-4 rounded-t-xl flex items-center justify-between shadow-xs">
                   <div className="flex items-center gap-2">
-                    <Share2 className="w-4 h-4 text-blue-300" />
+                    <Share2 className="w-4 h-4 text-sky-400" />
                     <span className="text-xs font-bold tracking-wide uppercase">LinkedIn B2B Post</span>
                   </div>
                   <div className="flex items-center gap-2">
                     {onSaveToFirestore && (
-                      <button
+                      <Button
                         type="button"
+                        variant="secondary"
+                        size="xs"
                         disabled={isSavingArticle}
+                        isLoading={isSavingArticle}
                         onClick={() => onSaveToFirestore("approved")}
-                        className="bg-blue-800 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                        leftIcon={!isSavingArticle ? <Save className="w-3.5 h-3.5 text-sky-300" /> : undefined}
                       >
-                        <Save className="w-3.5 h-3.5 text-blue-200" />
-                        <span>{isSavingArticle ? "Guardando..." : "Guardar"}</span>
-                      </button>
+                        {isSavingArticle ? "Guardando..." : "Guardar"}
+                      </Button>
                     )}
-                    <button
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="xs"
                       onClick={() => copyToClipboard(content.linkedin.fullPostText, "li-post")}
-                      className="bg-blue-800 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                      leftIcon={copiedKey === "li-post" ? <Check className="w-3.5 h-3.5 text-sky-200" /> : <Copy className="w-3.5 h-3.5" />}
                     >
-                      {copiedKey === "li-post" ? <Check className="w-3.5 h-3.5 text-blue-300" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copiedKey === "li-post" ? "¡Copiado!" : "Copiar Post"}</span>
-                    </button>
+                      {copiedKey === "li-post" ? "¡Copiado!" : "Copiar Post"}
+                    </Button>
                   </div>
                 </div>
                 <div className="bg-slate-50 border border-slate-200 p-6 rounded-b-xl">

@@ -263,10 +263,10 @@ export const NotebookLMSourceHub: React.FC<NotebookLMSourceHubProps> = ({
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1 mb-0.5">
-                      <span className="font-mono text-[10px] text-indigo-300 font-bold bg-indigo-950/70 px-1.5 py-0.2 rounded border border-indigo-800/60">
+                      <span className="font-mono text-[10px] text-indigo-300 font-bold bg-indigo-950/70 px-1.5 py-0.5 rounded border border-indigo-800/60">
                         {source.id.toUpperCase()}
                       </span>
-                      <span className="uppercase text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">
+                      <span className="uppercase text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
                         {source.type}
                       </span>
                     </div>

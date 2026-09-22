@@ -293,7 +293,7 @@ export function OutlineEditorModal({
       case "INSTALLER_CALLOUT":
         return <AlertTriangle className="w-4 h-4 text-amber-600" />;
       case "FAQ":
-        return <HelpCircle className="w-4 h-4 text-purple-600" />;
+        return <HelpCircle className="w-4 h-4 text-indigo-600" />;
       default:
         return <FileText className="w-4 h-4 text-slate-600" />;
     }

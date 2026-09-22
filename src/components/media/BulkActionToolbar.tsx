@@ -29,7 +29,7 @@ export function BulkActionToolbar({
       <div className="pointer-events-auto flex items-center justify-between gap-4 bg-slate-900/95 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700/80 max-w-xl w-full">
         {/* Count & Info */}
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-purple-600/30 border border-purple-500/40 flex items-center justify-center text-purple-300">
+          <div className="w-8 h-8 rounded-xl bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-300">
             <CheckSquare className="w-4 h-4" />
           </div>
           <div className="flex flex-col">

@@ -5,6 +5,8 @@ import { Radar, RefreshCw } from "lucide-react";
 import { ProductOpportunityRecord } from "@/lib/services/opportunity-radar";
 import { BusinessGoal } from "@/lib/types/editorial-controls";
 import { OpportunityCard } from "@/components/OpportunityCard";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export const BUSINESS_GOAL_PILLS: Array<{ id: BusinessGoal; label: string }> = [
   { id: "ALL_OPPORTUNITIES", label: "⚡ Todas" },
@@ -80,25 +82,27 @@ export const OpportunityRadarWidget: React.FC<OpportunityRadarWidgetProps> = ({
                 <h3 className="text-xs font-bold text-white uppercase tracking-wider">
                   Radar de Oportunidades
                 </h3>
-                <span className="bg-indigo-500/20 text-indigo-300 text-[9px] px-1.5 py-0.2 rounded-full border border-indigo-400/30 font-mono">
+                <Badge variant="indigo" size="xs">
                   Autopilot
-                </span>
+                </Badge>
               </div>
               <p className="text-[10px] text-slate-400">Master Notebook + Stock</p>
             </div>
           </div>
 
           {onRegenerateRadar && (
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="xs"
               onClick={onRegenerateRadar}
               disabled={isRegeneratingRadar || isLoading}
               title="Regenerar Radar con IA y NotebookLM"
-              className="bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-200 hover:text-white px-2 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition active:scale-95 disabled:opacity-50 cursor-pointer"
+              className="border-indigo-500/40 text-indigo-200 hover:text-white"
             >
-              <RefreshCw className={`w-3 h-3 text-indigo-300 ${isRegeneratingRadar ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-3 h-3 text-indigo-300 mr-1 ${isRegeneratingRadar ? "animate-spin" : ""}`} />
               <span>{isRegeneratingRadar ? "..." : "Refrescar"}</span>
-            </button>
+            </Button>
           )}
         </div>
 
@@ -150,9 +154,9 @@ export const OpportunityRadarWidget: React.FC<OpportunityRadarWidgetProps> = ({
               <h3 className="text-base font-bold text-white tracking-wide">
                 Radar de Oportunidades Diarias (Product Brain)
               </h3>
-              <span className="bg-indigo-500/20 text-indigo-300 text-xs px-2 py-0.5 rounded-full border border-indigo-400/30 font-mono">
+              <Badge variant="indigo" size="xs">
                 Autopilot
-              </span>
+              </Badge>
             </div>
             <p className="text-xs text-slate-400">
               Clasificación algorítmica por Stock, Gap de Contenido, Tendencia B2B y NotebookLM Grounding.
@@ -162,15 +166,17 @@ export const OpportunityRadarWidget: React.FC<OpportunityRadarWidgetProps> = ({
 
         <div className="flex items-center space-x-3">
           {onRegenerateRadar && (
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={onRegenerateRadar}
               disabled={isRegeneratingRadar || isLoading}
-              className="bg-indigo-900/60 hover:bg-indigo-800/80 border border-indigo-500/40 text-indigo-200 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition active:scale-95 disabled:opacity-50 cursor-pointer"
+              className="border-indigo-500/40 text-indigo-200 hover:text-white"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-indigo-300 ${isRegeneratingRadar ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-indigo-300 mr-1.5 ${isRegeneratingRadar ? "animate-spin" : ""}`} />
               <span>{isRegeneratingRadar ? "Regenerando..." : "Regenerar Radar (IA + NotebookLM)"}</span>
-            </button>
+            </Button>
           )}
           <div className="hidden sm:flex items-center text-xs text-slate-400">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-ping" />

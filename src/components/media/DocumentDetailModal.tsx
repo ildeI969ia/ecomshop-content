@@ -162,7 +162,7 @@ ${bodyMd}
   const getStatusBadge = (status: StoredDocument["status"]) => {
     switch (status) {
       case "published":
-        return { label: "Publicado", color: "bg-purple-500/20 text-purple-300 border-purple-500/40" };
+        return { label: "Publicado", color: "bg-indigo-500/20 text-indigo-300 border-indigo-500/40" };
       case "approved":
         return { label: "Aprobado", color: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" };
       case "reviewed":

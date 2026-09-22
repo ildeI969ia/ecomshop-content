@@ -3,7 +3,7 @@ import { ECOM_BRAND, PRESET_TOPICS, STAR_PRODUCTS } from "./knowledge";
 import { STRATEGIC_AGENT_SYSTEM_PROMPT } from "./gemini-agent";
 import { ProductIntelligenceService } from "@/server/services/product-intelligence-service";
 import { ProductIntelligenceCard } from "./types/product-intelligence";
-import { getCatalogDevice, ECOMSHOP_CATALOG, CatalogDevice } from "./catalog";
+import { getCatalogDevice, CatalogDevice } from "./catalog";
 
 export async function generateB2BContent(req: GenerateRequest & { apiKey?: string }): Promise<ContentOutput> {
   const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!req.apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT));

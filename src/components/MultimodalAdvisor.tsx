@@ -28,6 +28,7 @@ import {
   CURATED_FIELD_SCENARIOS_POOL, 
   FieldScenarioInspiration 
 } from "@/lib/services/field-scenarios-service";
+import { Button, Badge, Card, EmptyState } from "@/components/ui";
 
 export type { FieldScenarioInspiration };
 export const FIELD_SCENARIOS = CURATED_FIELD_SCENARIOS_POOL;
@@ -245,7 +246,7 @@ export function MultimodalAdvisor({
       case "network":
         return <Network className="w-3.5 h-3.5 text-indigo-500 shrink-0" />;
       case "layers":
-        return <Layers className="w-3.5 h-3.5 text-purple-500 shrink-0" />;
+        return <Layers className="w-3.5 h-3.5 text-cyan-500 shrink-0" />;
       case "file":
         return <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" />;
       case "zap":
@@ -397,47 +398,42 @@ export function MultimodalAdvisor({
 
           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             {/* Botón Generar Más Ideas con IA (CTA Principal) */}
-            <button
+            <Button
               type="button"
+              variant="primary"
+              size="sm"
               onClick={handleGenerateMoreScenarios}
               disabled={generatingMoreScenarios}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
+              isLoading={generatingMoreScenarios}
+              leftIcon={!generatingMoreScenarios ? <RefreshCw className="w-3.5 h-3.5" /> : undefined}
               title="Consultar al Master NotebookLM para sintetizar nuevos dolores técnicos de obra"
             >
-              {generatingMoreScenarios ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Sintetizando ideas...</span>
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Generar Más Ideas con IA</span>
-                </>
-              )}
-            </button>
+              {generatingMoreScenarios ? "Sintetizando ideas..." : "Generar Más Ideas con IA"}
+            </Button>
 
             {/* Botón Mezclar (Secundario Atenuado) */}
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={handleShuffleScenarios}
-              className="inline-flex items-center gap-1 px-2.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700/80 transition-colors cursor-pointer"
+              leftIcon={<Shuffle className="w-3.5 h-3.5 text-slate-400" />}
               title="Mezclar el orden de las inspiraciones"
             >
-              <Shuffle className="w-3.5 h-3.5 text-slate-400" />
               <span className="hidden md:inline">Mezclar</span>
-            </button>
+            </Button>
 
             {/* Botón Sorpréndeme (Secundario Atenuado) */}
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={handleSurpriseMe}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold rounded-xl border border-slate-700/80 transition-colors cursor-pointer"
+              leftIcon={<Dices className="w-3.5 h-3.5 text-indigo-400" />}
               title="Elegir un escenario aleatorio"
             >
-              <Dices className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Sorpréndeme</span>
-            </button>
+              Sorpréndeme
+            </Button>
           </div>
         </div>
 
@@ -463,7 +459,7 @@ export function MultimodalAdvisor({
                 }`}
               >
                 <span>{cat.label}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-mono ${
                   isActive ? "bg-indigo-700 text-white" : "bg-slate-900 text-slate-400"
                 }`}>
                   {cat.count}
@@ -505,14 +501,14 @@ export function MultimodalAdvisor({
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-1.5">
                     {getScenarioIcon(sc.icon)}
-                    <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300">
+                    <Badge variant="neutral" size="xs">
                       {sc.badge}
-                    </span>
+                    </Badge>
                   </div>
                   {isSelected ? (
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                   ) : (
-                    <span className="text-[10px] font-semibold text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-[11px] font-semibold text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">
                       Usar caso →
                     </span>
                   )}
@@ -533,9 +529,9 @@ export function MultimodalAdvisor({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Columna Izquierda: Input Multimodal */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Upload className="w-4 h-4 text-indigo-600" />
+          <Card variant="default" padding="md" className="space-y-4">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Upload className="w-4 h-4 text-indigo-400" />
               1. Aporta el Material Técnico u Observación
             </h3>
 
@@ -548,18 +544,18 @@ export function MultimodalAdvisor({
                 onClick={() => fileInputRef.current?.click()}
                 className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-2 ${
                   isDragging
-                    ? "border-indigo-500 bg-indigo-50/50"
-                    : "border-slate-200 hover:border-indigo-400 hover:bg-slate-50/50"
+                    ? "border-indigo-500 bg-indigo-950/30"
+                    : "border-slate-800 hover:border-indigo-500/50 hover:bg-slate-950/50 bg-slate-950/30"
                 }`}
               >
-                <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-indigo-950/60 border border-indigo-800/40 text-indigo-400 flex items-center justify-center">
                   <ImageIcon className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-800">
+                  <p className="text-xs font-bold text-slate-200">
                     Arrastra una foto, esquema, captura o PDF
                   </p>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-slate-400">
                     Formatos JPG, PNG, WEBP o PDF (Max 15MB)
                   </p>
                 </div>
@@ -576,24 +572,24 @@ export function MultimodalAdvisor({
                 />
               </div>
             ) : (
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+              <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {selectedFile.mimeType.startsWith("image/") ? (
                     <img
                       src={selectedFile.previewUrl}
                       alt="Preview"
-                      className="w-12 h-12 object-cover rounded-lg border border-slate-200"
+                      className="w-12 h-12 object-cover rounded-lg border border-slate-700"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-lg bg-indigo-950/60 text-indigo-300 border border-indigo-800/50 flex items-center justify-center">
                       <FileText className="w-6 h-6" />
                     </div>
                   )}
                   <div>
-                    <p className="text-xs font-bold text-slate-900 truncate max-w-[180px]">
+                    <p className="text-xs font-bold text-white truncate max-w-[180px]">
                       {selectedFile.file.name}
                     </p>
-                    <p className="text-[10px] text-slate-500">
+                    <p className="text-[11px] text-slate-400">
                       {(selectedFile.file.size / 1024).toFixed(1)} KB • {selectedFile.mimeType}
                     </p>
                   </div>
@@ -601,7 +597,7 @@ export function MultimodalAdvisor({
                 <button
                   type="button"
                   onClick={removeFile}
-                  className="p-1.5 text-slate-400 hover:text-rose-600 transition rounded-lg hover:bg-rose-50"
+                  className="p-1.5 text-slate-400 hover:text-rose-400 transition rounded-lg hover:bg-rose-950/50 cursor-pointer"
                   title="Eliminar archivo"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -610,44 +606,48 @@ export function MultimodalAdvisor({
             )}
 
             {/* Grabadora de Voz Integrada */}
-            <div className="border-t border-slate-100 pt-3">
+            <div className="border-t border-slate-800 pt-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                  <Mic className="w-3.5 h-3.5 text-rose-500" />
+                <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <Mic className="w-3.5 h-3.5 text-rose-400" />
                   O dicta una nota de voz rápida
                 </span>
                 {isRecording && (
-                  <span className="text-[11px] font-mono text-rose-600 font-bold animate-pulse flex items-center gap-1">
+                  <span className="text-[11px] font-mono text-rose-400 font-bold animate-pulse flex items-center gap-1">
                     ● Grabando: {recordingSeconds}s
                   </span>
                 )}
               </div>
 
               {!isRecording ? (
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="w-full text-rose-300 border-rose-900/40 hover:bg-rose-950/30 hover:border-rose-800"
                   onClick={startRecording}
                   disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold transition border border-rose-200"
+                  leftIcon={<Mic className="w-4 h-4 text-rose-400" />}
                 >
-                  <Mic className="w-4 h-4" />
                   Iniciar Grabación de Voz
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   type="button"
+                  variant="danger"
+                  size="sm"
+                  className="w-full bg-rose-600 hover:bg-rose-500 text-white animate-bounce"
                   onClick={stopRecording}
-                  className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition shadow-sm animate-bounce"
+                  leftIcon={<Square className="w-4 h-4" />}
                 >
-                  <Square className="w-4 h-4" />
                   Detener y Adjuntar Audio
-                </button>
+                </Button>
               )}
             </div>
 
             {/* Prompt de Contexto u Observación */}
-            <div className="border-t border-slate-100 pt-3">
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            <div className="border-t border-slate-800 pt-3">
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Notas adicionales u observaciones del operador (opcional)
               </label>
               <textarea
@@ -659,141 +659,131 @@ export function MultimodalAdvisor({
                   }
                 }}
                 placeholder="Ej: El cliente se queja de caídas continuas en horas punta. Quiere saber si con EnGenius Cloud resolverá las saturaciones sin pagar licencias anuales..."
-                className="w-full text-xs p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 resize-none h-24"
+                className="w-full text-xs p-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 resize-none h-24"
               />
             </div>
 
             {/* Botón de Enviar a Gemini */}
-            <button
+            <Button
               type="button"
+              variant="primary"
+              size="md"
               onClick={handleSubmit}
               disabled={loading || isRecording || (!operatorPrompt.trim() && !selectedFile)}
-              className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-md hover:shadow-indigo-500/25"
+              isLoading={loading}
+              leftIcon={!loading ? <Sparkles className="w-4 h-4 text-indigo-200" /> : undefined}
+              className="w-full py-3"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Procesando Diagnóstico...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 text-indigo-200" />
-                  <span>Desbloquear Ideas & Generar Propuestas</span>
-                </>
-              )}
-            </button>
+              {loading ? "Procesando Diagnóstico..." : "Desbloquear Ideas & Generar Propuestas"}
+            </Button>
 
             {errorMsg && (
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs flex items-center gap-2">
+              <div className="p-3 bg-rose-950/60 border border-rose-800/80 rounded-xl text-rose-300 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{errorMsg}</span>
               </div>
             )}
-          </div>
+          </Card>
         </div>
 
         {/* Columna Derecha: Matriz de Propuestas & Progreso Multi-Paso */}
         <div className="lg:col-span-7 space-y-4">
           {!result && !loading && (
-            <div className="bg-white rounded-xl border border-slate-200 p-10 text-center flex flex-col items-center justify-center space-y-4 shadow-xs min-h-[380px]">
-              <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-xs">
-                <Sparkles className="w-7 h-7" />
-              </div>
-              <div className="max-w-md space-y-2">
-                <h4 className="text-base font-bold text-slate-900 font-editorial">
-                  ¿Bloqueo editorial? Genera 3 propuestas de ingeniería al instante
-                </h4>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  No necesitas redactar nada desde cero. Haz clic en cualquiera de los <strong>6 casos de obra arriba</strong> o pulsa <strong>"🎲 Sorpréndeme"</strong> para que Gemini y el Master NotebookLM extraigan el diagnóstico y formulen 3 ángulos B2B directos hacia el Junia Engine.
-                </p>
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={handleSurpriseMe}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-xs"
-                  >
-                    <Dices className="w-4 h-4 text-sky-400" />
-                    Cargar Dolor de Obra Aleatorio
-                  </button>
-                </div>
-              </div>
-            </div>
+            <EmptyState
+              icon={<Sparkles className="w-6 h-6 text-indigo-400" />}
+              title="¿Bloqueo editorial? Genera 3 propuestas de ingeniería al instante"
+              description="No necesitas redactar nada desde cero. Haz clic en cualquiera de los casos de obra arriba o pulsa 'Sorpréndeme' para que Gemini y el Master NotebookLM extraigan el diagnóstico y formulen 3 ángulos B2B directos hacia el Junia Engine."
+              action={
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="md"
+                  onClick={handleSurpriseMe}
+                  leftIcon={<Dices className="w-4 h-4 text-sky-300" />}
+                >
+                  Cargar Dolor de Obra Aleatorio
+                </Button>
+              }
+              className="min-h-[380px]"
+            />
           )}
 
           {/* Feedback de Progreso Multi-Paso en Vivo */}
           {loading && (
-            <div className="bg-white rounded-xl border border-slate-200 p-8 text-center flex flex-col items-center justify-center space-y-5 shadow-xs min-h-[380px]">
+            <Card variant="default" padding="lg" className="text-center flex flex-col items-center justify-center space-y-5 min-h-[380px]">
               <div className="relative">
-                <div className="w-14 h-14 rounded-full border-3 border-indigo-100 border-t-indigo-600 animate-spin" />
-                <Sparkles className="w-6 h-6 text-indigo-600 absolute inset-0 m-auto" />
+                <div className="w-14 h-14 rounded-full border-3 border-indigo-950 border-t-indigo-500 animate-spin" />
+                <Sparkles className="w-6 h-6 text-indigo-400 absolute inset-0 m-auto" />
               </div>
 
               <div className="space-y-2 max-w-md w-full">
-                <div className="flex items-center justify-between text-xs font-semibold text-indigo-950">
+                <div className="flex items-center justify-between text-xs font-semibold text-slate-200">
                   <span className="flex items-center gap-1.5">
-                    <span className="inline-block w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
+                    <span className="inline-block w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
                     <span>Procesando consulta</span>
                   </span>
-                  <span className="font-mono text-indigo-700 font-bold bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded">
+                  <Badge variant="indigo" size="xs">
                     Tiempo transcurrido: {elapsedSeconds}s
-                  </span>
+                  </Badge>
                 </div>
-                <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-gradient-to-r from-indigo-600 via-blue-500 to-indigo-600 h-full rounded-full animate-pulse w-full" />
+                <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-800">
+                  <div className="bg-gradient-to-r from-indigo-600 via-sky-500 to-indigo-600 h-full rounded-full animate-pulse w-full" />
                 </div>
-                <p className="text-xs font-bold text-slate-800 pt-1 text-center">
+                <p className="text-xs font-bold text-slate-300 pt-1 text-center">
                   {progressText}
                 </p>
               </div>
-            </div>
+            </Card>
           )}
 
           {result && !loading && (
             <div className="space-y-4">
               {/* Diagnóstico Preliminar */}
-              <div className="bg-white rounded-xl border border-indigo-100 p-4 shadow-xs bg-gradient-to-b from-indigo-50/40 to-white space-y-2">
+              <Card variant="highlight" padding="md" className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="p-1 rounded bg-indigo-600 text-white">
+                  <span className="p-1 rounded-lg bg-indigo-600 text-white">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                   </span>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-900">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-300">
                     Diagnóstico de Ingeniería Preventa
                   </h4>
                 </div>
-                <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                <p className="text-xs text-slate-300 leading-relaxed font-medium">
                   {result.analysisSummary}
                 </p>
-                <div className="pt-2 border-t border-indigo-100/60 flex items-center gap-2">
-                  <Tag className="w-3.5 h-3.5 text-indigo-500" />
-                  <span className="text-[11px] font-semibold text-slate-500">Detectado:</span>
-                  <span className="text-[11px] font-bold text-indigo-700 bg-indigo-100/60 px-2 py-0.5 rounded">
+                <div className="pt-2 border-t border-slate-800 flex items-center gap-2">
+                  <Tag className="w-3.5 h-3.5 text-indigo-400" />
+                  <span className="text-[11px] font-semibold text-slate-400">Detectado:</span>
+                  <Badge variant="cyan" size="sm">
                     {result.detectedEquipmentOrNeed}
-                  </span>
+                  </Badge>
                 </div>
-              </div>
+              </Card>
 
               {/* Lista de 3 Propuestas Accionables con Integración Dual: The Junia Engine vs One-Shot */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 px-1">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 px-1">
                   Matriz de Propuestas Estratégicas ({result.recommendations.length})
                 </h4>
 
                 {result.recommendations.map((rec, idx) => (
-                  <div
+                  <Card
                     key={rec.id || idx}
-                    className="bg-white rounded-xl border border-slate-200 hover:border-indigo-300 p-4.5 transition shadow-xs hover:shadow-md space-y-3"
+                    variant="interactive"
+                    padding="md"
+                    className="space-y-3"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
+                          <Badge variant="neutral" size="xs">
                             Propuesta {idx + 1}: {rec.suggestedAngle}
-                          </span>
-                          <span className="text-[10px] font-bold text-indigo-600 uppercase">
+                          </Badge>
+                          <Badge variant="indigo" size="xs">
                             {rec.category}
-                          </span>
+                          </Badge>
                         </div>
-                        <h3 className="text-sm font-bold text-slate-950 font-editorial">
+                        <h3 className="text-sm font-bold text-white font-editorial">
                           {rec.title}
                         </h3>
                       </div>
@@ -801,49 +791,51 @@ export function MultimodalAdvisor({
                       {/* Acciones duales: The Junia Engine (Recomendado) y One-Shot */}
                       <div className="flex items-center gap-2 self-end sm:self-start">
                         {onLaunchJuniaEngine && (
-                          <button
+                          <Button
                             type="button"
+                            variant="primary"
+                            size="xs"
                             onClick={() => onLaunchJuniaEngine(rec)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-lg text-xs font-bold transition shadow-xs"
+                            leftIcon={<Layers className="w-3.5 h-3.5 text-indigo-200" />}
                             title="Lanzar con The Junia Engine (Outline Interactivo y Redacción por Secciones)"
                           >
-                            <Layers className="w-3.5 h-3.5 text-indigo-200" />
-                            <span>Outline Interactivo (Junia)</span>
-                          </button>
+                            Outline Junia
+                          </Button>
                         )}
-                        <button
+                        <Button
                           type="button"
+                          variant="secondary"
+                          size="xs"
                           onClick={() => onApplyRecommendation(rec)}
-                          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition border border-slate-200"
+                          leftIcon={<Zap className="w-3 h-3 text-slate-400" />}
                           title="Transferir al generador clásico rápido"
                         >
-                          <Zap className="w-3 h-3 text-slate-500" />
-                          <span>One-Shot</span>
-                        </button>
+                          One-Shot
+                        </Button>
                       </div>
                     </div>
 
-                    <div className="bg-slate-50 rounded-lg p-2.5 border border-slate-100 text-xs text-slate-700 italic">
+                    <div className="bg-slate-950/80 rounded-lg p-2.5 border border-slate-800 text-xs text-slate-300 italic">
                       "{rec.hookText}"
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] pt-1">
                       <div>
-                        <span className="font-bold text-slate-500 block">Equipos Sugeridos:</span>
-                        <span className="font-semibold text-slate-800">
+                        <span className="font-bold text-slate-400 block">Equipos Sugeridos:</span>
+                        <span className="font-semibold text-slate-200">
                           {rec.recommendedProducts.join(", ") || "Solución EnGenius Cloud"}
                         </span>
                       </div>
                       <div>
-                        <span className="font-bold text-slate-500 block">Llamada a la Acción (CTA):</span>
-                        <span className="font-semibold text-slate-800">{rec.recommendedCtaText}</span>
+                        <span className="font-bold text-slate-400 block">Llamada a la Acción (CTA):</span>
+                        <span className="font-semibold text-slate-200">{rec.recommendedCtaText}</span>
                       </div>
                     </div>
 
-                    <div className="text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-md border border-emerald-100 font-medium">
+                    <div className="text-[11px] text-emerald-300 bg-emerald-950/40 px-2.5 py-1.5 rounded-lg border border-emerald-800/50 font-medium">
                       💡 <strong>Por qué funciona:</strong> {rec.whyThisWorks}
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
             </div>

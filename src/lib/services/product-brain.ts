@@ -1,8 +1,8 @@
 import { ProductIntelligenceCard } from "../types/product-intelligence";
 import { NotebookGroundingService } from "./notebook-grounding";
 import { STAR_PRODUCTS } from "../knowledge";
-import { findCatalogProduct, CatalogProduct, ECOMSHOP_FULL_CATALOG } from "../data/ecomshop-catalog";
-import { getCatalogDevice, CatalogDevice, ECOMSHOP_CATALOG } from "../catalog";
+import { findCatalogProduct, ECOMSHOP_FULL_CATALOG } from "../data/ecomshop-catalog";
+
 
 export interface BuyerPersonaProfile {
   name: string;
@@ -148,14 +148,21 @@ export class ProductBrainService {
       }
     );
 
-    // Ecosistema & Cross-Selling alimentado por ECOMSHOP_CATALOG
+    // Ecosistema & Cross-Selling alimentado por la fuente canónica ECOMSHOP_FULL_CATALOG
     let ecosystem: ProductEcosystemBundle;
     if (catalogItem) {
-      const alternatives = ECOMSHOP_CATALOG.filter(
-        p => p.sku !== catalogItem.sku
-      ).slice(0, 2).map(p => ({
+      // Buscar alternativas directas de la misma categoría o tipo de dispositivo en el catálogo canónico
+      const sameCategoryProds = ECOMSHOP_FULL_CATALOG.filter(
+        p => p.sku !== catalogItem.sku && (p.deviceType === catalogItem.deviceType || p.category === catalogItem.category)
+      );
+      const otherProds = ECOMSHOP_FULL_CATALOG.filter(
+        p => p.sku !== catalogItem.sku && p.deviceType !== catalogItem.deviceType && p.category !== catalogItem.category
+      );
+      const candidateList = [...sameCategoryProds, ...otherProds];
+
+      const alternatives = candidateList.slice(0, 2).map(p => ({
         sku: p.sku,
-        reason: p.shortDesc
+        reason: p.description.length > 100 ? `${p.description.slice(0, 97)}...` : p.description
       }));
 
       const accessories: Array<{ sku: string; reason: string }> = [];

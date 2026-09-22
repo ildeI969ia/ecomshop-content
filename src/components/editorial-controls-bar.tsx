@@ -121,15 +121,15 @@ export const EditorialControlsBar: React.FC<EditorialControlsBarProps> = ({
 
         {/* Nivel de Profundidad Técnica */}
         <div>
-          <label htmlFor="select-tech-depth" className="block text-xs font-semibold text-slate-200 mb-1.5 flex items-center gap-1.5">
-            <Cpu className="w-4 h-4 text-purple-400" />
+          <label htmlFor="select-tech-depth" className="text-xs font-semibold text-slate-200 mb-1.5 flex items-center gap-1.5">
+            <Cpu className="w-4 h-4 text-indigo-400" />
             <span>Profundidad Técnica</span>
           </label>
           <select
             id="select-tech-depth"
             value={controls.technicalDeepDiveLevel}
             onChange={(e) => updateField("technicalDeepDiveLevel", e.target.value as any)}
-            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-medium text-slate-100 focus:outline-none focus:border-purple-500 transition cursor-pointer"
+            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-medium text-slate-100 focus:outline-none focus:border-indigo-500 transition cursor-pointer"
           >
             <option value="HIGH_TECHNICAL">Alta (MLO, Preamble Puncturing, 10G)</option>
             <option value="CONSULTATIVE_ROI">Consultiva (TCO, Cero Licencias, SLAs)</option>

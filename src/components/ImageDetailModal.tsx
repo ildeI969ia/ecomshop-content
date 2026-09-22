@@ -104,7 +104,7 @@ export function ImageDetailModal({
       case "gemini_multimodal":
         return {
           label: "Google Vertex AI · Gemini Flash Image (Multimodal)",
-          color: "bg-purple-500/20 text-purple-300 border-purple-500/40",
+          color: "bg-indigo-500/20 text-indigo-300 border-indigo-500/40",
           desc: "Composición guiada por visión multimodal conservando la imagen base de referencia."
         };
       case "imagen3":
@@ -142,7 +142,7 @@ export function ImageDetailModal({
               {image.sourceType === "official_product" ? (
                 <Shield className="w-3.5 h-3.5 text-emerald-400" />
               ) : (
-                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
               )}
               {badge.label}
             </span>
@@ -335,9 +335,9 @@ export function ImageDetailModal({
                           setActionFeedback("✓ Insertada en el contenido del artículo");
                           setTimeout(() => setActionFeedback(null), 3000);
                         }}
-                        className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 hover:text-white flex items-center gap-2 transition border-t border-slate-800"
+                        className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 hover:text-white flex items-center gap-2 transition border-t border-slate-800 cursor-pointer"
                       >
-                        <ImageIcon className="w-4 h-4 text-purple-400" />
+                        <ImageIcon className="w-4 h-4 text-indigo-400" />
                         <div>
                           <div className="font-semibold">En Cuerpo del Artículo</div>
                           <div className="text-[10px] text-slate-400">Etiqueta &lt;img&gt; en el texto HTML</div>
@@ -358,7 +358,7 @@ export function ImageDetailModal({
                       setShowInsertMenu(false);
                       setShowReuseMenu(!showReuseMenu);
                     }}
-                    className="bg-emerald-600/90 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
+                    className="bg-emerald-600/90 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm cursor-pointer"
                     title="Reutilizar esta imagen en canales de campaña"
                   >
                     <Share2 className="w-3.5 h-3.5 text-emerald-200" />
@@ -416,7 +416,7 @@ export function ImageDetailModal({
                     onUseAsBase(image.url);
                     onClose();
                   }}
-                  className="bg-purple-600/90 hover:bg-purple-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm cursor-pointer"
                   title="Usar como imagen de referencia en el Director de Arte"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-amber-300" />

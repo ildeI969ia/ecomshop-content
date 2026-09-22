@@ -1200,10 +1200,16 @@ export const ECOMSHOP_FULL_CATALOG: CatalogProduct[] = [
 export function findCatalogProduct(query: string): CatalogProduct | undefined {
   if (!query) return undefined;
   const clean = query.trim().toUpperCase();
-  return ECOMSHOP_FULL_CATALOG.find(p =>
+  // 1. Coincidencia exacta primero (prioridad máxima para evitar colisiones entre ECS5512F y ECS5512FP)
+  const exact = ECOMSHOP_FULL_CATALOG.find(p =>
     p.sku.toUpperCase() === clean ||
     p.model.toUpperCase() === clean ||
-    p.id.toUpperCase() === clean ||
+    p.id.toUpperCase() === clean
+  );
+  if (exact) return exact;
+
+  // 2. Coincidencia parcial si no hay coincidencia exacta
+  return ECOMSHOP_FULL_CATALOG.find(p =>
     p.sku.toUpperCase().includes(clean) ||
     clean.includes(p.sku.toUpperCase()) ||
     p.name.toUpperCase().includes(clean)

@@ -353,7 +353,7 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
             <div className="pt-1.5 border-t border-amber-800/40">
               <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1">
                 <span>¿Buscas algo específico? (Ej: "exterior", "switch 24p"):</span>
-                <span className="font-mono text-[9px] text-slate-500">{customDirective.length}/100</span>
+                <span className="font-mono text-[10px] text-slate-500">{customDirective.length}/100</span>
               </div>
               <div className="flex items-center gap-1">
                 <input

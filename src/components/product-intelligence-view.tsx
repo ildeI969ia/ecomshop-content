@@ -75,8 +75,8 @@ export const ProductIntelligenceView: React.FC<ProductIntelligenceViewProps> = (
               </span>
             )}
 
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40">
-              <BookOpen className="w-3 h-3 text-purple-400" />
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+              <BookOpen className="w-3 h-3 text-indigo-400" />
               NotebookLM Grounding
             </span>
           </div>
@@ -247,7 +247,7 @@ export const ProductIntelligenceView: React.FC<ProductIntelligenceViewProps> = (
 
         {/* BLOQUE 3 POLIMÓRFICO: ALIMENTACIÓN Y GESTIÓN */}
         <div className="bg-slate-800/60 border border-slate-700/60 rounded-lg p-3">
-          <div className="flex items-center gap-2 text-xs font-semibold text-purple-400 mb-2">
+          <div className="flex items-center gap-2 text-xs font-semibold text-indigo-400 mb-2">
             <Zap className="w-3.5 h-3.5" />
             <span>
               {deviceType === "SWITCH"
@@ -266,7 +266,7 @@ export const ProductIntelligenceView: React.FC<ProductIntelligenceViewProps> = (
             {technicalSpecs.powerRequirements}
           </p>
           <p className="text-xs text-slate-400 mt-1.5 pt-1.5 border-t border-slate-700/40">
-            Gestión: <span className="text-purple-300 font-medium">{technicalSpecs.management}</span>
+            Gestión: <span className="text-indigo-300 font-medium">{technicalSpecs.management}</span>
           </p>
         </div>
       </div>
