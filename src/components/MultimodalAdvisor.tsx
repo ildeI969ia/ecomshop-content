@@ -88,25 +88,25 @@ export function MultimodalAdvisor({
     };
   }, [audioUrl, selectedFile]);
 
-  // Simulación de pasos de progreso mientras la IA procesa
+  // Seguimiento de tiempo transcurrido real y estado de la petición
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (loading) {
-      setProgressStep(1);
+      setElapsedSeconds(0);
       setProgressText("Analizando evidencias técnicas y telemetría de campo...");
       interval = setInterval(() => {
-        setProgressStep((prev) => {
-          if (prev === 1) {
+        setElapsedSeconds((sec) => {
+          const next = sec + 1;
+          if (next >= 4 && next < 8) {
             setProgressText("Cruzando con el Master NotebookLM de EcomShop (59 fuentes de ingeniería)...");
-            return 2;
-          }
-          if (prev === 2) {
+          } else if (next >= 8) {
             setProgressText("Formulando 3 propuestas estratégicas B2B con SKUs y ángulos...");
-            return 3;
           }
-          return prev;
+          return next;
         });
-      }, 3500);
+      }, 1000);
     }
     return () => {
       if (interval) clearInterval(interval);
@@ -115,6 +115,14 @@ export function MultimodalAdvisor({
 
   const handleFileChange = (file: File) => {
     setErrorMsg(null);
+
+    // Validación real de tamaño máximo (15MB)
+    const maxBytes = 15 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      setErrorMsg(`El archivo seleccionado supera el límite de 15 MB (${(file.size / (1024 * 1024)).toFixed(1)} MB). Por favor, comprímelo o selecciona otro.`);
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = () => {
       const resultStr = reader.result as string;
@@ -127,6 +135,9 @@ export function MultimodalAdvisor({
         mimeType: file.type || "application/octet-stream"
       });
     };
+    reader.onerror = () => {
+      setErrorMsg("Error al leer el archivo seleccionado.");
+    };
     reader.readAsDataURL(file);
   };
 
@@ -138,10 +149,22 @@ export function MultimodalAdvisor({
     }
   };
 
-  // Grabación de audio con el micrófono del navegador
+  // Grabación de audio con el micrófono del navegador y diagnóstico contextual
   const startRecording = async () => {
     try {
       setErrorMsg(null);
+
+      // Comprobar disponibilidad de API mediaDevices y protocolo seguro HTTPS
+      if (typeof window !== "undefined" && !window.isSecureContext) {
+        setErrorMsg("El acceso al micrófono requiere una conexión segura HTTPS según la política del navegador.");
+        return;
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setErrorMsg("Tu navegador no soporta grabación de audio o está bloqueada por la política de seguridad.");
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
@@ -182,7 +205,15 @@ export function MultimodalAdvisor({
       }, 1000);
     } catch (err: any) {
       console.error(err);
-      setErrorMsg("No se pudo acceder al micrófono. Verifica los permisos del navegador.");
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        setErrorMsg("Permiso de micrófono denegado. Habilita el acceso en el candado de la barra de direcciones.");
+      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+        setErrorMsg("No se detectó ningún micrófono conectado en tu equipo.");
+      } else if (err.name === "SecurityError") {
+        setErrorMsg("Acceso al micrófono denegado por política de seguridad (origen no seguro o iframe restringido).");
+      } else {
+        setErrorMsg(`No se pudo acceder al micrófono (${err.message || "error desconocido"}). Verifica los permisos del navegador.`);
+      }
     }
   };
 
@@ -260,9 +291,9 @@ export function MultimodalAdvisor({
         
         onRecordFinops({
           action: "gemini_multimodal_advisor",
-          details: `Generación de ideas de campo IA (${activeCategory}): ${newItems.length} casos de obra`,
-          tokensInput: 650,
-          tokensOutput: 450
+          details: `Generación de ideas de campo IA (${activeCategory}): ${newItems.length} casos de obra (tokens estimados)`,
+          tokensInput: data.meta?.tokensInput ?? 650,
+          tokensOutput: data.meta?.tokensOutput ?? 450
         });
       }
     } catch (err: any) {
@@ -699,16 +730,18 @@ export function MultimodalAdvisor({
 
               <div className="space-y-2 max-w-md w-full">
                 <div className="flex items-center justify-between text-xs font-semibold text-indigo-950">
-                  <span>Paso {progressStep} de 3</span>
-                  <span className="font-mono text-slate-500">{progressStep * 33}%</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="inline-block w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
+                    <span>Procesando consulta</span>
+                  </span>
+                  <span className="font-mono text-indigo-700 font-bold bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded">
+                    Tiempo transcurrido: {elapsedSeconds}s
+                  </span>
                 </div>
-                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div
-                    className="bg-gradient-to-r from-indigo-600 to-blue-600 h-full rounded-full transition-all duration-500"
-                    style={{ width: `${progressStep * 33}%` }}
-                  />
+                <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-gradient-to-r from-indigo-600 via-blue-500 to-indigo-600 h-full rounded-full animate-pulse w-full" />
                 </div>
-                <p className="text-xs font-bold text-slate-800 pt-1">
+                <p className="text-xs font-bold text-slate-800 pt-1 text-center">
                   {progressText}
                 </p>
               </div>
