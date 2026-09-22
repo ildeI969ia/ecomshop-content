@@ -1,6 +1,4 @@
-"use client";
-
-import React, { useState } from "react";
+import React from "react";
 import {
   Maximize2,
   Trash2,
@@ -8,8 +6,7 @@ import {
   Search,
   Shield,
   Sparkles,
-  ImageIcon,
-  Check
+  ImageIcon
 } from "lucide-react";
 import { GeneratedImageItem } from "@/components/image-studio-view";
 
@@ -74,22 +71,25 @@ export const ImageGalleryGrid: React.FC<ImageGalleryGridProps> = ({
                 </div>
               )}
 
-              {/* Badge flotante de origen */}
-              <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-900/90 backdrop-blur-md text-slate-300 border border-slate-700 flex items-center gap-1 select-none z-10">
+              {/* Badge flotante de origen (Neutral B2B) */}
+              <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-950/80 backdrop-blur-md text-slate-300 border border-slate-700/80 flex items-center gap-1 select-none z-10 font-mono">
                 {isOfficial ? (
                   <>
-                    <Shield className="w-3 h-3 text-emerald-400" />
-                    <span>📷 Foto Oficial</span>
+                    <Shield className="w-3 h-3 text-slate-400" />
+                    <span>Catálogo Oficial</span>
                   </>
                 ) : isImagen3 ? (
                   <>
-                    <Sparkles className="w-3 h-3 text-amber-300" />
-                    <span>✨ Imagen 3</span>
+                    <Sparkles className="w-3 h-3 text-indigo-400" />
+                    <span>Google Imagen 3</span>
                   </>
                 ) : img.sourceType === "gemini_multimodal" ? (
-                  <span>🤖 Multimodal</span>
+                  <>
+                    <ImageIcon className="w-3 h-3 text-sky-400" />
+                    <span>Multimodal</span>
+                  </>
                 ) : (
-                  <span>🖼️ Stock</span>
+                  <span>Activo Externo</span>
                 )}
               </span>
 

@@ -458,7 +458,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   }
 
   return (
-    <div className="bg-white border border-indigo-100 rounded-2xl shadow-xl overflow-hidden mb-10 transition-all">
+    <div className="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl overflow-hidden mb-10 transition-all text-slate-100">
       {/* Cabecera del Campaign Workspace */}
       <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white p-6 border-b border-slate-800">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -647,21 +647,21 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
       {content && (
         <div className="flex flex-col">
           {/* Navegación por Pestañas */}
-          <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 px-6 py-2.5">
+          <div className="flex items-center justify-between border-b border-slate-800 bg-slate-950/80 px-6 py-2.5">
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => handleSelectTab("blog")}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                   activeTab === "blog"
-                    ? "bg-white text-slate-950 border border-slate-200 shadow-xs font-bold"
-                    : "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
+                    ? "bg-indigo-600 text-white shadow-xs font-bold"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                 }`}
               >
-                <Globe className="w-3.5 h-3.5 text-sky-600" />
+                <Globe className="w-3.5 h-3.5 text-sky-300" />
                 <span>Blog Durable (HTML)</span>
                 {visitedTabs.has("blog") && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" title="Pestaña revisada" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shrink-0" title="Pestaña revisada" />
                 )}
               </button>
 
@@ -670,14 +670,14 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 onClick={() => handleSelectTab("mailchimp")}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                   activeTab === "mailchimp"
-                    ? "bg-white text-slate-950 border border-slate-200 shadow-xs font-bold"
-                    : "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
+                    ? "bg-indigo-600 text-white shadow-xs font-bold"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                 }`}
               >
-                <Mail className="w-3.5 h-3.5 text-amber-600" />
+                <Mail className="w-3.5 h-3.5 text-amber-300" />
                 <span>Mailchimp B2B</span>
                 {visitedTabs.has("mailchimp") && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" title="Pestaña revisada" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" title="Pestaña revisada" />
                 )}
               </button>
 
@@ -686,14 +686,14 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 onClick={() => handleSelectTab("whatsapp")}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                   activeTab === "whatsapp"
-                    ? "bg-white text-slate-950 border border-slate-200 shadow-xs font-bold"
-                    : "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
+                    ? "bg-indigo-600 text-white shadow-xs font-bold"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                 }`}
               >
-                <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                <MessageSquare className="w-3.5 h-3.5 text-emerald-300" />
                 <span>WhatsApp Broadcast</span>
                 {visitedTabs.has("whatsapp") && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title="Pestaña revisada" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" title="Pestaña revisada" />
                 )}
               </button>
 
@@ -702,14 +702,14 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 onClick={() => handleSelectTab("linkedin")}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                   activeTab === "linkedin"
-                    ? "bg-white text-slate-950 border border-slate-200 shadow-xs font-bold"
-                    : "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
+                    ? "bg-indigo-600 text-white shadow-xs font-bold"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                 }`}
               >
-                <Share2 className="w-3.5 h-3.5 text-blue-600" />
+                <Share2 className="w-3.5 h-3.5 text-blue-300" />
                 <span>LinkedIn B2B</span>
                 {visitedTabs.has("linkedin") && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" title="Pestaña revisada" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" title="Pestaña revisada" />
                 )}
               </button>
 
@@ -719,24 +719,25 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                   onClick={() => handleSelectTab("intel")}
                   className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                     activeTab === "intel"
-                      ? "bg-white text-slate-950 border border-slate-200 shadow-xs font-bold"
-                      : "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
+                      ? "bg-indigo-600 text-white shadow-xs font-bold"
+                      : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                   }`}
                 >
-                  <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-indigo-300" />
                   <span>Product Intelligence & Auditoría</span>
                   {visitedTabs.has("intel") && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" title="Pestaña revisada" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" title="Pestaña revisada" />
                   )}
                 </button>
               )}
             </div>
 
-            <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-500 font-mono">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+            <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-400 font-mono">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
               <span>Grounded & Fact-Checked</span>
             </div>
           </div>
+
 
           {/* Cuerpo de las Pestañas con Transición y Skeleton */}
           <div className="p-6 transition-opacity duration-200">

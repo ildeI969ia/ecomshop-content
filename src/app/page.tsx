@@ -2046,191 +2046,211 @@ export default function ContentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col font-sans selection:bg-sky-100 selection:text-sky-900">
-      {/* Top Editorial Ribbon */}
-      <div className="bg-[#0f172a] text-slate-300 text-[11px] px-6 py-1.5 flex items-center justify-between border-b border-slate-800">
-        <div className="flex items-center gap-3 tracking-wider uppercase font-semibold">
-          <span className="text-sky-400 font-bold">EcomShop Gazette</span>
-          <span className="text-slate-600">•</span>
-          <span className="text-slate-400">Editorial Commerce & Networking Engine</span>
-          <span className="text-slate-600">•</span>
-          <span className="text-emerald-400 font-mono text-[10px] bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/60">
-            ● Google Cloud Run + Firebase Firestore
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-900 selection:text-indigo-200">
+      {/* LEVEL 1: STATUS BAR (Discreto, fino, estado de infraestructura Cloud e IA) */}
+      <div className="bg-slate-950 text-slate-400 text-[11px] px-6 py-1.5 flex items-center justify-between border-b border-slate-800/80 font-mono select-none">
+        <div className="flex items-center gap-2.5 sm:gap-3.5 tracking-tight flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-slate-300 font-semibold">Google Cloud Run</span>
+          </div>
+          <span className="text-slate-700">•</span>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span className="text-slate-300">Firebase Firestore</span>
+          </div>
+          <span className="text-slate-700 hidden sm:inline">•</span>
+          <div className="hidden sm:flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+            <span className="text-slate-300">Vertex AI & Gemini 2.5</span>
+          </div>
+          <span className="text-slate-700 hidden md:inline">•</span>
+          <span className="hidden md:inline text-slate-500 font-sans text-[10px]">
+            Madrid, ES &bull; Enterprise B2B Engine
           </span>
         </div>
-        <div className="flex items-center gap-4 text-slate-400">
+
+        <div className="flex items-center gap-4 text-slate-400 text-[10px] font-sans">
           <a
             href={ECOM_BRAND.blogUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-white flex items-center gap-1 transition"
+            className="hover:text-slate-200 flex items-center gap-1 transition"
           >
             <Globe className="w-3 h-3 text-sky-400" />
-            Blog Durable
-            <ExternalLink className="w-2.5 h-2.5" />
+            <span className="hidden sm:inline">Blog Durable</span>
+            <ExternalLink className="w-2.5 h-2.5 text-slate-500" />
           </a>
           <a
             href={ECOM_BRAND.storeUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-white flex items-center gap-1 transition"
+            className="hover:text-slate-200 flex items-center gap-1 transition"
           >
             <BookOpen className="w-3 h-3 text-emerald-400" />
-            EcomShop.es
-            <ExternalLink className="w-2.5 h-2.5" />
+            <span className="hidden sm:inline">EcomShop.es</span>
+            <ExternalLink className="w-2.5 h-2.5 text-slate-500" />
           </a>
         </div>
       </div>
 
-      {/* Main Editorial Masthead */}
-      <header className="border-b border-slate-200/80 bg-white/95 backdrop-blur-md sticky top-0 z-30 px-6 py-3.5 flex items-center justify-between shadow-xs">
-        <div className="flex items-center gap-4">
-          <div className="bg-[#0f172a] text-white p-2.5 rounded-lg shadow-sm">
-            <Layers className="w-5 h-5 text-sky-400" />
+      {/* LEVEL 2: PRODUCT NAVIGATION & WORKSPACE CONTROLS */}
+      <header className="border-b border-slate-800/80 bg-slate-900/95 backdrop-blur-md sticky top-0 z-30 px-6 py-3 flex items-center justify-between shadow-md">
+        {/* Brand & Suite Identity */}
+        <div className="flex items-center gap-3.5">
+          <div className="bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 p-2 rounded-xl shadow-xs">
+            <Layers className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-editorial text-xl font-bold tracking-tight text-slate-950">
-                EcomShop Editorial
+              <h1 className="font-editorial text-lg sm:text-xl font-bold tracking-tight text-white">
+                ECOMSHOP EDITORIAL
               </h1>
-              <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                B2B Suite
+              <span className="text-[9px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-slate-800 text-indigo-300 border border-slate-700 font-mono">
+                SUITE B2B
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 font-medium">
-              Curaduría Semanal • Redacción Multicanal • Automatización Omnicanal
+            <p className="text-[11px] text-slate-400 font-medium">
+              Curaduría Semanal • Redacción Multicanal • Grounding Oficial
             </p>
           </div>
         </div>
 
-        {/* 5 Módulos de Navegación del Panel */}
-        <nav className="flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/80">
+        {/* Módulos de Navegación del Panel (Pill Tabs Dark Navy + Indigo) */}
+        <nav className="hidden lg:flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800 shadow-inner">
           <button
+            type="button"
             onClick={() => setMainView("generator")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
               mainView === "generator"
-                ? "bg-white text-slate-900 shadow-xs border border-slate-200/80 font-bold"
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                ? "bg-indigo-600 text-white shadow-xs font-bold"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
             }`}
           >
-            <Layers className="w-3.5 h-3.5 text-sky-600" />
-            Generador Multicanal
+            <Layers className="w-3.5 h-3.5 text-sky-300" />
+            <span>Generador Multicanal</span>
           </button>
 
           <button
+            type="button"
             onClick={() => setMainView("advisor")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
               mainView === "advisor"
-                ? "bg-white text-slate-900 shadow-xs border border-slate-200/80 font-bold"
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                ? "bg-indigo-600 text-white shadow-xs font-bold"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-            Brainstorming Multimodal
-            <span className="px-1.5 py-0.2 rounded-full bg-indigo-100 text-indigo-800 text-[9px] font-bold">
-              IA Vision & Audio
-            </span>
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>Brainstorming Multimodal</span>
           </button>
 
           <button
+            type="button"
             onClick={() => setMainView("history")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
               mainView === "history"
-                ? "bg-white text-slate-900 shadow-xs border border-slate-200/80 font-bold"
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                ? "bg-indigo-600 text-white shadow-xs font-bold"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
             }`}
           >
-            <History className="w-3.5 h-3.5 text-indigo-600" />
-            Historial & Estados
+            <History className="w-3.5 h-3.5 text-indigo-300" />
+            <span>Historial & Estados</span>
             {historyItems.length > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-bold">
+              <span className="px-1.5 py-0.2 rounded-full bg-slate-800 text-indigo-300 text-[10px] font-mono font-bold border border-slate-700">
                 {historyItems.length}
               </span>
             )}
           </button>
 
           <button
+            type="button"
             onClick={() => setMainView("image_studio")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
               mainView === "image_studio"
-                ? "bg-white text-slate-900 shadow-xs border border-slate-200/80 font-bold"
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                ? "bg-indigo-600 text-white shadow-xs font-bold"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
             }`}
           >
-            <ImageIcon className="w-3.5 h-3.5 text-purple-600" />
-            Estudio Imagen 3
+            <ImageIcon className="w-3.5 h-3.5 text-purple-300" />
+            <span>Estudio Imagen 3</span>
           </button>
 
           <button
+            type="button"
             onClick={() => setMainView("finops")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
               mainView === "finops"
-                ? "bg-white text-slate-900 shadow-xs border border-slate-200/80 font-bold"
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                ? "bg-indigo-600 text-white shadow-xs font-bold"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
             }`}
           >
-            <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-            Costes & FinOps
+            <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Costes & FinOps</span>
           </button>
         </nav>
 
-        <div className="flex items-center gap-3 text-xs">
+        {/* Acciones y Estados a la Derecha */}
+        <div className="flex items-center gap-2.5 text-xs">
           {/* NotebookLM Status Badge */}
           <button
+            type="button"
             onClick={() => setShowNotebookModal(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border font-medium transition shadow-2xs bg-purple-50 border-purple-200 text-purple-900 hover:bg-purple-100/70"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border font-medium transition shadow-xs bg-slate-950/80 border-slate-800 text-slate-300 hover:border-purple-500/40 hover:text-purple-200 cursor-pointer"
             title="NotebookLM EcomShop Knowledge Base"
           >
-            <BookOpen className="w-3.5 h-3.5 text-purple-600" />
+            <BookOpen className="w-3.5 h-3.5 text-purple-400" />
             <span className="font-semibold text-xs">
-              NotebookLM: <span className="text-purple-700 font-bold">{notebookState.sources.length} Fuentes</span>
+              NotebookLM: <span className="text-purple-300 font-mono font-bold">{notebookState.sources.length}</span>
             </span>
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           </button>
 
           {/* Corporate Session Badge */}
           {currentUser ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-slate-50 border-slate-200 text-slate-800">
-              <Shield className="w-3.5 h-3.5 text-emerald-600" />
-              <div className="flex flex-col text-left">
-                <span className="font-semibold text-[11px] leading-tight flex items-center gap-1">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-slate-950/80 border-slate-800 text-slate-300">
+              <Shield className="w-3.5 h-3.5 text-emerald-400" />
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium text-xs truncate max-w-[120px] sm:max-w-[160px] text-slate-200">
                   {currentUser.email}
-                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-mono font-bold">
-                    {currentUser.role}
-                  </span>
+                </span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950/60 text-emerald-300 font-mono font-bold border border-emerald-800/50 uppercase">
+                  {currentUser.role}
                 </span>
               </div>
               <button
+                type="button"
                 onClick={handleLogout}
                 title="Cerrar Sesión Corporativa"
-                className="ml-1 p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-800 transition"
+                className="ml-1 p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-rose-400 transition cursor-pointer"
               >
                 <LogOut className="w-3 h-3" />
               </button>
             </div>
           ) : (
             <button
+              type="button"
               onClick={() => setShowSignInModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100/80 font-semibold text-xs shadow-2xs transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20 font-semibold text-xs shadow-xs transition cursor-pointer"
             >
-              <Shield className="w-3.5 h-3.5 text-amber-600" />
-              <span>Iniciar Sesión @ecomspain.com</span>
+              <Shield className="w-3.5 h-3.5 text-amber-400" />
+              <span>Acceso Corporativo</span>
             </button>
           )}
 
-          {/* Gemini API Status Badge & Config */}
+          {/* Gemini API Status Badge */}
           <button
+            type="button"
             onClick={() => setShowKeyModal(true)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-medium transition shadow-2xs ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-medium transition shadow-xs cursor-pointer ${
               keyStatus === "valid"
-                ? "bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100/70"
+                ? "bg-slate-950/80 border-slate-800 text-slate-300 hover:border-emerald-500/40"
                 : keyStatus === "invalid"
-                ? "bg-rose-50 border-rose-200 text-rose-800 hover:bg-rose-100/70"
-                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                ? "bg-rose-500/10 border-rose-500/30 text-rose-300 hover:bg-rose-500/20"
+                : "bg-slate-950/80 border-slate-800 text-slate-400 hover:border-slate-700"
             }`}
           >
-            <Bot className="w-3.5 h-3.5 text-slate-600" />
-            <span className="font-semibold text-xs">
+            <Bot className="w-3.5 h-3.5 text-slate-400" />
+            <span className="font-semibold text-xs hidden sm:inline">
               {keyStatus === "valid"
                 ? activeBackendLabel
                 : keyStatus === "invalid"
@@ -2238,8 +2258,8 @@ export default function ContentDashboard() {
                 : "Conectar Gemini API"}
             </span>
             <div
-              className={`w-2 h-2 rounded-full ${
-                keyStatus === "valid" ? "bg-emerald-500 animate-pulse" : "bg-amber-400"
+              className={`w-1.5 h-1.5 rounded-full ${
+                keyStatus === "valid" ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
               }`}
             />
           </button>
@@ -2354,8 +2374,8 @@ export default function ContentDashboard() {
                   </select>
                 </div>
 
-                {/* 3 Tarjetas de Oportunidad Compactas */}
-                <div className="flex flex-col gap-2.5 mt-1">
+                {/* 3 Tarjetas de Oportunidad B2B con Jerarquía y CTA Primario */}
+                <div className="flex flex-col gap-3 mt-1">
                   {opportunities.map((opp, idx) => {
                     const isSelected = selectedRadarOppId === opp.id;
                     const score = opp.scores.totalScore;
@@ -2363,57 +2383,73 @@ export default function ContentDashboard() {
                     return (
                       <div
                         key={opp.id}
-                        onClick={() => {
-                          setSelectedRadarOppId(opp.id);
-                          handleSelectOpportunity(opp);
-                        }}
-                        className={`cursor-pointer rounded-xl p-3.5 border transition-all duration-200 flex flex-col gap-2 ${
+                        className={`rounded-xl p-4 border transition-all duration-200 flex flex-col gap-3 ${
                           isSelected
-                            ? "bg-slate-900 border-blue-500 ring-2 ring-blue-500/50 shadow-md"
-                            : "bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/90"
+                            ? "bg-slate-900 border-indigo-500 ring-1 ring-indigo-500/40 shadow-lg shadow-indigo-950/40"
+                            : "bg-slate-900/80 border-slate-800 hover:border-slate-700 hover:bg-slate-900"
                         }`}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            <span className="bg-indigo-950 text-indigo-200 text-[10px] font-mono font-bold px-2 py-0.5 rounded border border-indigo-800/80">
+                        {/* Cabecera Tarjeta: Posición + SKU + Ángulo + Score */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="bg-slate-800 text-slate-200 text-[10px] font-mono font-bold px-2 py-0.5 rounded border border-slate-700">
                               #{idx + 1} {opp.sku}
                             </span>
-                            <span className="text-[10px] font-semibold uppercase text-emerald-300 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60">
+                            <span className="text-[10px] font-semibold uppercase text-sky-300 bg-sky-950/60 px-2 py-0.5 rounded border border-sky-800/50">
                               {opp.recommendedAngle}
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-1.5">
-                            {isSelected && (
-                              <span className="text-[10px] text-blue-400 font-bold bg-blue-950/70 border border-blue-800/60 px-1.5 py-0.2 rounded flex items-center gap-1">
-                                <Check className="w-2.5 h-2.5" /> Seleccionada
-                              </span>
-                            )}
-                            <div className="flex items-center gap-1 text-amber-400 font-mono text-xs font-bold">
-                              <Zap className="w-3 h-3 fill-amber-400" />
-                              <span>{score}/100</span>
-                            </div>
+                          <div className="flex items-center gap-1.5 shrink-0 font-mono text-xs font-bold text-amber-400">
+                            <Zap className="w-3 h-3 fill-amber-400" />
+                            <span>{score}/100</span>
                           </div>
                         </div>
 
+                        {/* Título & Target */}
                         <div>
-                          <h4 className="text-xs font-bold text-slate-100 line-clamp-1 leading-snug">
+                          <h4 className="text-xs font-bold text-white line-clamp-2 leading-snug">
                             {opp.actionTitle}
                           </h4>
-                          <p className="text-[11px] text-slate-400 mt-0.5">
-                            Target: <strong className="text-slate-200">{opp.targetSegment}</strong>
-                          </p>
+                          <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+                            <span>Target: <strong className="text-slate-300">{opp.targetSegment}</strong></span>
+                            <span className="font-mono text-[10px] text-emerald-300 bg-emerald-950/50 px-1.5 py-0.2 rounded border border-emerald-800/40">
+                              {opp.pricingCondition || "Tarifa B2B"}
+                            </span>
+                          </div>
                         </div>
 
+                        {/* Bundle sugerido */}
                         {opp.suggestedBundle && (
-                          <div className="bg-slate-950/60 rounded p-2 border border-slate-800/80 text-[11px] text-slate-300 truncate">
+                          <div className="bg-slate-950/70 rounded-lg p-2 border border-slate-800/70 text-[11px] text-slate-300">
                             <span className="text-indigo-300 font-semibold">Bundle:</span> + {opp.suggestedBundle.accessorySku} ({opp.suggestedBundle.accessoryName})
                           </div>
                         )}
 
-                        <details className="text-[11px] text-slate-400 pt-1 group/det" onClick={(e) => e.stopPropagation()}>
-                          <summary className="cursor-pointer text-indigo-400 hover:text-indigo-300 font-medium select-none flex items-center gap-1">
-                            <span>ℹ️ Ver análisis comercial</span>
+                        {/* CTA Principal Unificado: Cargar en Workspace */}
+                        <div className="flex items-center gap-2 pt-1 border-t border-slate-800/80">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedRadarOppId(opp.id);
+                              handleSelectOpportunity(opp);
+                            }}
+                            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                              isSelected
+                                ? "bg-indigo-600 text-white shadow-xs"
+                                : "bg-slate-800 hover:bg-indigo-600/80 text-slate-200 hover:text-white"
+                            }`}
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>{isSelected ? "Oportunidad Activa" : `Seleccionar ${opp.sku}`}</span>
+                          </button>
+                        </div>
+
+                        {/* Desplegable comercial atenuado */}
+                        <details className="text-[11px] text-slate-400 pt-0.5 group/det" onClick={(e) => e.stopPropagation()}>
+                          <summary className="cursor-pointer text-indigo-400 hover:text-indigo-300 font-medium select-none flex items-center justify-between">
+                            <span>ℹ️ Pitch & Buyer Persona</span>
+                            <ChevronDown className="w-3 h-3 transition-transform group-open/det:rotate-180 text-slate-500" />
                           </summary>
                           <div className="mt-2 bg-slate-950 p-2.5 rounded-lg border border-slate-800/80 space-y-1.5 text-[11px] text-slate-300">
                             {opp.narrativeAnchor?.pitch30s && (
@@ -2701,21 +2737,21 @@ export default function ContentDashboard() {
       {/* VISTA 2: HISTORIAL Y ESTADOS */}
       {mainView === "history" && (
         <div className="flex-1 max-w-[1780px] 2xl:max-w-[1920px] mx-auto w-full p-6 sm:p-8 flex flex-col gap-6">
-          <div className="flex items-center justify-between bg-white border border-slate-200/80 rounded-xl p-5 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xs gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <History className="w-5 h-5 text-indigo-600" />
-                <h2 className="font-editorial text-lg font-bold text-slate-900">
+                <History className="w-5 h-5 text-indigo-400" />
+                <h2 className="font-editorial text-lg font-bold text-white">
                   Historial de Publicaciones & Archivo Editorial
                 </h2>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-slate-400 mt-1">
                 Supervisa los borradores creados, gestiona el ciclo de revisión y recupera ediciones previas en el canvas.
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5 flex-wrap">
               {historyItems.length > 0 && (
-                <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer select-none bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition">
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer select-none bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-lg hover:bg-slate-800 transition">
                   <input
                     type="checkbox"
                     checked={
@@ -2729,53 +2765,58 @@ export default function ContentDashboard() {
                         setSelectedArticleIds([]);
                       }
                     }}
-                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
+                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-700 bg-slate-900 cursor-pointer"
                   />
                   <span>Seleccionar todos</span>
                 </label>
               )}
               <button
+                type="button"
                 onClick={() => loadDatabaseContents()}
                 disabled={loadingDatabaseContents}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 transition shadow-2xs"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-950 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition shadow-xs cursor-pointer"
                 title="Recargar artículos desde Firestore"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingDatabaseContents ? "animate-spin text-indigo-600" : "text-slate-500"}`} />
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingDatabaseContents ? "animate-spin text-indigo-400" : "text-slate-400"}`} />
                 <span>{loadingDatabaseContents ? "Sincronizando..." : "Sincronizar BBDD"}</span>
               </button>
               <div className="relative">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-500" />
                 <input
                   type="text"
                   placeholder="Buscar en el archivo..."
                   value={searchHistory}
                   onChange={(e) => setSearchHistory(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white transition"
+                  className="bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
                 />
               </div>
             </div>
           </div>
 
           {historyItems.length === 0 ? (
-            <div className="bg-white border border-slate-200/80 rounded-xl p-12 text-center text-slate-500 flex flex-col items-center shadow-xs">
-              <History className="w-12 h-12 text-slate-300 mb-3" />
-              <p className="text-sm font-semibold text-slate-900 font-editorial">No hay publicaciones archivadas aún</p>
-              <p className="text-xs text-slate-500 mt-1 max-w-sm">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-12 text-center text-slate-400 flex flex-col items-center shadow-xs">
+              <div className="w-12 h-12 rounded-xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center text-slate-400 mb-3">
+                <History className="w-6 h-6 text-indigo-400" />
+              </div>
+              <p className="text-sm font-semibold text-white font-editorial">No hay publicaciones archivadas aún</p>
+              <p className="text-xs text-slate-400 mt-1 max-w-sm">
                 Genera tu primer artículo en el Generador Multicanal y se guardará automáticamente en este panel editorial compartido.
               </p>
               <div className="flex items-center gap-2 mt-4">
                 <button
+                  type="button"
                   onClick={() => setMainView("generator")}
-                  className="bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-xs"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition shadow-xs cursor-pointer"
                 >
                   Ir al Generador
                 </button>
                 <button
+                  type="button"
                   onClick={() => loadDatabaseContents()}
                   disabled={loadingDatabaseContents}
-                  className="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg transition flex items-center gap-1.5 shadow-xs"
+                  className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${loadingDatabaseContents ? "animate-spin text-indigo-600" : ""}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingDatabaseContents ? "animate-spin text-indigo-400" : ""}`} />
                   Cargar desde BBDD
                 </button>
               </div>
@@ -2798,12 +2839,18 @@ export default function ContentDashboard() {
                   const itemSlug = item?.content?.blog?.slug || "general";
                   const itemStatus = item?.status || "draft";
                   const isSelected = selectedArticleIds.includes(itemId);
+                  const channelsCount = [
+                    Boolean(item?.content?.blog),
+                    Boolean(item?.content?.mailchimp),
+                    Boolean(item?.content?.whatsapp),
+                    Boolean(item?.content?.linkedin)
+                  ].filter(Boolean).length;
 
                   return (
                     <div
                       key={itemId}
-                      className={`bg-white border rounded-xl p-4 flex items-center justify-between hover:shadow-2xs transition ${
-                        isSelected ? "border-indigo-500 ring-1 ring-indigo-500/30 bg-indigo-50/20" : "border-slate-200/80 hover:border-slate-300"
+                      className={`bg-slate-900/90 border rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-slate-700 transition ${
+                        isSelected ? "border-indigo-500 ring-1 ring-indigo-500/40 bg-slate-900" : "border-slate-800"
                       }`}
                     >
                       <div className="flex items-center gap-3 sm:gap-4">
@@ -2818,57 +2865,64 @@ export default function ContentDashboard() {
                               setSelectedArticleIds(prev => prev.filter(id => id !== itemId));
                             }
                           }}
-                          className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer shrink-0"
+                          className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-700 bg-slate-950 cursor-pointer shrink-0"
                           title="Seleccionar para acción masiva"
                         />
-                        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-xs uppercase text-slate-800 border border-slate-200 shrink-0">
+                        <div className="w-10 h-10 rounded-lg bg-slate-950 flex items-center justify-center font-bold text-xs uppercase text-slate-300 border border-slate-800 shrink-0 font-mono">
                           {itemCat.substring(0, 3)}
                         </div>
                         <div>
-                          <h4
-                            className="text-sm font-bold text-slate-900 hover:text-sky-600 cursor-pointer font-editorial"
-                            onClick={() => setSelectedDocumentForDetail(item)}
-                            title="Clic para ver detalle del documento"
-                          >
-                            {itemTitle}
-                          </h4>
-                          <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
-                            <span>Fecha: {itemDate}</span>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4
+                              className="text-sm font-bold text-white hover:text-indigo-300 cursor-pointer font-editorial"
+                              onClick={() => setSelectedDocumentForDetail(item)}
+                              title="Clic para ver detalle del documento"
+                            >
+                              {itemTitle}
+                            </h4>
+                            {channelsCount > 1 && (
+                              <span className="text-[9px] font-mono font-semibold bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded border border-slate-700">
+                                {channelsCount} Canales
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-slate-400 mt-1 flex-wrap">
+                            <span className="font-mono text-[11px] text-slate-400">{itemDate}</span>
                             <span>&bull;</span>
-                            <span>Slug: /{itemSlug}</span>
+                            <span className="font-mono text-[11px] text-sky-400">/{itemSlug}</span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        {/* Selector de Estado */}
+                      <div className="flex items-center gap-2 shrink-0 self-end md:self-auto flex-wrap">
+                        {/* Selector de Estado Semántico */}
                         <select
                           value={itemStatus}
                           onChange={(e) => updateArticleStatus(itemId, e.target.value as any)}
-                          className={`text-xs px-2.5 py-1.5 rounded-lg border font-semibold focus:outline-none ${
+                          className={`text-xs px-2.5 py-1.5 rounded-lg border font-semibold focus:outline-none cursor-pointer ${
                             itemStatus === "published"
-                              ? "bg-purple-50 border-purple-200 text-purple-800"
+                              ? "bg-purple-950/60 border-purple-800 text-purple-300"
                               : itemStatus === "approved"
-                              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                              ? "bg-emerald-950/60 border-emerald-800 text-emerald-300"
                               : itemStatus === "reviewed"
-                              ? "bg-sky-50 border-sky-200 text-sky-800"
-                              : "bg-amber-50 border-amber-200 text-amber-800"
+                              ? "bg-sky-950/60 border-sky-800 text-sky-300"
+                              : "bg-amber-950/60 border-amber-800 text-amber-300"
                           }`}
                         >
-                          <option value="draft">🟡 Borrador</option>
-                          <option value="reviewed">🔵 Revisado</option>
-                          <option value="approved">🟢 Aprobado</option>
-                          <option value="published">🟣 Publicado</option>
+                          <option value="draft" className="bg-slate-900 text-amber-300">🟡 Borrador</option>
+                          <option value="reviewed" className="bg-slate-900 text-sky-300">🔵 Revisado</option>
+                          <option value="approved" className="bg-slate-900 text-emerald-300">🟢 Aprobado</option>
+                          <option value="published" className="bg-slate-900 text-purple-300">🟣 Publicado</option>
                         </select>
 
                         <button
                           type="button"
                           onClick={() => setSelectedDocumentForDetail(item)}
-                          className="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition border border-indigo-200 font-semibold"
+                          className="bg-indigo-950/60 hover:bg-indigo-900/70 text-indigo-300 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition border border-indigo-800/50 font-semibold cursor-pointer"
                           title="Inspeccionar documento en detalle (HTML, Markdown, Metadatos)"
                         >
-                          <FileText className="w-3.5 h-3.5 text-indigo-600" />
-                          <span className="hidden sm:inline">Ver Documento</span>
+                          <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                          <span className="hidden sm:inline">Detalle</span>
                         </button>
 
                         <button
@@ -2882,21 +2936,20 @@ export default function ContentDashboard() {
                               setMainView("generator");
                             }
                           }}
-                          className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition border border-slate-200 font-medium"
+                          className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition border border-slate-700 font-medium cursor-pointer"
                           title="Cargar en el lienzo de edición"
                         >
-                          <Eye className="w-3.5 h-3.5 text-sky-600" />
-                          <span className="hidden md:inline">Cargar en Editor</span>
+                          <Eye className="w-3.5 h-3.5 text-sky-400" />
+                          <span className="hidden md:inline">Cargar</span>
                         </button>
 
                         <button
                           type="button"
                           onClick={() => handleDeleteArticle(itemId)}
-                          className="bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-300 text-slate-400 hover:text-rose-600 px-2 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition shadow-2xs"
+                          className="bg-slate-950 hover:bg-rose-950/50 border border-slate-800 hover:border-rose-800/60 text-slate-400 hover:text-rose-300 px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition cursor-pointer"
                           title="Eliminar este artículo del archivo"
                         >
-                          <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                          <span className="hidden lg:inline">Borrar</span>
+                          <Trash2 className="w-3.5 h-3.5 text-rose-400" />
                         </button>
                       </div>
                     </div>
@@ -2966,47 +3019,48 @@ export default function ContentDashboard() {
       {/* VISTA 4: MONITOR FINOPS & VALORACIÓN DE COSTES */}
       {mainView === "finops" && (
         <div className="flex-1 max-w-[1780px] 2xl:max-w-[1920px] mx-auto w-full p-6 sm:p-8 flex flex-col gap-6">
-          <div className="flex items-center justify-between bg-white border border-slate-200/80 rounded-xl p-5 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xs gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-emerald-600" />
-                <h2 className="font-editorial text-lg font-bold text-slate-900">
+                <DollarSign className="w-5 h-5 text-emerald-400" />
+                <h2 className="font-editorial text-lg font-bold text-white">
                   Monitor FinOps & Valoración de Costes en Tiempo Real
                 </h2>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-slate-400 mt-1">
                 Auditoría continua de consumo en Google Gemini 2.5 Flash, Google Imagen 3, Google Cloud Run y Firebase Firestore.
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {/* Badge de fuente de datos */}
               {cloudCosts ? (
                 cloudCosts.source === "fallback_estimation" ? (
-                  <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg text-amber-800 text-xs font-semibold">
-                    <AlertCircle className="w-4 h-4 text-amber-600" />
+                  <div className="flex items-center gap-2 bg-amber-950/60 border border-amber-800/60 px-3 py-1.5 rounded-lg text-amber-300 text-xs font-semibold">
+                    <AlertCircle className="w-4 h-4 text-amber-400" />
                     Estimación local (sin billing viewer)
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg text-emerald-800 text-xs font-semibold">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <div className="flex items-center gap-2 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg text-emerald-300 text-xs font-semibold">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                     Datos Reales Google Cloud
                   </div>
                 )
               ) : (
-                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg text-emerald-800 text-xs font-semibold">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <div className="flex items-center gap-2 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-lg text-emerald-300 text-xs font-semibold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                   Tarifas Oficiales de Google Cloud
                 </div>
               )}
               {/* Botón Actualizar desde GCP */}
               {currentUser && (
                 <button
+                  type="button"
                   onClick={() => fetchCloudCosts(true)}
                   disabled={loadingCloudCosts}
-                  className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 border border-slate-200 px-3 py-1.5 rounded-lg text-slate-700 text-xs font-semibold transition"
+                  className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-200 text-xs font-semibold transition cursor-pointer"
                   title="Consultar Google Cloud Billing en tiempo real"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${loadingCloudCosts ? "animate-spin" : ""}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingCloudCosts ? "animate-spin text-indigo-400" : "text-slate-400"}`} />
                   {loadingCloudCosts ? "Consultando GCP…" : "↻ Actualizar"}
                 </button>
               )}
@@ -3014,58 +3068,58 @@ export default function ContentDashboard() {
           </div>
 
           {/* Tarjetas de Resumen FinOps */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs">
-              <span className="text-xs text-slate-500 font-medium block mb-1">Gasto Acumulado Sesión</span>
-              <div className="font-editorial text-2xl font-bold text-slate-950">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-xs">
+              <span className="text-xs text-slate-400 font-medium block mb-1">Gasto Acumulado Sesión</span>
+              <div className="font-editorial text-2xl font-bold text-white font-mono">
                 {usageRecords.reduce((acc, curr) => acc + curr.estimatedCostEur, 0).toFixed(4)} €
               </div>
-              <span className="text-[10px] text-emerald-700 font-medium">~0,0008€ por artículo completo</span>
+              <span className="text-[10px] text-emerald-400 font-medium font-mono">~0,0008€ por artículo completo</span>
             </div>
 
-            <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs">
-              <span className="text-xs text-slate-500 font-medium block mb-1">Google Gemini 2.5 Flash</span>
-              <div className="font-editorial text-2xl font-bold text-sky-700">
-                {usageRecords.filter(r => r.action.startsWith("gemini")).length} <span className="text-xs font-normal text-slate-500">llamadas</span>
+            <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-xs">
+              <span className="text-xs text-slate-400 font-medium block mb-1">Google Gemini 2.5 Flash</span>
+              <div className="font-editorial text-2xl font-bold text-sky-400 font-mono">
+                {usageRecords.filter(r => r.action.startsWith("gemini")).length} <span className="text-xs font-normal text-slate-400">llamadas</span>
               </div>
-              <span className="text-[10px] text-slate-500">0.07€ / 1M in &bull; 0.28€ / 1M out</span>
+              <span className="text-[10px] text-slate-400 font-mono">0.07€ / 1M in &bull; 0.28€ / 1M out</span>
             </div>
 
-            <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs">
-              <span className="text-xs text-slate-500 font-medium block mb-1">Google Imagen 3</span>
-              <div className="font-editorial text-2xl font-bold text-purple-700">
-                {usageRecords.filter(r => r.action === "imagen_image").length} <span className="text-xs font-normal text-slate-500">imágenes</span>
+            <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-xs">
+              <span className="text-xs text-slate-400 font-medium block mb-1">Google Imagen 3</span>
+              <div className="font-editorial text-2xl font-bold text-purple-400 font-mono">
+                {usageRecords.filter(r => r.action === "imagen_image").length} <span className="text-xs font-normal text-slate-400">imágenes</span>
               </div>
-              <span className="text-[10px] text-slate-500">~0.028€ por imagen generada</span>
+              <span className="text-[10px] text-slate-400 font-mono">~0.028€ por imagen generada</span>
             </div>
 
-            {/* Tarjeta Cloud Run & Firebase — ahora con datos reales */}
-            <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs relative">
-              <span className="text-xs text-slate-500 font-medium block mb-1">Cloud Run & Firebase</span>
+            {/* Tarjeta Cloud Run & Firebase — datos reales */}
+            <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-xs relative">
+              <span className="text-xs text-slate-400 font-medium block mb-1">Cloud Run & Firebase</span>
               {loadingCloudCosts ? (
                 <div className="flex items-center gap-2 py-1">
-                  <div className="w-4 h-4 border-2 border-slate-300 border-t-emerald-600 rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-slate-700 border-t-emerald-400 rounded-full animate-spin" />
                   <span className="text-xs text-slate-400">Consultando GCP…</span>
                 </div>
               ) : cloudCosts ? (
                 <>
-                  <div className="font-editorial text-2xl font-bold text-emerald-700">
+                  <div className="font-editorial text-2xl font-bold text-emerald-400 font-mono">
                     {cloudCosts.totalEur.toFixed(4)} €
                     {cloudCosts.totalEur === 0 && (
-                      <span className="text-xs font-normal text-emerald-600 ml-1">(Capa Gratuita)</span>
+                      <span className="text-xs font-normal text-emerald-300 ml-1 font-sans">(Capa Gratuita)</span>
                     )}
                   </div>
-                  <span className="text-[10px] text-slate-500">
+                  <span className="text-[10px] text-slate-400 font-mono">
                     {cloudCosts.period.start} → {cloudCosts.period.end}
                     {cloudCosts.cached && " · caché"}
                   </span>
                 </>
               ) : (
                 <>
-                  <div className="font-editorial text-2xl font-bold text-emerald-700">
-                    0,00 € <span className="text-xs font-normal text-emerald-600">(Capa Gratuita)</span>
+                  <div className="font-editorial text-2xl font-bold text-emerald-400 font-mono">
+                    0,00 € <span className="text-xs font-normal text-emerald-300 ml-1 font-sans">(Capa Gratuita)</span>
                   </div>
-                  <span className="text-[10px] text-slate-500">2M req/mes gratis en Cloud Run</span>
+                  <span className="text-[10px] text-slate-400 font-mono">2M req/mes gratis en Cloud Run</span>
                 </>
               )}
             </div>
@@ -3073,10 +3127,10 @@ export default function ContentDashboard() {
 
           {/* Panel de Costes Reales GCP por Servicio */}
           {cloudCosts && cloudCosts.services.length > 0 && (
-            <div className="bg-white border border-slate-200/80 rounded-xl p-5 flex flex-col gap-3 shadow-xs">
-              <div className="flex items-center justify-between">
-                <h3 className="font-editorial text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+            <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 flex flex-col gap-3 shadow-xs">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h3 className="font-editorial text-sm font-bold text-white flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
                   Desglose Real por Servicio Google Cloud MTD
                 </h3>
                 <div className="flex items-center gap-2">
@@ -3085,12 +3139,12 @@ export default function ContentDashboard() {
                       Billing: {cloudCosts.billingAccountId}
                     </span>
                   )}
-                  <span className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
+                  <span className={`text-[10px] px-2 py-0.5 rounded font-semibold font-mono ${
                     cloudCosts.source === "google_cloud_monitoring"
-                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                      ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
                       : cloudCosts.source === "google_cloud_billing_api"
-                      ? "bg-sky-50 text-sky-700 border border-sky-200"
-                      : "bg-amber-50 text-amber-700 border border-amber-200"
+                      ? "bg-sky-950 text-sky-300 border border-sky-800"
+                      : "bg-amber-950 text-amber-300 border border-amber-800"
                   }`}>
                     {cloudCosts.source === "google_cloud_monitoring"
                       ? "Cloud Monitoring API"
@@ -3103,26 +3157,26 @@ export default function ContentDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="border-b border-slate-100 text-slate-500 font-semibold">
+                    <tr className="border-b border-slate-800 text-slate-400 font-semibold">
                       <th className="py-2.5">Servicio GCP</th>
                       <th className="py-2.5 text-right">Coste MTD (€)</th>
                       <th className="py-2.5 text-right">Estado</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                  <tbody className="divide-y divide-slate-800 text-slate-200">
                     {cloudCosts.services.map((svc) => (
                       <tr key={svc.service}>
-                        <td className="py-2.5 font-medium">{svc.displayName}</td>
-                        <td className="py-2.5 text-right font-mono font-bold text-emerald-700">
+                        <td className="py-2.5 font-medium text-white">{svc.displayName}</td>
+                        <td className="py-2.5 text-right font-mono font-bold text-emerald-400">
                           {svc.costEur.toFixed(6)} €
                         </td>
                         <td className="py-2.5 text-right">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono ${
                             svc.costEur === 0
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
                               : svc.costEur < 1
-                              ? "bg-sky-50 text-sky-700 border border-sky-200"
-                              : "bg-amber-50 text-amber-700 border border-amber-200"
+                              ? "bg-sky-950 text-sky-300 border border-sky-800"
+                              : "bg-amber-950 text-amber-300 border border-amber-800"
                           }`}>
                             {svc.costEur === 0 ? "FREE TIER" : svc.costEur < 1 ? "< 1€" : `${svc.costEur.toFixed(2)}€`}
                           </span>
@@ -3131,9 +3185,9 @@ export default function ContentDashboard() {
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="border-t-2 border-slate-200">
-                      <td className="py-2.5 font-bold text-slate-900">TOTAL Google Cloud MTD</td>
-                      <td className="py-2.5 text-right font-mono font-bold text-slate-900">
+                    <tr className="border-t-2 border-slate-700">
+                      <td className="py-2.5 font-bold text-white">TOTAL Google Cloud MTD</td>
+                      <td className="py-2.5 text-right font-mono font-bold text-emerald-300">
                         {cloudCosts.totalEur.toFixed(6)} €
                       </td>
                       <td />
@@ -3142,11 +3196,11 @@ export default function ContentDashboard() {
                 </table>
               </div>
               {cloudCosts.error && (
-                <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded">
+                <div className="text-[10px] text-amber-300 bg-amber-950/60 border border-amber-800/60 px-3 py-2 rounded">
                   ⚠️ {cloudCosts.error}. Para acceso completo, añade el rol <strong>roles/billing.viewer</strong> al Service Account.
                 </div>
               )}
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10px] text-slate-400 font-mono">
                 Actualizado: {new Date(cloudCosts.fetchedAt).toLocaleString("es-ES")}
                 {cloudCosts.cached && " · Datos en caché (TTL 5 min)"}
               </p>
@@ -3154,8 +3208,8 @@ export default function ContentDashboard() {
           )}
 
           {/* Registro de Telemetría y Acciones */}
-          <div className="bg-white border border-slate-200/80 rounded-xl p-5 flex flex-col gap-3 shadow-xs">
-            <h3 className="font-editorial text-sm font-bold text-slate-900">Registro de Telemetría de Costes</h3>
+          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 flex flex-col gap-3 shadow-xs">
+            <h3 className="font-editorial text-sm font-bold text-white">Registro de Telemetría de Costes</h3>
             
             {usageRecords.length === 0 ? (
               <div className="text-center py-8 text-xs text-slate-400">
@@ -3165,7 +3219,7 @@ export default function ContentDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="border-b border-slate-100 text-slate-500 font-semibold">
+                    <tr className="border-b border-slate-800 text-slate-400 font-semibold">
                       <th className="py-2.5">Hora</th>
                       <th className="py-2.5">Servicio / Acción</th>
                       <th className="py-2.5">Detalles</th>
@@ -3173,26 +3227,26 @@ export default function ContentDashboard() {
                       <th className="py-2.5 text-right">Coste Estimado</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                  <tbody className="divide-y divide-slate-800 text-slate-300">
                     {usageRecords.map((r) => (
                       <tr key={r.id}>
-                        <td className="py-2.5 text-slate-500 font-mono text-[11px]">{new Date(r.timestamp).toLocaleTimeString()}</td>
+                        <td className="py-2.5 text-slate-400 font-mono text-[11px]">{new Date(r.timestamp).toLocaleTimeString()}</td>
                         <td className="py-2.5">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase ${
                             r.action.startsWith("gemini")
-                              ? "bg-sky-50 text-sky-800 border border-sky-200"
+                              ? "bg-sky-950 text-sky-300 border border-sky-800"
                               : r.action === "imagen_image"
-                              ? "bg-purple-50 text-purple-800 border border-purple-200"
-                              : "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                              ? "bg-purple-950 text-purple-300 border border-purple-800"
+                              : "bg-emerald-950 text-emerald-300 border border-emerald-800"
                           }`}>
                             {r.action}
                           </span>
                         </td>
-                        <td className="py-2.5">{r.details}</td>
-                        <td className="py-2.5 font-mono text-[11px] text-slate-500">
+                        <td className="py-2.5 text-slate-200">{r.details}</td>
+                        <td className="py-2.5 font-mono text-[11px] text-slate-400">
                           {r.tokensInput ? `In: ${r.tokensInput} / Out: ${r.tokensOutput}` : r.imageCount ? `1 Imagen` : "1 Req"}
                         </td>
-                        <td className="py-2.5 text-right font-mono font-bold text-emerald-700">
+                        <td className="py-2.5 text-right font-mono font-bold text-emerald-400">
                           {r.estimatedCostEur.toFixed(6)} €
                         </td>
                       </tr>

@@ -379,29 +379,29 @@ export function MultimodalAdvisor({
       </div>
 
       {/* Selector de Inspiraciones de Obra cuando no se sabe qué escribir */}
-      <div className="bg-white rounded-xl border border-indigo-100 p-5 shadow-xs space-y-4">
+      <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-5 shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <span className="p-1 rounded bg-indigo-50 text-indigo-600">
+              <span className="p-1 rounded bg-indigo-500/20 text-indigo-300">
                 <Sparkles className="w-4 h-4" />
               </span>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-white">
                 Inspiraciones Rápidas de Campo (Diagnósticos Reales de Obra B2B)
               </h3>
             </div>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-400 mt-1">
               ¿No tienes material ni notas a mano? Explora o genera casos cotidianos de ingeniería de telecomunicaciones:
             </p>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            {/* Botón Generar Más Ideas con IA */}
+            {/* Botón Generar Más Ideas con IA (CTA Principal) */}
             <button
               type="button"
               onClick={handleGenerateMoreScenarios}
               disabled={generatingMoreScenarios}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-xs transition-all active:scale-95"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
               title="Consultar al Master NotebookLM para sintetizar nuevos dolores técnicos de obra"
             >
               {generatingMoreScenarios ? (
@@ -417,32 +417,32 @@ export function MultimodalAdvisor({
               )}
             </button>
 
-            {/* Botón Mezclar */}
+            {/* Botón Mezclar (Secundario Atenuado) */}
             <button
               type="button"
               onClick={handleShuffleScenarios}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 transition-colors"
+              className="inline-flex items-center gap-1 px-2.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700/80 transition-colors cursor-pointer"
               title="Mezclar el orden de las inspiraciones"
             >
-              <Shuffle className="w-3.5 h-3.5 text-slate-500" />
+              <Shuffle className="w-3.5 h-3.5 text-slate-400" />
               <span className="hidden md:inline">Mezclar</span>
             </button>
 
-            {/* Botón Sorpréndeme */}
+            {/* Botón Sorpréndeme (Secundario Atenuado) */}
             <button
               type="button"
               onClick={handleSurpriseMe}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold rounded-xl border border-slate-700/80 transition-colors cursor-pointer"
               title="Elegir un escenario aleatorio"
             >
-              <Dices className="w-3.5 h-3.5" />
+              <Dices className="w-3.5 h-3.5 text-indigo-400" />
               <span>Sorpréndeme</span>
             </button>
           </div>
         </div>
 
         {/* Pestañas de Filtrado por Categoría Técnica */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs border-b border-slate-100">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs border-b border-slate-800">
           {[
             { id: "ALL", label: "Todas las áreas", count: scenarios.length },
             { id: "wifi", label: "Wi-Fi 7 & Roaming", count: scenarios.filter(s => s.suggestedCategory === "wifi").length },
@@ -456,15 +456,15 @@ export function MultimodalAdvisor({
                 key={cat.id}
                 type="button"
                 onClick={() => setActiveCategory(cat.id)}
-                className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 cursor-pointer ${
                   isActive
-                    ? "bg-slate-900 text-white font-semibold shadow-xs"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                    ? "bg-indigo-600 text-white font-semibold shadow-xs"
+                    : "bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-slate-200"
                 }`}
               >
                 <span>{cat.label}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                  isActive ? "bg-slate-800 text-slate-300" : "bg-slate-200 text-slate-600"
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  isActive ? "bg-indigo-700 text-white" : "bg-slate-900 text-slate-400"
                 }`}>
                   {cat.count}
                 </span>
@@ -475,20 +475,20 @@ export function MultimodalAdvisor({
 
         {/* Feedback Banner cuando se generan nuevas ideas */}
         {scenarioFeedback && (
-          <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between animate-fadeIn">
+          <div className="p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-800/60 text-emerald-300 text-xs flex items-center justify-between animate-fadeIn">
             <span className="font-medium">{scenarioFeedback}</span>
             <button
               type="button"
               onClick={() => setScenarioFeedback(null)}
-              className="text-emerald-600 hover:text-emerald-900 font-bold ml-2"
+              className="text-emerald-400 hover:text-emerald-200 font-bold ml-2 cursor-pointer"
             >
               ✕
             </button>
           </div>
         )}
 
-        {/* Grid de Escenarios Filtrados */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+        {/* Grid de Escenarios Filtrados con line-clamp-3 y Dark Navy */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
           {filteredScenarios.map((sc) => {
             const isSelected = selectedScenarioId === sc.id;
             return (
@@ -496,31 +496,31 @@ export function MultimodalAdvisor({
                 key={sc.id}
                 type="button"
                 onClick={() => handleSelectScenario(sc)}
-                className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between gap-2.5 group ${
+                className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between gap-3 group cursor-pointer ${
                   isSelected
-                    ? "bg-indigo-50/90 border-indigo-500 ring-2 ring-indigo-400/30 shadow-xs"
-                    : "bg-slate-50/70 hover:bg-white border-slate-200 hover:border-indigo-300 hover:shadow-xs"
+                    ? "bg-slate-950 border-indigo-500 ring-2 ring-indigo-500/40 shadow-lg"
+                    : "bg-slate-950/60 hover:bg-slate-950 border-slate-800 hover:border-slate-700"
                 }`}
               >
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-1.5">
                     {getScenarioIcon(sc.icon)}
-                    <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700">
+                    <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300">
                       {sc.badge}
                     </span>
                   </div>
                   {isSelected ? (
-                    <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                   ) : (
-                    <span className="text-[10px] font-semibold text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-[10px] font-semibold text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">
                       Usar caso →
                     </span>
                   )}
                 </div>
-                <h4 className="text-xs font-bold text-slate-900 leading-snug line-clamp-2">
+                <h4 className="text-xs font-bold text-white leading-snug line-clamp-2">
                   {sc.title}
                 </h4>
-                <p className="text-[11px] text-slate-600 line-clamp-3 leading-relaxed">
+                <p className="text-[11px] text-slate-400 line-clamp-3 leading-relaxed">
                   {sc.prompt}
                 </p>
               </button>
