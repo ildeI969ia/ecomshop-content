@@ -23,7 +23,8 @@ import {
   BookOpen,
   Info,
   Save,
-  Zap
+  Zap,
+  AlertCircle
 } from "lucide-react";
 import { ContentOutput } from "@/lib/schema";
 import { ProductOpportunityRecord } from "@/lib/services/opportunity-radar";
@@ -68,7 +69,11 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   isLoadingIntelligence = false
 }) => {
   const [activeTab, setActiveTab] = useState<"blog" | "mailchimp" | "whatsapp" | "linkedin" | "intel">("blog");
+  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set(["blog"]));
+  const [isTabTransitioning, setIsTabTransitioning] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [clipboardError, setClipboardError] = useState<string | null>(null);
+  const [showCloseWorkspaceConfirm, setShowCloseWorkspaceConfirm] = useState(false);
 
   // Estado para el Drawer de Fuentes / Citaciones
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -137,10 +142,37 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
     setDrawerOpen(true);
   };
 
-  const copyToClipboard = (text: string, key: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
+  const handleSelectTab = (tab: "blog" | "mailchimp" | "whatsapp" | "linkedin" | "intel") => {
+    if (tab === activeTab) return;
+    setIsTabTransitioning(true);
+    setActiveTab(tab);
+    setVisitedTabs((prev) => new Set(prev).add(tab));
+    setTimeout(() => setIsTabTransitioning(false), 150);
+  };
+
+  const copyToClipboard = async (text: string, key: string) => {
+    setClipboardError(null);
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("Portapapeles no disponible en este contexto.");
+      }
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey(null), 2000);
+    } catch (err: any) {
+      console.error("Error al copiar al portapapeles:", err);
+      setClipboardError(`Error al copiar: ${err.message || "Permiso denegado"}`);
+      setTimeout(() => setClipboardError(null), 4000);
+    }
+  };
+
+  const handleSafeReset = () => {
+    if (!onReset) return;
+    if (content) {
+      setShowCloseWorkspaceConfirm(true);
+      return;
+    }
+    onReset();
   };
 
   // Enriquecer el HTML con etiquetas de citación interactivas
@@ -495,7 +527,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             {onReset && (
               <button
                 type="button"
-                onClick={onReset}
+                onClick={handleSafeReset}
                 className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition border border-slate-700 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
@@ -504,6 +536,43 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             )}
           </div>
         </div>
+
+        {/* Banner de confirmación para cerrar workspace con contenido activo */}
+        {showCloseWorkspaceConfirm && (
+          <div className="mt-4 p-3 bg-amber-950/60 border border-amber-500/50 rounded-xl flex items-center justify-between gap-3 text-xs text-amber-200 animate-fadeIn">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Hay contenido generado en este workspace que podría no haberse guardado en Firestore. ¿Deseas salir?</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowCloseWorkspaceConfirm(false)}
+                className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold cursor-pointer"
+              >
+                Permanecer
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCloseWorkspaceConfirm(false);
+                  onReset?.();
+                }}
+                className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold cursor-pointer"
+              >
+                Cerrar Workspace
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Notificación flotante de error al copiar */}
+        {clipboardError && (
+          <div className="mt-2 p-2.5 bg-rose-950/80 border border-rose-800 rounded-lg text-xs text-rose-200 flex items-center gap-2 animate-fadeIn">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <span>{clipboardError}</span>
+          </div>
+        )}
       </div>
 
       {/* Stepper del Ciclo de Vida */}
@@ -582,68 +651,83 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => setActiveTab("blog")}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+                onClick={() => handleSelectTab("blog")}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                   activeTab === "blog"
                     ? "bg-white text-slate-950 border border-slate-200 shadow-xs font-bold"
                     : "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
                 }`}
               >
                 <Globe className="w-3.5 h-3.5 text-sky-600" />
-                Blog Durable (HTML)
+                <span>Blog Durable (HTML)</span>
+                {visitedTabs.has("blog") && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" title="Pestaña revisada" />
+                )}
               </button>
 
               <button
                 type="button"
-                onClick={() => setActiveTab("mailchimp")}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+                onClick={() => handleSelectTab("mailchimp")}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                   activeTab === "mailchimp"
                     ? "bg-white text-slate-950 border border-slate-200 shadow-xs font-bold"
                     : "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
                 }`}
               >
                 <Mail className="w-3.5 h-3.5 text-amber-600" />
-                Mailchimp B2B
+                <span>Mailchimp B2B</span>
+                {visitedTabs.has("mailchimp") && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" title="Pestaña revisada" />
+                )}
               </button>
 
               <button
                 type="button"
-                onClick={() => setActiveTab("whatsapp")}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+                onClick={() => handleSelectTab("whatsapp")}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                   activeTab === "whatsapp"
                     ? "bg-white text-slate-950 border border-slate-200 shadow-xs font-bold"
                     : "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
                 }`}
               >
                 <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-                WhatsApp Broadcast
+                <span>WhatsApp Broadcast</span>
+                {visitedTabs.has("whatsapp") && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title="Pestaña revisada" />
+                )}
               </button>
 
               <button
                 type="button"
-                onClick={() => setActiveTab("linkedin")}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+                onClick={() => handleSelectTab("linkedin")}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                   activeTab === "linkedin"
                     ? "bg-white text-slate-950 border border-slate-200 shadow-xs font-bold"
                     : "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
                 }`}
               >
                 <Share2 className="w-3.5 h-3.5 text-blue-600" />
-                LinkedIn B2B
+                <span>LinkedIn B2B</span>
+                {visitedTabs.has("linkedin") && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" title="Pestaña revisada" />
+                )}
               </button>
 
               {intelligenceCard && (
                 <button
                   type="button"
-                  onClick={() => setActiveTab("intel")}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  onClick={() => handleSelectTab("intel")}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                     activeTab === "intel"
                       ? "bg-white text-slate-950 border border-slate-200 shadow-xs font-bold"
                       : "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
                   }`}
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
-                  Product Intelligence & Auditoría
+                  <span>Product Intelligence & Auditoría</span>
+                  {visitedTabs.has("intel") && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" title="Pestaña revisada" />
+                  )}
                 </button>
               )}
             </div>
@@ -654,9 +738,17 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             </div>
           </div>
 
-          {/* Cuerpo de las Pestañas */}
-          <div className="p-6">
-            {/* 1. BLOG TAB */}
+          {/* Cuerpo de las Pestañas con Transición y Skeleton */}
+          <div className="p-6 transition-opacity duration-200">
+            {isTabTransitioning ? (
+              <div className="space-y-4 animate-pulse p-4">
+                <div className="h-6 bg-slate-200 rounded w-1/3" />
+                <div className="h-4 bg-slate-100 rounded w-2/3" />
+                <div className="h-32 bg-slate-100 rounded" />
+              </div>
+            ) : (
+              <>
+                {/* 1. BLOG TAB */}
             {activeTab === "blog" && (
               <div className="flex flex-col gap-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-slate-50 p-4 rounded-xl border border-slate-200 gap-4">
@@ -934,6 +1026,8 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                   productName={intelligenceCard.product.model}
                 />
               </div>
+            )}
+              </>
             )}
           </div>
         </div>
