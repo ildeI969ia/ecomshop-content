@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   X,
   Sparkles,
@@ -15,7 +15,9 @@ import {
   HelpCircle,
   FileText,
   CheckCircle2,
-  Loader2
+  Loader2,
+  Square,
+  RefreshCw
 } from "lucide-react";
 import {
   ArticleOutline,
@@ -45,25 +47,76 @@ export function OutlineEditorModal({
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeWritingIndex, setActiveWritingIndex] = useState<number | null>(null);
   const [completedSections, setCompletedSections] = useState<Record<string, { wordCount: number }>>({});
+  const [writtenSectionsStore, setWrittenSectionsStore] = useState<WrittenSectionResult[]>([]);
   const [totalWordsWritten, setTotalWordsWritten] = useState(0);
   const [progressStatus, setProgressStatus] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [failedSectionIndex, setFailedSectionIndex] = useState<number | null>(null);
+  const [inlineNotice, setInlineNotice] = useState<string | null>(null);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Comprobar si hay cambios sin guardar
+  const isDirty = useMemo(() => {
+    return JSON.stringify(outline) !== JSON.stringify(initialOutline);
+  }, [outline, initialOutline]);
+
+  // Sincronizar initialOutline cuando se abre o cambia
+  useEffect(() => {
+    setOutline(initialOutline);
+    setCompletedSections({});
+    setWrittenSectionsStore([]);
+    setTotalWordsWritten(0);
+    setErrorMsg(null);
+    setFailedSectionIndex(null);
+    setInlineNotice(null);
+    setShowCloseConfirm(false);
+  }, [initialOutline, isOpen]);
+
+  // Limpieza al desmontar
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   if (!isOpen) return null;
 
+  const handleSafeClose = () => {
+    if (isGenerating) {
+      if (window.confirm("Hay una generación en curso. ¿Deseas cancelarla y cerrar el editor?")) {
+        handleCancelGeneration();
+        onClose();
+      }
+      return;
+    }
+    if (isDirty) {
+      setShowCloseConfirm(true);
+      return;
+    }
+    onClose();
+  };
+
   const handleUpdateTitle = (title: string) => {
+    setInlineNotice(null);
     setOutline((prev) => ({ ...prev, title }));
   };
 
   const handleUpdateMetaDescription = (metaDescription: string) => {
+    setInlineNotice(null);
     setOutline((prev) => ({ ...prev, metaDescription }));
   };
 
   const handleUpdateTargetAudience = (targetAudience: string) => {
+    setInlineNotice(null);
     setOutline((prev) => ({ ...prev, targetAudience }));
   };
 
   const handleUpdateSection = (index: number, updates: Partial<ArticleOutlineSection>) => {
+    setInlineNotice(null);
     setOutline((prev) => {
       const updated = [...prev.sections];
       updated[index] = { ...updated[index], ...updates };
@@ -72,6 +125,7 @@ export function OutlineEditorModal({
   };
 
   const handleMoveSection = (index: number, direction: "up" | "down") => {
+    setInlineNotice(null);
     setOutline((prev) => {
       const updated = [...prev.sections];
       const targetIndex = direction === "up" ? index - 1 : index + 1;
@@ -85,9 +139,10 @@ export function OutlineEditorModal({
 
   const handleDeleteSection = (index: number) => {
     if (outline.sections.length <= 1) {
-      alert("El artículo debe contener al menos una sección.");
+      setInlineNotice("El artículo debe contener al menos una sección obligatoria.");
       return;
     }
+    setInlineNotice(null);
     setOutline((prev) => ({
       ...prev,
       sections: prev.sections.filter((_, i) => i !== index)
@@ -95,6 +150,7 @@ export function OutlineEditorModal({
   };
 
   const handleAddSection = () => {
+    setInlineNotice(null);
     const newId = `sec-${Date.now()}`;
     const newSection: ArticleOutlineSection = {
       id: newId,
@@ -110,26 +166,43 @@ export function OutlineEditorModal({
     }));
   };
 
+  const handleCancelGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsGenerating(false);
+    setActiveWritingIndex(null);
+    setProgressStatus("Generación cancelada por el usuario.");
+  };
+
   /**
-   * Orquestación Sección por Sección en Tiempo Real:
-   * En lugar de una llamada monolítica bloqueante de 2 minutos, ejecuta
-   * cada sección individualmente actualizando la barra de progreso, palabras
-   * y estado visual de cada tarjeta antes de ensamblar el artículo final.
+   * Orquestación Sección por Sección con AbortController y Reintento de Sección Fallida
    */
-  const handleLaunchDeepWriter = async () => {
+  const handleLaunchDeepWriter = async (startFromIndex = 0) => {
     setIsGenerating(true);
     setErrorMsg(null);
-    setCompletedSections({});
-    setTotalWordsWritten(0);
+    setInlineNotice(null);
+    setFailedSectionIndex(null);
 
-    const writtenSectionsList: WrittenSectionResult[] = [];
-    let accumulatedSummary = "";
-    let runningWords = 0;
+    // Crear nuevo AbortController
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    const writtenSectionsList: WrittenSectionResult[] = [...writtenSectionsStore.slice(0, startFromIndex)];
+    let accumulatedSummary = writtenSectionsList
+      .map((s, idx) => `\n- [${s.level}] ${s.title}: ${outline.sections[idx]?.keyTakeaway || ""}`)
+      .join("");
+    let runningWords = writtenSectionsList.reduce((acc, s) => acc + (s.wordCount || 0), 0);
     const totalSecs = outline.sections.length;
 
     try {
-      // 1. Redacción interactiva sección por sección
-      for (let i = 0; i < totalSecs; i++) {
+      // 1. Redacción interactiva sección por sección a partir de startFromIndex
+      for (let i = startFromIndex; i < totalSecs; i++) {
+        if (controller.signal.aborted) {
+          throw new DOMException("Generación abortada por el usuario", "AbortError");
+        }
+
         const sec = outline.sections[i];
         setActiveWritingIndex(i);
         setProgressStatus(`Redactando sección ${i + 1} de ${totalSecs}: "${sec.title.slice(0, 38)}..."`);
@@ -143,17 +216,20 @@ export function OutlineEditorModal({
             section: sec,
             previousSectionsSummary: accumulatedSummary,
             category
-          })
+          }),
+          signal: controller.signal
         });
 
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
+          setFailedSectionIndex(i);
           throw new Error(errorData.error || `Error al redactar sección ${i + 1}: ${sec.title}`);
         }
 
         const data = await res.json();
         const writtenSec: WrittenSectionResult = data.section;
         writtenSectionsList.push(writtenSec);
+        setWrittenSectionsStore([...writtenSectionsList]);
 
         runningWords += writtenSec.wordCount || 0;
         setTotalWordsWritten(runningWords);
@@ -177,7 +253,8 @@ export function OutlineEditorModal({
           outline,
           writtenSections: writtenSectionsList,
           category
-        })
+        }),
+        signal: controller.signal
       });
 
       if (!finalRes.ok) {
@@ -193,11 +270,17 @@ export function OutlineEditorModal({
         throw new Error("No se recibieron los activos multicanal generados.");
       }
     } catch (err: any) {
-      console.error("Error en Deep Section Writer:", err);
-      setErrorMsg(err.message || "Ocurrió un error durante la redacción por secciones.");
+      if (err.name === "AbortError" || controller.signal.aborted) {
+        console.log("Generación abortada voluntariamente.");
+        setProgressStatus("Generación cancelada por el usuario.");
+      } else {
+        console.error("Error en Deep Section Writer:", err);
+        setErrorMsg(err.message || "Ocurrió un error durante la redacción por secciones.");
+      }
     } finally {
       setIsGenerating(false);
       setActiveWritingIndex(null);
+      abortControllerRef.current = null;
     }
   };
 
@@ -241,20 +324,79 @@ export function OutlineEditorModal({
             </div>
           </div>
           <button
-            onClick={onClose}
-            disabled={isGenerating}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
+            onClick={handleSafeClose}
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+            title="Cerrar modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
+        {/* Modal de confirmación si hay cambios sin guardar */}
+        {showCloseConfirm && (
+          <div className="p-4 bg-amber-500/10 border-b border-amber-500/30 flex items-center justify-between gap-3 text-xs text-amber-900 animate-fadeIn">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>Tienes cambios sin guardar en la estructura de secciones. ¿Seguro que deseas salir?</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowCloseConfirm(false)}
+                className="px-2.5 py-1 rounded-md bg-white border border-slate-300 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+              >
+                Continuar editando
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCloseConfirm(false);
+                  onClose();
+                }}
+                className="px-2.5 py-1 rounded-md bg-rose-600 font-bold text-white hover:bg-rose-500 cursor-pointer"
+              >
+                Descartar cambios
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Contenido scrolleable */}
         <div className="p-6 overflow-y-auto flex-1 space-y-6">
+          {/* Mensaje de error de red con opción de reintentar sección fallida */}
           {errorMsg && (
-            <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-800 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
-              <span>{errorMsg}</span>
+            <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+              {failedSectionIndex !== null && !isGenerating && (
+                <button
+                  type="button"
+                  onClick={() => handleLaunchDeepWriter(failedSectionIndex)}
+                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg flex items-center gap-1.5 shrink-0 cursor-pointer transition shadow-xs"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Reintentar desde sección {failedSectionIndex + 1}</span>
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Aviso inline de validación (ej. intento de borrar única sección) */}
+          {inlineNotice && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-center justify-between gap-2 animate-fadeIn">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>{inlineNotice}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInlineNotice(null)}
+                className="text-amber-600 hover:text-amber-800 p-1 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
 
@@ -506,17 +648,29 @@ export function OutlineEditorModal({
           </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+            {isGenerating ? (
+              <button
+                type="button"
+                onClick={handleCancelGeneration}
+                className="px-4 py-2 text-xs font-bold text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+                title="Cancelar generación en curso"
+              >
+                <Square className="w-3.5 h-3.5 fill-rose-600 text-rose-600" />
+                <span>Cancelar generación</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSafeClose}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                Cerrar
+              </button>
+            )}
             <button
-              onClick={onClose}
-              disabled={isGenerating}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50"
-            >
-              Cerrar
-            </button>
-            <button
-              onClick={handleLaunchDeepWriter}
+              onClick={() => handleLaunchDeepWriter(0)}
               disabled={isGenerating || outline.sections.length === 0}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2 text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 rounded-xl shadow-md hover:shadow-indigo-500/20 transition-all disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2 text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 rounded-xl shadow-md hover:shadow-indigo-500/20 transition-all disabled:opacity-50 cursor-pointer"
             >
               {isGenerating ? (
                 <>
