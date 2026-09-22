@@ -1,7 +1,8 @@
 import { ProductIntelligenceCard } from "../types/product-intelligence";
 import { NotebookGroundingService } from "./notebook-grounding";
 import { STAR_PRODUCTS } from "../knowledge";
-import { findCatalogProduct, ECOMSHOP_CATALOG, CatalogProduct } from "../catalog";
+import { findCatalogProduct, CatalogProduct, ECOMSHOP_FULL_CATALOG } from "../data/ecomshop-catalog";
+import { getCatalogDevice, CatalogDevice, ECOMSHOP_CATALOG } from "../catalog";
 
 export interface BuyerPersonaProfile {
   name: string;
@@ -151,10 +152,10 @@ export class ProductBrainService {
     let ecosystem: ProductEcosystemBundle;
     if (catalogItem) {
       const alternatives = ECOMSHOP_CATALOG.filter(
-        p => p.category === catalogItem.category && p.sku !== catalogItem.sku
+        p => p.sku !== catalogItem.sku
       ).slice(0, 2).map(p => ({
         sku: p.sku,
-        reason: p.description
+        reason: p.shortDesc
       }));
 
       const accessories: Array<{ sku: string; reason: string }> = [];

@@ -2,9 +2,10 @@ import { ContentRepository, ProductRepository } from "@/server/repositories";
 import { ProductEntity, ContentItem } from "@/server/domain/types";
 import { STAR_PRODUCTS } from "../knowledge";
 import { ProductBrainService, ProductBrainProfile } from "./product-brain";
-import { OFFICIAL_NOTEBOOK } from "../notebooklm";
 import { EditorialControls, BusinessGoal } from "../types/editorial-controls";
-import { ECOMSHOP_CATALOG, findCatalogProduct, CatalogProduct } from "../catalog";
+import { OFFICIAL_NOTEBOOK } from "../notebooklm";
+import { ECOMSHOP_FULL_CATALOG, findCatalogProduct, CatalogProduct } from "../data/ecomshop-catalog";
+import { ECOMSHOP_CATALOG, getCatalogDevice, CatalogDevice } from "../catalog";
 
 export interface OpportunityScoreBreakdown {
   stockScore: number;       // 0-25: Disponibilidad inmediata en almacén EcomSpain
@@ -106,7 +107,7 @@ export class OpportunityRadarService {
     businessGoalAffinity: Record<BusinessGoal, number>;
     catalogItem: CatalogProduct;
   }> {
-    return ECOMSHOP_CATALOG.map(item => ({
+    return ECOMSHOP_FULL_CATALOG.map(item => ({
       sku: item.sku,
       model: item.model,
       category: (item.category.startsWith("WIFI") ? "wifi" :
