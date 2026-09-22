@@ -3,14 +3,22 @@ import { ECOM_BRAND, PRESET_TOPICS, STAR_PRODUCTS } from "./knowledge";
 import { STRATEGIC_AGENT_SYSTEM_PROMPT } from "./gemini-agent";
 import { ProductIntelligenceService } from "@/server/services/product-intelligence-service";
 import { ProductIntelligenceCard } from "./types/product-intelligence";
+import { getCatalogDevice, ECOMSHOP_CATALOG, CatalogDevice } from "./catalog";
 
 export async function generateB2BContent(req: GenerateRequest & { apiKey?: string }): Promise<ContentOutput> {
   const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!req.apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT));
   const apiKey = req.apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
+  // Detección y Grounding enriquecido con ECOMSHOP_CATALOG
+  const targetSku = req.sku || req.customEquipmentName || (req.promotedProductIds && req.promotedProductIds[0]) || "";
+  const catalogDevice: CatalogDevice | undefined =
+    getCatalogDevice(targetSku) ||
+    (req.topicTitle ? getCatalogDevice(req.topicTitle) : undefined) ||
+    (req.productUrl ? getCatalogDevice(req.productUrl) : undefined);
+
   // Paso intermedio: Obtener o sintetizar la ProductIntelligenceCard con evidencia
   let intelligenceCard: ProductIntelligenceCard | null = null;
-  const productIdentifier = req.customEquipmentName || (req.promotedProductIds && req.promotedProductIds[0]) || req.topicTitle || "Solución de Networking";
+  const productIdentifier = catalogDevice?.sku || targetSku || req.topicTitle || "Solución de Networking";
 
   try {
     const intelService = new ProductIntelligenceService();
@@ -19,9 +27,41 @@ export async function generateB2BContent(req: GenerateRequest & { apiKey?: strin
     console.warn("No se pudo obtener ProductIntelligenceCard (continuando):", intelErr);
   }
 
+  // Fuentes efectivas: Priorizar fuentes del usuario o inyectar la fuente oficial del catálogo
+  const effectiveSourceIds: string[] | undefined = (req.selectedSourceIds && req.selectedSourceIds.length > 0)
+    ? req.selectedSourceIds
+    : catalogDevice?.notebookSourceId
+      ? [catalogDevice.notebookSourceId, "src-4", "src-18"]
+      : undefined;
+
+  // Integración prioritaria de GroundedWriterService con NotebookLM
+  if (effectiveSourceIds && effectiveSourceIds.length > 0) {
+    try {
+      const { GroundedWriterService } = await import("./services/grounded-writer");
+      const { NotebookIntelligenceService } = await import("./services/notebook-intelligence");
+      const intelService = new NotebookIntelligenceService();
+      const intel = intelService.synthesizeProductIntelligence(productIdentifier, effectiveSourceIds);
+      const writer = new GroundedWriterService();
+      return await writer.generateGroundedContent({
+        sku: catalogDevice?.sku || intel.sku,
+        topicTitle: req.topicTitle || catalogDevice?.name || intel.model,
+        category: req.category,
+        productUrl: req.productUrl || catalogDevice?.productUrl,
+        targetAudience: req.targetAudience,
+        customNotes: req.customNotes,
+        editorialControls: req.editorialControls,
+        selectedSourceIds: effectiveSourceIds,
+        intel,
+        apiKey
+      });
+    } catch (groundedErr) {
+      console.warn("Fallo en GroundedWriterService, continuando con flujo estándar:", groundedErr);
+    }
+  }
+
   if (apiKey || isVertex) {
     try {
-      return await generateWithGeminiAPI(req, apiKey, intelligenceCard);
+      return await generateWithGeminiAPI(req, apiKey, intelligenceCard, catalogDevice);
     } catch (err) {
       console.warn("Error calling Gemini API, falling back to deterministic high-quality B2B generator:", err);
     }
@@ -34,7 +74,8 @@ export async function generateB2BContent(req: GenerateRequest & { apiKey?: strin
 async function generateWithGeminiAPI(
   req: GenerateRequest,
   apiKey?: string,
-  intel?: ProductIntelligenceCard | null
+  intel?: ProductIntelligenceCard | null,
+  catalogDevice?: CatalogDevice
 ): Promise<ContentOutput> {
   const { getGenAIClient, getActiveGeminiModel } = await import("./genai-client");
   const ai = getGenAIClient(apiKey);
@@ -140,6 +181,21 @@ FICHA DE INTELIGENCIA TÉCNICA VERIFICADA (CALIDAD Y ANTI-ALUCINACIÓN OBLIGATOR
   * Operaciones: ${intel.commercialAngles.operationsDeployment}
 - Ledger de Evidencias Verificadas:
 ${intel.evidenceLedger.map(e => `  [${e.sourceType}] ${e.claim} (Fuente: ${e.source})`).join("\n")}
+` : ""}
+${catalogDevice ? `
+📦 CATÁLOGO CANÓNICO ECOMSHOP - ESPECIFICACIONES EXACTAS Y GROUNDING OFICIAL (ANTI-ALUCINACIONES):
+- Dispositivo: ${catalogDevice.brand} ${catalogDevice.name} (SKU Oficial: ${catalogDevice.sku})
+- Tipo: ${catalogDevice.type} | Categoría de Hardware: ${catalogDevice.category}
+- Resumen Canónico: ${catalogDevice.shortDesc}
+- Especificaciones Técnicas Exactas de Fábrica:
+${catalogDevice.specs.wirelessStandards?.length ? `  * Estándares Inalámbricos: ${catalogDevice.specs.wirelessStandards.join(", ")}\n` : ""}${catalogDevice.specs.bands?.length ? `  * Bandas de Frecuencia: ${catalogDevice.specs.bands.join(", ")}\n` : ""}${catalogDevice.specs.mimo ? `  * Arreglo MIMO: ${catalogDevice.specs.mimo}\n` : ""}${catalogDevice.specs.maxSpeed ? `  * Velocidad Agregada / Throughput: ${catalogDevice.specs.maxSpeed}\n` : ""}${catalogDevice.specs.portsCount ? `  * Puertos / Conmutación: ${catalogDevice.specs.portsCount}\n` : ""}${catalogDevice.specs.poeBudget ? `  * Presupuesto PoE: ${catalogDevice.specs.poeBudget}\n` : ""}${catalogDevice.specs.uplinks ? `  * Uplinks Troncales: ${catalogDevice.specs.uplinks}\n` : ""}${catalogDevice.specs.layer ? `  * Capa: ${catalogDevice.specs.layer}\n` : ""}${catalogDevice.specs.throughput ? `  * Rendimiento Firewall / Throughput: ${catalogDevice.specs.throughput}\n` : ""}${catalogDevice.specs.wanPorts ? `  * Puertos WAN: ${catalogDevice.specs.wanPorts}\n` : ""}${catalogDevice.specs.vpnFeatures?.length ? `  * Capacidades VPN: ${catalogDevice.specs.vpnFeatures.join(", ")}\n` : ""}  * Interfaces Físicas: ${catalogDevice.specs.interfaces.join(", ")}
+  * Alimentación Eléctrica / PoE: ${catalogDevice.specs.powerSource}
+  * Plataforma de Gestión: ${catalogDevice.specs.management}
+- Ventajas Diferenciales Clave:
+${catalogDevice.keyAdvantages.map(adv => `  * ${adv}`).join("\n")}
+- Bundle Recomendado Cruzado: ${catalogDevice.recommendedBundle} (Sinergia técnica probada en despliegues)
+- Fuente Master NotebookLM: [${catalogDevice.notebookSource}]
+- URL Oficial Tienda EcomShop: ${catalogDevice.productUrl}
 ` : ""}
 
 JSON Schema requerido:
@@ -257,25 +313,30 @@ JSON Schema requerido:
     console.warn("Error parsing Gemini JSON output, falling back to deterministic generator:", parseError);
   }
 
-  return generateDeterministicFallback(req, intel);
+  return generateDeterministicFallback(req, intel, catalogDevice);
 }
 
-function generateDeterministicFallback(req: GenerateRequest, intel?: ProductIntelligenceCard | null): ContentOutput {
-  const effectiveTitle = req.topicTitle || (intel?.product ? `${intel.product.brand} ${intel.product.model}` : "Solución de Conectividad Profesional EcomShop");
+function generateDeterministicFallback(
+  req: GenerateRequest,
+  intel?: ProductIntelligenceCard | null,
+  catalogDevice?: CatalogDevice
+): ContentOutput {
+  const effectiveTitle = req.topicTitle || (catalogDevice ? `${catalogDevice.brand} ${catalogDevice.sku}: ${catalogDevice.name}` : (intel?.product ? `${intel.product.brand} ${intel.product.model}` : "Solución de Conectividad Profesional EcomShop"));
   const matchedPreset = PRESET_TOPICS.find(t => t.title.toLowerCase().includes(effectiveTitle.toLowerCase()) || t.category === req.category) || PRESET_TOPICS[0];
   const now = new Date().toISOString();
   const slug = effectiveTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
   const selectedStarProducts = STAR_PRODUCTS.filter(p => (req.promotedProductIds || []).includes(p.id));
-  const customProdText = intel?.product ? `${intel.product.brand} ${intel.product.model}` : req.customEquipmentName?.trim();
+  const customProdText = catalogDevice ? `${catalogDevice.brand} ${catalogDevice.sku}` : (intel?.product ? `${intel.product.brand} ${intel.product.model}` : req.customEquipmentName?.trim());
   
   const featuredProductNames = [
+    ...(catalogDevice ? [`${catalogDevice.brand} ${catalogDevice.name}`] : []),
     ...selectedStarProducts.map((p: any) => p.name),
-    ...(customProdText ? [customProdText] : [])
+    ...(customProdText && !catalogDevice ? [customProdText] : [])
   ];
 
   const ctaBtnText = req.ctaButtonText || "Solicitar Condiciones Especiales B2B";
-  const ctaDestination = req.ctaUrl || req.customEquipmentUrl || selectedStarProducts[0]?.url || req.productUrl || (matchedPreset.suggestedProducts[0]?.url ?? ECOM_BRAND.storeUrl);
+  const ctaDestination = req.ctaUrl || req.customEquipmentUrl || catalogDevice?.productUrl || selectedStarProducts[0]?.url || req.productUrl || (matchedPreset.suggestedProducts[0]?.url ?? ECOM_BRAND.storeUrl);
 
   const photo1Prompt = `Professional close-up photography of ${featuredProductNames[0] || "EnGenius Cloud Switch"} installed in a clean 19-inch enterprise rack, blue patch cables, glowing status LEDs, cinematic studio lighting, photorealistic 8k`;
   const photo2Prompt = `High-tech modern corporate open-plan office with high ceiling, ceiling mounted discreet EnGenius WiFi 7 access point with green connectivity indicator, professional architectural photography, 4k`;

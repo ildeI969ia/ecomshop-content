@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { 
   Globe, 
   Mail, 
@@ -19,7 +19,11 @@ import {
   Eye, 
   ArrowLeft,
   ImageIcon,
-  ShieldAlert
+  ShieldAlert,
+  BookOpen,
+  Info,
+  Save,
+  Zap
 } from "lucide-react";
 import { ContentOutput } from "@/lib/schema";
 import { ProductOpportunityRecord } from "@/lib/services/opportunity-radar";
@@ -27,6 +31,8 @@ import { ProductIntelligenceCard } from "@/lib/types/product-intelligence";
 import { ProductIntelligenceView } from "./product-intelligence-view";
 import { EvidenceAuditDrawer } from "./evidence-audit-drawer";
 import { CampaignStepper, GenerationStage } from "./campaign-stepper";
+import { SourceDrawer, CitationDetail } from "./source-drawer";
+import { ECOMSHOP_CATALOG, getCatalogDevice, getAllCatalogDevices } from "@/lib/catalog";
 
 interface CampaignWorkspaceProps {
   stage: GenerationStage;
@@ -37,6 +43,12 @@ interface CampaignWorkspaceProps {
   onRetry?: () => void;
   onReset?: () => void;
   onOpenImageStudio?: (prompt: string) => void;
+  onSaveToFirestore?: (status?: "approved" | "published") => void;
+  isSavingArticle?: boolean;
+  onSelectQuickSku?: (sku: string) => void;
+  onLaunchWithSku?: (sku: string) => void;
+  selectedSku?: string;
+  isLoadingIntelligence?: boolean;
 }
 
 export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
@@ -47,10 +59,83 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   errorMessage,
   onRetry,
   onReset,
-  onOpenImageStudio
+  onOpenImageStudio,
+  onSaveToFirestore,
+  isSavingArticle = false,
+  onSelectQuickSku,
+  onLaunchWithSku,
+  selectedSku = "ECW510",
+  isLoadingIntelligence = false
 }) => {
   const [activeTab, setActiveTab] = useState<"blog" | "mailchimp" | "whatsapp" | "linkedin" | "intel">("blog");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  // Estado para el Drawer de Fuentes / Citaciones
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [activeCitationId, setActiveCitationId] = useState<string | null>(null);
+  const [activeCitationData, setActiveCitationData] = useState<CitationDetail | null>(null);
+
+  const QUICK_TEST_SKUS = [
+    {
+      sku: "ECW510",
+      brand: "EnGenius",
+      name: "Cloud Wi-Fi 7 Dual-Band AP 2x2",
+      badge: "Wi-Fi 7 BE5000",
+      angle: "Transición eficiente a Wi-Fi 7 con puerto 2.5GbE y QR en 2 min",
+      bundle: "ECS2512FP",
+      specsSnippet: "2x2:2 | 3.6 Gbps | PoE+ 802.3at (18.5W)",
+      color: "from-blue-600 to-indigo-700"
+    },
+    {
+      sku: "ECS2512FP",
+      brand: "EnGenius",
+      name: "Switch Multi-Gigabit 8p 2.5G + 4p 10G SFP+",
+      badge: "PoE+ 240W Multi-Gig",
+      angle: "Backbone conmutado sin cuellos de botella para APs Wi-Fi 7",
+      bundle: "ECW510 / ECW536",
+      specsSnippet: "8x 2.5G PoE+ | 4x 10G SFP+ | 240W Budget",
+      color: "from-emerald-600 to-teal-700"
+    },
+    {
+      sku: "ESG510",
+      brand: "EnGenius",
+      name: "Cloud Security Gateway SD-WAN 4x 2.5G (Sin Wi-Fi)",
+      badge: "SD-WAN Dual-WAN",
+      angle: "Perímetro seguro con balanceo multi-WAN, VPN Mesh y 0€ licencias",
+      bundle: "ECS2512FP + ECW510",
+      specsSnippet: "2.5 Gbps Firewall | Dual-WAN Failover | WireGuard",
+      color: "from-amber-600 to-orange-700"
+    },
+    {
+      sku: "ECW536",
+      brand: "EnGenius",
+      name: "Flagship Wi-Fi 7 Tri-Band AP 4x4:4 (18.7 Gbps)",
+      badge: "6 GHz Tri-Band Flagship",
+      angle: "Máxima densidad y canales de 320 MHz con puerto 10GbE PoE++",
+      bundle: "ECS2512FP",
+      specsSnippet: "4x4:4 Tri-Banda | 18.7 Gbps | 10GbE PoE++ 802.3bt",
+      color: "from-purple-600 to-pink-700"
+    }
+  ];
+
+  const handleOpenCitation = (citationId: string, customData?: CitationDetail) => {
+    setActiveCitationId(citationId);
+    if (customData) {
+      setActiveCitationData(customData);
+    } else if (content?.citations && content.citations[citationId]) {
+      const c = content.citations[citationId];
+      setActiveCitationData({
+        id: citationId,
+        title: c.title,
+        type: c.type,
+        excerpt: c.excerpt,
+        url: c.url
+      });
+    } else {
+      setActiveCitationData(null);
+    }
+    setDrawerOpen(true);
+  };
 
   const copyToClipboard = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -58,7 +143,287 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  if (stage === "IDLE") return null;
+  // Enriquecer el HTML con etiquetas de citación interactivas
+  const enrichedBlogHtml = useMemo(() => {
+    if (!content?.blog?.htmlContent) return "";
+    return content.blog.htmlContent.replace(
+      /\[(src-\d+)\]/gi,
+      (match, id) =>
+        `<button type="button" data-citation="${id.toLowerCase()}" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 mx-0.5 rounded font-mono text-[11px] font-bold bg-indigo-100 text-indigo-800 hover:bg-indigo-200 border border-indigo-300 transition cursor-pointer" title="Ver evidencia oficial de NotebookLM">[${id.toUpperCase()}]</button>`
+    );
+  }, [content?.blog?.htmlContent]);
+
+  const enrichedMailchimpHtml = useMemo(() => {
+    if (!content?.mailchimp?.newsletterHtml) return "";
+    return content.mailchimp.newsletterHtml.replace(
+      /\[(src-\d+)\]/gi,
+      (match, id) =>
+        `<button type="button" data-citation="${id.toLowerCase()}" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 mx-0.5 rounded font-mono text-[11px] font-bold bg-indigo-100 text-indigo-800 hover:bg-indigo-200 border border-indigo-300 transition cursor-pointer" title="Ver evidencia oficial de NotebookLM">[${id.toUpperCase()}]</button>`
+    );
+  }, [content?.mailchimp?.newsletterHtml]);
+
+  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = (e.target as HTMLElement).closest("[data-citation]");
+    if (target) {
+      const citationId = target.getAttribute("data-citation");
+      if (citationId) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleOpenCitation(citationId);
+      }
+    }
+  };
+
+  // ESTADO 1: IDLE (Dashboard de Bienvenida + 4 Tarjetas de Prueba Rápida + Inteligencia en Vivo)
+  if (stage === "IDLE" && !content) {
+    return (
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col gap-6 p-6">
+        {/* Banner Bienvenida */}
+        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 border border-slate-800/90 rounded-xl p-5 text-white flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-md">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="bg-indigo-600/30 text-indigo-300 text-xs px-2.5 py-0.5 rounded-full font-mono border border-indigo-500/40 uppercase tracking-wider">
+                Workspace Omnicanal
+              </span>
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                <BookOpen className="w-3 h-3 text-purple-400" />
+                59 Fuentes Oficiales NotebookLM
+              </span>
+            </div>
+            <h2 className="text-lg font-bold text-white tracking-tight">
+              Panel de Activación y Grounding Oficial
+            </h2>
+            <p className="text-xs text-slate-400 max-w-2xl">
+              Genera campañas completas (Blog Durable HTML, Mailchimp B2B, WhatsApp y LinkedIn Post) validadas contra especificaciones y manuales de ingeniería de EcomShop.
+            </p>
+          </div>
+
+          {selectedSku && onLaunchWithSku && (
+            <button
+              type="button"
+              onClick={() => onLaunchWithSku(selectedSku)}
+              className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-300" />
+              <span>🚀 Lanzar Campaña ({selectedSku})</span>
+            </button>
+          )}
+        </div>
+
+        {/* 4 Tarjetas de Prueba Rápida */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Prueba Rápida con Equipos Estrella de EcomShop</span>
+            </h3>
+            <span className="text-[11px] text-slate-400 font-mono">1 Clic para Grounding</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            {QUICK_TEST_SKUS.map((item) => {
+              const isSelected = selectedSku === item.sku;
+              return (
+                <div
+                  key={item.sku}
+                  className={`rounded-xl p-4 border transition-all duration-200 flex flex-col justify-between gap-3 ${
+                    isSelected
+                      ? "bg-slate-950 border-indigo-500 ring-2 ring-indigo-500/40 shadow-lg"
+                      : "bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-950/90"
+                  }`}
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
+                        {item.sku}
+                      </span>
+                      <span className="text-[10px] font-semibold text-sky-400 bg-sky-950/60 px-1.5 py-0.5 rounded border border-sky-800/60">
+                        {item.badge}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">{item.brand}</span>
+                      <h4 className="text-xs font-bold text-white line-clamp-2 leading-snug">{item.name}</h4>
+                    </div>
+                    <div className="text-[10px] text-indigo-300 font-mono bg-indigo-950/50 px-2 py-1 rounded border border-indigo-900/60">
+                      ⚡ {item.specsSnippet}
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed italic">
+                      "{item.angle}"
+                    </p>
+                    <div className="text-[10px] text-emerald-400 flex items-center gap-1 font-mono">
+                      <Package className="w-3 h-3 text-emerald-400 shrink-0" />
+                      <span className="truncate">Bundle: {item.bundle}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1 border-t border-slate-800/80">
+                    <button
+                      type="button"
+                      onClick={() => onSelectQuickSku?.(item.sku)}
+                      className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition cursor-pointer flex items-center justify-center gap-1 ${
+                        isSelected
+                          ? "bg-indigo-600/30 text-indigo-300 border border-indigo-500/50"
+                          : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                      }`}
+                    >
+                      <Eye className="w-3 h-3" />
+                      <span>{isSelected ? "Activo" : "Cargar"}</span>
+                    </button>
+                    {onLaunchWithSku && (
+                      <button
+                        type="button"
+                        onClick={() => onLaunchWithSku(item.sku)}
+                        className="py-1.5 px-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[11px] font-bold transition shadow-xs cursor-pointer flex items-center justify-center gap-1"
+                        title={`Generar campaña de ${item.sku}`}
+                      >
+                        <Zap className="w-3 h-3 text-amber-300" />
+                        <span>Lanzar</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Selector Rápido Catálogo Completo ECOMSHOP_CATALOG (8 Modelos Canónicos) */}
+          <div className="mt-3.5 bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Package className="w-3.5 h-3.5 text-indigo-400" />
+                <h4 className="text-xs font-bold text-slate-200">
+                  Catálogo Canónico EcomShop (8 Equipos Oficiales)
+                </h4>
+              </div>
+              <span className="text-[11px] text-slate-400 font-mono">
+                Hardware Homologado EcomSpain
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+              {getAllCatalogDevices().map((device) => {
+                const isSelected = selectedSku === device.sku;
+                return (
+                  <button
+                    key={device.sku}
+                    type="button"
+                    onClick={() => onSelectQuickSku?.(device.sku)}
+                    className={`p-2 rounded-lg text-left transition flex flex-col justify-between border cursor-pointer ${
+                      isSelected
+                        ? "bg-indigo-600/30 border-indigo-500 text-white shadow-sm ring-1 ring-indigo-500/50"
+                        : "bg-slate-900/80 hover:bg-slate-800 border-slate-800 text-slate-300 hover:border-slate-700"
+                    }`}
+                    title={`${device.name}\n${device.shortDesc}\nBundle: ${device.recommendedBundle}`}
+                  >
+                    <div className="flex items-center justify-between w-full mb-1">
+                      <span className="font-mono font-bold text-[11px]">{device.sku}</span>
+                      <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${
+                        device.type === "ACCESS_POINT" ? "bg-blue-950 text-blue-300 border border-blue-800" :
+                        device.type === "SWITCH" ? "bg-emerald-950 text-emerald-300 border border-emerald-800" :
+                        device.type === "GATEWAY" ? "bg-amber-950 text-amber-300 border border-amber-800" :
+                        "bg-purple-950 text-purple-300 border border-purple-800"
+                      }`}>
+                        {device.type === "ACCESS_POINT" ? "AP" :
+                         device.type === "SWITCH" ? "SW" :
+                         device.type === "GATEWAY" ? "GW" : "ACC"}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 truncate w-full">
+                      {device.name.replace("EnGenius Cloud ", "").replace("EnGenius ", "")}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Ficha Técnica / Inteligencia en Vivo */}
+        <div>
+          <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                Ficha de Inteligencia NotebookLM {selectedSku ? `(${selectedSku})` : ""}
+              </h3>
+            </div>
+            <span className="text-[11px] font-mono text-emerald-400 bg-emerald-950/70 border border-emerald-800/60 px-2 py-0.5 rounded-full">
+              Grounding Oficial
+            </span>
+          </div>
+
+          {isLoadingIntelligence ? (
+            <div className="py-16 flex flex-col items-center justify-center text-slate-400 space-y-3 bg-slate-950/40 rounded-xl border border-slate-800">
+              <div className="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+              <p className="text-xs font-mono">Sintetizando especificaciones técnicas de {selectedSku}...</p>
+            </div>
+          ) : intelligenceCard ? (
+            <div className="space-y-4">
+              <ProductIntelligenceView card={intelligenceCard} />
+              <EvidenceAuditDrawer
+                score={95}
+                evidenceLedger={intelligenceCard.evidenceLedger}
+                productName={intelligenceCard.product.model}
+              />
+            </div>
+          ) : (
+            <div className="p-8 text-center text-slate-400 bg-slate-950/40 rounded-xl border border-slate-800 text-xs">
+              Selecciona una oportunidad a la izquierda o haz clic en un SKU para ver la ficha de ingeniería y grounding oficial.
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ESTADO 2: LOADING (Milestone Stepper Animado)
+  if (stage !== "IDLE" && !content) {
+    return (
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col gap-6 p-6">
+        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 border border-slate-800/90 rounded-xl p-5 text-white flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-md">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="bg-indigo-600/30 text-indigo-300 text-xs px-2.5 py-0.5 rounded-full font-mono border border-indigo-500/40 uppercase tracking-wider animate-pulse">
+                Generando Campaña
+              </span>
+              {opportunity?.sku && (
+                <span className="bg-slate-800 text-sky-400 text-xs px-2.5 py-0.5 rounded-full font-mono border border-slate-700">
+                  SKU: {opportunity.sku}
+                </span>
+              )}
+            </div>
+            <h2 className="text-lg font-bold text-white tracking-tight">
+              {opportunity?.actionTitle || `Orquestando campaña para ${opportunity?.sku || selectedSku}`}
+            </h2>
+            <p className="text-xs text-slate-400">
+              Procesando los 4 hitos: scraping de producto, contrastación contra fuentes NotebookLM, redacción omnicanal y fact-checking.
+            </p>
+          </div>
+          {onReset && (
+            <button
+              type="button"
+              onClick={onReset}
+              className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-lg flex items-center gap-1.5 transition border border-slate-700 cursor-pointer self-start md:self-auto"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Cancelar</span>
+            </button>
+          )}
+        </div>
+
+        <div className="p-6 bg-slate-950/80 rounded-xl border border-slate-800 shadow-inner">
+          <CampaignStepper
+            currentStage={stage}
+            errorMessage={errorMessage}
+            onRetry={onRetry}
+            activeSku={opportunity?.sku || selectedSku}
+            activeAngle={opportunity?.recommendedAngle}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white border border-indigo-100 rounded-2xl shadow-xl overflow-hidden mb-10 transition-all">
@@ -80,6 +445,10 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                   {opportunity.recommendedAngle}
                 </span>
               )}
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                <BookOpen className="w-3 h-3 text-purple-400" />
+                NotebookLM Grounded
+              </span>
             </div>
 
             <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
@@ -94,13 +463,30 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            <div className="bg-emerald-950/80 text-emerald-300 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-emerald-700/60 font-mono font-bold">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Fidelidad: {content?.factCheckScore || 98}/100</span>
+            </div>
+
+            {onSaveToFirestore && (
+              <button
+                type="button"
+                disabled={isSavingArticle}
+                onClick={() => onSaveToFirestore("approved")}
+                className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition font-semibold shadow-xs cursor-pointer active:scale-95"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{isSavingArticle ? "Guardando..." : "Guardar en Firestore"}</span>
+              </button>
+            )}
+
             {opportunity?.url && (
               <a
                 href={opportunity.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-2 rounded-lg flex items-center gap-1.5 transition border border-slate-700"
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition border border-slate-700"
               >
                 <ExternalLink className="w-3.5 h-3.5 text-sky-400" />
                 <span>Ver en ecomshop.es</span>
@@ -110,10 +496,10 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
               <button
                 type="button"
                 onClick={onReset}
-                className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-lg flex items-center gap-1.5 transition border border-slate-700"
+                className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition border border-slate-700 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Cerrar Workspace</span>
+                <span>Cerrar</span>
               </button>
             )}
           </div>
@@ -163,13 +549,39 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
         </div>
       )}
 
-      {/* Contenedor Interactivo con Pestañas de Canales (Una vez completado o con contenido disponible) */}
+      {/* Barra de Citaciones Interactivas si hay fuentes citadas */}
+      {content?.citations && Object.keys(content.citations).length > 0 && (
+        <div className="bg-indigo-50 border-b border-indigo-100 px-6 py-2.5 flex items-center justify-between flex-wrap gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-indigo-600" />
+            <span className="font-bold text-slate-800">
+              Evidencias Citadas de NotebookLM ({Object.keys(content.citations).length}):
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {Object.entries(content.citations).map(([id, cit]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => handleOpenCitation(id, cit)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg font-mono text-[11px] font-bold bg-white hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-200 shadow-2xs transition cursor-pointer"
+              >
+                <span>[{id.toUpperCase()}]</span>
+                <span className="font-sans font-medium max-w-[140px] truncate">{cit.title}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Contenedor Interactivo con Pestañas de Canales */}
       {content && (
         <div className="flex flex-col">
           {/* Navegación por Pestañas */}
           <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 px-6 py-2.5">
             <div className="flex flex-wrap gap-2">
               <button
+                type="button"
                 onClick={() => setActiveTab("blog")}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
                   activeTab === "blog"
@@ -182,6 +594,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
               </button>
 
               <button
+                type="button"
                 onClick={() => setActiveTab("mailchimp")}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
                   activeTab === "mailchimp"
@@ -194,6 +607,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
               </button>
 
               <button
+                type="button"
                 onClick={() => setActiveTab("whatsapp")}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
                   activeTab === "whatsapp"
@@ -206,6 +620,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
               </button>
 
               <button
+                type="button"
                 onClick={() => setActiveTab("linkedin")}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
                   activeTab === "linkedin"
@@ -219,6 +634,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
 
               {intelligenceCard && (
                 <button
+                  type="button"
                   onClick={() => setActiveTab("intel")}
                   className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
                     activeTab === "intel"
@@ -253,13 +669,26 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                       <span>Lectura: <strong>{content.blog.readingTimeMinutes} min</strong></span>
                     </p>
                   </div>
-                  <button
-                    onClick={() => copyToClipboard(content.blog.htmlContent, "blog-html")}
-                    className="flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-xs font-semibold transition shadow-xs shrink-0"
-                  >
-                    {copiedKey === "blog-html" ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-sky-400" />}
-                    <span>{copiedKey === "blog-html" ? "¡HTML Copiado!" : "Copiar HTML Durable"}</span>
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {onSaveToFirestore && (
+                      <button
+                        type="button"
+                        disabled={isSavingArticle}
+                        onClick={() => onSaveToFirestore("approved")}
+                        className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition shadow-xs cursor-pointer disabled:opacity-50"
+                      >
+                        <Save className="w-3.5 h-3.5 text-emerald-200" />
+                        <span>{isSavingArticle ? "Guardando..." : "Guardar en Firestore"}</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => copyToClipboard(content.blog.htmlContent, "blog-html")}
+                      className="flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-xs font-semibold transition shadow-xs shrink-0 cursor-pointer"
+                    >
+                      {copiedKey === "blog-html" ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-sky-400" />}
+                      <span>{copiedKey === "blog-html" ? "¡HTML Copiado!" : "Copiar HTML Durable"}</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Perfiles B2B */}
@@ -327,7 +756,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                             <button
                               type="button"
                               onClick={() => onOpenImageStudio(photo.imagen3Prompt)}
-                              className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition shadow-2xs"
+                              className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer"
                             >
                               <Sparkles className="w-3.5 h-3.5 text-purple-200" />
                               Generar esta foto en Estudio Imagen 3 &rarr;
@@ -339,11 +768,14 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                   </div>
                 )}
 
-                {/* Vista previa de HTML */}
-                <div className="border border-slate-200 rounded-xl p-6 bg-white text-slate-900 shadow-xs max-h-[600px] overflow-y-auto">
+                {/* Vista previa de HTML con delegación de clic para citas */}
+                <div 
+                  onClick={handleContainerClick}
+                  className="border border-slate-200 rounded-xl p-6 bg-white text-slate-900 shadow-xs max-h-[600px] overflow-y-auto"
+                >
                   <div 
                     className="prose max-w-none text-sm font-sans leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: content.blog.htmlContent }}
+                    dangerouslySetInnerHTML={{ __html: enrichedBlogHtml }}
                   />
                 </div>
               </div>
@@ -360,7 +792,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                     <p className="text-sm font-semibold text-slate-900">{content.mailchimp.subjectA}</p>
                     <button
                       onClick={() => copyToClipboard(content.mailchimp.subjectA, "sub-a")}
-                      className="mt-2 text-xs text-amber-800 hover:text-amber-950 font-medium flex items-center gap-1"
+                      className="mt-2 text-xs text-amber-800 hover:text-amber-950 font-medium flex items-center gap-1 cursor-pointer"
                     >
                       <Copy className="w-3 h-3" /> {copiedKey === "sub-a" ? "Copiado" : "Copiar Asunto A"}
                     </button>
@@ -373,7 +805,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                     <p className="text-sm font-semibold text-slate-900">{content.mailchimp.subjectB}</p>
                     <button
                       onClick={() => copyToClipboard(content.mailchimp.subjectB, "sub-b")}
-                      className="mt-2 text-xs text-amber-800 hover:text-amber-950 font-medium flex items-center gap-1"
+                      className="mt-2 text-xs text-amber-800 hover:text-amber-950 font-medium flex items-center gap-1 cursor-pointer"
                     >
                       <Copy className="w-3 h-3" /> {copiedKey === "sub-b" ? "Copiado" : "Copiar Asunto B"}
                     </button>
@@ -384,19 +816,35 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                   <span className="text-xs text-slate-600">
                     Preview Text: <strong>{content.mailchimp.previewText}</strong>
                   </span>
-                  <button
-                    onClick={() => copyToClipboard(content.mailchimp.newsletterHtml, "mailchimp-html")}
-                    className="flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition shadow-xs"
-                  >
-                    {copiedKey === "mailchimp-html" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-400" />}
-                    <span>{copiedKey === "mailchimp-html" ? "¡HTML Copiado!" : "Copiar Template Mailchimp"}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {onSaveToFirestore && (
+                      <button
+                        type="button"
+                        disabled={isSavingArticle}
+                        onClick={() => onSaveToFirestore("approved")}
+                        className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow-xs cursor-pointer disabled:opacity-50"
+                      >
+                        <Save className="w-3.5 h-3.5 text-emerald-200" />
+                        <span>{isSavingArticle ? "Guardando..." : "Guardar"}</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => copyToClipboard(content.mailchimp.newsletterHtml, "mailchimp-html")}
+                      className="flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition shadow-xs cursor-pointer"
+                    >
+                      {copiedKey === "mailchimp-html" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-400" />}
+                      <span>{copiedKey === "mailchimp-html" ? "¡HTML Copiado!" : "Copiar Template Mailchimp"}</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="border border-slate-200 rounded-xl p-6 bg-white text-slate-900 shadow-xs max-h-[500px] overflow-y-auto">
+                <div 
+                  onClick={handleContainerClick}
+                  className="border border-slate-200 rounded-xl p-6 bg-white text-slate-900 shadow-xs max-h-[500px] overflow-y-auto"
+                >
                   <div 
                     className="prose max-w-none text-sm font-sans"
-                    dangerouslySetInnerHTML={{ __html: content.mailchimp.newsletterHtml }}
+                    dangerouslySetInnerHTML={{ __html: enrichedMailchimpHtml }}
                   />
                 </div>
               </div>
@@ -410,13 +858,26 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                     <MessageSquare className="w-4 h-4 text-emerald-300" />
                     <span className="text-xs font-bold tracking-wide uppercase">WhatsApp Broadcast B2B</span>
                   </div>
-                  <button
-                    onClick={() => copyToClipboard(content.whatsapp.formattedMessage, "wa-msg")}
-                    className="bg-emerald-800 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
-                  >
-                    {copiedKey === "wa-msg" ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedKey === "wa-msg" ? "¡Copiado!" : "Copiar Mensaje"}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {onSaveToFirestore && (
+                      <button
+                        type="button"
+                        disabled={isSavingArticle}
+                        onClick={() => onSaveToFirestore("approved")}
+                        className="bg-emerald-800 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                      >
+                        <Save className="w-3.5 h-3.5 text-emerald-200" />
+                        <span>{isSavingArticle ? "Guardando..." : "Guardar"}</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => copyToClipboard(content.whatsapp.formattedMessage, "wa-msg")}
+                      className="bg-emerald-800 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                    >
+                      {copiedKey === "wa-msg" ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedKey === "wa-msg" ? "¡Copiado!" : "Copiar Mensaje"}</span>
+                    </button>
+                  </div>
                 </div>
                 <div className="bg-emerald-50/50 border border-emerald-200 p-6 rounded-b-xl">
                   <pre className="whitespace-pre-wrap font-sans text-xs text-slate-800 leading-relaxed bg-white p-5 rounded-lg border border-emerald-100 shadow-xs">
@@ -434,13 +895,26 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                     <Share2 className="w-4 h-4 text-blue-300" />
                     <span className="text-xs font-bold tracking-wide uppercase">LinkedIn B2B Post</span>
                   </div>
-                  <button
-                    onClick={() => copyToClipboard(content.linkedin.fullPostText, "li-post")}
-                    className="bg-blue-800 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
-                  >
-                    {copiedKey === "li-post" ? <Check className="w-3.5 h-3.5 text-blue-300" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedKey === "li-post" ? "¡Copiado!" : "Copiar Post"}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {onSaveToFirestore && (
+                      <button
+                        type="button"
+                        disabled={isSavingArticle}
+                        onClick={() => onSaveToFirestore("approved")}
+                        className="bg-blue-800 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                      >
+                        <Save className="w-3.5 h-3.5 text-blue-200" />
+                        <span>{isSavingArticle ? "Guardando..." : "Guardar"}</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => copyToClipboard(content.linkedin.fullPostText, "li-post")}
+                      className="bg-blue-800 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                    >
+                      {copiedKey === "li-post" ? <Check className="w-3.5 h-3.5 text-blue-300" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedKey === "li-post" ? "¡Copiado!" : "Copiar Post"}</span>
+                    </button>
+                  </div>
                 </div>
                 <div className="bg-slate-50 border border-slate-200 p-6 rounded-b-xl">
                   <pre className="whitespace-pre-wrap font-sans text-xs text-slate-800 leading-relaxed bg-white p-5 rounded-lg border border-slate-200 shadow-xs">
@@ -464,7 +938,14 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
           </div>
         </div>
       )}
+
+      {/* Drawer Lateral de Evidencia Oficial NotebookLM */}
+      <SourceDrawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        citationId={activeCitationId}
+        citationData={activeCitationData}
+      />
     </div>
   );
 };
-

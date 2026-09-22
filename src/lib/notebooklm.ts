@@ -26,6 +26,15 @@ export const OFFICIAL_NOTEBOOK: NotebookState = {
   sources: [
     // Bloque 1: Novedades EnGenius Networks WiFi 7 & Cloud
     {
+      id: "src-0",
+      title: "EnGenius Cloud WiFi 7 ECW510 Datasheet",
+      type: "datasheet",
+      description: "Punto de acceso Wi-Fi 7 Dual-Band ultracompacto con puerto 2.5GbE PoE+, modulación 4096-QAM, roaming 802.11k/v/r y gestión cloud nativa sin cuotas.",
+      url: "https://www.ecomshop.es/engenius-ecw510",
+      imageUrl: "https://store.engeniustech.com/cdn/shop/files/Product_Photos_Cloud_Access_Point_InD_ECW526_Front_View_907d4351-407d-4679-8491-99e6307ad5d1.jpg",
+      addedAt: "18 Sep 2026"
+    },
+    {
       id: "src-1",
       title: "EnGenius Cloud WiFi 7 ECW536 Datasheet",
       type: "datasheet",

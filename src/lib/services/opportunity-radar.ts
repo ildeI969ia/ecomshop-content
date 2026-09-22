@@ -4,6 +4,7 @@ import { STAR_PRODUCTS } from "../knowledge";
 import { ProductBrainService, ProductBrainProfile } from "./product-brain";
 import { OFFICIAL_NOTEBOOK } from "../notebooklm";
 import { EditorialControls, BusinessGoal } from "../types/editorial-controls";
+import { ECOMSHOP_CATALOG, findCatalogProduct, CatalogProduct } from "../catalog";
 
 export interface OpportunityScoreBreakdown {
   stockScore: number;       // 0-25: Disponibilidad inmediata en almacén EcomSpain
@@ -82,7 +83,10 @@ export class OpportunityRadarService {
   private productRepo = new ProductRepository();
   private productBrain = new ProductBrainService();
 
-  private readonly MASTER_CATALOG_DEFINITIONS: Array<{
+  /**
+   * Catálogo unificado obtenido directamente desde ECOMSHOP_CATALOG
+   */
+  private get MASTER_CATALOG_DEFINITIONS(): Array<{
     sku: string;
     model: string;
     category: "wifi" | "switches" | "gateways" | "fibra" | "accesorios";
@@ -100,258 +104,32 @@ export class OpportunityRadarService {
     sourceIds: string[];
     sectorAffinity: Record<string, number>;
     businessGoalAffinity: Record<BusinessGoal, number>;
-  }> = [
-    {
-      sku: "ECW536",
-      model: "ECW536 Cloud Tri-Band Wi-Fi 7",
-      category: "wifi",
-      brand: "EnGenius",
-      priceEur: 599,
-      url: "https://www.ecomshop.es/engenius-ecw536",
-      actionTitle: "Oportunidad Wi-Fi 7 Tri-Band: Despliegue de Alta Densidad ECW536",
-      targetSegment: "Oficinas Corporativas, Auditorios y Sedes Centrales",
-      defaultAngle: "PERFORMANCE",
+    catalogItem: CatalogProduct;
+  }> {
+    return ECOMSHOP_CATALOG.map(item => ({
+      sku: item.sku,
+      model: item.model,
+      category: (item.category.startsWith("WIFI") ? "wifi" :
+                item.category.startsWith("SWITCH") ? "switches" :
+                item.category.startsWith("GATEWAY") ? "gateways" :
+                item.category.startsWith("FIBRA") ? "fibra" : "accesorios") as "wifi" | "switches" | "gateways" | "fibra" | "accesorios",
+      brand: item.brand,
+      priceEur: item.priceEur,
+      url: item.url,
+      actionTitle: item.actionTitle,
+      targetSegment: item.targetSegment,
+      defaultAngle: item.defaultAngle,
       suggestedBundle: {
-        accessorySku: "ECS2512FP",
-        accessoryName: "Switch Cloud Multi-Gigabit 2.5G PoE++",
-        rationale: "Puerto 10GbE del AP alimentado a 60W PoE++ 802.3bt para eliminar cuellos de botella."
+        accessorySku: item.bundleDetails?.sku || item.recommendedBundle.sku,
+        accessoryName: item.bundleDetails?.name || item.recommendedBundle.sku,
+        rationale: item.bundleDetails?.rationale || item.recommendedBundle.rationale
       },
-      sourceIds: ["src-1", "src-4", "src-8"],
-      sectorAffinity: { ENTERPRISE_OFFICE: 25, EDUCATION_CAMPUS: 24, HOSPITALITY: 18, LOGISTICS_INDUSTRY: 15 },
-      businessGoalAffinity: {
-        ALL_OPPORTUNITIES: 25,
-        WIFI7_MULTIGIG_EXPANSION: 30,
-        HOSPITALITY_SOLUTIONS: 18,
-        SWITCHING_POE_BACKBONE: 15,
-        STOCK_CLEARANCE_PROMO: 10
-      }
-    },
-    {
-      sku: "ECW510",
-      model: "ECW510 Cloud Dual-Band Wi-Fi 7",
-      category: "wifi",
-      brand: "EnGenius",
-      priceEur: 389,
-      url: "https://www.ecomshop.es/engenius-ecw510",
-      actionTitle: "Oportunidad Wi-Fi 7 Eficiente: ECW510 con Aprovisionamiento QR 2min",
-      targetSegment: "Integradores de Redes Corporativas y Pymes Avanzadas",
-      defaultAngle: "OPERATIONS",
-      suggestedBundle: {
-        accessorySku: "ECS2512FP",
-        accessoryName: "Switch Cloud Multi-Gigabit 2.5G PoE++",
-        rationale: "Uplink Multi-Gigabit 2.5G garantizado para tráfico concurrente y videoconferencias."
-      },
-      sourceIds: ["src-1", "src-5", "src-18"],
-      sectorAffinity: { ENTERPRISE_OFFICE: 22, HOSPITALITY: 23, LOGISTICS_INDUSTRY: 18, EDUCATION_CAMPUS: 19 },
-      businessGoalAffinity: {
-        ALL_OPPORTUNITIES: 24,
-        WIFI7_MULTIGIG_EXPANSION: 28,
-        HOSPITALITY_SOLUTIONS: 22,
-        SWITCHING_POE_BACKBONE: 14,
-        STOCK_CLEARANCE_PROMO: 24
-      }
-    },
-    {
-      sku: "ECW526",
-      model: "ECW526 Wi-Fi 7 AP Interior Compacto",
-      category: "wifi",
-      brand: "EnGenius",
-      priceEur: 299,
-      url: "https://www.ecomshop.es/engenius-ecw526",
-      actionTitle: "Oportunidad Hospitality: Cobertura In-Room y Despachos con ECW526",
-      targetSegment: "Hoteles, Residencias y Despachos Ejecutivos",
-      defaultAngle: "ROI",
-      suggestedBundle: {
-        accessorySku: "ECS1528FP",
-        accessoryName: "Switch Cloud PoE+ 24 Puertos (410W)",
-        rationale: "Alimentación centralizada para decenas de APs por planta sin ruido y con bajo consumo."
-      },
-      sourceIds: ["src-2", "src-4", "src-11"],
-      sectorAffinity: { HOSPITALITY: 25, ENTERPRISE_OFFICE: 20, EDUCATION_CAMPUS: 22, LOGISTICS_INDUSTRY: 12 },
-      businessGoalAffinity: {
-        ALL_OPPORTUNITIES: 22,
-        WIFI7_MULTIGIG_EXPANSION: 20,
-        HOSPITALITY_SOLUTIONS: 30,
-        SWITCHING_POE_BACKBONE: 12,
-        STOCK_CLEARANCE_PROMO: 25
-      }
-    },
-    {
-      sku: "ECW546",
-      model: "ECW546 Outdoor Wi-Fi 7 IP67",
-      category: "wifi",
-      brand: "EnGenius",
-      priceEur: 649,
-      url: "https://www.ecomshop.es/engenius-ecw546-outdoor",
-      actionTitle: "Oportunidad Industrial & Terrazas: Cobertura Robusta IP67 con ECW546",
-      targetSegment: "Naves Logísticas, Campings, Terrazas y Zonas Portuarias",
-      defaultAngle: "OPERATIONS",
-      suggestedBundle: {
-        accessorySku: "ECS2512FP",
-        accessoryName: "Switch Cloud Multi-Gigabit PoE++ 60W",
-        rationale: "Protección contra sobretensiones y alimentación PoE++ para exteriores con clima extremo."
-      },
-      sourceIds: ["src-3", "src-10", "src-18"],
-      sectorAffinity: { LOGISTICS_INDUSTRY: 25, HOSPITALITY: 24, EDUCATION_CAMPUS: 18, ENTERPRISE_OFFICE: 14 },
-      businessGoalAffinity: {
-        ALL_OPPORTUNITIES: 23,
-        WIFI7_MULTIGIG_EXPANSION: 22,
-        HOSPITALITY_SOLUTIONS: 29,
-        SWITCHING_POE_BACKBONE: 14,
-        STOCK_CLEARANCE_PROMO: 12
-      }
-    },
-    {
-      sku: "ECS2512FP",
-      model: "ECS2512FP Multi-Gigabit PoE++ (8x 2.5G + 4x 10G SFP+)",
-      category: "switches",
-      brand: "EnGenius",
-      priceEur: 689,
-      url: "https://www.ecomshop.es/engenius-ecs2512fp",
-      actionTitle: "Oportunidad Switching Multi-Gigabit: ECS2512FP para Troncales Wi-Fi 7",
-      targetSegment: "Instaladores IT y Arquitectos de Infraestructura",
-      defaultAngle: "PERFORMANCE",
-      suggestedBundle: {
-        accessorySku: "SFP-10G-SR-KIT",
-        accessoryName: "Transceptores 10G SFP+ y Latiguillo OM4",
-        rationale: "Backbone de fibra de 10 Gbps para interconexión de racks sin saturación."
-      },
-      sourceIds: ["src-8", "src-10", "src-14"],
-      sectorAffinity: { ENTERPRISE_OFFICE: 24, LOGISTICS_INDUSTRY: 23, HOSPITALITY: 21, EDUCATION_CAMPUS: 23 },
-      businessGoalAffinity: {
-        ALL_OPPORTUNITIES: 25,
-        WIFI7_MULTIGIG_EXPANSION: 28,
-        HOSPITALITY_SOLUTIONS: 20,
-        SWITCHING_POE_BACKBONE: 30,
-        STOCK_CLEARANCE_PROMO: 16
-      }
-    },
-    {
-      sku: "ECS1528FP",
-      model: "ECS1528FP Cloud PoE+ (24 Puertos 410W + 4x 10G)",
-      category: "switches",
-      brand: "EnGenius",
-      priceEur: 549,
-      url: "https://www.ecomshop.es/engenius-ecs1528fp",
-      actionTitle: "Oportunidad Switching 24 Puertos: ECS1528FP 410W con 0€ Licencias",
-      targetSegment: "Integradores de Videovigilancia IP y Redes Medianas",
-      defaultAngle: "ROI",
-      suggestedBundle: {
-        accessorySku: "SFP-10G-SR-KIT",
-        accessoryName: "Kit Transceptores Ópticos 10G SFP+ y Fibra OM4",
-        rationale: "Troncal 10G entre armarios secundarios con PoE+ simultáneo para cámaras y telefonía."
-      },
-      sourceIds: ["src-7", "src-11", "src-13"],
-      sectorAffinity: { HOSPITALITY: 24, ENTERPRISE_OFFICE: 23, LOGISTICS_INDUSTRY: 22, EDUCATION_CAMPUS: 24 },
-      businessGoalAffinity: {
-        ALL_OPPORTUNITIES: 24,
-        WIFI7_MULTIGIG_EXPANSION: 18,
-        HOSPITALITY_SOLUTIONS: 27,
-        SWITCHING_POE_BACKBONE: 29,
-        STOCK_CLEARANCE_PROMO: 28
-      }
-    },
-    {
-      sku: "ECS5512FP",
-      model: "ECS5512FP Switch Agregación Fibra 10G",
-      category: "switches",
-      brand: "EnGenius",
-      priceEur: 1190,
-      url: "https://www.ecomshop.es/engenius-ecs5512fp",
-      actionTitle: "Oportunidad Core 10G: Agregación Troncal ECS5512FP para Campus",
-      targetSegment: "Directores TIC y MSPs Multi-Edificio",
-      defaultAngle: "PERFORMANCE",
-      suggestedBundle: {
-        accessorySku: "SFP-10G-SR-KIT",
-        accessoryName: "Módulos Transceptores 10G SFP+ Multimodo",
-        rationale: "Distribución de red de fibra óptica inter-edificios con redundancia STP/LACP."
-      },
-      sourceIds: ["src-9", "src-14", "src-15"],
-      sectorAffinity: { EDUCATION_CAMPUS: 25, ENTERPRISE_OFFICE: 24, LOGISTICS_INDUSTRY: 20, HOSPITALITY: 19 },
-      businessGoalAffinity: {
-        ALL_OPPORTUNITIES: 21,
-        WIFI7_MULTIGIG_EXPANSION: 20,
-        HOSPITALITY_SOLUTIONS: 14,
-        SWITCHING_POE_BACKBONE: 30,
-        STOCK_CLEARANCE_PROMO: 10
-      }
-    },
-    {
-      sku: "ESG610",
-      model: "ESG610 Gateway SD-WAN Cloud Security",
-      category: "gateways",
-      brand: "EnGenius",
-      priceEur: 479,
-      url: "https://www.ecomshop.es/engenius-esg610",
-      actionTitle: "Oportunidad Cloud Total: Gateway ESG610 + VPN Multi-Sede sin Cuotas",
-      targetSegment: "Responsables de Seguridad y Directores TIC",
-      defaultAngle: "ROI",
-      suggestedBundle: {
-        accessorySku: "ECS1528FP",
-        accessoryName: "Switch Cloud PoE+ 24 Puertos",
-        rationale: "Topología EnGenius Cloud unificada: Firewall + Switching + Wi-Fi en un solo panel."
-      },
-      sourceIds: ["src-6", "src-4", "src-11"],
-      sectorAffinity: { ENTERPRISE_OFFICE: 25, HOSPITALITY: 22, EDUCATION_CAMPUS: 22, LOGISTICS_INDUSTRY: 21 },
-      businessGoalAffinity: {
-        ALL_OPPORTUNITIES: 22,
-        WIFI7_MULTIGIG_EXPANSION: 18,
-        HOSPITALITY_SOLUTIONS: 24,
-        SWITCHING_POE_BACKBONE: 16,
-        STOCK_CLEARANCE_PROMO: 15
-      }
-    },
-    {
-      sku: "SFP-10G-SR-KIT",
-      model: "Kit Troncal Fibra 10G SFP+ y Cable OM4",
-      category: "fibra",
-      brand: "EcomSpain",
-      priceEur: 89,
-      url: "https://www.ecomshop.es/transceptores-sfp-10g",
-      actionTitle: "Campaña Flash Conectividad: Kit Troncal Fibra 10G SFP+ Certificado",
-      targetSegment: "Instaladores Telecomunicaciones Tipo A / Cableado Estructurado",
-      defaultAngle: "OPERATIONS",
-      suggestedBundle: {
-        accessorySku: "ECS1528FP",
-        accessoryName: "Switch EnGenius Cloud PoE+ 24 Puertos",
-        rationale: "Garantiza el interlink a 10 Gbps entre racks sin atenuación ni errores CRC."
-      },
-      sourceIds: ["src-14", "src-17", "src-18"],
-      sectorAffinity: { LOGISTICS_INDUSTRY: 23, ENTERPRISE_OFFICE: 22, HOSPITALITY: 20, EDUCATION_CAMPUS: 22 },
-      businessGoalAffinity: {
-        ALL_OPPORTUNITIES: 22,
-        WIFI7_MULTIGIG_EXPANSION: 20,
-        HOSPITALITY_SOLUTIONS: 18,
-        SWITCHING_POE_BACKBONE: 30,
-        STOCK_CLEARANCE_PROMO: 26
-      }
-    },
-    {
-      sku: "POE30Gv2",
-      model: "POE30Gv2 Inyector PoE+ Gigabit 30W",
-      category: "accesorios",
-      brand: "EnGenius",
-      priceEur: 39,
-      url: "https://www.ecomshop.es/guias-poe",
-      actionTitle: "Oportunidad Despliegue Rápido: Inyector POE30Gv2 para APs Individuales",
-      targetSegment: "Instaladores de Telecomunicaciones y Reparaciones de Urgencia",
-      defaultAngle: "OPERATIONS",
-      suggestedBundle: {
-        accessorySku: "ECW526",
-        accessoryName: "AP Wi-Fi 7 Interior Compacto",
-        rationale: "Permite instalar puntos de acceso en salas sin necesidad de cambiar el switch existente."
-      },
-      sourceIds: ["src-10", "src-18", "src-19"],
-      sectorAffinity: { HOSPITALITY: 21, ENTERPRISE_OFFICE: 20, EDUCATION_CAMPUS: 18, LOGISTICS_INDUSTRY: 19 },
-      businessGoalAffinity: {
-        ALL_OPPORTUNITIES: 20,
-        WIFI7_MULTIGIG_EXPANSION: 12,
-        HOSPITALITY_SOLUTIONS: 22,
-        SWITCHING_POE_BACKBONE: 15,
-        STOCK_CLEARANCE_PROMO: 30
-      }
-    }
-  ];
+      sourceIds: [item.notebookSourceId || item.notebookSource.sourceId, ...(item.additionalSourceIds || [])].filter((s): s is string => Boolean(s)),
+      sectorAffinity: item.sectorAffinity,
+      businessGoalAffinity: item.businessGoalAffinity,
+      catalogItem: item
+    }));
+  }
 
   /**
    * Calcula el radar de oportunidades diarias clasificadas por puntuación algorítmica y controles editoriales
@@ -536,26 +314,49 @@ export class OpportunityRadarService {
       const rawTotal = stockScore + contentGapScore + marketTrendScore + bundleScore + editorialScore + seedVariation;
       const totalScore = Math.min(100, Math.max(50, rawTotal));
 
-      // Extraer citas de NotebookLM
-      const notebookCitations: NotebookCitation[] = def.sourceIds.map(srcId => {
-        const found = OFFICIAL_NOTEBOOK.sources.find(s => s.id === srcId);
-        return {
-          id: srcId,
-          title: found ? found.title : `Fuente Documental ${srcId}`,
-          type: found ? found.type : "datasheet",
-          url: found?.url,
-          rationale: found ? found.description : "Validación técnica en cuaderno maestro EcomShop."
-        };
-      });
+      // Extraer citas de NotebookLM priorizando el notebookSource oficial
+      const notebookCitations: NotebookCitation[] = [];
+      if (def.catalogItem?.notebookCitation) {
+        notebookCitations.push({
+          id: def.catalogItem.notebookCitation.sourceId,
+          title: def.catalogItem.notebookCitation.title,
+          type: def.catalogItem.notebookCitation.type,
+          url: def.catalogItem.notebookCitation.url,
+          rationale: def.catalogItem.notebookCitation.rationale
+        });
+      }
+      for (const srcId of def.sourceIds) {
+        if (!notebookCitations.some(c => c.id === srcId)) {
+          const found = OFFICIAL_NOTEBOOK.sources.find(s => s.id === srcId);
+          notebookCitations.push({
+            id: srcId,
+            title: found ? found.title : `Fuente Documental ${srcId}`,
+            type: found ? found.type : "datasheet",
+            url: found?.url,
+            rationale: found ? found.description : "Validación técnica en cuaderno maestro EcomShop."
+          });
+        }
+      }
 
-      // Hilo conductor narrativo canónico
-      const defaultPitch = `El equipo ${def.sku} se aprovisiona en 2 minutos con código QR desde el móvil. Cero cuotas de licencias y sustitución en 24h de EcomSpain si falla en obra.`;
-      const defaultObjection = def.category === "wifi"
-        ? "¿Es compatible con la red existente de mi cliente si usan otra marca (Cisco, Ubiquiti, MikroTik)?"
-        : "¿Qué ventaja tiene frente a marcas con suscripción cloud obligatoria?";
-      const defaultCounterArgument = def.category === "wifi"
-        ? "Totalmente compatible mediante estándares abiertos IEEE 802.3 y VLANs 802.1Q. Permite una migración escalonada sede por sede sin cambiar la electrónica previa."
-        : "Con EnGenius Cloud en EcomShop no hay suscripción obligatoria. Ahorro de hasta el 42% en TCO a 3 años frente a Cisco Meraki sin cuotas recurrentes.";
+      // Hilo conductor narrativo canónico con salvaguardas anti-alucinación
+      let defaultPitch = `El equipo ${def.sku} se aprovisiona en 2 minutos con código QR desde el móvil. Cero cuotas de licencias y sustitución en 24h de EcomSpain si falla en obra.`;
+      let defaultObjection = "¿Qué ventaja tiene frente a marcas con suscripción cloud obligatoria?";
+      let defaultCounterArgument = "Con EnGenius Cloud en EcomShop no hay suscripción obligatoria. Ahorro de hasta el 42% en TCO a 3 años frente a Cisco Meraki sin cuotas recurrentes.";
+
+      if (def.category === "wifi") {
+        defaultObjection = "¿Es compatible con la red existente de mi cliente si usan otra marca (Cisco, Ubiquiti, MikroTik)?";
+        defaultCounterArgument = "Totalmente compatible mediante estándares abiertos IEEE 802.3 y VLANs 802.1Q. Permite una migración escalonada sede por sede sin cambiar la electrónica previa.";
+      } else if (def.category === "gateways" || def.sku.startsWith("ESG")) {
+        defaultPitch = `El gateway ${def.sku} ofrece seguridad 2.5 GbE con doble WAN y VPN WireGuard nativa sin suscripción obligatoria. Ahorra más del 40% en TCO.`;
+        defaultObjection = `¿Tiene el gateway ${def.sku} antena o punto de acceso Wi-Fi integrado para la oficina?`;
+        defaultCounterArgument = `No, el ${def.sku} es un gateway y firewall perimetral exclusivamente cableado (cero Wi-Fi integrado). Se complementa con APs Wi-Fi 7 ECW alimentados por switch PoE en la misma consola cloud.`;
+      }
+
+      const groundedClaimsPreview: string[] = [
+        (def.catalogItem?.rawSpecs || def.catalogItem?.specs)?.[0] || `Stock físico garantizado con entrega en 24/48h desde almacén EcomSpain`,
+        def.catalogItem?.keyAdvantages[0] || `Tarifa distribuidor profesional con margen protegido: consultar en ecomshop.es`,
+        def.catalogItem?.antiHallucinationNotes?.[0] || `Cero cuotas obligatorias con gestión nativa en EnGenius Cloud`
+      ];
 
       scoredOpportunities.push({
         id: `opp-${def.sku.toLowerCase()}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -591,11 +392,7 @@ export class OpportunityRadarService {
           accessoryName: def.suggestedBundle.accessoryName,
           rationale: def.suggestedBundle.rationale
         },
-        groundedClaimsPreview: [
-          `Stock físico garantizado con entrega en 24/48h desde almacén EcomSpain`,
-          `Tarifa distribuidor profesional con margen protegido: consultar en ecomshop.es`,
-          `Cero cuotas obligatorias con gestión nativa en EnGenius Cloud`
-        ],
+        groundedClaimsPreview,
         notebookCitations,
         editorialFit: editorialFitReason
       });

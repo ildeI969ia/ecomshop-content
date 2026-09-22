@@ -84,11 +84,13 @@ export const PRESET_TOPICS: KnowledgeTopic[] = [
   }
 ];
 
+export { ECOMSHOP_CATALOG, findCatalogProduct, getAllCatalogProducts, type CatalogProduct } from "./catalog";
+
 export interface StarProduct {
   id: string;
   name: string;
   model: string;
-  category: "wifi" | "switches" | "fibra" | "engenius";
+  category: "wifi" | "switches" | "fibra" | "engenius" | "gateways" | "accesorios";
   description: string;
   url: string;
   imageUrl: string;
@@ -107,6 +109,16 @@ export const STAR_PRODUCTS: StarProduct[] = [
     specs: ["Tri-Band WiFi 7 (2.4/5/6 GHz)", "Puerto 10 GbE PoE++", "Gestión Cloud sin licencias", "Análisis de interferencias por IA"]
   },
   {
+    id: "ecw510",
+    name: "EnGenius Cloud WiFi 7 ECW510 AP Dual-Band",
+    model: "ECW510",
+    category: "engenius",
+    description: "Punto de acceso Wi-Fi 7 Dual-Band ultracompacto con puerto 2.5GbE PoE+, modulación 4096-QAM y aprovisionamiento QR 2min.",
+    url: "https://www.ecomshop.es/engenius-ecw510",
+    imageUrl: "https://store.engeniustech.com/cdn/shop/files/Product_Photos_Cloud_Access_Point_InD_ECW526_Front_View_907d4351-407d-4679-8491-99e6307ad5d1.jpg",
+    specs: ["Dual-Band Wi-Fi 7 (2.4/5 GHz)", "Puerto 2.5 GbE PoE+", "Aprovisionamiento QR 2min", "Gestión EnGenius Cloud sin licencias"]
+  },
+  {
     id: "ecw526",
     name: "EnGenius ECW526 WiFi 7 AP Interior",
     model: "ECW526",
@@ -115,6 +127,16 @@ export const STAR_PRODUCTS: StarProduct[] = [
     url: "https://www.ecomshop.es/engenius-ecw526",
     imageUrl: "https://store.engeniustech.com/cdn/shop/files/Product_Photos_Cloud_Access_Point_InD_ECW526_Front_View_907d4351-407d-4679-8491-99e6307ad5d1.jpg",
     specs: ["Tri-Band WiFi 7 2x2x2", "Puerto 2.5GbE PoE+", "Diseño ultra discreto para techo", "Gestión EnGenius Cloud"]
+  },
+  {
+    id: "ecw546",
+    name: "EnGenius ECW546 Outdoor Wi-Fi 7 AP IP67",
+    model: "ECW546",
+    category: "engenius",
+    description: "Punto de acceso Tri-Band Wi-Fi 7 de exterior reforzado con chasis IP67 y sobretensiones 6kV.",
+    url: "https://www.ecomshop.es/engenius-ecw546-outdoor",
+    imageUrl: "https://store.engeniustech.com/cdn/shop/files/ECW536-2.jpg?v=1745267297&width=1445",
+    specs: ["Tri-Band Wi-Fi 7 Exterior", "Protección estanca IP67", "Sobretensiones 6kV", "Puerto 10 GbE PoE++"]
   },
   {
     id: "ecs2512fp",
@@ -137,24 +159,34 @@ export const STAR_PRODUCTS: StarProduct[] = [
     specs: ["24x GbE PoE+ (410W budget)", "4x 10G SFP+ uplinks", "Reinicio remoto PoE", "Topología visual en Cloud"]
   },
   {
+    id: "ecs5512fp",
+    name: "Switch EnGenius ECS5512FP 10G Multi-Gigabit PoE++",
+    model: "ECS5512FP",
+    category: "switches",
+    description: "Switch de agregación troncal L2+ con 8 puertos 10G Base-T PoE++ (420W) y 4 slots 10G SFP+.",
+    url: "https://www.ecomshop.es/engenius-ecs5512fp",
+    imageUrl: "https://www.engeniustech.com/wp-content/uploads/2020/02/ecs2512fp-front-opt.jpg",
+    specs: ["8x 10G Base-T PoE++ (802.3bt)", "4x 10G SFP+ uplinks", "PoE Budget 420W", "Conmutación 240 Gbps"]
+  },
+  {
     id: "esg510",
     name: "EnGenius Cloud Security Gateway ESG510",
     model: "ESG510",
     category: "engenius",
-    description: "Gateway de seguridad gestionado 100% en EnGenius Cloud con doble WAN 2.5 GbE, VPN Site-to-Site y firewall con cero licencias.",
+    description: "Gateway de seguridad gestionado 100% en EnGenius Cloud con 4x 2.5GbE (doble WAN), VPN WireGuard/IPsec y firewall sin licencias (equipo cableado sin Wi-Fi).",
     url: "https://www.ecomshop.es/engenius-esg510",
     imageUrl: "https://store.engeniustech.com/cdn/shop/files/Product_Photos_Cloud_VPN_Router_ESG510_Top_View_Angle_Left.jpg",
-    specs: ["Doble WAN 2.5 GbE", "Gestión unificada EnGenius Cloud", "0€ licencias de firewall/VPN", "Failover WAN automático"]
+    specs: ["Doble WAN 2.5 GbE", "Firewall 2.5 Gbps & VPN 950 Mbps", "0€ licencias de firewall/VPN", "Equipo cableado sin Wi-Fi"]
   },
   {
     id: "esg610",
     name: "EnGenius Cloud Security Gateway ESG610",
     model: "ESG610",
     category: "engenius",
-    description: "Gateway corporativo de alto rendimiento con procesador Quad Core 2.2 GHz, 4 puertos 2.5 GbE y balanceo multi-WAN.",
+    description: "Gateway corporativo con CPU Quad-Core 2.2 GHz, 4 puertos 2.5 GbE, balanceo multi-WAN y VPN WireGuard hasta 1.2 Gbps (cableado sin Wi-Fi).",
     url: "https://www.ecomshop.es/engenius-esg610",
     imageUrl: "https://store.engeniustech.com/cdn/shop/files/Product_Photos_Cloud_VPN_Router_ESG610_Front_Top_View.jpg",
-    specs: ["Quad-Core 2.2 GHz", "4x puertos 2.5GbE", "SD-WAN y VPN WireGuard/IPsec", "Rendimiento corporativo"]
+    specs: ["Quad-Core 2.2 GHz", "4x puertos 2.5GbE Multi-WAN", "SD-WAN y VPN WireGuard 1.2 Gbps", "Seguridad perimetral sin cuotas"]
   },
   {
     id: "sfp-kit-10g",
@@ -165,6 +197,16 @@ export const STAR_PRODUCTS: StarProduct[] = [
     url: "https://www.ecomshop.es/transceptores-sfp-10g",
     imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
     specs: ["10 Gbps garantizados", "Conector LC dúplex", "Compatible EnGenius/Cisco/MikroTik", "Latiguillos OM4 testados"]
+  },
+  {
+    id: "poe30gv2",
+    name: "Inyector EnGenius POE30Gv2 Gigabit PoE+ 30W",
+    model: "POE30Gv2",
+    category: "accesorios",
+    description: "Inyector Gigabit PoE+ 802.3at de 30W plug-and-play para alimentar APs y cámaras en switches no PoE.",
+    url: "https://www.ecomshop.es/guias-poe",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    specs: ["Salida PoE+ 30W (54V)", "Puertos Gigabit Ethernet", "Alcance hasta 100m", "Protección cortocircuitos"]
   }
 ];
 
@@ -233,3 +275,6 @@ export const B2B_CTA_OPTIONS = [
     defaultUrl: "https://www.ecomshop.es"
   }
 ];
+
+// Re-export canonical B2B catalog module
+export * from "./catalog";

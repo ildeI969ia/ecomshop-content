@@ -21,7 +21,8 @@ import {
   SlidersHorizontal,
   X
 } from "lucide-react";
-import { STAR_PRODUCTS } from "@/lib/knowledge";
+import { STAR_PRODUCTS, StarProduct } from "@/lib/knowledge";
+import { ECOMSHOP_CATALOG, getCatalogDevice, getAllCatalogDevices, catalogDeviceToStarProduct, CatalogDevice } from "@/lib/catalog";
 import { PRESET_IMAGE_PROMPTS } from "@/lib/image-generator";
 import { PromptRefinementCard, PromptRefinementData } from "@/components/PromptRefinementCard";
 import { compressImageToDataUrl } from "@/lib/image-compressor";
@@ -81,7 +82,7 @@ interface ImageStudioViewProps {
   onRestoreDefaultTemplates: () => void;
 
   // Catálogo Oficial
-  onUseRealProductPhoto: (product: (typeof STAR_PRODUCTS)[number]) => void;
+  onUseRealProductPhoto: (product: StarProduct) => void;
 }
 
 export const ImageStudioView: React.FC<ImageStudioViewProps> = ({
@@ -122,6 +123,7 @@ export const ImageStudioView: React.FC<ImageStudioViewProps> = ({
   onUseRealProductPhoto
 }) => {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [selectedProductSku, setSelectedProductSku] = useState<string>(ECOMSHOP_CATALOG[0]?.sku || "ECW536");
 
   // Helper para descargar la imagen localmente
   const handleDownload = (url: string, id: string) => {
@@ -190,6 +192,50 @@ export const ImageStudioView: React.FC<ImageStudioViewProps> = ({
                     <span>✨ Cualificar con IA</span>
                   </>
                 )}
+              </button>
+            </div>
+
+            {/* 4 Presets Rápidos B2B */}
+            <div className="flex flex-wrap gap-1.5 pt-1 pb-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  onChangePrompt("EnGenius Wi-Fi 7 Enterprise Access Point mounted on acoustic office ceiling, subtle status LED active, modern open-plan corporate headquarters, 8k commercial photography, realistic lighting");
+                  onChangeAspectRatio("16:9");
+                }}
+                className="text-[11px] font-semibold bg-slate-950 hover:bg-indigo-950/70 border border-slate-800 hover:border-indigo-500/50 text-slate-200 hover:text-indigo-200 px-2.5 py-1 rounded-lg transition"
+              >
+                🏢 AP en Techo
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onChangePrompt("Enterprise server rack 42U in climate-controlled datacenter with EnGenius Cloud Switches, organized Cat6A patch cables, active blue LEDs, professional cable management, photorealistic");
+                  onChangeAspectRatio("16:9");
+                }}
+                className="text-[11px] font-semibold bg-slate-950 hover:bg-indigo-950/70 border border-slate-800 hover:border-indigo-500/50 text-slate-200 hover:text-indigo-200 px-2.5 py-1 rounded-lg transition"
+              >
+                🗄️ Rack 42U
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onChangePrompt("Isometric 3D network topology diagram of enterprise campus with gateway, core switches, PoE distribution and Wi-Fi 7 access points, sleek clean tech aesthetic, high resolution");
+                  onChangeAspectRatio("16:9");
+                }}
+                className="text-[11px] font-semibold bg-slate-950 hover:bg-indigo-950/70 border border-slate-800 hover:border-indigo-500/50 text-slate-200 hover:text-indigo-200 px-2.5 py-1 rounded-lg transition"
+              >
+                📊 Topología 3D
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onChangePrompt("Telecom engineer testing 10G SFP+ fiber optic transceiver uplink in structured networking cabinet, high precision optical tools, realistic enterprise environment");
+                  onChangeAspectRatio("16:9");
+                }}
+                className="text-[11px] font-semibold bg-slate-950 hover:bg-indigo-950/70 border border-slate-800 hover:border-indigo-500/50 text-slate-200 hover:text-indigo-200 px-2.5 py-1 rounded-lg transition"
+              >
+                👷 Fibra Óptica
               </button>
             </div>
 
@@ -305,68 +351,89 @@ export const ImageStudioView: React.FC<ImageStudioViewProps> = ({
               </summary>
               <div className="p-3 pt-0 border-t border-slate-800/60 mt-2 space-y-2.5">
                 <p className="text-[11px] text-slate-400 leading-snug">
-                  Hardware exacto del catálogo oficial de EcomShop. Fotos de fabricante libres de manipulación IA:
+                  Hardware oficial de EcomShop (8 modelos canónicos). Selecciona un producto para importar su fotografía de fabricante libre de alucinaciones (0€) y ficha técnica:
                 </p>
-                <div className="grid grid-cols-2 gap-2 max-h-[260px] overflow-y-auto pr-1">
-                  {STAR_PRODUCTS.map((prod) => (
-                    <div
-                      key={prod.id}
-                      className="bg-slate-900 border border-slate-800 rounded-lg p-2 flex flex-col justify-between hover:border-emerald-500/40 transition"
-                    >
-                      <div
-                        className="relative aspect-video bg-slate-950 rounded overflow-hidden mb-1.5 flex items-center justify-center border border-slate-800 cursor-zoom-in group/thumb"
-                        onClick={() =>
-                          onOpenLightbox({
-                            id: prod.id,
-                            url: prod.imageUrl,
-                            prompt: `${prod.name} (${prod.model}) — ${prod.description}. Especificaciones Oficiales: ${prod.specs.join(", ")}`,
-                            createdAt: "Catálogo Oficial",
-                            sourceType: "official_product"
-                          })
-                        }
-                        title="Clic para ampliar"
-                      >
+                <div className="flex items-center gap-2">
+                  <select
+                    value={selectedProductSku}
+                    onChange={(e) => setSelectedProductSku(e.target.value)}
+                    className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  >
+                    {getAllCatalogDevices().map((dev) => (
+                      <option key={dev.sku} value={dev.sku}>
+                        {dev.sku} — {dev.name} ({dev.category.replace("SWITCH_", "").replace("GATEWAY_", "")})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const dev = getCatalogDevice(selectedProductSku) || getAllCatalogDevices()[0];
+                      if (dev) {
+                        const star = catalogDeviceToStarProduct(dev);
+                        onUseRealProductPhoto(star);
+                      }
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition shrink-0 shadow-sm cursor-pointer"
+                  >
+                    Importar (0€)
+                  </button>
+                </div>
+                {/* Preview compacta del producto seleccionado y su ficha técnica */}
+                {(() => {
+                  const activeDevice = getCatalogDevice(selectedProductSku) || getAllCatalogDevices()[0];
+                  if (!activeDevice) return null;
+                  const activeStar = catalogDeviceToStarProduct(activeDevice);
+
+                  return (
+                    <div className="bg-slate-900 border border-slate-800 rounded-lg p-2.5 mt-1 space-y-2">
+                      <div className="flex items-center gap-3">
                         <img
-                          src={prod.imageUrl}
-                          alt={prod.name}
-                          className="object-contain w-full h-full p-1 group-hover/thumb:scale-105 transition duration-200"
-                          loading="lazy"
+                          src={activeStar.imageUrl}
+                          alt={activeStar.name}
+                          className="w-16 h-12 object-contain bg-slate-950 rounded p-1 border border-slate-800 shrink-0"
                         />
-                        <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover/thumb:opacity-100 transition flex items-center justify-center gap-1 text-[10px] text-white font-medium">
-                          <Maximize2 className="w-3.5 h-3.5" />
-                          <span>Ampliar</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-bold text-xs text-slate-100">{activeDevice.sku}</span>
+                            <span className="text-[10px] text-indigo-300 font-semibold bg-indigo-950/70 border border-indigo-800/60 px-1.5 py-0.2 rounded">
+                              {activeDevice.category}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-300 font-medium truncate">{activeDevice.name}</div>
+                          <div className="text-[10px] text-slate-400 line-clamp-1">{activeDevice.shortDesc}</div>
                         </div>
-                      </div>
-                      <div className="text-[11px] font-bold text-slate-200 truncate mb-0.5" title={prod.name}>
-                        {prod.model}
-                      </div>
-                      <div className="text-[10px] text-slate-400 line-clamp-1 mb-2">
-                        {prod.description}
-                      </div>
-                      <div className="grid grid-cols-2 gap-1 mt-auto">
-                        <button
-                          type="button"
-                          onClick={() => onUseRealProductPhoto(prod)}
-                          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1 px-1 rounded text-[10px] transition text-center"
-                          title="Añadir fotografía real a la galería (Coste: 0€)"
-                        >
-                          Usar (0€)
-                        </button>
                         <button
                           type="button"
                           onClick={() => {
-                            onSetImageBase(prod.imageUrl);
-                            onChangePrompt(`Corporate architectural placement of ${prod.name} (${prod.model}) in an enterprise office`);
+                            onSetImageBase(activeStar.imageUrl);
+                            onChangePrompt(`Corporate architectural placement of ${activeStar.name} (${activeStar.model}) in an enterprise office`);
                           }}
-                          className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-1 px-1 rounded text-[10px] transition text-center"
-                          title="Usar como base de referencia visual"
+                          className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2 py-1 rounded transition shrink-0 border border-slate-700 cursor-pointer"
+                          title="Usar como base visual para Imagen 3"
                         >
                           Como Base
                         </button>
                       </div>
+
+                      {/* Micro-Ficha Técnica del Dispositivo */}
+                      <div className="pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-1.5 text-[10px]">
+                        <div className="text-slate-400 truncate">
+                          <span className="text-slate-500 font-semibold">Alimentación: </span>
+                          <span className="text-slate-300">{activeDevice.specs.powerSource}</span>
+                        </div>
+                        <div className="text-slate-400 truncate">
+                          <span className="text-slate-500 font-semibold">Bundle: </span>
+                          <span className="text-emerald-400 font-mono">{activeDevice.recommendedBundle}</span>
+                        </div>
+                        <div className="text-slate-400 truncate col-span-2">
+                          <span className="text-slate-500 font-semibold">Interfaces: </span>
+                          <span className="text-slate-300">{activeDevice.specs.interfaces.join(" • ")}</span>
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })()}
               </div>
             </details>
 
@@ -625,8 +692,8 @@ export const ImageStudioView: React.FC<ImageStudioViewProps> = ({
             </p>
           </div>
         ) : (
-          /* Grid Visual Moderno (Responsive 2 o 3 columnas) */
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-4 auto-rows-max overflow-y-auto max-h-[calc(100vh-14rem)] pr-1">
+          /* Grid Visual Moderno (Responsive 2 columnas) */
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-max overflow-y-auto max-h-[calc(100vh-14rem)] pr-1">
             {images.map((img) => {
               const isSelected = selectedImageIds.includes(img.id);
               const isOfficial =

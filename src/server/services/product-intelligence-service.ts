@@ -4,6 +4,7 @@ import { ProductEntity, ProductIntelligenceRecord } from "../domain/types";
 import { ProductRepository, ProductIntelligenceRepository } from "../repositories";
 import { OFFICIAL_NOTEBOOK } from "@/lib/notebooklm";
 import { STAR_PRODUCTS } from "@/lib/knowledge";
+import { findCatalogProduct, ECOMSHOP_CATALOG, CatalogProduct } from "@/lib/catalog";
 
 export class ProductIntelligenceService {
   private productRepo = new ProductRepository();
@@ -56,7 +57,29 @@ export class ProductIntelligenceService {
   }
 
   private resolveCatalogItem(query: string): ProductEntity {
-    // Buscar en productos estrella o generar objeto base
+    // 1. Búsqueda primaria en ECOMSHOP_CATALOG (máxima prioridad y fidelidad técnica)
+    const cat = findCatalogProduct(query);
+    if (cat) {
+      return {
+        id: cat.id,
+        sku: cat.sku,
+        brand: cat.brand,
+        model: cat.model,
+        title: cat.name,
+        category: cat.category,
+        description: cat.description,
+        url: cat.url,
+        stockStatus: cat.stockStatus,
+        standards: cat.standards,
+        ports: cat.interfaces,
+        poeBudgetWatts: cat.poeBudgetWatts,
+        managementType: `${cat.managementMode} unificada EnGenius Cloud (zero-licensing)`,
+        tags: ["networking", "b2b", cat.category, "official-catalog"],
+        updatedAt: new Date().toISOString()
+      };
+    }
+
+    // 2. Buscar en productos estrella
     const star = STAR_PRODUCTS.find(p =>
       p.model.toLowerCase().includes(query) ||
       p.id.toLowerCase().includes(query) ||
@@ -75,19 +98,21 @@ export class ProductIntelligenceService {
         url: star.url,
         stockStatus: "IN_STOCK",
         standards: star.specs,
-        ports: star.model === "ECW536" ? ["1x 10GbE PoE++ (802.3bt)"] :
+        ports: star.model === "ECW536" ? ["1x 10GbE PoE++ (802.3bt)", "1x 2.5GbE LAN"] :
+               star.model === "ECW526" || star.model === "ECW510" ? ["1x 2.5GbE PoE+ (802.3at)"] :
                star.model === "ECS1528FP" ? ["24x GbE PoE+ (802.3at)", "4x 10G SFP+"] :
                star.model === "ECS2512FP" ? ["8x 2.5GbE PoE++ (802.3bt)", "4x 10G SFP+"] :
+               star.model === "ESG510" || star.model === "ESG610" ? ["4x 2.5GbE RJ45 Multi-WAN/LAN"] :
                ["1x GbE RJ45"],
         poeBudgetWatts: star.model === "ECS1528FP" ? 410 :
                         star.model === "ECS2512FP" ? 240 : undefined,
-        managementType: star.category === "engenius" || star.category === "wifi" ? "EnGenius Cloud / On-Premise" : "EnGenius Cloud",
+        managementType: star.category === "engenius" || star.category === "wifi" || star.category === "gateways" ? "EnGenius Cloud / On-Premise" : "EnGenius Cloud",
         tags: ["networking", "b2b", star.category],
         updatedAt: new Date().toISOString()
       };
     }
 
-    // Default dinámico para cualquier equipo de conectividad
+    // 3. Default dinámico para cualquier equipo de conectividad
     return {
       id: `prod-${query.replace(/[^a-z0-9]/g, "-")}`,
       sku: query.toUpperCase(),
@@ -111,8 +136,24 @@ export class ProductIntelligenceService {
     const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT));
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
-    // Localizar fuentes y datasheets relevantes en OFFICIAL_NOTEBOOK
-    const relevantSources = OFFICIAL_NOTEBOOK.sources.filter(s =>
+    const cat = findCatalogProduct(product.sku || product.model);
+
+    // Localizar fuentes y datasheets relevantes en OFFICIAL_NOTEBOOK, priorizando notebookCitation oficial
+    const notebookSources = [...OFFICIAL_NOTEBOOK.sources];
+    const catCitation = cat?.notebookCitation || cat?.notebookSource;
+    if (catCitation && !notebookSources.some(s => s.id === catCitation.sourceId)) {
+      notebookSources.unshift({
+        id: catCitation.sourceId,
+        title: catCitation.title,
+        type: catCitation.type,
+        description: catCitation.rationale,
+        url: catCitation.url,
+        addedAt: "Oficial"
+      });
+    }
+
+    const relevantSources = notebookSources.filter(s =>
+      (cat?.notebookSource && s.id === cat.notebookSource.sourceId) ||
       s.title.toLowerCase().includes(product.model.toLowerCase()) ||
       s.description.toLowerCase().includes(product.model.toLowerCase()) ||
       s.description.toLowerCase().includes(product.category.toLowerCase())
@@ -125,13 +166,23 @@ export class ProductIntelligenceService {
         const activeModel = getActiveGeminiModel(apiKey);
 
         const prompt = `
-Genera una ProductIntelligenceCard técnica y rigurosa para este producto del catálogo de EcomShop:
+Genera una ProductIntelligenceCard técnica y rigurosa para este producto del catálogo oficial ECOMSHOP_CATALOG:
 - Marca: ${product.brand}
 - Modelo: ${product.model}
 - SKU: ${product.sku}
 - Categoría: ${product.category}
 - Descripción: ${product.description}
-- Puertos y estándares conocidos: ${product.ports.join(", ")} | ${product.standards.join(", ")}
+- Puertos e interfaces oficiales: ${product.ports.join(", ")}
+- Estándares y especificaciones: ${product.standards.join(", ")}
+${cat?.powerRequirements ? `- Requisitos de alimentación: ${cat.powerRequirements}` : ""}
+${cat?.firewallThroughput ? `- Rendimiento Firewall/VPN: ${cat.firewallThroughput}` : ""}
+${cat?.keyAdvantages ? `- Ventajas clave oficiales:\n  * ${cat.keyAdvantages.join("\n  * ")}` : ""}
+${cat?.antiHallucinationNotes && cat.antiHallucinationNotes.length > 0 ? `
+NORMAS ANTI-ALUCINACIÓN ESTRICTAS PARA ESTE MODELO:
+${cat.antiHallucinationNotes.map(n => `- ${n}`).join("\n")}
+` : ""}
+${cat?.bundleDetails ? `- Bundle recomendado en catálogo: ${cat.bundleDetails.sku} (${cat.bundleDetails.name}) -> ${cat.bundleDetails.rationale}` : ""}
+
 - Fuentes verificadas disponibles:
 ${relevantSources.map(s => `[${s.type}] ${s.title}: ${s.description} (${s.url || "N/A"})`).join("\n")}
 
@@ -140,7 +191,9 @@ REGLAS DE RIGOR TÉCNICO:
 2. sourceType debe ser: 'ECOMSHOP_WEB' | 'DATASHEET' | 'MANUFACTURER_FAQ' | 'SEARCH_GROUNDING'.
 3. confidence debe ser 'HIGH' | 'MEDIUM' | 'LOW' y verified: true.
 4. commercialAngles debe contener exactamente executiveRoi, engineeringPerformance y operationsDeployment.
-5. complementaryProducts debe sugerir accesorios coherentes (ej. Si es AP WiFi 7 con puerto 10G PoE++, sugerir switch PoE++ o inyector).
+5. complementaryProducts debe sugerir el bundle recomendado del catálogo: ${cat?.bundleDetails?.sku || "ECS2512FP"}.
+6. JAMÁS inventes que el gateway ESG510 o ESG610 tiene Wi-Fi integrado. Si es un ESG, recalca explícitamente que es un gateway cableado.
+7. JAMÁS inventes que un AP Wi-Fi 7 funciona al 100% con PoE básico de 15W si requiere 802.3bt.
 
 Responde estrictamente en JSON con la forma de ProductIntelligenceCard:
 `;
@@ -169,9 +222,78 @@ Responde estrictamente en JSON con la forma de ProductIntelligenceCard:
       }
     }
 
-    // Fallback con Grounding Técnico Verificado
+    // Fallback con Grounding Técnico Verificado desde ECOMSHOP_CATALOG
     const isAP = product.category === "wifi" || product.model.startsWith("ECW");
     const isSwitch = product.category === "switches" || product.model.startsWith("ECS");
+    const isGateway = product.category === "gateways" || product.model.startsWith("ESG");
+
+    const officialEvidenceLedger = [
+      {
+        claim: cat
+          ? `El equipo ${cat.name} cuenta con especificaciones oficiales validadas: ${(cat.rawSpecs || cat.specs).slice(0, 2).join(". ")}.`
+          : `El equipo ${product.model} cuenta con soporte nativo de gestión Cloud sin costes de licencias recurrentes.`,
+        source: cat?.notebookCitation?.url || relevantSources[0]?.url || product.url || "https://www.ecomshop.es",
+        sourceType: "DATASHEET" as const,
+        confidence: "HIGH" as const,
+        verified: true
+      },
+      {
+        claim: cat?.antiHallucinationNotes?.[0] || (
+          isGateway
+            ? `El gateway ${product.model} es un dispositivo exclusivamente cableado de seguridad perimetral (sin Wi-Fi integrado).`
+            : `Distribución oficial con garantía EcomSpain y disponibilidad con entrega rápida 24/48h en España.`
+        ),
+        source: cat?.notebookCitation?.url || "https://www.ecomshop.es",
+        sourceType: (cat?.antiHallucinationNotes ? "DATASHEET" : "ECOMSHOP_WEB") as "DATASHEET" | "ECOMSHOP_WEB",
+        confidence: "HIGH" as const,
+        verified: true
+      },
+      {
+        claim: `Distribución oficial por EcomSpain con soporte preventa de ingeniería y stock garantizado en España con entrega 24/48h.`,
+        source: "https://www.ecomshop.es",
+        sourceType: "ECOMSHOP_WEB" as const,
+        confidence: "HIGH" as const,
+        verified: true
+      }
+    ];
+
+    const complementaryProducts = cat?.bundleDetails ? [
+      {
+        skuOrCategory: cat.bundleDetails.sku,
+        relationshipType: cat.bundleDetails.relationshipType,
+        reason: cat.bundleDetails.rationale
+      }
+    ] : isAP ? [
+      {
+        skuOrCategory: "ECS2512FP",
+        relationshipType: "REQUIRES_POE_SWITCH" as const,
+        reason: "Switch Multi-Gigabit 2.5G con PoE++ 802.3bt imprescindible para alimentar y exprimir el ancho de banda del AP."
+      }
+    ] : isSwitch ? [
+      {
+        skuOrCategory: "SFP-10G-SR-KIT",
+        relationshipType: "COMPATIBLE_TRANSCEIVER" as const,
+        reason: "Transceptores ópticos 10G SFP+ y latiguillos OM4 certificados para uplinks de alta velocidad entre racks."
+      }
+    ] : isGateway ? [
+      {
+        skuOrCategory: "ECS1528FP",
+        relationshipType: "REQUIRES_POE_SWITCH" as const,
+        reason: "Switch PoE gestionable para conectar y alimentar APs Wi-Fi y puestos de trabajo, ya que el gateway no tiene PoE ni Wi-Fi."
+      }
+    ] : [
+      {
+        skuOrCategory: "ACCESSORY-RACK",
+        relationshipType: "ACCESSORY" as const,
+        reason: "Kit de montaje en rack de 19 pulgadas y organizador de cableado."
+      }
+    ];
+
+    const commercialAngles = cat?.commercialAngles || {
+      executiveRoi: "Eliminación completa de licencias anuales obligatorias, logrando un ahorro de TCO superior al 40% frente a marcas propietarias.",
+      engineeringPerformance: "Caudal de datos sin cuellos de botella gracias a puertos Multi-Gigabit y gestión centralizada de interferencias.",
+      operationsDeployment: "Aprovisionamiento masivo de sedes en minutos con escaneo QR y monitoreo de topología en tiempo real."
+    };
 
     return {
       product: {
@@ -183,57 +305,21 @@ Responde estrictamente en JSON con la forma de ProductIntelligenceCard:
         stockStatus: product.stockStatus
       },
       technicalSpecs: {
-        standards: product.standards.length > 0 ? product.standards : ["IEEE 802.11be", "802.3bt PoE++"],
-        ports: product.ports.length > 0 ? product.ports : ["1x 10GbE RJ45", "1x 2.5GbE RJ45"],
-        powerRequirements: product.poeBudgetWatts ? `PoE Budget: ${product.poeBudgetWatts}W (802.3at/bt)` : "Alimentación PoE 802.3at/bt o adaptador DC",
-        management: product.managementType || "EnGenius Cloud con zero-touch provisioning",
-        keyDifferentiators: [
+        standards: cat?.standards || (product.standards.length > 0 ? product.standards : ["IEEE 802.11be", "802.3bt PoE++"]),
+        ports: cat?.interfaces || (product.ports.length > 0 ? product.ports : ["1x 10GbE RJ45", "1x 2.5GbE RJ45"]),
+        powerRequirements: cat?.powerRequirements || (product.poeBudgetWatts ? `PoE Budget: ${product.poeBudgetWatts}W (802.3at/bt)` : "Alimentación PoE 802.3at/bt o adaptador DC"),
+        management: cat ? `${cat.managementMode} unificada en EnGenius Cloud con zero-licensing` : (product.managementType || "EnGenius Cloud con zero-touch provisioning"),
+        keyDifferentiators: cat?.keyAdvantages || [
           "Sin costes ocultos de suscripción anual en gestión cloud",
           "Aprovisionamiento ultra-rápido mediante código QR",
           "Soporte preventa y sustitución avanzada de EcomShop en 24/48h"
         ]
       },
-      evidenceLedger: [
-        {
-          claim: `El equipo ${product.model} cuenta con soporte nativo de gestión Cloud sin costes de licencias recurrentes.`,
-          source: relevantSources[0]?.url || product.url || "https://www.ecomshop.es",
-          sourceType: "DATASHEET",
-          confidence: "HIGH",
-          verified: true
-        },
-        {
-          claim: `Distribución oficial con garantía EcomSpain y disponibilidad con entrega rápida 24/48h en España.`,
-          source: "https://www.ecomshop.es",
-          sourceType: "ECOMSHOP_WEB",
-          confidence: "HIGH",
-          verified: true
-        }
-      ],
-      commercialAngles: {
-        executiveRoi: "Eliminación completa de licencias anuales obligatorias, logrando un ahorro de TCO superior al 40% frente a marcas propietarias.",
-        engineeringPerformance: "Caudal de datos sin cuellos de botella gracias a puertos Multi-Gigabit y gestión centralizada de interferencias.",
-        operationsDeployment: "Aprovisionamiento masivo de sedes en minutos con escaneo QR y monitoreo de topología en tiempo real."
-      },
-      complementaryProducts: isAP ? [
-        {
-          skuOrCategory: "ECS2512FP",
-          relationshipType: "REQUIRES_POE_SWITCH",
-          reason: "Switch Multi-Gigabit 2.5G con PoE++ 802.3bt imprescindible para alimentar y exprimir el ancho de banda del AP."
-        }
-      ] : isSwitch ? [
-        {
-          skuOrCategory: "SFP-10G-SR-KIT",
-          relationshipType: "COMPATIBLE_TRANSCEIVER",
-          reason: "Transceptores ópticos 10G SFP+ y latiguillos OM4 certificados para uplinks de alta velocidad entre racks."
-        }
-      ] : [
-        {
-          skuOrCategory: "ACCESSORY-RACK",
-          relationshipType: "ACCESSORY",
-          reason: "Kit de montaje en rack de 19 pulgadas y organizador de cableado."
-        }
-      ],
+      evidenceLedger: officialEvidenceLedger,
+      commercialAngles,
+      complementaryProducts,
       generatedAt: new Date().toISOString()
     };
   }
 }
+

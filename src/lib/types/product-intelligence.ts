@@ -1,4 +1,6 @@
-﻿export interface ProductEvidenceClaim {
+export type DeviceType = "ACCESS_POINT" | "SWITCH" | "GATEWAY" | "ACCESSORY";
+
+export interface ProductEvidenceClaim {
   claim: string;
   source: string; // URL, Datasheet, Manual
   sourceType: "ECOMSHOP_WEB" | "DATASHEET" | "MANUFACTURER_FAQ" | "SEARCH_GROUNDING";
@@ -23,11 +25,26 @@ export interface ProductIntelligenceCard {
     stockStatus: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK" | "UNKNOWN";
   };
   technicalSpecs: {
-    standards: string[]; // e.g. ["Wi-Fi 7 (802.11be)", "PoE+ (802.3at)"]
+    deviceType?: DeviceType;
+    standards: string[]; // e.g. ["Wi-Fi 7 (802.11be)", "PoE+ (802.3at)"] or firewall/VPN specs
     ports: string[];     // e.g. ["1x 2.5GbE RJ45", "1x GbE RJ45"]
     powerRequirements: string;
     management: string; // e.g. "EnGenius Cloud / Standalone"
     keyDifferentiators: string[];
+
+    // Campos polimórficos especializados
+    wirelessStandards?: string[];
+    frequencyBands?: string[];
+    mimo?: string;
+    switchingCapacity?: string;
+    switchingLayer?: string;
+    poeBudget?: string;
+    uplinks?: string[];
+    firewallThroughput?: string;
+    vpnProtocols?: string[];
+    wanFailover?: boolean;
+    hasWifiRadios?: boolean;
+    isCableOnly?: boolean;
   };
   evidenceLedger: ProductEvidenceClaim[];
   commercialAngles: {

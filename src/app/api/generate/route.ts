@@ -9,6 +9,7 @@ import { extractEcomshopProduct } from "@/lib/services/ecomshop-extractor";
 import { buildProductIntelligenceCard } from "@/lib/services/product-intelligence";
 import { verifyAndSanitizeContent } from "@/lib/services/evidence-engine";
 import { ProductIntelligenceCard } from "@/lib/types/product-intelligence";
+import { getCatalogDevice, ECOMSHOP_CATALOG } from "@/lib/catalog";
 
 export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
   try {
@@ -25,13 +26,42 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     const inputData = parsed.data;
     const apiKey = process.env.GEMINI_API_KEY || json.apiKey;
 
-    // 1. Fase de Extracción (Si se proporciona productUrl)
+    // Detectar si el SKU corresponde a un dispositivo canónico de ECOMSHOP_CATALOG
+    const targetSku = inputData.sku || inputData.customEquipmentName || (inputData.promotedProductIds && inputData.promotedProductIds[0]) || "";
+    const catalogDevice = getCatalogDevice(targetSku) ||
+      (inputData.topicTitle ? getCatalogDevice(inputData.topicTitle) : undefined) ||
+      (inputData.productUrl ? getCatalogDevice(inputData.productUrl) : undefined);
+
+    // 1. Fase de Extracción o Enriquecimiento con ECOMSHOP_CATALOG
     let intelligenceCard: ProductIntelligenceCard | null = null;
     let effectiveTitle = inputData.topicTitle;
     let effectiveCategory = inputData.category;
-    const productUrl = inputData.productUrl;
+    let productUrl = inputData.productUrl;
 
-    if (productUrl) {
+    if (catalogDevice) {
+      if (!effectiveTitle) {
+        effectiveTitle = `${catalogDevice.brand} ${catalogDevice.sku}: ${catalogDevice.name}`;
+      }
+      if (effectiveCategory === "general") {
+        if (catalogDevice.category.startsWith("WIFI")) effectiveCategory = "wifi";
+        else if (catalogDevice.category.startsWith("SWITCH")) effectiveCategory = "switches";
+        else if (catalogDevice.category === "GATEWAY_SDWAN") effectiveCategory = "engenius";
+        else effectiveCategory = "engenius";
+      }
+      if (!productUrl) {
+        productUrl = catalogDevice.productUrl;
+      }
+      if (!inputData.selectedSourceIds || inputData.selectedSourceIds.length === 0) {
+        inputData.selectedSourceIds = [catalogDevice.notebookSource, "src-4", "src-18"].filter(Boolean);
+      }
+      try {
+        const { ProductIntelligenceService } = await import("@/server/services/product-intelligence-service");
+        const intelService = new ProductIntelligenceService();
+        intelligenceCard = await intelService.getOrGenerateCard(catalogDevice.sku, apiKey);
+      } catch (intelErr) {
+        console.warn("[API Generate] No se pudo obtener tarjeta de inteligencia para catalogDevice:", intelErr);
+      }
+    } else if (productUrl) {
       try {
         const rawProduct = await extractEcomshopProduct(productUrl);
         intelligenceCard = await buildProductIntelligenceCard(rawProduct, apiKey);
@@ -58,6 +88,8 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     // 2. Generar Borradores Multicanal
     let content = await generateB2BContent({
       ...inputData,
+      sku: catalogDevice?.sku || inputData.sku,
+      productUrl: productUrl || catalogDevice?.productUrl,
       topicTitle: effectiveTitle,
       category: effectiveCategory,
       apiKey
@@ -99,9 +131,9 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     }
 
     // 5. Persistencia en Firestore (Contents, Variants, ProductIntelligence, FinOps, Audit)
+    let contentId = `content-${content.topicId}-${Date.now().toString(36)}`;
     try {
       const nowIso = new Date().toISOString();
-      const contentId = `content-${content.topicId}-${Date.now().toString(36)}`;
       const contentRepo = new ContentRepository();
 
       const contentItem: ContentItem = {
@@ -217,6 +249,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
 
     return NextResponse.json({
       ...content,
+      id: contentId,
       intelligenceCard: intelligenceCard || undefined
     });
   } catch (error: any) {

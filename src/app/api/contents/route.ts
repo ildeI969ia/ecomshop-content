@@ -63,8 +63,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const repo = new ContentRepository();
 
-    const rawId = body.id || String(Date.now());
-    const contentId = rawId.startsWith("content-") ? rawId : `content-${rawId}`;
+    const rawId = String(body.id || Date.now());
+    const cleanId = rawId.replace(/^(content-)+/, "");
+    const contentId = `content-${cleanId}`;
 
     const normalizedStatus =
       body.status === "published" || body.status === "PUBLISHED" ? "PUBLISHED" :
@@ -174,7 +175,8 @@ export async function PATCH(req: NextRequest) {
       status === "reviewed" || status === "IN_REVIEW" ? "IN_REVIEW" : "DRAFT";
 
     const repo = new ContentRepository();
-    const contentId = id.startsWith("content-") ? id : `content-${id}`;
+    const cleanId = String(id).replace(/^(content-)+/, "");
+    const contentId = `content-${cleanId}`;
 
     await repo.updateStatus(contentId, normalizedStatus as any);
 

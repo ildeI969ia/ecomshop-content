@@ -68,6 +68,9 @@ import { CorporateSignIn } from "@/components/auth/CorporateSignIn";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { CampaignWorkspace } from "@/components/campaign-workspace";
 import { CampaignStepper, GenerationStage } from "@/components/campaign-stepper";
+import { NotebookLMSourceHub } from "@/components/notebooklm-source-hub";
+import { SourceDrawer, CitationDetail } from "@/components/source-drawer";
+import { HighlightedNotebookSource, StructuredProductIntelligence } from "@/lib/services/notebook-intelligence";
 import { EditorialControlsBar } from "@/components/editorial-controls-bar";
 import { EditorialControls, BusinessGoal } from "@/lib/types/editorial-controls";
 import { SuggestedTopics } from "@/components/suggested-topics";
@@ -153,11 +156,66 @@ export default function ContentDashboard() {
   const [showOutlineModal, setShowOutlineModal] = useState(false);
 
   // Unified Workspace State (Selector de Origen y Selección de Tarjeta)
-  const [entryOrigin, setEntryOrigin] = useState<"radar" | "url" | "topic">("radar");
+  const [entryOrigin, setEntryOrigin] = useState<"radar" | "url" | "custom">("radar");
   const [selectedRadarOppId, setSelectedRadarOppId] = useState<string | null>(null);
   const [canvasActiveTab, setCanvasActiveTab] = useState<"blog" | "linkedin" | "mailchimp" | "whatsapp" | "intel">("blog");
   const [isSavingArticle, setIsSavingArticle] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+
+  // NotebookLM Grounding & Workspace Ergonómico (Fase 10)
+  const [selectedSku, setSelectedSku] = useState<string>("ECW510");
+  const [availableSources, setAvailableSources] = useState<HighlightedNotebookSource[]>([]);
+  const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
+  const [activeIntelligenceCard, setActiveIntelligenceCard] = useState<ProductIntelligenceCard | null>(null);
+  const [isLoadingIntelligence, setIsLoadingIntelligence] = useState<boolean>(false);
+  const [sourceDrawerOpen, setSourceDrawerOpen] = useState<boolean>(false);
+  const [activeCitationId, setActiveCitationId] = useState<string | null>(null);
+  const [activeCitationData, setActiveCitationData] = useState<CitationDetail | null>(null);
+
+  const loadNotebookIntelligence = async (sku: string, currentSelectedIds?: string[]) => {
+    setIsLoadingIntelligence(true);
+    try {
+      const res = await apiFetch<{
+        success: boolean;
+        sources: HighlightedNotebookSource[];
+        intelligence: StructuredProductIntelligence;
+      }>(`/api/notebooklm/intelligence?sku=${encodeURIComponent(sku)}`);
+
+      if (res.success) {
+        setAvailableSources(res.sources || []);
+        if (!currentSelectedIds || currentSelectedIds.length === 0) {
+          setSelectedSourceIds((res.sources || []).map((s) => s.id));
+        }
+        if (res.intelligence?.card) {
+          setActiveIntelligenceCard(res.intelligence.card);
+          setIntelligenceCard(res.intelligence.card);
+        }
+        if (res.intelligence) {
+          setEditorialControls((prev) => ({
+            ...prev,
+            targetSector: res.intelligence.naturalSector || prev.targetSector,
+            editorialTone: res.intelligence.recommendedTone || prev.editorialTone,
+            competitorFocus: res.intelligence.recommendedCompetitor || prev.competitorFocus
+          }));
+        }
+      }
+    } catch (error) {
+      console.warn("Error al cargar inteligencia de NotebookLM:", error);
+    } finally {
+      setIsLoadingIntelligence(false);
+    }
+  };
+
+  useEffect(() => {
+    loadNotebookIntelligence("ECW510");
+  }, []);
+
+  const handleSelectSku = (sku: string) => {
+    setSelectedSku(sku);
+    setTopicTitle(`Despliegue y Arquitectura B2B: ${sku}`);
+    setCategory("engenius");
+    loadNotebookIntelligence(sku);
+  };
 
   const [currentUser, setCurrentUser] = useState<{
     uid: string;
@@ -311,6 +369,7 @@ export default function ContentDashboard() {
 
   const handleSelectOpportunity = (opp: ProductOpportunityRecord) => {
     setSelectedRadarOppId(opp.id);
+    setSelectedSku(opp.sku);
     setInputMode("ecomshop_url");
     setProductUrl(opp.url);
     setTopicTitle(opp.actionTitle);
@@ -323,6 +382,7 @@ export default function ContentDashboard() {
     if (opp.productBrainProfile?.buyerPersonas?.[0]) {
       setCustomNotes(`Enfoque Estratégico Product Brain:\n- Buyer Persona: ${opp.productBrainProfile.buyerPersonas[0].name}\n- Pitch: ${opp.productBrainProfile.buyerPersonas[0].pitchIn30Seconds}\n- Bundle: ${opp.suggestedBundle.rationale}`);
     }
+    loadNotebookIntelligence(opp.sku);
   };
 
   const handleLaunchCampaign = async (opp: ProductOpportunityRecord) => {
@@ -382,6 +442,7 @@ export default function ContentDashboard() {
           editorialControls,
           businessGoal: selectedBusinessGoal,
           narrativeAnchor: opp.narrativeAnchor,
+          selectedSourceIds: selectedSourceIds.length > 0 ? selectedSourceIds : undefined,
           apiKey: geminiApiKey || undefined
         })
       });
@@ -404,9 +465,12 @@ export default function ContentDashboard() {
         tokensOutput: 2600
       });
 
-      // Guardar en Historial de Artículos
+      // Guardar en Historial de Artículos reutilizando el ID persistido por /api/generate
+      const generatedId = (data as any).id || (data as any).contentId || `content-${opp.sku.toLowerCase()}-${Date.now().toString(36)}`;
+      setActiveArticleId(generatedId);
+
       const historyEntry: ArticleHistoryItem = {
-        id: Math.random().toString(36).substring(2, 9),
+        id: generatedId,
         title: data.topicTitle,
         category: data.category,
         status: "draft",
@@ -419,11 +483,13 @@ export default function ContentDashboard() {
         content: data
       };
       setHistoryItems((prev) => {
-        const updated = [historyEntry, ...prev];
-        localStorage.setItem("ecomshop_article_history", JSON.stringify(updated.slice(0, 50)));
+        const filtered = prev.filter(item => item.id !== generatedId && (!item.content?.blog?.slug || item.content?.blog?.slug !== data.blog?.slug));
+        const updated = [historyEntry, ...filtered];
+        try {
+          localStorage.setItem("ecomshop_article_history", JSON.stringify(updated.slice(0, 50)));
+        } catch {}
         return updated;
       });
-      persistArticleToDatabase(historyEntry);
     } catch (err: any) {
       console.error("Error al lanzar campaña:", err);
       setCampaignStage("ERROR");
@@ -449,25 +515,85 @@ export default function ContentDashboard() {
     await handleGenerate();
   };
 
+  // ID del artículo actualmente abierto o generado en el editor canvas
+  const [activeArticleId, setActiveArticleId] = useState<string | null>(null);
+
   const handleSaveToFirestore = async (status: "approved" | "published" = "approved") => {
     if (!content) return;
     setIsSavingArticle(true);
     try {
-      const entry: ArticleHistoryItem = {
-        id: Math.random().toString(36).substring(2, 9),
-        title: content.blog.title || topicTitle,
-        category,
-        status,
-        createdAt: new Date().toLocaleDateString("es-ES", {
-          day: "2-digit",
-          month: "short",
-          hour: "2-digit",
-          minute: "2-digit"
-        }),
-        content
-      };
-      await persistArticleToDatabase(entry);
-      setHistoryItems(prev => [entry, ...prev]);
+      const rawTargetId = activeArticleId || (content as any).id || (content.blog?.slug ? `content-${content.blog.slug}` : `content-${Date.now()}`);
+      const cleanId = String(rawTargetId).replace(/^(content-)+/, "");
+      const targetId = `content-${cleanId}`;
+
+      let updatedViaPatch = false;
+      try {
+        await apiFetch("/api/contents", {
+          method: "PATCH",
+          body: JSON.stringify({ id: targetId, status })
+        });
+        updatedViaPatch = true;
+      } catch {
+        // Fallback si aún no existe en backend
+      }
+
+      if (!updatedViaPatch) {
+        const entry: ArticleHistoryItem = {
+          id: targetId,
+          title: content.blog.title || topicTitle,
+          category,
+          status,
+          createdAt: new Date().toLocaleDateString("es-ES", {
+            day: "2-digit",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit"
+          }),
+          content
+        };
+        await persistArticleToDatabase(entry);
+      }
+
+      setActiveArticleId(targetId);
+
+      setHistoryItems(prev => {
+        const matchIndex = prev.findIndex(item => 
+          item.id === targetId || 
+          item.id === cleanId ||
+          item.id === `content-${cleanId}` ||
+          (content.blog?.slug && item.content?.blog?.slug === content.blog.slug)
+        );
+
+        let updated: ArticleHistoryItem[];
+        if (matchIndex >= 0) {
+          updated = prev.map((item, idx) =>
+            idx === matchIndex
+              ? { ...item, id: targetId, status, title: content.blog.title || item.title, content }
+              : item
+          );
+        } else {
+          const entry: ArticleHistoryItem = {
+            id: targetId,
+            title: content.blog.title || topicTitle,
+            category,
+            status,
+            createdAt: new Date().toLocaleDateString("es-ES", {
+              day: "2-digit",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit"
+            }),
+            content
+          };
+          updated = [entry, ...prev];
+        }
+
+        try {
+          localStorage.setItem("ecomshop_article_history", JSON.stringify(updated.slice(0, 50)));
+        } catch {}
+        return updated;
+      });
+
       setSaveSuccessMessage("¡Guardado y Aprobado en Firestore con éxito!");
       setTimeout(() => setSaveSuccessMessage(null), 3000);
     } catch (err) {
@@ -526,21 +652,43 @@ export default function ContentDashboard() {
           content: item?.content || null
         }));
 
+        // Deduplicación estricta por slug o ID canónico
+        const uniqueRemoteMap = new Map<string, ArticleHistoryItem>();
+        for (const item of sanitizedRemote) {
+          const cleanId = String(item.id).replace(/^(content-)+/, "");
+          const canonicalId = `content-${cleanId}`;
+          const key = item.content?.blog?.slug || cleanId;
+          const normalizedItem = { ...item, id: canonicalId };
+          const existing = uniqueRemoteMap.get(key);
+          if (!existing) {
+            uniqueRemoteMap.set(key, normalizedItem);
+          } else {
+            const statusRank: Record<string, number> = { published: 4, approved: 3, reviewed: 2, draft: 1 };
+            if ((statusRank[normalizedItem.status] || 0) > (statusRank[existing.status] || 0)) {
+              uniqueRemoteMap.set(key, normalizedItem);
+            }
+          }
+        }
+        const deduplicatedRemote = Array.from(uniqueRemoteMap.values());
+
         setHistoryItems((prev) => {
-          const existingIds = new Set(sanitizedRemote.map((c) => c.id));
-          const existingSlugs = new Set(sanitizedRemote.map((c) => c.content?.blog?.slug).filter(Boolean));
-          const merged = [...sanitizedRemote];
+          const existingIds = new Set(deduplicatedRemote.map((c) => c.id));
+          const existingCleanIds = new Set(deduplicatedRemote.map((c) => c.id.replace(/^(content-)+/, "")));
+          const existingSlugs = new Set(deduplicatedRemote.map((c) => c.content?.blog?.slug).filter(Boolean));
+          const merged = [...deduplicatedRemote];
           for (const localItem of prev) {
             if (!localItem) continue;
-            const rawId = localItem.id;
+            const cleanId = String(localItem.id).replace(/^(content-)+/, "");
             const localSlug = localItem.content?.blog?.slug;
             if (
-              !existingIds.has(rawId) &&
-              !existingIds.has(`content-${rawId}`) &&
+              !existingIds.has(localItem.id) &&
+              !existingCleanIds.has(cleanId) &&
               (!localSlug || !existingSlugs.has(localSlug))
             ) {
-              merged.push(localItem);
-              existingIds.add(rawId);
+              merged.push({ ...localItem, id: `content-${cleanId}` });
+              existingIds.add(localItem.id);
+              existingCleanIds.add(cleanId);
+              if (localSlug) existingSlugs.add(localSlug);
             }
           }
           try {
@@ -718,15 +866,35 @@ export default function ContentDashboard() {
       if (savedHist) {
         const parsed = JSON.parse(savedHist);
         if (Array.isArray(parsed)) {
-          const sanitized = parsed.map((item: any, idx: number) => ({
-            id: item?.id ? String(item.id) : `hist-${idx}-${Date.now()}`,
-            title: item?.title ? String(item.title) : "Artículo sin título",
-            category: item?.category ? String(item.category) : "general",
-            status: (["draft", "reviewed", "approved", "published"].includes(item?.status) ? item.status : "draft") as any,
-            createdAt: item?.createdAt ? String(item.createdAt) : new Date().toLocaleDateString("es-ES"),
-            content: item?.content || null
-          }));
+          const uniqueLocalMap = new Map<string, ArticleHistoryItem>();
+          for (const rawItem of parsed) {
+            if (!rawItem) continue;
+            const cleanId = String(rawItem.id || "").replace(/^(content-)+/, "");
+            const canonicalId = `content-${cleanId || Date.now()}`;
+            const key = rawItem.content?.blog?.slug || cleanId;
+            const item: ArticleHistoryItem = {
+              id: canonicalId,
+              title: rawItem?.title ? String(rawItem.title) : "Artículo sin título",
+              category: rawItem?.category ? String(rawItem.category) : "general",
+              status: (["draft", "reviewed", "approved", "published"].includes(rawItem?.status) ? rawItem.status : "draft") as any,
+              createdAt: rawItem?.createdAt ? String(rawItem.createdAt) : new Date().toLocaleDateString("es-ES"),
+              content: rawItem?.content || null
+            };
+            const existing = uniqueLocalMap.get(key);
+            if (!existing) {
+              uniqueLocalMap.set(key, item);
+            } else {
+              const statusRank: Record<string, number> = { published: 4, approved: 3, reviewed: 2, draft: 1 };
+              if ((statusRank[item.status] || 0) > (statusRank[existing.status] || 0)) {
+                uniqueLocalMap.set(key, item);
+              }
+            }
+          }
+          const sanitized = Array.from(uniqueLocalMap.values());
           setHistoryItems(sanitized);
+          try {
+            localStorage.setItem("ecomshop_article_history", JSON.stringify(sanitized.slice(0, 50)));
+          } catch {}
         }
       }
     } catch (err) {
@@ -1237,9 +1405,9 @@ export default function ContentDashboard() {
           targetAudience,
           productUrl,
           customNotes,
-          promotedProductIds: selectedProducts,
-          customEquipmentName: customProductText,
-          customEquipmentUrl: customProductLink,
+          promotedProductIds: selectedProducts.length > 0 ? selectedProducts : [selectedSku.toLowerCase()],
+          customEquipmentName: customProductText || selectedSku,
+          customEquipmentUrl: customProductLink || productUrl,
           ctaObjective: B2B_CTA_OPTIONS.find((c) => c.id === selectedCtaId)?.label,
           ctaButtonText: customCtaText,
           ctaUrl: customCtaUrl,
@@ -1248,6 +1416,7 @@ export default function ContentDashboard() {
           customAngle,
           editorialControls,
           businessGoal: selectedBusinessGoal,
+          selectedSourceIds: selectedSourceIds.length > 0 ? selectedSourceIds : undefined,
           apiKey: geminiApiKey || undefined
         })
       });
@@ -1271,9 +1440,12 @@ export default function ContentDashboard() {
         tokensOutput: 2400
       });
 
-      // Guardar en Historial de Artículos
+      // Guardar en Historial de Artículos reutilizando el ID persistido por /api/generate
+      const generatedId = (data as any).id || (data as any).contentId || `content-${Date.now().toString(36)}`;
+      setActiveArticleId(generatedId);
+
       const historyEntry: ArticleHistoryItem = {
-        id: Math.random().toString(36).substring(2, 9),
+        id: generatedId,
         title: data.topicTitle,
         category: data.category,
         status: "draft",
@@ -1286,11 +1458,13 @@ export default function ContentDashboard() {
         content: data
       };
       setHistoryItems((prev) => {
-        const updated = [historyEntry, ...prev];
-        localStorage.setItem("ecomshop_article_history", JSON.stringify(updated.slice(0, 50)));
+        const filtered = prev.filter(item => item.id !== generatedId && (!item.content?.blog?.slug || item.content?.blog?.slug !== data.blog?.slug));
+        const updated = [historyEntry, ...filtered];
+        try {
+          localStorage.setItem("ecomshop_article_history", JSON.stringify(updated.slice(0, 50)));
+        } catch {}
         return updated;
       });
-      persistArticleToDatabase(historyEntry);
     } catch (err: any) {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -2093,50 +2267,49 @@ export default function ContentDashboard() {
           {/* PANEL IZQUIERDO: EL HUB DE ENTRADA (35% Ancho / 4 Columnas en Desktop)     */}
           {/* ========================================================================= */}
           <aside className="lg:col-span-4 xl:col-span-4 flex flex-col gap-4">
-            {/* 1. Selector de Origen de Campaña (Tabs Superiores) */}
+            {/* Tabs de Selección de Origen (Unificados) */}
             <div className="bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 flex items-center gap-1 text-xs shadow-md">
               <button
                 type="button"
                 onClick={() => setEntryOrigin("radar")}
-                className={`flex-1 py-2 px-2.5 rounded-xl font-bold transition flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-2 px-2.5 rounded-xl font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                   entryOrigin === "radar"
                     ? "bg-indigo-600 text-white shadow-sm"
                     : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                 }`}
               >
                 <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
-                <span className="truncate">Radar Oportunidades</span>
+                <span className="truncate">⚡ Oportunidades</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setEntryOrigin("url")}
-                className={`flex-1 py-2 px-2.5 rounded-xl font-bold transition flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-2 px-2.5 rounded-xl font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                   entryOrigin === "url"
                     ? "bg-indigo-600 text-white shadow-sm"
                     : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                 }`}
               >
                 <ExternalLink className="w-3.5 h-3.5 text-sky-300 shrink-0" />
-                <span className="truncate">URL EcomShop</span>
+                <span className="truncate">🔗 URL EcomShop</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => setEntryOrigin("topic")}
-                className={`flex-1 py-2 px-2.5 rounded-xl font-bold transition flex items-center justify-center gap-1.5 ${
-                  entryOrigin === "topic"
+                onClick={() => setEntryOrigin("custom")}
+                className={`flex-1 py-2 px-2.5 rounded-xl font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  entryOrigin === "custom"
                     ? "bg-indigo-600 text-white shadow-sm"
                     : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                 }`}
               >
                 <FileText className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-                <span className="truncate">Línea / Libre</span>
+                <span className="truncate">✍️ Tema Libre</span>
               </button>
             </div>
 
-            {/* 2. Contenido según el Tab seleccionado */}
-            {/* TAB A: RADAR OPORTUNIDADES */}
+            {/* TAB 1: RADAR DE OPORTUNIDADES PRODUCT BRAIN */}
             {entryOrigin === "radar" && (
               <div className="bg-slate-950/80 border border-slate-800/90 rounded-2xl p-4 text-white shadow-lg flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
@@ -2154,7 +2327,7 @@ export default function ContentDashboard() {
                     onClick={handleRegenerateRadar}
                     disabled={isRegeneratingRadar || loadingOpportunities}
                     title="Ver otras oportunidades del catálogo"
-                    className="text-[11px] text-indigo-300 hover:text-white bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-500/30 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition active:scale-95 disabled:opacity-50"
+                    className="text-[11px] text-indigo-300 hover:text-white bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-500/30 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition active:scale-95 disabled:opacity-50 cursor-pointer"
                   >
                     <RefreshCw className={`w-3 h-3 ${isRegeneratingRadar ? "animate-spin" : ""}`} />
                     <span>{isRegeneratingRadar ? "Cargando..." : "Ver otras"}</span>
@@ -2200,7 +2373,6 @@ export default function ContentDashboard() {
                             : "bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/90"
                         }`}
                       >
-                        {/* Cabecera Tarjeta: SKU, Ángulo y Score */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <span className="bg-indigo-950 text-indigo-200 text-[10px] font-mono font-bold px-2 py-0.5 rounded border border-indigo-800/80">
@@ -2219,12 +2391,11 @@ export default function ContentDashboard() {
                             )}
                             <div className="flex items-center gap-1 text-amber-400 font-mono text-xs font-bold">
                               <Zap className="w-3 h-3 fill-amber-400" />
-                              <span>{score}</span>
+                              <span>{score}/100</span>
                             </div>
                           </div>
                         </div>
 
-                        {/* Título de Campaña y Target */}
                         <div>
                           <h4 className="text-xs font-bold text-slate-100 line-clamp-1 leading-snug">
                             {opp.actionTitle}
@@ -2234,18 +2405,25 @@ export default function ContentDashboard() {
                           </p>
                         </div>
 
-                        {/* Bundle y Pitch en 2 líneas */}
-                        <div className="bg-slate-950/60 rounded p-2 border border-slate-800/80 text-[11px] text-slate-300 leading-relaxed">
-                          {opp.suggestedBundle ? (
-                            <div className="truncate">
-                              <span className="text-indigo-300 font-semibold">Bundle:</span> + {opp.suggestedBundle.accessorySku} ({opp.suggestedBundle.accessoryName})
-                            </div>
-                          ) : (
-                            <div className="truncate">
-                              <span className="text-sky-300 font-semibold">Pitch:</span> {opp.narrativeAnchor?.pitch30s || "Enfoque Enterprise 10G"}
-                            </div>
-                          )}
-                        </div>
+                        {opp.suggestedBundle && (
+                          <div className="bg-slate-950/60 rounded p-2 border border-slate-800/80 text-[11px] text-slate-300 truncate">
+                            <span className="text-indigo-300 font-semibold">Bundle:</span> + {opp.suggestedBundle.accessorySku} ({opp.suggestedBundle.accessoryName})
+                          </div>
+                        )}
+
+                        <details className="text-[11px] text-slate-400 pt-1 group/det" onClick={(e) => e.stopPropagation()}>
+                          <summary className="cursor-pointer text-indigo-400 hover:text-indigo-300 font-medium select-none flex items-center gap-1">
+                            <span>ℹ️ Ver análisis comercial</span>
+                          </summary>
+                          <div className="mt-2 bg-slate-950 p-2.5 rounded-lg border border-slate-800/80 space-y-1.5 text-[11px] text-slate-300">
+                            {opp.narrativeAnchor?.pitch30s && (
+                              <p><strong>Pitch 30s:</strong> {opp.narrativeAnchor.pitch30s}</p>
+                            )}
+                            {opp.productBrainProfile?.buyerPersonas?.[0] && (
+                              <p><strong>Buyer Persona:</strong> {opp.productBrainProfile.buyerPersonas[0].name}</p>
+                            )}
+                          </div>
+                        </details>
                       </div>
                     );
                   })}
@@ -2253,242 +2431,235 @@ export default function ContentDashboard() {
               </div>
             )}
 
-            {/* TAB B: URL EcomShop */}
+            {/* TAB 2: URL EcomShop */}
             {entryOrigin === "url" && (
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 flex flex-col gap-3.5 shadow-xs">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4.5 flex flex-col gap-3.5 shadow-lg text-slate-200">
                 <div>
-                  <label className="text-xs font-bold text-slate-900 block mb-1">
+                  <label className="text-xs font-bold text-slate-200 block mb-1">
                     URL de Producto en EcomShop.es
                   </label>
-                  <p className="text-[11px] text-slate-500 mb-2">
-                    Pega el enlace de la tienda para extraer fichas técnicas y modelos en vivo:
-                  </p>
                   <input
                     type="text"
                     value={productUrl}
                     onChange={(e) => setProductUrl(e.target.value)}
                     placeholder="https://www.ecomshop.es/..."
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white transition"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition"
                   />
                 </div>
 
-                {/* Ejemplos rápidos */}
-                <div className="space-y-1.5 pt-1">
-                  <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block">
-                    Ejemplos Rápidos:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProductUrl("https://www.ecomshop.es/engenius-ecw536");
-                        setTopicTitle("EnGenius ECW536 Cloud WiFi 7 AP");
-                        setCategory("engenius");
-                        setCustomAngle("ROI");
-                      }}
-                      className="text-[10px] bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-2 py-1 rounded shadow-2xs font-medium transition"
-                    >
-                      ⚡ ECW536 WiFi 7
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProductUrl("https://www.ecomshop.es/engenius-ecs1528fp");
-                        setTopicTitle("Switch EnGenius ECS1528FP Cloud PoE+");
-                        setCategory("switches");
-                        setCustomAngle("PERFORMANCE");
-                      }}
-                      className="text-[10px] bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-2 py-1 rounded shadow-2xs font-medium transition"
-                    >
-                      ⚡ ECS1528FP PoE+
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProductUrl("https://www.ecomshop.es/engenius-esg510");
-                        setTopicTitle("Gateway EnGenius ESG510 Cloud Security 2.5G");
-                        setCategory("engenius");
-                        setCustomAngle("OPERATIONS");
-                      }}
-                      className="text-[10px] bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-2 py-1 rounded shadow-2xs font-medium transition"
-                    >
-                      ⚡ Gateway ESG510
-                    </button>
-                  </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-200 block mb-1">
+                    Título o Tesis de la Campaña
+                  </label>
+                  <input
+                    type="text"
+                    value={topicTitle}
+                    onChange={(e) => setTopicTitle(e.target.value)}
+                    placeholder="Ej: Despliegue Wi-Fi 7 Enterprise..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition"
+                  />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Público Objetivo</label>
-                    <select
-                      value={targetAudience}
-                      onChange={(e) => setTargetAudience(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs text-slate-800 font-medium"
-                    >
-                      <option value="Instaladores de telecomunicaciones e integradores IT">Instaladores & Integradores IT</option>
-                      <option value="Directores de TIC y responsables de sistemas">Directores de Sistemas / CIO</option>
-                      <option value="Jefes de compras y directores de operaciones">Jefes de Compras / TCO</option>
-                      <option value="Sector Hospitality y Hoteles">Sector Hospitality / Hoteles</option>
-                      <option value="Operadores locales y WISP">Operadores WISP / Telco</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Ángulo Estratégico</label>
-                    <select
-                      value={customAngle}
-                      onChange={(e) => setCustomAngle(e.target.value as any)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs text-slate-800 font-medium"
-                    >
-                      <option value="ROI">ROI & Cero Licencias</option>
-                      <option value="PERFORMANCE">Rendimiento Técnico & 10G</option>
-                      <option value="OPERATIONS">Despliegue Rápido & Soporte</option>
-                      <option value="GENERAL">Equilibrado General</option>
-                    </select>
+                <div>
+                  <label className="text-xs font-bold text-slate-200 block mb-1">
+                    Categoría Tecnológica
+                  </label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value as any)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition"
+                  >
+                    <option value="engenius">EnGenius Cloud & Wi-Fi 7</option>
+                    <option value="wifi">Wi-Fi & Redes Inalámbricas</option>
+                    <option value="switches">Switches & Conmutación PoE</option>
+                    <option value="fibra">Fibra Óptica & FTTH</option>
+                    <option value="general">Infraestructura General B2B</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-400 block mb-1.5">
+                    Modelos estrella de EcomShop:
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {["ECW510", "ECS2512FP", "ESG510", "ECW536"].map((quickSku) => (
+                      <button
+                        key={quickSku}
+                        type="button"
+                        onClick={() => {
+                          handleSelectSku(quickSku);
+                          setProductUrl(`https://www.ecomshop.es/catalogo?sku=${quickSku.toLowerCase()}`);
+                        }}
+                        className={`text-left px-2 py-1.5 rounded-lg text-[11px] font-mono border transition cursor-pointer ${
+                          selectedSku === quickSku
+                            ? "bg-indigo-600/30 text-indigo-300 border-indigo-500"
+                            : "bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700"
+                        }`}
+                      >
+                        {quickSku}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* TAB C: Línea / Tema Libre */}
-            {entryOrigin === "topic" && (
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 flex flex-col gap-3.5 shadow-xs">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <span className="text-xs font-bold text-slate-900">
-                    Líneas Editoriales & Tema Libre
-                  </span>
-                  <div className="flex bg-slate-100 p-0.5 rounded-lg text-[10px]">
-                    <button
-                      type="button"
-                      onClick={() => setInputMode("ecomshop_url")}
-                      className={`px-2 py-0.5 rounded font-medium transition ${
-                        inputMode === "ecomshop_url" ? "bg-white text-indigo-700 shadow-2xs font-bold" : "text-slate-600"
-                      }`}
-                    >
-                      Sugeridas
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setInputMode("prompt_libre")}
-                      className={`px-2 py-0.5 rounded font-medium transition ${
-                        inputMode === "prompt_libre" ? "bg-white text-indigo-700 shadow-2xs font-bold" : "text-slate-600"
-                      }`}
-                    >
-                      Texto Libre
-                    </button>
-                  </div>
+            {/* TAB 3: TEMA LIBRE */}
+            {entryOrigin === "custom" && (
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4.5 flex flex-col gap-3.5 shadow-lg text-slate-200">
+                <div>
+                  <label className="text-xs font-bold text-slate-200 block mb-1">
+                    Tema o Tesis Editorial Libre
+                  </label>
+                  <input
+                    type="text"
+                    value={topicTitle}
+                    onChange={(e) => setTopicTitle(e.target.value)}
+                    placeholder="Ej: Estrategia de Modernización de Redes Hospitalarias con Wi-Fi 7"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition"
+                  />
                 </div>
 
-                {inputMode === "ecomshop_url" ? (
-                  <SuggestedTopics
-                    selectedTopicId={selectedPresetId}
-                    onSelectTopic={handleSelectEditorialTopic}
-                    geminiApiKey={geminiApiKey || undefined}
+                <div>
+                  <label className="text-xs font-bold text-slate-200 block mb-1">
+                    Público Objetivo Principal
+                  </label>
+                  <input
+                    type="text"
+                    value={targetAudience}
+                    onChange={(e) => setTargetAudience(e.target.value)}
+                    placeholder="Ej: Directores de IT, Ingenieros Preventa, Integradores B2B"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition"
                   />
-                ) : (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">
-                        Título o Tesis de la Campaña:
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={topicTitle}
-                        onChange={(e) => setTopicTitle(e.target.value)}
-                        placeholder="Ej: Despliegue de red Wi-Fi 7 y PoE++ en oficinas corporativas sin licencias recurrentes..."
-                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white transition resize-none"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-[11px] font-bold text-slate-700 block mb-1">Categoría</label>
-                        <select
-                          value={category}
-                          onChange={(e) => setCategory(e.target.value as any)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs text-slate-800"
-                        >
-                          <option value="engenius">EnGenius Networks</option>
-                          <option value="wifi">WiFi Profesional / WiFi 7</option>
-                          <option value="switches">Switches & PoE</option>
-                          <option value="fibra">Fibra Óptica</option>
-                          <option value="general">Networking General</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[11px] font-bold text-slate-700 block mb-1">Público</label>
-                        <input
-                          type="text"
-                          value={targetAudience}
-                          onChange={(e) => setTargetAudience(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs text-slate-800"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-200 block mb-1">
+                    Categoría
+                  </label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value as any)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition"
+                  >
+                    <option value="engenius">EnGenius Cloud & Wi-Fi 7</option>
+                    <option value="wifi">Wi-Fi & Redes Inalámbricas</option>
+                    <option value="switches">Switches & Conmutación PoE</option>
+                    <option value="fibra">Fibra Óptica & FTTH</option>
+                    <option value="general">Infraestructura General B2B</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-200 block mb-1">
+                    Notas o Directivas Especiales (Opcional)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={customNotes}
+                    onChange={(e) => setCustomNotes(e.target.value)}
+                    placeholder="Directivas técnicas, objeciones del cliente, requisitos de ancho de banda..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition"
+                  />
+                </div>
               </div>
             )}
 
-            {/* 3. Acordeón Colapsable "⚙️ Ajustes Editoriales Avanzados" */}
-            <details className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xs group">
-              <summary className="p-3.5 flex items-center justify-between text-xs font-bold text-slate-200 cursor-pointer hover:bg-slate-800/60 transition list-none select-none">
+            {/* Ajustes Editoriales Colapsables (CERRADO por defecto) */}
+            <details className="group border border-slate-800 rounded-xl bg-slate-900/60 text-xs overflow-hidden">
+              <summary className="flex items-center justify-between p-3.5 cursor-pointer font-bold text-slate-300 select-none hover:bg-slate-800/40 transition">
                 <div className="flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-sky-400" />
-                  <span>⚙️ Ajustes Editoriales Avanzados</span>
-                  <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
-                    ({editorialControls.targetSector.replace("_", " ")} &bull; {editorialControls.competitorFocus})
-                  </span>
+                  <span>⚙️ Ajustes Editoriales (Opcional)</span>
                 </div>
-                <ChevronDown className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform duration-200" />
+                <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180 text-slate-400" />
               </summary>
-              <div className="p-3 border-t border-slate-800 bg-slate-950/40">
-                <EditorialControlsBar
-                  controls={editorialControls}
-                  onChange={setEditorialControls}
-                  onApplyToRadar={handleRegenerateRadar}
-                  isApplying={isRegeneratingRadar}
-                  embedded={true}
-                />
+              <div className="p-3.5 pt-0 border-t border-slate-800/60 space-y-3 mt-2 text-slate-300">
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-400 block mb-1">Público Objetivo (Target Sector)</label>
+                  <select
+                    value={editorialControls.targetSector}
+                    onChange={(e) => setEditorialControls(prev => ({ ...prev, targetSector: e.target.value as any }))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200"
+                  >
+                    <option value="ENTERPRISE_OFFICE">🏢 Oficinas Corporativas & Sedes</option>
+                    <option value="HOSPITALITY_HOTELS">🏨 Hoteles & Hospitality</option>
+                    <option value="EDUCATION_CAMPUS">🎓 Educación & Campus</option>
+                    <option value="HEALTHCARE">🏥 Clínicas & Hospitales</option>
+                    <option value="LOGISTICS_WAREHOUSE">📦 Logística & Almacenes</option>
+                    <option value="RETAIL_CHAINS">🛍️ Retail & Franquicias</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-400 block mb-1">Tono Editorial</label>
+                  <select
+                    value={editorialControls.editorialTone}
+                    onChange={(e) => setEditorialControls(prev => ({ ...prev, editorialTone: e.target.value as any }))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200"
+                  >
+                    <option value="ENGINEERING_PREVENTA">📐 Preventa Técnica Rigurosa</option>
+                    <option value="EXECUTIVE_ROI">💼 Directivo & TCO (C-Level)</option>
+                    <option value="TECHNICAL_TUTORIAL">🛠️ Paso a Paso / Tutorial</option>
+                    <option value="COMPARATIVE_BENCHMARK">⚖️ Comparativa de Rendimiento</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-400 block mb-1">Enfoque Frente a Competencia</label>
+                  <select
+                    value={editorialControls.competitorFocus}
+                    onChange={(e) => setEditorialControls(prev => ({ ...prev, competitorFocus: e.target.value as any }))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200"
+                  >
+                    <option value="MERAKI">Cisco Meraki (Alternativa Sin Licencias Recurrentes)</option>
+                    <option value="UBIQUITI">Ubiquiti UniFi (Mayor Estabilidad Enterprise & Soporte)</option>
+                    <option value="ARUBA">Aruba Instant On (Mayor Rendimiento Multi-Gig)</option>
+                    <option value="NONE">Sin Mención Explícita a Competidores</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <label className="text-[11px] text-slate-300 font-medium flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editorialControls.emphasizeUplinkSwitching}
+                      onChange={(e) => setEditorialControls(prev => ({ ...prev, emphasizeUplinkSwitching: e.target.checked }))}
+                      className="w-3.5 h-3.5 rounded text-indigo-600 bg-slate-950 border-slate-700"
+                    />
+                    <span>Destacar Switching PoE++</span>
+                  </label>
+                  <label className="text-[11px] text-slate-300 font-medium flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editorialControls.includePricing}
+                      onChange={(e) => setEditorialControls(prev => ({ ...prev, includePricing: e.target.checked }))}
+                      className="w-3.5 h-3.5 rounded text-indigo-600 bg-slate-950 border-slate-700"
+                    />
+                    <span>Incluir PVP ecomshop.es</span>
+                  </label>
+                </div>
               </div>
             </details>
 
-            {/* 4. Botón Único de Acción Principal (Sticky al pie del panel izquierdo) */}
-            <div className="sticky bottom-4 z-20 bg-slate-950/95 backdrop-blur-md p-3.5 rounded-2xl border border-slate-800 shadow-2xl space-y-2 mt-auto">
+            {/* Botón de Lanzamiento Primario (Sticky abajo) */}
+            <div className="sticky bottom-0 pt-3 pb-2 bg-gradient-to-t from-slate-950 via-slate-950 to-transparent flex flex-col gap-2 z-10">
               <button
                 type="button"
                 onClick={handleUnifiedLaunch}
                 disabled={loading || (campaignStage !== "IDLE" && campaignStage !== "COMPLETED" && campaignStage !== "ERROR")}
-                className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-indigo-600/30 active:scale-95 cursor-pointer"
+                className="w-full bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold py-3.5 px-4 rounded-xl text-sm shadow-xl shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-[0.98]"
               >
-                {loading || (campaignStage !== "IDLE" && campaignStage !== "COMPLETED" && campaignStage !== "ERROR") ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Generando Campaña en Directo...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 text-amber-300" />
-                    <span>🚀 Generar Campaña Multicanal</span>
-                  </>
-                )}
+                <Sparkles className="w-4 h-4 text-amber-300" />
+                <span>🚀 Generar Campaña con Grounding de NotebookLM</span>
               </button>
-
               <button
                 type="button"
                 onClick={() => handleOpenJuniaEngine()}
-                disabled={isGeneratingOutline || loading}
-                className="w-full bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white font-semibold py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-2 transition"
+                disabled={isGeneratingOutline}
+                className="w-full bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 font-semibold py-2 px-3 rounded-lg text-xs transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
-                {isGeneratingOutline ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-slate-200 rounded-full animate-spin" />
-                    <span>Creando Outline Técnico...</span>
-                  </>
-                ) : (
-                  <>
-                    <Layers className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>📋 Planificar Outline (The Junia Engine)</span>
-                  </>
-                )}
+                <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                <span>{isGeneratingOutline ? "Generando Esquema..." : "Planificar con Junia Engine (Multi-Paso)"}</span>
               </button>
             </div>
           </aside>
@@ -2496,522 +2667,33 @@ export default function ContentDashboard() {
           {/* ========================================================================= */}
           {/* PANEL DERECHO: EL CANVAS DE RESULTADOS (65% Ancho / 8 Columnas)            */}
           {/* ========================================================================= */}
-          <main className="lg:col-span-8 xl:col-span-8 bg-slate-900/60 border border-slate-800 rounded-2xl p-6 flex flex-col min-h-[calc(100vh-6rem)] shadow-sm overflow-hidden">
-            {/* ESTADO 1: VACÍO (IDLE) */}
-            {campaignStage === "IDLE" && !content && (
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-6 sm:p-10 text-slate-300">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-950/80 border border-indigo-500/30 text-indigo-300 text-xs font-semibold mb-5 shadow-lg shadow-indigo-950/50">
-                  <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-                  <span>Lienzo de Trabajo Activo • Marketing Copilot B2B</span>
-                </div>
-
-                <h2 className="font-editorial text-2xl sm:text-3xl font-bold text-white tracking-tight max-w-xl mb-3">
-                  Generador Multicanal Fundamentado con NotebookLM
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-400 max-w-lg mb-8 leading-relaxed">
-                  Selecciona una oportunidad a la izquierda o introduce una URL para desplegar la campaña completa.
-                </p>
-
-                {/* 3 Pasos Visuales del Motor Editorial */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-3xl mb-8 text-left">
-                  <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2">
-                    <div className="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-400 font-mono font-bold text-xs flex items-center justify-center border border-sky-500/30">
-                      01
-                    </div>
-                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-                      Selección o URL
-                    </h4>
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      Elige una oportunidad algorítmica del radar o pega la URL de un equipo de ecomshop.es a la izquierda.
-                    </p>
-                  </div>
-
-                  <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2">
-                    <div className="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 font-mono font-bold text-xs flex items-center justify-center border border-indigo-500/30">
-                      02
-                    </div>
-                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-                      Grounding Oficial
-                    </h4>
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      NotebookLM extrae fichas técnicas EnGenius (Wi-Fi 7, PoE+, 10G) y audita compatibilidades en tiempo real.
-                    </p>
-                  </div>
-
-                  <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2">
-                    <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 font-mono font-bold text-xs flex items-center justify-center border border-emerald-500/30">
-                      03
-                    </div>
-                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-                      Despliegue Omnicanal
-                    </h4>
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      Revisa y copia con 1 clic los 4 formatos calibrados con directivas comerciales y fotos recomendadas.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Tarjetas de Acceso Rápido de Prueba */}
-                <div className="bg-slate-950/90 border border-slate-800/90 rounded-xl p-5 max-w-2xl w-full text-left space-y-3">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span className="font-semibold text-slate-300">Probar con equipos estrella (1-clic):</span>
-                    <span className="text-[11px] font-mono text-emerald-400">● 100% Cero Licencias</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProductUrl("https://www.ecomshop.es/engenius-ecw536");
-                        setTopicTitle("EnGenius ECW536 Cloud WiFi 7 AP");
-                        setCategory("engenius");
-                        setCustomAngle("ROI");
-                        handleGenerate();
-                      }}
-                      className="p-3 bg-slate-900 hover:bg-slate-800/90 border border-slate-700/80 hover:border-sky-500/60 rounded-lg text-left transition group space-y-1"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-sky-400 group-hover:text-sky-300">ECW536</span>
-                        <Zap className="w-3 h-3 text-amber-400" />
-                      </div>
-                      <p className="text-[11px] text-slate-300 font-medium">Wi-Fi 7 Enterprise 4x4</p>
-                      <span className="text-[10px] text-slate-500 block">Probar campaña &rarr;</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProductUrl("https://www.ecomshop.es/engenius-ecs1528fp");
-                        setTopicTitle("Switch EnGenius ECS1528FP Cloud PoE+");
-                        setCategory("switches");
-                        setCustomAngle("PERFORMANCE");
-                        handleGenerate();
-                      }}
-                      className="p-3 bg-slate-900 hover:bg-slate-800/90 border border-slate-700/80 hover:border-indigo-500/60 rounded-lg text-left transition group space-y-1"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-indigo-400 group-hover:text-indigo-300">ECS1528FP</span>
-                        <Zap className="w-3 h-3 text-amber-400" />
-                      </div>
-                      <p className="text-[11px] text-slate-300 font-medium">Switch 24p PoE+ 410W</p>
-                      <span className="text-[10px] text-slate-500 block">Probar campaña &rarr;</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProductUrl("https://www.ecomshop.es/engenius-esg510");
-                        setTopicTitle("Gateway EnGenius ESG510 Cloud Security 2.5G");
-                        setCategory("engenius");
-                        setCustomAngle("OPERATIONS");
-                        handleGenerate();
-                      }}
-                      className="p-3 bg-slate-900 hover:bg-slate-800/90 border border-slate-700/80 hover:border-emerald-500/60 rounded-lg text-left transition group space-y-1"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-emerald-400 group-hover:text-emerald-300">ESG510</span>
-                        <Zap className="w-3 h-3 text-amber-400" />
-                      </div>
-                      <p className="text-[11px] text-slate-300 font-medium">Gateway 2.5G Security</p>
-                      <span className="text-[10px] text-slate-500 block">Probar campaña &rarr;</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ESTADO 2: PROGRESO EN VIVO (GENERATING / STEPPER) */}
-            {campaignStage !== "IDLE" && campaignStage !== "COMPLETED" && (
-              <div className="flex-1 flex flex-col justify-center p-6 sm:p-10">
-                <div className="max-w-2xl mx-auto w-full space-y-6">
-                  <div className="text-center space-y-2">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center mx-auto mb-2 animate-bounce">
-                      <Sparkles className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-lg font-bold text-white tracking-wide">
-                      Pipeline de Campaña en Ejecución
-                    </h3>
-                    <p className="text-xs text-slate-400">
-                      Extrayendo datos de EcomShop, cotejando con Master NotebookLM y aplicando Quality Gate:
-                    </p>
-                  </div>
-
-                  <CampaignStepper
-                    currentStage={campaignStage}
-                    errorMessage={campaignErrorMessage}
-                    onRetry={handleUnifiedLaunch}
-                    activeSku={campaignOpportunity?.sku || "SKU EcomShop"}
-                    activeAngle={campaignOpportunity?.recommendedAngle || customAngle}
-                  />
-
-                  {campaignErrorMessage && (
-                    <div className="p-4 bg-rose-950/60 border border-rose-500/50 rounded-xl text-center space-y-3">
-                      <p className="text-xs text-rose-200 font-medium">{campaignErrorMessage}</p>
-                      <button
-                        type="button"
-                        onClick={handleUnifiedLaunch}
-                        className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg transition"
-                      >
-                        Reintentar Generación
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* ESTADO 3: WORKSPACE DE CONTENIDOS (COMPLETED) */}
-            {content && (campaignStage === "COMPLETED" || campaignStage === "IDLE") && (
-              <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Cabecera del Workspace de Contenidos */}
-                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-md">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="bg-emerald-950 text-emerald-300 text-xs px-2.5 py-0.5 rounded font-bold border border-emerald-800 flex items-center gap-1">
-                        <ShieldCheck className="w-3.5 h-3.5" /> Quality Gate: 95/100
-                      </span>
-                      {campaignOpportunity?.sku && (
-                        <span className="bg-slate-800 text-sky-400 text-xs px-2 py-0.5 rounded font-mono border border-slate-700">
-                          SKU: {campaignOpportunity.sku}
-                        </span>
-                      )}
-                      <span className="bg-indigo-950 text-indigo-300 text-xs px-2 py-0.5 rounded font-mono border border-indigo-800">
-                        {category.toUpperCase()}
-                      </span>
-                    </div>
-                    <h3 className="text-base font-bold text-white line-clamp-1">
-                      {content.blog?.title || topicTitle}
-                    </h3>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCampaignStage("IDLE");
-                        setContent(null);
-                        setCampaignOpportunity(null);
-                      }}
-                      className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 border border-slate-700 transition"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Nueva Campaña</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Veto del EvidenceEngine si hubo ajustes */}
-                {content.evidenceEngineAdjustments && content.evidenceEngineAdjustments.length > 0 && (
-                  <div className="bg-amber-950/30 border border-amber-500/40 rounded-xl p-3.5 mb-4 text-xs flex items-start gap-2.5">
-                    <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <span className="font-bold text-amber-300 block">
-                        🛡️ Ajustes aplicados por Veto Absoluto del EvidenceEngine:
-                      </span>
-                      {content.evidenceEngineAdjustments.map((adj, i) => (
-                        <p key={i} className="text-amber-200 text-[11px]">
-                          <strong>{adj.corrected}</strong>: {adj.reason}
-                        </p>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Selector de Pestañas Horizontales */}
-                <div className="bg-slate-950/80 p-1.5 rounded-xl border border-slate-800 flex items-center gap-1 text-xs mb-4 overflow-x-auto">
-                  <button
-                    type="button"
-                    onClick={() => setCanvasActiveTab("blog")}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg font-bold transition shrink-0 ${
-                      canvasActiveTab === "blog"
-                        ? "bg-sky-600 text-white shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                    }`}
-                  >
-                    <Globe className="w-3.5 h-3.5 text-sky-300" />
-                    <span>📝 Blog Técnico SEO</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setCanvasActiveTab("linkedin")}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg font-bold transition shrink-0 ${
-                      canvasActiveTab === "linkedin"
-                        ? "bg-blue-600 text-white shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                    }`}
-                  >
-                    <Share2 className="w-3.5 h-3.5 text-blue-300" />
-                    <span>💼 LinkedIn B2B</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setCanvasActiveTab("mailchimp")}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg font-bold transition shrink-0 ${
-                      canvasActiveTab === "mailchimp"
-                        ? "bg-amber-600 text-white shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                    }`}
-                  >
-                    <Mail className="w-3.5 h-3.5 text-amber-300" />
-                    <span>📧 Mailchimp HTML</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setCanvasActiveTab("whatsapp")}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg font-bold transition shrink-0 ${
-                      canvasActiveTab === "whatsapp"
-                        ? "bg-emerald-600 text-white shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                    }`}
-                  >
-                    <MessageSquare className="w-3.5 h-3.5 text-emerald-300" />
-                    <span>💬 WhatsApp Comercial</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setCanvasActiveTab("intel")}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg font-bold transition shrink-0 ${
-                      canvasActiveTab === "intel"
-                        ? "bg-indigo-600 text-white shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                    }`}
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-300" />
-                    <span>🔍 Evidencias Auditadas</span>
-                  </button>
-                </div>
-
-                {/* Toast de Guardado Exitoso */}
-                {saveSuccessMessage && (
-                  <div className="mb-3 p-2.5 bg-emerald-950/80 border border-emerald-500/50 rounded-lg text-emerald-300 text-xs font-semibold flex items-center justify-between animate-fadeIn">
-                    <span>{saveSuccessMessage}</span>
-                    <Check className="w-4 h-4 text-emerald-400" />
-                  </div>
-                )}
-
-                {/* Contenido de Cada Pestaña */}
-                <div className="flex-1 overflow-y-auto pr-1">
-                  {/* PESTAÑA 1: BLOG TÉCNICO SEO */}
-                  {canvasActiveTab === "blog" && (
-                    <div className="space-y-4">
-                      {/* Barra de Acciones Superior */}
-                      <div className="flex flex-wrap items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800 gap-3">
-                        <div className="text-xs text-slate-400">
-                          Slug: <code className="text-sky-400 font-mono">/{content.blog?.slug}</code> &bull; Lectura: <strong className="text-white">{content.blog?.readingTimeMinutes} min</strong>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => copyToClipboard(content.blog?.htmlContent || "", "blog-html")}
-                            className="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-sm"
-                          >
-                            {copiedKey === "blog-html" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                            <span>{copiedKey === "blog-html" ? "¡Copiado!" : "📋 Copiar al Portapapeles"}</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleSaveToFirestore("approved")}
-                            disabled={isSavingArticle}
-                            className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-slate-700 transition"
-                          >
-                            <Save className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>{isSavingArticle ? "Guardando..." : "💾 Guardar / Aprobar en Firestore"}</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Guía de Fotos para Imagen 3 */}
-                      {content.blog?.editorialLayout?.photoPlacements && content.blog.editorialLayout.photoPlacements.length > 0 && (
-                        <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
-                              <ImageIcon className="w-3.5 h-3.5" /> Fotos Sugeridas para Imagen 3 & Durable CMS
-                            </span>
-                            <span className="text-[10px] bg-purple-950 text-purple-300 px-2 py-0.5 rounded font-mono border border-purple-800">
-                              {content.blog.editorialLayout.photoPlacements.length} Prompts
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {content.blog.editorialLayout.photoPlacements.map((photo, i) => (
-                              <div key={i} className="bg-slate-900 rounded-lg p-3 border border-slate-800 flex flex-col justify-between gap-2">
-                                <p className="text-xs text-slate-300 font-medium line-clamp-2">
-                                  {photo.description}
-                                </p>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setImagePrompt(photo.imagen3Prompt);
-                                    setMainView("image_studio");
-                                  }}
-                                  className="w-full text-center bg-purple-900/60 hover:bg-purple-800 text-purple-200 text-[11px] font-bold py-1 px-2 rounded transition border border-purple-700/60"
-                                >
-                                  🎨 Generar en Estudio Imagen 3 &rarr;
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Visor HTML Renderizado */}
-                      <div className="bg-white rounded-xl p-6 text-slate-900 shadow-md border border-slate-200">
-                        <div
-                          className="prose max-w-none text-sm font-sans leading-relaxed"
-                          dangerouslySetInnerHTML={{ __html: content.blog?.htmlContent || "" }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* PESTAÑA 2: LINKEDIN B2B */}
-                  {canvasActiveTab === "linkedin" && (
-                    <div className="space-y-4 max-w-2xl mx-auto">
-                      <div className="flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800">
-                        <span className="text-xs text-blue-400 font-bold uppercase tracking-wider">
-                          Post con Gancho y Valor Técnico
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => copyToClipboard(content.linkedin?.fullPostText || "", "li-post")}
-                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-sm"
-                          >
-                            {copiedKey === "li-post" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                            <span>{copiedKey === "li-post" ? "¡Copiado!" : "📋 Copiar al Portapapeles"}</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleSaveToFirestore("approved")}
-                            disabled={isSavingArticle}
-                            className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-slate-700 transition"
-                          >
-                            <Save className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>💾 Guardar</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="bg-slate-950 rounded-xl p-5 border border-slate-800 text-slate-200 text-xs leading-relaxed whitespace-pre-line font-sans shadow-md">
-                        {content.linkedin?.fullPostText}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* PESTAÑA 3: MAILCHIMP HTML */}
-                  {canvasActiveTab === "mailchimp" && (
-                    <div className="space-y-4">
-                      <div className="flex flex-wrap items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800 gap-3">
-                        <div className="text-xs text-amber-300 font-medium">
-                          Preheader: <span className="text-slate-300">{content.mailchimp?.previewText}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => copyToClipboard(content.mailchimp?.newsletterHtml || "", "mailchimp-html")}
-                            className="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-sm"
-                          >
-                            {copiedKey === "mailchimp-html" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                            <span>{copiedKey === "mailchimp-html" ? "¡Copiado!" : "📋 Copiar Template HTML"}</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleSaveToFirestore("approved")}
-                            disabled={isSavingArticle}
-                            className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-slate-700 transition"
-                          >
-                            <Save className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>💾 Guardar</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Variantes A/B */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs">
-                          <span className="text-amber-400 font-bold block mb-1">Asunto Variante A:</span>
-                          <p className="text-slate-200">{content.mailchimp?.subjectA}</p>
-                        </div>
-                        <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs">
-                          <span className="text-amber-400 font-bold block mb-1">Asunto Variante B:</span>
-                          <p className="text-slate-200">{content.mailchimp?.subjectB}</p>
-                        </div>
-                      </div>
-
-                      {/* Vista previa newsletter */}
-                      <div className="bg-white rounded-xl p-6 text-slate-900 shadow-md border border-slate-200">
-                        <div
-                          className="prose max-w-none text-sm font-sans"
-                          dangerouslySetInnerHTML={{ __html: content.mailchimp?.newsletterHtml || "" }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* PESTAÑA 4: WHATSAPP COMERCIAL */}
-                  {canvasActiveTab === "whatsapp" && (
-                    <div className="space-y-4 max-w-lg mx-auto">
-                      <div className="flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800">
-                        <span className="text-xs text-emerald-400 font-bold uppercase tracking-wider">
-                          Formato Móvil con Emojis
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => copyToClipboard(content.whatsapp?.formattedMessage || "", "wa-msg")}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-sm"
-                          >
-                            {copiedKey === "wa-msg" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                            <span>{copiedKey === "wa-msg" ? "¡Copiado!" : "📋 Copiar al Portapapeles"}</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleSaveToFirestore("approved")}
-                            disabled={isSavingArticle}
-                            className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-slate-700 transition"
-                          >
-                            <Save className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>💾 Guardar</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Bocadillo de WhatsApp */}
-                      <div className="bg-[#0b141a] p-5 rounded-2xl border border-emerald-950/60 shadow-xl">
-                        <div className="bg-[#202c33] text-[#e9edef] p-4 rounded-xl text-xs leading-relaxed whitespace-pre-line border-l-4 border-emerald-500 font-sans">
-                          {content.whatsapp?.formattedMessage}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* PESTAÑA 5: EVIDENCIAS AUDITADAS */}
-                  {canvasActiveTab === "intel" && (
-                    <div className="space-y-4">
-                      {intelligenceCard ? (
-                        <>
-                          <ProductIntelligenceView card={intelligenceCard} />
-                          <EvidenceAuditDrawer
-                            score={95}
-                            evidenceLedger={intelligenceCard.evidenceLedger}
-                            productName={intelligenceCard.product?.model || "EnGenius"}
-                          />
-                        </>
-                      ) : (
-                        <div className="p-8 text-center text-slate-400 bg-slate-950 rounded-xl border border-slate-800">
-                          <ShieldCheck className="w-8 h-8 text-indigo-400 mx-auto mb-2" />
-                          <p className="text-xs">Ficha de inteligencia generada con validación de catálogo EnGenius.</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+          <main className="lg:col-span-8 xl:col-span-8 flex flex-col min-h-[calc(100vh-6rem)]">
+            <CampaignWorkspace
+              stage={campaignStage}
+              opportunity={campaignOpportunity || opportunities.find(o => o.id === selectedRadarOppId) || opportunities[0] || null}
+              content={content}
+              intelligenceCard={intelligenceCard || activeIntelligenceCard}
+              errorMessage={campaignErrorMessage}
+              onRetry={handleUnifiedLaunch}
+              onReset={() => {
+                setCampaignStage("IDLE");
+                setContent(null);
+                setCampaignOpportunity(null);
+              }}
+              onOpenImageStudio={(prompt) => {
+                setImagePrompt(prompt);
+                setMainView("image_studio");
+              }}
+              onSaveToFirestore={handleSaveToFirestore}
+              isSavingArticle={isSavingArticle}
+              onSelectQuickSku={handleSelectSku}
+              onLaunchWithSku={(sku) => {
+                handleSelectSku(sku);
+                handleUnifiedLaunch();
+              }}
+              selectedSku={selectedSku}
+              isLoadingIntelligence={isLoadingIntelligence}
+            />
           </main>
         </div>
       )}
@@ -3196,6 +2878,7 @@ export default function ContentDashboard() {
                               setContent(item.content);
                               setTopicTitle(itemTitle);
                               setCategory((item?.category as any) || "general");
+                              setActiveArticleId(itemId);
                               setMainView("generator");
                             }
                           }}
@@ -4037,6 +3720,14 @@ export default function ContentDashboard() {
           onArticleGenerated={handleJuniaArticleGenerated}
         />
       )}
+
+      {/* Drawer Lateral de Evidencias Técnicas NotebookLM */}
+      <SourceDrawer
+        isOpen={sourceDrawerOpen}
+        onClose={() => setSourceDrawerOpen(false)}
+        citationId={activeCitationId}
+        citationData={activeCitationData}
+      />
     </div>
   );
 }

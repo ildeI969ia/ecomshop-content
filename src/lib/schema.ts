@@ -73,7 +73,19 @@ export const ContentOutputSchema = z.object({
     corrected: z.string(),
     reason: z.string(),
     sourceId: z.string()
-  })).optional()
+  })).optional(),
+
+  // Citas Interactivas de Fuentes de NotebookLM
+  citations: z.record(z.string(), z.object({
+    id: z.string(),
+    title: z.string(),
+    type: z.string(),
+    excerpt: z.string(),
+    url: z.string().optional()
+  })).optional(),
+
+  // Fact-Check Score de Fidelidad Técnica (0-100)
+  factCheckScore: z.number().optional()
 });
 
 export type ContentOutput = z.infer<typeof ContentOutputSchema>;
@@ -81,6 +93,7 @@ export type ContentOutput = z.infer<typeof ContentOutputSchema>;
 import { EditorialControlsSchema } from "./types/editorial-controls";
 
 export const GenerateRequestSchema = z.object({
+  sku: z.string().optional(),
   topicTitle: z.string().min(3).optional(),
   category: z.enum(["wifi", "switches", "fibra", "engenius", "general"]).default("general"),
   customNotes: z.string().optional(),
@@ -108,7 +121,10 @@ export const GenerateRequestSchema = z.object({
     commercialObjection: z.string(),
     counterArgument: z.string(),
     targetSegment: z.string()
-  }).optional()
+  }).optional(),
+
+  // Fuentes Seleccionadas del NotebookLM
+  selectedSourceIds: z.array(z.string()).optional()
 });
 
 export type GenerateRequest = z.infer<typeof GenerateRequestSchema>;

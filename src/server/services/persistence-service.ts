@@ -43,12 +43,14 @@ export class PersistenceService {
     if (payload.historyItems && Array.isArray(payload.historyItems)) {
       for (const item of payload.historyItems) {
         if (!item.content) continue;
-        const contentId = `content-${item.id || Date.now()}`;
+        const rawId = String(item.id || Date.now());
+        const cleanId = rawId.replace(/^(content-)+/, "");
+        const contentId = `content-${cleanId}`;
         const contentItem: ContentItem = {
           id: contentId,
           workspaceId,
           title: item.title || item.content.topicTitle || "Sin título",
-          slug: item.content.blog?.slug || `post-${item.id}`,
+          slug: item.content.blog?.slug || `post-${cleanId}`,
           category: item.category || item.content.category || "general",
           status: item.status === "published" ? "PUBLISHED" : item.status === "approved" ? "APPROVED" : item.status === "reviewed" ? "IN_REVIEW" : "DRAFT",
           currentVersion: 1,
