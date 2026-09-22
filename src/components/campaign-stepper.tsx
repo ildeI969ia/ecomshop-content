@@ -69,7 +69,25 @@ export const CampaignStepper: React.FC<CampaignStepperProps> = ({
   activeSku,
   activeAngle
 }) => {
+  const [isRetrying, setIsRetrying] = React.useState(false);
+
+  // Restablecer el estado de retry cuando cambie el stage
+  React.useEffect(() => {
+    setIsRetrying(false);
+  }, [currentStage]);
+
   if (currentStage === "IDLE") return null;
+
+  const handleRetryClick = async () => {
+    if (!onRetry || isRetrying) return;
+    setIsRetrying(true);
+    try {
+      await onRetry();
+    } finally {
+      // Breve margen visual para evitar parpadeos o dobles clics
+      setTimeout(() => setIsRetrying(false), 1000);
+    }
+  };
 
   const stageOrder: GenerationStage[] = [
     "EXTRACTING",
@@ -100,7 +118,7 @@ export const CampaignStepper: React.FC<CampaignStepperProps> = ({
             )}
           </h3>
         </div>
-        <div className="text-xs text-slate-400 font-mono">
+        <div className="text-xs text-slate-400 font-mono" aria-live="polite" aria-atomic="true">
           {currentStage === "COMPLETED" && (
             <span className="text-emerald-400 font-bold flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" /> Pipeline Completado
@@ -171,18 +189,20 @@ export const CampaignStepper: React.FC<CampaignStepperProps> = ({
       </div>
 
       {currentStage === "ERROR" && (
-        <div className="mt-4 p-3 rounded-lg bg-rose-950/80 border border-rose-800 text-rose-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
+        <div className="mt-4 p-3 rounded-lg bg-rose-950/80 border border-rose-800 text-rose-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs" aria-live="assertive">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
             <span>{errorMessage || "Error al procesar la campaña multicanal."}</span>
           </div>
           {onRetry && (
             <button
-              onClick={onRetry}
-              className="bg-rose-600 hover:bg-rose-500 text-white font-semibold px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition shrink-0"
+              onClick={handleRetryClick}
+              disabled={isRetrying}
+              aria-label="Reintentar pipeline"
+              className="bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-semibold px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition shrink-0 cursor-pointer"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Reintentar</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${isRetrying ? "animate-spin" : ""}`} />
+              <span>{isRetrying ? "Reintentando..." : "Reintentar"}</span>
             </button>
           )}
         </div>
