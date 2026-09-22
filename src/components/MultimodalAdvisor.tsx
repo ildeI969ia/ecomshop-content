@@ -303,6 +303,8 @@ export function MultimodalAdvisor({
           textPrompt: operatorPrompt.trim(),
           mediaBase64: selectedFile?.base64,
           mimeType: selectedFile?.mimeType,
+          scenarioId: selectedScenarioId || undefined,
+          category: activeCategory !== "ALL" ? activeCategory : undefined,
           apiKey: apiKey || undefined
         })
       });
@@ -621,7 +623,9 @@ export function MultimodalAdvisor({
                 value={operatorPrompt}
                 onChange={(e) => {
                   setOperatorPrompt(e.target.value);
-                  setSelectedScenarioId(null);
+                  if (!e.target.value.trim()) {
+                    setSelectedScenarioId(null);
+                  }
                 }}
                 placeholder="Ej: El cliente se queja de caídas continuas en horas punta. Quiere saber si con EnGenius Cloud resolverá las saturaciones sin pagar licencias anuales..."
                 className="w-full text-xs p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 resize-none h-24"
