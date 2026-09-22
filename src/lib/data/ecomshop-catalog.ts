@@ -1,6 +1,13 @@
 import { BusinessGoal } from "../types/editorial-controls";
 
-export type DeviceType = "ACCESS_POINT" | "SWITCH" | "GATEWAY" | "ACCESSORY";
+export type DeviceType =
+  | "ACCESS_POINT"
+  | "SWITCH"
+  | "ROUTER_CELLULAR"
+  | "GATEWAY"
+  | "FIBER_OPTIC"
+  | "TESTER"
+  | "ACCESSORY";
 
 export interface CatalogProductBundle {
   sku: string;
@@ -40,7 +47,7 @@ export interface AccessPointSpecs {
 export interface SwitchSpecs {
   switchingCapacityGbps: number;
   forwardingRateMpps?: number;
-  switchingLayer: "L2+" | "L3 Lite" | "L3";
+  switchingLayer: "L2+" | "L3 Lite" | "L3" | "Unmanaged";
   portDensity: string;
   poeStandard?: "802.3af" | "802.3at" | "802.3bt";
   poeBudgetWatts?: number;
@@ -59,6 +66,33 @@ export interface GatewaySpecs {
   hasWifiRadios: false; // estrictamente tipado false para evitar alucinaciones
 }
 
+export interface CellularRouterSpecs {
+  mobileTechnology: "5G" | "4G_LTE_CAT4" | "4G_LTE_CAT6" | "3G";
+  simSlots: number;
+  dualSimFailover: boolean;
+  cellularSpeedDownstream: string;
+  gnssSupport?: boolean;
+  industrialInterfaces?: string[];
+  operatingTemperatureRange?: string;
+  hasWifiRadios?: boolean;
+}
+
+export interface TesterSpecs {
+  testCapabilities: string[];
+  mediaSupported: string[]; // e.g. ["Cobre Cat6A", "Fibra Óptica OM3/OM4", "Wi-Fi 6E/7"]
+  batteryLifeHours?: number;
+  poeLoadTestWatts?: number;
+  screenSize?: string;
+}
+
+export interface FiberOpticSpecs {
+  connectorType: "LC" | "SC" | "SFP+" | "QSFP28";
+  fiberType: "MULTIMODE_OM4" | "MULTIMODE_OM3" | "SINGLEMODE_OS2";
+  wavelengthNm: number;
+  maxDistanceMeters: number;
+  attenuationDbPerKm?: number;
+}
+
 export interface AccessorySpecs {
   powerOutputWatts?: number;
   voltageOutput?: string;
@@ -72,6 +106,9 @@ export interface PolymorphicSpecs {
   accessPoint?: AccessPointSpecs;
   switch?: SwitchSpecs;
   gateway?: GatewaySpecs;
+  cellularRouter?: CellularRouterSpecs;
+  tester?: TesterSpecs;
+  fiberOptic?: FiberOpticSpecs;
   accessory?: AccessorySpecs;
 }
 
@@ -82,7 +119,7 @@ export interface CatalogProduct {
   name: string;
   brand: string;
   deviceType: DeviceType;
-  category: "wifi" | "switches" | "gateways" | "fibra" | "accesorios" | "engenius";
+  category: "wifi" | "switches" | "gateways" | "fibra" | "accesorios" | "engenius" | "cellular" | "testers";
   description: string;
   url: string;
   imageUrl: string;
@@ -97,7 +134,7 @@ export interface CatalogProduct {
   poeType: "802.3af" | "802.3at" | "802.3bt" | "DC_PASSIVE" | "NONE";
   powerConsumptionWatts: number;
   poeBudgetWatts?: number;
-  managementMode: "Cloud" | "On-Premise" | "Hybrid" | "Standalone";
+  managementMode: "Cloud" | "On-Premise" | "Hybrid" | "Standalone" | "RMS" | "Local";
   standards: string[];
   firewallThroughput?: string;
   fiberLinks?: string;
@@ -1190,6 +1227,1287 @@ export const ECOMSHOP_FULL_CATALOG: CatalogProduct[] = [
       HOSPITALITY_SOLUTIONS: 18,
       SWITCHING_POE_BACKBONE: 30,
       STOCK_CLEARANCE_PROMO: 26
+    }
+  },
+
+  // ==========================================
+  // 5. ENGENIUS WI-FI 7 & WI-FI 6 ADICIONALES (ECW516L, ECW230, ECW220, ECW212L, ECW210L, ECW260, ECW160)
+  // ==========================================
+  {
+    id: "ecw516l",
+    sku: "ECW516L",
+    model: "ECW516L",
+    name: "EnGenius Cloud Wi-Fi 7 ECW516L AP Interior 2x2",
+    brand: "EnGenius",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "Punto de acceso Wi-Fi 7 BE5000 dual-band gestionado en la nube con puerto 2.5GbE PoE+ para oficinas corporativas y aulas de formación.",
+    url: "https://www.ecomshop.es/engenius-ecw516l",
+    imageUrl: "https://store.engeniustech.com/cdn/shop/files/Product_Photos_Cloud_Access_Point_InD_ECW526_Front_View_907d4351-407d-4679-8491-99e6307ad5d1.jpg",
+    priceEur: 329,
+    wholesalePriceEur: 239,
+    stockStatus: "IN_STOCK",
+    specs: [
+      "Wi-Fi 7 Dual-Band concurrente (2.4 GHz + 5 GHz)",
+      "Puerto 2.5 GbE PoE+ (802.3at)",
+      "Modulación 4096-QAM y canales de 160 MHz",
+      "Aprovisionamiento QR en 2 minutos con EnGenius Cloud To-Go"
+    ],
+    interfaces: ["1x 2.5 GbE RJ45 (PoE+ 802.3at)"],
+    powerRequirements: "Alimentación PoE+ 802.3at (17W máx)",
+    poeType: "802.3at",
+    powerConsumptionWatts: 17,
+    managementMode: "Cloud",
+    standards: ["Wi-Fi 7 (802.11be)", "IEEE 802.3at PoE+", "WPA3 Enterprise"],
+    polymorphicSpecs: {
+      accessPoint: {
+        wirelessStandards: ["Wi-Fi 7 (IEEE 802.11be)", "Wi-Fi 6 (802.11ax)"],
+        frequencyBands: ["2.4 GHz", "5 GHz"],
+        mimo: "2x2:2 Dual-Band",
+        channelWidth: "Hasta 160 MHz",
+        modulation: "4096-QAM",
+        maxPhysicalRate: "5.0 Gbps agregados",
+        mloSupport: true,
+        roamingStandards: ["802.11k", "802.11v", "802.11r"],
+        poeInput: "PoE+ 802.3at (17W)",
+        ethernetPorts: ["1x 2.5 GbE RJ45"]
+      }
+    },
+    keyAdvantages: [
+      "Transición fluida a Wi-Fi 7 para pymes sin cuotas cloud",
+      "Puerto 2.5GbE para evitar estrangulamiento de fibra",
+      "Garantía 24h EcomSpain"
+    ],
+    antiHallucinationNotes: [
+      "Equipo Dual-Band (2.4 y 5 GHz); no incluye radio de 6 GHz dedicada.",
+      "Requiere switch o inyector PoE+."
+    ],
+    recommendedBundle: {
+      sku: "ECS2512FP",
+      name: "Switch Cloud Multi-Gigabit 2.5G PoE++",
+      relationshipType: "REQUIRES_POE_SWITCH",
+      rationale: "Backbone Multi-Gigabit sin pérdidas de paquetes."
+    },
+    notebookSource: {
+      sourceId: "src-0",
+      title: "EnGenius Cloud WiFi 7 ECW516L Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ecw516l",
+      rationale: "Ficha oficial de AP Wi-Fi 7 ECW516L en EcomShop."
+    },
+    additionalSourceIds: ["src-4", "src-18"],
+    actionTitle: "Oportunidad Wi-Fi 7 Pyme: ECW516L con Puerto 2.5G",
+    targetSegment: "Oficinas y Pymes",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Wi-Fi 7 con coste ajustado y cero cuotas de plataforma cloud.",
+      engineeringPerformance: "Puerto 2.5GbE con 4096-QAM para alta densidad de puestos de trabajo.",
+      operationsDeployment: "Aprovisionamiento QR en 2 minutos con Cloud To-Go."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, EDUCATION_CAMPUS: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 28,
+      HOSPITALITY_SOLUTIONS: 18,
+      SWITCHING_POE_BACKBONE: 15,
+      STOCK_CLEARANCE_PROMO: 10
+    }
+  },
+  {
+    id: "ecw230",
+    sku: "ECW230",
+    model: "ECW230",
+    name: "EnGenius Cloud Wi-Fi 6 ECW230 4x4 Enterprise AP",
+    brand: "EnGenius",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "Punto de acceso Wi-Fi 6 4x4:4 de alta densidad para campus y auditorios con puerto 2.5GbE PoE+ y gestión cloud unificada sin licencias.",
+    url: "https://www.ecomshop.es/engenius-ecw230",
+    imageUrl: "https://store.engeniustech.com/cdn/shop/files/Product_Photos_Cloud_Access_Point_InD_ECW526_Front_View_907d4351-407d-4679-8491-99e6307ad5d1.jpg",
+    priceEur: 429,
+    wholesalePriceEur: 310,
+    stockStatus: "IN_STOCK",
+    specs: [
+      "Wi-Fi 6 (802.11ax) 4x4:4 simultáneo en 2.4 GHz y 5 GHz",
+      "Puerto 2.5 GbE RJ45 PoE+ 802.3at",
+      "Velocidad combinada hasta 3548 Mbps",
+      "Gestión EnGenius Cloud con topología en vivo y 0€ licencias"
+    ],
+    interfaces: ["1x 2.5 GbE RJ45 PoE+ (802.3at)"],
+    powerRequirements: "PoE+ 802.3at (consumo máx 19.5W)",
+    poeType: "802.3at",
+    powerConsumptionWatts: 19.5,
+    managementMode: "Cloud",
+    standards: ["Wi-Fi 6 (802.11ax)", "IEEE 802.3at PoE+", "OFDMA / MU-MIMO 4x4"],
+    polymorphicSpecs: {
+      accessPoint: {
+        wirelessStandards: ["Wi-Fi 6 (802.11ax)", "802.11ac Wave 2"],
+        frequencyBands: ["2.4 GHz", "5 GHz"],
+        mimo: "4x4:4 Dual-Band",
+        channelWidth: "Hasta 80 MHz / 160 MHz",
+        modulation: "1024-QAM",
+        maxPhysicalRate: "3.55 Gbps agregados",
+        roamingStandards: ["802.11k", "802.11v", "802.11r"],
+        poeInput: "PoE+ 802.3at (19.5W)",
+        ethernetPorts: ["1x 2.5 GbE RJ45"]
+      }
+    },
+    keyAdvantages: [
+      "Densidad probada de más de 200 clientes concurrentes por punto de acceso",
+      "Puerto 2.5G nativo para enlace directo a switch PoE+",
+      "Zero-licensing cloud de por vida"
+    ],
+    antiHallucinationNotes: [
+      "Tecnología Wi-Fi 6 (802.11ax); no es Wi-Fi 7 ni incorpora banda de 6 GHz.",
+      "Requiere alimentación PoE+ (19.5W)."
+    ],
+    recommendedBundle: {
+      sku: "ECS2512FP",
+      name: "Switch Cloud Multi-Gigabit 2.5G PoE++",
+      relationshipType: "REQUIRES_POE_SWITCH",
+      rationale: "Proporciona 2.5GbE y PoE+ garantizado para alta densidad de tráfico."
+    },
+    notebookSource: {
+      sourceId: "src-0",
+      title: "EnGenius Cloud Wi-Fi 6 ECW230 Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ecw230",
+      rationale: "Ficha oficial de EnGenius ECW230 en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-4", "src-18"],
+    actionTitle: "Oportunidad Wi-Fi 6 Alta Densidad: ECW230 4x4 con Puerto 2.5G",
+    targetSegment: "Centros Educativos y Auditorios",
+    defaultAngle: "PERFORMANCE",
+    commercialAngles: {
+      executiveRoi: "Coste por usuario ultra-competitivo frente a soluciones con cuotas anuales.",
+      engineeringPerformance: "Arquitectura 4x4:4 que minimiza el retardo en entornos con decenas de portátiles simultáneos.",
+      operationsDeployment: "Aprovisionamiento masivo por app y diagnóstico de RF en la nube."
+    },
+    sectorAffinity: { EDUCATION_CAMPUS: 28, ENTERPRISE_OFFICE: 22 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 24,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 22,
+      SWITCHING_POE_BACKBONE: 18,
+      STOCK_CLEARANCE_PROMO: 15
+    }
+  },
+  {
+    id: "ecw220",
+    sku: "ECW220",
+    model: "ECW220",
+    name: "EnGenius Cloud Wi-Fi 6 ECW220 2x2 AP Interior",
+    brand: "EnGenius",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "Punto de acceso Wi-Fi 6 2x2:2 gestionado en nube con puerto Gigabit PoE+ para despachos, hoteles y salas de reuniones.",
+    url: "https://www.ecomshop.es/engenius-ecw220",
+    imageUrl: "https://store.engeniustech.com/cdn/shop/files/Product_Photos_Cloud_Access_Point_InD_ECW526_Front_View_907d4351-407d-4679-8491-99e6307ad5d1.jpg",
+    priceEur: 239,
+    wholesalePriceEur: 165,
+    stockStatus: "IN_STOCK",
+    specs: [
+      "Wi-Fi 6 Dual-Band concurrente (hasta 1774 Mbps)",
+      "Puerto 1 GbE RJ45 PoE 802.3af/at",
+      "Diseño compacto para falso techo o pared",
+      "EnGenius Cloud con zero-licensing"
+    ],
+    interfaces: ["1x 1 GbE RJ45 (PoE 802.3af/at)"],
+    powerRequirements: "PoE 802.3af/at (consumo máx 12.8W)",
+    poeType: "802.3at",
+    powerConsumptionWatts: 12.8,
+    managementMode: "Cloud",
+    standards: ["Wi-Fi 6 (802.11ax)", "IEEE 802.3af PoE"],
+    polymorphicSpecs: {
+      accessPoint: {
+        wirelessStandards: ["Wi-Fi 6 (802.11ax)", "802.11ac"],
+        frequencyBands: ["2.4 GHz", "5 GHz"],
+        mimo: "2x2:2 Dual-Band",
+        channelWidth: "Hasta 80 MHz",
+        modulation: "1024-QAM",
+        maxPhysicalRate: "1.77 Gbps agregados",
+        roamingStandards: ["802.11k", "802.11v", "802.11r"],
+        poeInput: "PoE 802.3af/at (12.8W)",
+        ethernetPorts: ["1x 1 GbE RJ45"]
+      }
+    },
+    keyAdvantages: [
+      "Inversión contenida para despliegues in-room hoteleros",
+      "Consumo de solo 12.8W que optimiza el PoE Budget del switch",
+      "0€ en licencias cloud"
+    ],
+    antiHallucinationNotes: [
+      "Puerto de red 1 GbE (no es 2.5G ni 10G).",
+      "Estándar Wi-Fi 6 (no Wi-Fi 7)."
+    ],
+    recommendedBundle: {
+      sku: "ECS1528FP",
+      name: "Switch EnGenius Cloud PoE+ 24 Puertos (410W budget)",
+      relationshipType: "REQUIRES_POE_SWITCH",
+      rationale: "Alimentación centralizada para hasta 24 APs por planta sin saturación de energía."
+    },
+    notebookSource: {
+      sourceId: "src-0",
+      title: "EnGenius Cloud Wi-Fi 6 ECW220 Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ecw220",
+      rationale: "Ficha oficial de EnGenius ECW220 en EcomShop."
+    },
+    additionalSourceIds: ["src-4", "src-18"],
+    actionTitle: "Oportunidad Hospitality: Wi-Fi 6 Eficiente ECW220",
+    targetSegment: "Hoteles y Residencias",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente amortización por habitación hotelera sin costes recurrentes.",
+      engineeringPerformance: "Banda de 5 GHz limpia con roaming asistido para clientes en movimiento.",
+      operationsDeployment: "Montaje ultra-discreto y aprovisionamiento por código QR."
+    },
+    sectorAffinity: { HOSPITALITY: 30, ENTERPRISE_OFFICE: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 22,
+      WIFI7_MULTIGIG_EXPANSION: 15,
+      HOSPITALITY_SOLUTIONS: 30,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 25
+    }
+  },
+  {
+    id: "ecw260",
+    sku: "ECW260",
+    model: "ECW260",
+    name: "EnGenius Cloud Wi-Fi 6 ECW260 Exterior IP67",
+    brand: "EnGenius",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "Punto de acceso Wi-Fi 6 2x2:2 de exterior reforzado IP67 con antenas omnidireccionales desmontables y puerto 2.5GbE PoE+.",
+    url: "https://www.ecomshop.es/engenius-ecw260",
+    imageUrl: "https://store.engeniustech.com/cdn/shop/files/ECW536-2.jpg?v=1745267297&width=1445",
+    priceEur: 389,
+    wholesalePriceEur: 275,
+    stockStatus: "IN_STOCK",
+    specs: [
+      "Wi-Fi 6 (802.11ax) Dual-Band con chasis estanco IP67",
+      "Puerto 2.5 GbE RJ45 PoE+ 802.3at",
+      "4 antenas omnidireccionales desmontables con conector RP-SMA",
+      "Rango de temperatura industrial -20°C a 60°C"
+    ],
+    interfaces: ["1x 2.5 GbE RJ45 PoE+ (802.3at) IP67", "4x RP-SMA Conectores Antena"],
+    powerRequirements: "PoE+ 802.3at (consumo máx 15.9W)",
+    poeType: "802.3at",
+    powerConsumptionWatts: 15.9,
+    managementMode: "Cloud",
+    standards: ["Wi-Fi 6 (802.11ax)", "Certificación IP67", "Protección 6kV"],
+    polymorphicSpecs: {
+      accessPoint: {
+        wirelessStandards: ["Wi-Fi 6 (802.11ax)"],
+        frequencyBands: ["2.4 GHz", "5 GHz"],
+        mimo: "2x2:2 Dual-Band Outdoor",
+        channelWidth: "Hasta 80 MHz",
+        modulation: "1024-QAM",
+        maxPhysicalRate: "1.77 Gbps agregados",
+        roamingStandards: ["802.11k", "802.11v", "802.11r"],
+        poeInput: "PoE+ 802.3at (15.9W)",
+        ethernetPorts: ["1x 2.5 GbE RJ45 IP67"]
+      }
+    },
+    keyAdvantages: [
+      "Chasis industrial sellado contra lluvia, polvo y ambientes salinos",
+      "Puerto 2.5GbE para alta velocidad en terrazas y campings",
+      "0€ licencias cloud"
+    ],
+    antiHallucinationNotes: [
+      "Estándar Wi-Fi 6 (no Wi-Fi 7).",
+      "Requiere cable exterior FTP apantallado y PoE+."
+    ],
+    recommendedBundle: {
+      sku: "ECS2512FP",
+      name: "Switch Cloud Multi-Gigabit 2.5G PoE++",
+      relationshipType: "REQUIRES_POE_SWITCH",
+      rationale: "Alimentación PoE+ y uplink Multi-Gigabit para intemperie."
+    },
+    notebookSource: {
+      sourceId: "src-3",
+      title: "EnGenius Cloud Wi-Fi 6 ECW260 Exterior IP67 Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ecw260",
+      rationale: "Ficha oficial de EnGenius ECW260 en EcomShop."
+    },
+    additionalSourceIds: ["src-4", "src-18"],
+    actionTitle: "Oportunidad Exterior: ECW260 IP67 con Puerto 2.5G",
+    targetSegment: "Campings, Terrazas y Zonas Industriales",
+    defaultAngle: "OPERATIONS",
+    commercialAngles: {
+      executiveRoi: "Ahorro radical en sustituciones por clima adverso gracias al chasis IP67.",
+      engineeringPerformance: "Antenas de alta ganancia omnidireccionales con puerto 2.5GbE.",
+      operationsDeployment: "Aprovisionamiento QR en 2 minutos sin abrir el equipo."
+    },
+    sectorAffinity: { HOSPITALITY: 28, LOGISTICS_INDUSTRY: 26 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 24,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 30,
+      SWITCHING_POE_BACKBONE: 15,
+      STOCK_CLEARANCE_PROMO: 20
+    }
+  },
+  {
+    id: "ecw160",
+    sku: "ECW160",
+    model: "ECW160",
+    name: "EnGenius Cloud Wi-Fi 5 ECW160 Exterior IP67",
+    brand: "EnGenius",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "Punto de acceso Wi-Fi 5 Wave 2 para exteriores IP67 económico con antenas desmontables y gestión Cloud.",
+    url: "https://www.ecomshop.es/engenius-ecw160",
+    imageUrl: "https://store.engeniustech.com/cdn/shop/files/ECW536-2.jpg?v=1745267297&width=1445",
+    priceEur: 219,
+    wholesalePriceEur: 149,
+    stockStatus: "IN_STOCK",
+    specs: [
+      "Wi-Fi 5 (802.11ac Wave 2) 2x2:2 con carcasa IP67",
+      "Puerto Gigabit Ethernet PoE 802.3af",
+      "2 antenas omnidireccionales exteriores",
+      "Gestión EnGenius Cloud sin costes recurrentes"
+    ],
+    interfaces: ["1x GbE RJ45 PoE (802.3af)"],
+    powerRequirements: "PoE 802.3af (consumo máx 12.6W)",
+    poeType: "802.3af",
+    powerConsumptionWatts: 12.6,
+    managementMode: "Cloud",
+    standards: ["Wi-Fi 5 (802.11ac)", "Certificación IP67"],
+    polymorphicSpecs: {
+      accessPoint: {
+        wirelessStandards: ["Wi-Fi 5 (802.11ac Wave 2)"],
+        frequencyBands: ["2.4 GHz", "5 GHz"],
+        mimo: "2x2:2 Dual-Band Outdoor",
+        channelWidth: "Hasta 80 MHz",
+        modulation: "256-QAM",
+        maxPhysicalRate: "1.26 Gbps agregados",
+        roamingStandards: ["802.11k", "802.11v", "802.11r"],
+        poeInput: "PoE 802.3af (12.6W)",
+        ethernetPorts: ["1x GbE RJ45 IP67"]
+      }
+    },
+    keyAdvantages: [
+      "Solución exterior ultra económica para patios y jardines",
+      "Bajo consumo PoE 802.3af",
+      "0€ cuotas de licencia cloud"
+    ],
+    antiHallucinationNotes: [
+      "Tecnología Wi-Fi 5 (802.11ac); no es Wi-Fi 6 ni Wi-Fi 7.",
+      "Puerto Gigabit de cobre (no 2.5G)."
+    ],
+    recommendedBundle: {
+      sku: "POE30Gv2",
+      name: "Inyector EnGenius POE30Gv2 Gigabit PoE+ 30W",
+      relationshipType: "ACCESSORY",
+      rationale: "Alimentación PoE directa sin necesidad de cambiar el switch."
+    },
+    notebookSource: {
+      sourceId: "src-3",
+      title: "EnGenius Cloud Wi-Fi 5 ECW160 Exterior Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ecw160",
+      rationale: "Ficha oficial de EnGenius ECW160 en EcomShop."
+    },
+    additionalSourceIds: ["src-4", "src-18"],
+    actionTitle: "Liquidación & Promo Exterior: ECW160 IP67",
+    targetSegment: "Pymes, Restauración y Terrazas",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Precio de liquidación para proyectos de cobertura exterior de coste mínimo.",
+      engineeringPerformance: "Cobertura exterior robusta de 1.2 Gbps con certificación IP67.",
+      operationsDeployment: "Configuración remota en la nube en pocos clics."
+    },
+    sectorAffinity: { HOSPITALITY: 25, ENTERPRISE_OFFICE: 18 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 20,
+      WIFI7_MULTIGIG_EXPANSION: 10,
+      HOSPITALITY_SOLUTIONS: 25,
+      SWITCHING_POE_BACKBONE: 12,
+      STOCK_CLEARANCE_PROMO: 35
+    }
+  },
+
+  // ==========================================
+  // 6. TELTONIKA INDUSTRIAL 4G / 5G & IOT (RUTX50, RUT241, RUT956)
+  // ==========================================
+  {
+    id: "rutx50",
+    sku: "RUTX50",
+    model: "RUTX50",
+    name: "Teltonika RUTX50 Router Industrial 5G Dual-SIM",
+    brand: "Teltonika",
+    deviceType: "ROUTER_CELLULAR",
+    category: "cellular",
+    description: "Router industrial 5G Sub-6GHz SA/NSA con Dual-SIM (failover automático), 5 puertos Gigabit Ethernet, Wi-Fi Wave-2 y posicionamiento GNSS para despliegues de misión crítica.",
+    url: "https://www.ecomshop.es/teltonika-rutx50",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 589,
+    wholesalePriceEur: 425,
+    stockStatus: "IN_STOCK",
+    specs: [
+      "Conectividad 5G Sub-6 GHz SA/NSA hasta 3.3 Gbps y retrocompatibilidad 4G LTE Cat 20",
+      "Doble ranura SIM con conmutación automática por error (Dual-SIM Failover)",
+      "5 puertos Gigabit Ethernet (1x WAN, 4x LAN configurables)",
+      "Wi-Fi 802.11ac Wave 2 Dual-Band (867 Mbps)",
+      "Receptor GNSS integrado (GPS, GLONASS, BeiDou, Galileo)",
+      "Carcasa de aluminio robusta con rango térmico -40°C a 75°C",
+      "Sistema operativo RutOS con soporte VPN (WireGuard, OpenVPN, IPsec) y RMS"
+    ],
+    interfaces: [
+      "5x GbE RJ45 (1x WAN / 4x LAN)",
+      "2x Ranuras SIM (Mini-SIM 2FF)",
+      "4x Conectores SMA para antenas móviles 5G",
+      "2x Conectores RP-SMA para antenas Wi-Fi",
+      "1x Conector SMA para antena GNSS",
+      "1x Puerto USB 2.0",
+      "1x Bloque de alimentación terminal 4 pines"
+    ],
+    powerRequirements: "Entrada DC 9-50V (alimentador industrial 18W incluido o borna industrial)",
+    poeType: "DC_PASSIVE",
+    powerConsumptionWatts: 18,
+    managementMode: "RMS",
+    standards: [
+      "5G Sub-6 GHz SA/NSA 3GPP Release 16",
+      "4G LTE Cat 20",
+      "IEEE 802.11ac Wave 2",
+      "RutOS (Basado en OpenWrt Linux)",
+      "Protección industrial vibraciones e interferencias electromagnéticas"
+    ],
+    polymorphicSpecs: {
+      cellularRouter: {
+        mobileTechnology: "5G",
+        simSlots: 2,
+        dualSimFailover: true,
+        cellularSpeedDownstream: "Hasta 3.3 Gbps (5G SA/NSA)",
+        gnssSupport: true,
+        industrialInterfaces: ["1x Entrada Digital", "1x Salida Digital", "Bloque terminal 4-pin DC"],
+        operatingTemperatureRange: "-40°C a +75°C",
+        hasWifiRadios: true
+      }
+    },
+    keyAdvantages: [
+      "Ultra-alta velocidad 5G de hasta 3.3 Gbps para respaldo de fibra o sedes sin cobertura fija",
+      "Doble SIM con failover instantáneo ante caída del operador principal",
+      "Chasis industrial de aluminio con montaje en carril DIN y tolerancia térmica extrema",
+      "Gestión remota segura con Teltonika RMS (Remote Management System)"
+    ],
+    antiHallucinationNotes: [
+      "IMPORTANTE / ANTI-ALUCINACIÓN: Es un ROUTER CELULAR INDUSTRIAL 5G de Teltonika; NO ES UN DISPOSITIVO WI-FI 7 NI UN SWITCH POE.",
+      "Su Wi-Fi es 802.11ac Wave-2 de servicio local para técnicos; para cobertura corporativa de gran densidad se deben usar APs dedicados.",
+      "No suministra salida PoE estándar a periféricos (alimentación por borna o jack DC)."
+    ],
+    recommendedBundle: {
+      sku: "ECS1528FP",
+      name: "Switch EnGenius Cloud PoE+ 24 Puertos (410W budget)",
+      relationshipType: "REQUIRES_POE_SWITCH",
+      rationale: "Distribución cableada LAN y PoE corporativo alimentado desde la conexión 5G troncal del RUTX50."
+    },
+    notebookSource: {
+      sourceId: "src-teltonika-rutx50",
+      title: "Teltonika RUTX50 5G Industrial Router Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/teltonika-rutx50",
+      rationale: "Ficha técnica oficial de Teltonika RUTX50 en el catálogo de EcomShop."
+    },
+    additionalSourceIds: ["src-18"],
+    actionTitle: "Oportunidad 5G Industrial: Respaldo de Fibra y Sedes Críticas con RUTX50",
+    targetSegment: "Industria 4.0, Flotas, Logística y Continuidad de Negocio",
+    defaultAngle: "PERFORMANCE",
+    commercialAngles: {
+      executiveRoi: "Garantiza continuidad de negocio 99.99% evitando pérdidas de miles de euros por corte de fibra óptica gracias al respaldo 5G Dual-SIM.",
+      engineeringPerformance: "Velocidad de hasta 3.3 Gbps con 5G de ultra baja latencia y conmutación automática de operador en milisegundos.",
+      operationsDeployment: "Despliegue Plug & Play en cualquier cuadro eléctrico industrial con carril DIN y gestión centralizada RMS."
+    },
+    sectorAffinity: { LOGISTICS_INDUSTRY: 30, ENTERPRISE_OFFICE: 24, HEALTHCARE: 25 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 18,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    }
+  },
+  {
+    id: "rut241",
+    sku: "RUT241",
+    model: "RUT241",
+    name: "Teltonika RUT241 Router Industrial 4G LTE Cat 4",
+    brand: "Teltonika",
+    deviceType: "ROUTER_CELLULAR",
+    category: "cellular",
+    description: "Router industrial compacto 4G LTE Cat 4 con 2 puertos Ethernet, Wi-Fi local, I/O digital y soporte RutOS para cajeros, telemetría y CCTV.",
+    url: "https://www.ecomshop.es/teltonika-rut241",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 189,
+    wholesalePriceEur: 135,
+    stockStatus: "IN_STOCK",
+    specs: [
+      "Módem 4G LTE Cat 4 hasta 150 Mbps de descarga y 50 Mbps de subida",
+      "2 puertos Ethernet 10/100 Mbps (1x WAN, 1x LAN)",
+      "Wi-Fi 802.11b/g/n (hasta 150 Mbps)",
+      "1x Entrada Digital y 1x Salida Digital para control y alertas remotas",
+      "Formato ultracompacto con carcasa de aluminio para carril DIN"
+    ],
+    interfaces: [
+      "2x 10/100 Mbps RJ45",
+      "1x Ranura SIM (Mini-SIM 2FF)",
+      "2x Conectores SMA para antenas 4G",
+      "1x Conector RP-SMA para antena Wi-Fi",
+      "Bloque terminal 4-pin para alimentación y I/O"
+    ],
+    powerRequirements: "Entrada DC 9-30V (consumo típico < 6.5W)",
+    poeType: "DC_PASSIVE",
+    powerConsumptionWatts: 6.5,
+    managementMode: "RMS",
+    standards: ["4G LTE Cat 4", "3G / 2G", "RutOS", "OpenVPN / IPsec / WireGuard"],
+    polymorphicSpecs: {
+      cellularRouter: {
+        mobileTechnology: "4G_LTE_CAT4",
+        simSlots: 1,
+        dualSimFailover: false,
+        cellularSpeedDownstream: "Hasta 150 Mbps (LTE Cat 4)",
+        gnssSupport: false,
+        industrialInterfaces: ["1x Entrada Digital", "1x Salida Digital"],
+        operatingTemperatureRange: "-40°C a +75°C",
+        hasWifiRadios: true
+      }
+    },
+    keyAdvantages: [
+      "El estándar del sector para telemetría industrial, máquinas de vending y CCTV aislado",
+      "Consumo extremadamente reducido (< 6.5W) ideal para sistemas solares",
+      "Gestión remota Teltonika RMS sin necesidad de IP pública fija"
+    ],
+    antiHallucinationNotes: [
+      "Router 4G LTE Cat 4 de 150 Mbps con puertos Fast Ethernet 10/100 (no es Gigabit ni 5G).",
+      "NO es un punto de acceso Wi-Fi 7 corporativo."
+    ],
+    recommendedBundle: {
+      sku: "POE30Gv2",
+      name: "Inyector EnGenius POE30Gv2 Gigabit PoE+ 30W",
+      relationshipType: "ACCESSORY",
+      rationale: "Alimentación de cámaras IP remotas conectadas a la salida del RUT241."
+    },
+    notebookSource: {
+      sourceId: "src-teltonika-rut241",
+      title: "Teltonika RUT241 Industrial 4G Router Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/teltonika-rut241",
+      rationale: "Ficha técnica oficial de Teltonika RUT241 en EcomShop."
+    },
+    additionalSourceIds: ["src-18"],
+    actionTitle: "Oportunidad Telemetría & IoT: Router 4G RUT241 de Bajo Consumo",
+    targetSegment: "Integradores de Seguridad, Telemetría y Automatización",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Coste de adquisición mínimo para conectar emplazamientos remotos sin conexión cableada.",
+      engineeringPerformance: "Estabilidad industrial RutOS con auto-reinicio por ping y tolerancia térmica de -40°C a +75°C.",
+      operationsDeployment: "Aprovisionamiento masivo de miles de dispositivos desde la consola en la nube RMS."
+    },
+    sectorAffinity: { LOGISTICS_INDUSTRY: 30, ENTERPRISE_OFFICE: 15 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 22,
+      WIFI7_MULTIGIG_EXPANSION: 10,
+      HOSPITALITY_SOLUTIONS: 12,
+      SWITCHING_POE_BACKBONE: 14,
+      STOCK_CLEARANCE_PROMO: 25
+    }
+  },
+  {
+    id: "rut956",
+    sku: "RUT956",
+    model: "RUT956",
+    name: "Teltonika RUT956 Router Industrial 4G Dual-SIM con E/S y GPS",
+    brand: "Teltonika",
+    deviceType: "ROUTER_CELLULAR",
+    category: "cellular",
+    description: "Router celular 4G LTE Cat 4 para automatización industrial con Dual-SIM, GNSS integrado, puertos serie RS232/RS485 y múltiples E/S analógicas/digitales.",
+    url: "https://www.ecomshop.es/teltonika-rut956",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 269,
+    wholesalePriceEur: 195,
+    stockStatus: "IN_STOCK",
+    specs: [
+      "4G LTE Cat 4 con Dual-SIM y conmutación automática de cobertura",
+      "Puertos serie RS232 y RS485 para integración con autómatas y PLCs",
+      "Receptor GPS/GNSS para localización de flotas y sincronización de hora",
+      "4 puertos Ethernet 10/100 Mbps (1x WAN, 3x LAN)",
+      "Múltiples entradas y salidas digitales/analógicas configurables"
+    ],
+    interfaces: [
+      "4x 10/100 Mbps RJ45",
+      "2x Ranuras SIM (Mini-SIM 2FF)",
+      "1x Puerto serie RS232 (DB9)",
+      "1x Conector RS485 (borna 6-pin)",
+      "2x Conectores SMA para antenas 4G",
+      "2x Conectores RP-SMA para antenas Wi-Fi",
+      "1x Conector SMA para antena GNSS"
+    ],
+    powerRequirements: "Entrada DC 9-30V (consumo típico < 7W)",
+    poeType: "DC_PASSIVE",
+    powerConsumptionWatts: 7,
+    managementMode: "RMS",
+    standards: ["4G LTE Cat 4", "Modbus TCP / RTU", "GNSS", "RutOS"],
+    polymorphicSpecs: {
+      cellularRouter: {
+        mobileTechnology: "4G_LTE_CAT4",
+        simSlots: 2,
+        dualSimFailover: true,
+        cellularSpeedDownstream: "Hasta 150 Mbps",
+        gnssSupport: true,
+        industrialInterfaces: ["RS232 (DB9)", "RS485 (Borna)", "E/S Digitales y Analógicas"],
+        operatingTemperatureRange: "-40°C a +75°C",
+        hasWifiRadios: true
+      }
+    },
+    keyAdvantages: [
+      "Conexión directa de autómatas PLCs y maquinaria industrial vía RS232/RS485 sin convertidores",
+      "Doble SIM para redundancia de operador en plantas remotas",
+      "Localización de vehículos y cuadros de obra mediante GNSS"
+    ],
+    antiHallucinationNotes: [
+      "Router industrial celular con puertos serie y 10/100 Mbps; NO es un conmutador Multi-Gigabit.",
+      "No emite Wi-Fi 7."
+    ],
+    recommendedBundle: {
+      sku: "POE30Gv2",
+      name: "Inyector EnGenius POE30Gv2 Gigabit PoE+ 30W",
+      relationshipType: "ACCESSORY",
+      rationale: "Alimentación de periféricos industriales de campo."
+    },
+    notebookSource: {
+      sourceId: "src-teltonika-rut956",
+      title: "Teltonika RUT956 Industrial IoT Router Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/teltonika-rut956",
+      rationale: "Ficha oficial de Teltonika RUT956 en EcomShop."
+    },
+    additionalSourceIds: ["src-18"],
+    actionTitle: "Oportunidad Automatización & PLCs: Router Industrial RUT956",
+    targetSegment: "Integradores de Automatización, Cuadros Eléctricos e Industria 4.0",
+    defaultAngle: "OPERATIONS",
+    commercialAngles: {
+      executiveRoi: "Reduce costes al integrar módem 4G, pasarela Modbus/RS485 y GPS en un solo equipo.",
+      engineeringPerformance: "Soporte nativo de protocolos industriales (Modbus RTU/TCP, MQTT, DNP3).",
+      operationsDeployment: "Control de entradas y salidas remotas mediante alertas SMS o eventos de red."
+    },
+    sectorAffinity: { LOGISTICS_INDUSTRY: 30, ENTERPRISE_OFFICE: 15 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 22,
+      WIFI7_MULTIGIG_EXPANSION: 10,
+      HOSPITALITY_SOLUTIONS: 10,
+      SWITCHING_POE_BACKBONE: 15,
+      STOCK_CLEARANCE_PROMO: 20
+    }
+  },
+
+  // ==========================================
+  // 7. ENGENIUS SWITCHING MULTI-GIGABIT & GIGABIT ADICIONAL
+  // ==========================================
+  {
+    id: "ecs2510fp",
+    sku: "ECS2510FP",
+    model: "ECS2510FP",
+    name: "Switch EnGenius ECS2510FP Multi-Gigabit 8p 2.5G PoE+",
+    brand: "EnGenius",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Switch L2+ gestionado en Cloud con 8 puertos 2.5GbE PoE+ (802.3at, 240W budget) y 2 uplinks 10G SFP+ para distribución Wi-Fi 7 compacta.",
+    url: "https://www.ecomshop.es/engenius-ecs2510fp",
+    imageUrl: "https://www.engeniustech.com/wp-content/uploads/2020/02/ecs2512fp-front-opt.jpg",
+    priceEur: 549,
+    wholesalePriceEur: 395,
+    stockStatus: "IN_STOCK",
+    specs: [
+      "8 puertos 2.5 GbE RJ45 con PoE+ 802.3at (hasta 30W por puerto)",
+      "2 slots 10G SFP+ para uplinks troncales",
+      "PoE Budget de 240W",
+      "Capacidad de conmutación 80 Gbps sin bloqueo",
+      "Gestión 100% en la nube EnGenius Cloud sin licencias"
+    ],
+    interfaces: ["8x 2.5 GbE RJ45 PoE+ (802.3at)", "2x 10G SFP+ Uplinks"],
+    powerRequirements: "Entrada AC 100-240V, PoE Budget 240W (consumo máx 280W)",
+    poeType: "802.3at",
+    poeBudgetWatts: 240,
+    powerConsumptionWatts: 280,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3at PoE+", "IEEE 802.3bz 2.5GBASE-T", "L2+ Switching"],
+    polymorphicSpecs: {
+      switch: {
+        switchingCapacityGbps: 80,
+        forwardingRateMpps: 59.52,
+        switchingLayer: "L2+",
+        portDensity: "8x 2.5 GbE PoE+ (hasta 30W/puerto)",
+        poeStandard: "802.3at",
+        poeBudgetWatts: 240,
+        maxPowerPerPortWatts: 30,
+        uplinkPorts: ["2x 10G SFP+ Slots"]
+      }
+    },
+    keyAdvantages: [
+      "Conmutación Multi-Gigabit asequible para pequeñas oficinas y sucursales",
+      "2 slots 10G SFP+ para conexión directa a servidor o fibra troncal",
+      "0€ en licencias cloud"
+    ],
+    antiHallucinationNotes: [
+      "Suministra PoE+ 802.3at (hasta 30W/puerto); para PoE++ 60W se requiere ECS2512FP.",
+      "Posee 2 puertos SFP+ de uplink (a diferencia del ECS2512FP que tiene 4)."
+    ],
+    recommendedBundle: {
+      sku: "ECW510",
+      name: "EnGenius Cloud WiFi 7 ECW510 AP Dual-Band",
+      relationshipType: "REQUIRES_POE_SWITCH",
+      rationale: "Alimentación 2.5G PoE+ perfecta para APs Wi-Fi 7 Dual-Band."
+    },
+    notebookSource: {
+      sourceId: "src-8",
+      title: "EnGenius ECS2510FP Switch Multi-Gigabit Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ecs2510fp",
+      rationale: "Ficha oficial de EnGenius ECS2510FP en EcomShop."
+    },
+    additionalSourceIds: ["src-10", "src-18"],
+    actionTitle: "Oportunidad Switching Multi-Gigabit Pyme: ECS2510FP",
+    targetSegment: "Oficinas y Sedes Secundarias",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "La forma más rentable de introducir conmutación 2.5G y fibra 10G sin licencias recurrentes.",
+      engineeringPerformance: "80 Gbps wire-speed sin pérdida de paquetes para tráfico Wi-Fi 7 y NAS.",
+      operationsDeployment: "Supervisión de puertos y auto-reinicio PoE desde la nube."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 26, EDUCATION_CAMPUS: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 28,
+      HOSPITALITY_SOLUTIONS: 20,
+      SWITCHING_POE_BACKBONE: 30,
+      STOCK_CLEARANCE_PROMO: 15
+    }
+  },
+  {
+    id: "ecs2530fp",
+    sku: "ECS2530FP",
+    model: "ECS2530FP",
+    name: "Switch EnGenius ECS2530FP Multi-Gigabit 24p 2.5G PoE++ 740W",
+    brand: "EnGenius",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Switch L2+ gestionado en Cloud con 24 puertos 2.5GbE PoE++ (hasta 60W por puerto, presupuesto masivo de 740W) y 6 uplinks 10G SFP+.",
+    url: "https://www.ecomshop.es/engenius-ecs2530fp",
+    imageUrl: "https://www.engeniustech.com/wp-content/uploads/2020/02/ecs2512fp-front-opt.jpg",
+    priceEur: 1490,
+    wholesalePriceEur: 1080,
+    stockStatus: "IN_STOCK",
+    specs: [
+      "24 puertos 2.5 GbE RJ45 PoE++ 802.3bt (hasta 60W por puerto)",
+      "6 slots 10G SFP+ para uplinks de fibra masivos y agregación",
+      "Presupuesto de potencia PoE líder de 740W",
+      "Capacidad de conmutación 240 Gbps",
+      "Gestión EnGenius Cloud Enterprise con zero-licensing"
+    ],
+    interfaces: ["24x 2.5 GbE RJ45 PoE++ (802.3bt hasta 60W)", "6x 10G SFP+ Slots Uplink"],
+    powerRequirements: "Entrada AC 100-240V, PoE Budget 740W (consumo máx 850W)",
+    poeType: "802.3bt",
+    poeBudgetWatts: 740,
+    powerConsumptionWatts: 850,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3bt PoE++", "IEEE 802.3bz 2.5GBASE-T", "L2+ Enterprise Switching"],
+    polymorphicSpecs: {
+      switch: {
+        switchingCapacityGbps: 240,
+        forwardingRateMpps: 178.56,
+        switchingLayer: "L2+",
+        portDensity: "24x 2.5 GbE PoE++ (hasta 60W/puerto)",
+        poeStandard: "802.3bt",
+        poeBudgetWatts: 740,
+        maxPowerPerPortWatts: 60,
+        uplinkPorts: ["6x 10G SFP+ Slots"]
+      }
+    },
+    keyAdvantages: [
+      "740W reales de presupuesto PoE para alimentar simultáneamente 24 APs Wi-Fi 7 Tri-Band a plena potencia",
+      "6 uplinks 10G SFP+ para arquitecturas de rack y distribución redundante",
+      "Cero costes de licencias anuales de conmutación"
+    ],
+    antiHallucinationNotes: [
+      "Requiere rack con ventilación adecuada (potencia y disipación industrial de 740W PoE).",
+      "Los puertos de cobre son 2.5 GbE; para conexiones 10G usar los 6 slots SFP+."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "COMPATIBLE_TRANSCEIVER",
+      rationale: "Interconexión óptica troncal sin cuellos de botella para absorber el tráfico de 24 APs Multi-Gig."
+    },
+    notebookSource: {
+      sourceId: "src-8",
+      title: "EnGenius ECS2530FP Multi-Gigabit PoE++ 740W Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ecs2530fp",
+      rationale: "Ficha oficial de EnGenius ECS2530FP en EcomShop."
+    },
+    additionalSourceIds: ["src-10", "src-18"],
+    actionTitle: "Oportunidad Backbone Wi-Fi 7 Corporativo: ECS2530FP con 740W PoE++",
+    targetSegment: "Sedes Centrales, Hospitales y Campus Universitarios",
+    defaultAngle: "PERFORMANCE",
+    commercialAngles: {
+      executiveRoi: "Ahorro masivo de costes al eliminar fuentes de alimentación secundarias y licencias anuales de conmutación.",
+      engineeringPerformance: "740W PoE++ con 6 enlaces 10G SFP+ para soportar cualquier despliegue Wi-Fi 7 de alta potencia.",
+      operationsDeployment: "Control de consumo por puerto en tiempo real y reinicio automático de periféricos colgados."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 30, EDUCATION_CAMPUS: 28, HOSPITALITY: 25 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 30,
+      HOSPITALITY_SOLUTIONS: 22,
+      SWITCHING_POE_BACKBONE: 35,
+      STOCK_CLEARANCE_PROMO: 10
+    }
+  },
+  {
+    id: "ecs1528p",
+    sku: "ECS1528P",
+    model: "ECS1528P",
+    name: "Switch EnGenius ECS1528P Cloud PoE+ 24 Puertos (240W)",
+    brand: "EnGenius",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Switch L2+ gestionado en Cloud con 24 puertos Gigabit PoE+ (240W budget) y 4 uplinks 10G SFP+ para oficinas estándar y telefonía VoIP.",
+    url: "https://www.ecomshop.es/engenius-ecs1528p",
+    imageUrl: "https://store.engeniustech.com/cdn/shop/files/Product_Photos_Cloud_Switch_ECS1528FP_Front_Top_View.jpg?v=1745267323&width=1946",
+    priceEur: 449,
+    wholesalePriceEur: 320,
+    stockStatus: "IN_STOCK",
+    specs: [
+      "24 puertos Gigabit Ethernet con PoE+ 802.3at",
+      "Presupuesto PoE equilibrado de 240W",
+      "4 slots 10G SFP+ para uplinks troncales de fibra",
+      "Capacidad de conmutación 128 Gbps",
+      "Gestión Cloud multi-tenant sin suscripciones"
+    ],
+    interfaces: ["24x GbE RJ45 PoE+ (802.3at)", "4x 10G SFP+ Slots Uplink"],
+    powerRequirements: "Entrada AC 100-240V, PoE Budget 240W (consumo máx 290W)",
+    poeType: "802.3at",
+    poeBudgetWatts: 240,
+    powerConsumptionWatts: 290,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3at PoE+", "IEEE 802.3ab Gigabit", "L2+ Enterprise"],
+    polymorphicSpecs: {
+      switch: {
+        switchingCapacityGbps: 128,
+        forwardingRateMpps: 95.23,
+        switchingLayer: "L2+",
+        portDensity: "24x 1GbE PoE+ (hasta 30W/puerto)",
+        poeStandard: "802.3at",
+        poeBudgetWatts: 240,
+        maxPowerPerPortWatts: 30,
+        uplinkPorts: ["4x 10G SFP+ Slots"]
+      }
+    },
+    keyAdvantages: [
+      "Excelente relación coste por puerto PoE+ para telefonía IP y puestos de trabajo",
+      "4 puertos 10G SFP+ incluidos de serie",
+      "0€ en licencias cloud"
+    ],
+    antiHallucinationNotes: [
+      "PoE Budget de 240W (para cámaras PTZ de alto consumo o 24 APs concurrentes se recomienda el modelo FP de 410W).",
+      "Puertos Gigabit estándar (no 2.5G)."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "COMPATIBLE_TRANSCEIVER",
+      rationale: "Troncal 10G sin cuellos de botella hacia el rack principal."
+    },
+    notebookSource: {
+      sourceId: "src-7",
+      title: "EnGenius ECS1528P Switch Cloud PoE+ Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ecs1528p",
+      rationale: "Ficha oficial de EnGenius ECS1528P en EcomShop."
+    },
+    additionalSourceIds: ["src-11", "src-18"],
+    actionTitle: "Oportunidad Telefonía IP & Pyme: Switch 24p ECS1528P 240W",
+    targetSegment: "Oficinas y Call Centers",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Optimización de inversión para instalaciones donde 240W cubren holgadamente las necesidades.",
+      engineeringPerformance: "Voice VLAN automática para priorizar llamadas SIP y 4 uplinks de 10 Gbps.",
+      operationsDeployment: "Aprovisionamiento Plug & Play y topología en tiempo real."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 26, HOSPITALITY: 22 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 24,
+      WIFI7_MULTIGIG_EXPANSION: 15,
+      HOSPITALITY_SOLUTIONS: 22,
+      SWITCHING_POE_BACKBONE: 28,
+      STOCK_CLEARANCE_PROMO: 25
+    }
+  },
+
+  // ==========================================
+  // 8. WI-TEK SWITCHES INDUSTRIALES CARRIL DIN (WI-PS310GF-I)
+  // ==========================================
+  {
+    id: "wi-ps310gf-i",
+    sku: "WI-PS310GF-I",
+    model: "WI-PS310GF-I",
+    name: "Wi-Tek WI-PS310GF-I Switch Industrial Carril DIN PoE+",
+    brand: "Wi-Tek",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Switch industrial no gestionable para carril DIN con 8 puertos Gigabit PoE+ (modo extendido 250m), 2 slots Gigabit SFP y tolerancia de -40°C a 75°C.",
+    url: "https://www.ecomshop.es/wi-tek-wi-ps310gf-i",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 219,
+    wholesalePriceEur: 155,
+    stockStatus: "IN_STOCK",
+    specs: [
+      "8 puertos Gigabit Ethernet PoE+ 802.3af/at (hasta 30W por puerto, budget 240W con fuente externa)",
+      "2 slots Gigabit SFP para enlaces de fibra óptica en cuadros de intemperie",
+      "Modo CCTV Extendido PoE hasta 250 metros a 10 Mbps",
+      "Doble entrada de alimentación DC redundante (48-57V) con protección contra polaridad inversa",
+      "Carcasa metálica IP40 con disipación pasiva sin ventilador (fanless)",
+      "Protección contra sobretensiones de 6kV y rango térmico -40°C a +75°C"
+    ],
+    interfaces: ["8x GbE RJ45 PoE+ (802.3at)", "2x 1G SFP Slots", "Bloque terminal industrial 6-pin redundante"],
+    powerRequirements: "Entrada industrial DC 48-57V redundante (fuente industrial carril DIN opcional)",
+    poeType: "802.3at",
+    poeBudgetWatts: 240,
+    powerConsumptionWatts: 250,
+    managementMode: "Local",
+    standards: [
+      "IEEE 802.3af/at PoE+",
+      "Grado de protección industrial IP40",
+      "Protección de sobretensión 6kV",
+      "Resistencia a vibraciones IEC 60068"
+    ],
+    polymorphicSpecs: {
+      switch: {
+        switchingCapacityGbps: 20,
+        forwardingRateMpps: 14.88,
+        switchingLayer: "Unmanaged",
+        portDensity: "8x GbE PoE+ Industrial",
+        poeStandard: "802.3at",
+        poeBudgetWatts: 240,
+        maxPowerPerPortWatts: 30,
+        uplinkPorts: ["2x 1G SFP Slots"]
+      }
+    },
+    keyAdvantages: [
+      "Modo PoE Extendido hasta 250 metros para cámaras perimetrales distantes",
+      "Rango de temperatura de -40°C a +75°C sin ventiladores mecánicos",
+      "Doble entrada de corriente continua redundante para evitar paradas en planta"
+    ],
+    antiHallucinationNotes: [
+      "Switch industrial no gestionable con enlaces de fibra a 1 Gbps (SFP 1G, no es 10G SFP+).",
+      "Requiere fuente de alimentación externa en carril DIN de 48-57V (no incluida de serie)."
+    ],
+    recommendedBundle: {
+      sku: "rut241",
+      name: "Teltonika RUT241 Router Industrial 4G LTE Cat 4",
+      relationshipType: "ACCESSORY",
+      rationale: "Conexión 4G para cuadro eléctrico perimetral alimentando cámaras mediante el switch Wi-Tek."
+    },
+    notebookSource: {
+      sourceId: "src-witek-ps310gf-i",
+      title: "Wi-Tek WI-PS310GF-I Industrial DIN-Rail Switch Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/wi-tek-wi-ps310gf-i",
+      rationale: "Ficha oficial de Wi-Tek en el catálogo de ingeniería EcomShop."
+    },
+    additionalSourceIds: ["src-18"],
+    actionTitle: "Oportunidad CCTV Industrial: Switch Carril DIN Wi-Tek con PoE 250m",
+    targetSegment: "Seguridad Perimetral, Naves Industriales y Cuadros de Exterior",
+    defaultAngle: "OPERATIONS",
+    commercialAngles: {
+      executiveRoi: "Elimina la necesidad de repetidores intermedios gracias al modo PoE extendido de 250 metros.",
+      engineeringPerformance: "Cero fallos por calor o polvo en plantas industriales con rango térmico de -40°C a 75°C.",
+      operationsDeployment: "Anclaje directo a carril DIN estándar en 30 segundos con borna redundante."
+    },
+    sectorAffinity: { LOGISTICS_INDUSTRY: 30, ENTERPRISE_OFFICE: 15 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 22,
+      WIFI7_MULTIGIG_EXPANSION: 10,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 30,
+      STOCK_CLEARANCE_PROMO: 20
+    }
+  },
+
+  // ==========================================
+  // 9. STONET SWITCHES SOBREMESA & RACK (ST3124G)
+  // ==========================================
+  {
+    id: "st3124g",
+    sku: "ST3124G",
+    model: "ST3124G",
+    name: "Stonet ST3124G Switch 24 Puertos Gigabit Rack 19\"",
+    brand: "Stonet",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Switch no gestionable de 24 puertos Gigabit 10/100/1000 en formato rack 19\" metálico plug-and-play para distribución de oficinas y puestos de trabajo.",
+    url: "https://www.ecomshop.es/stonet-st3124g",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 89,
+    wholesalePriceEur: 59,
+    stockStatus: "IN_STOCK",
+    specs: [
+      "24 puertos Gigabit Ethernet 10/100/1000 Mbps con auto MDI/MDIX",
+      "Capacidad de conmutación 48 Gbps no bloqueante",
+      "Chasis metálico resistente de 19 pulgadas con aletas de rack incluidas",
+      "Tecnología Green Ethernet de ahorro energético",
+      "Funcionamiento silencioso sin ventiladores (fanless)",
+      "Instalación 100% Plug & Play sin configuración de software"
+    ],
+    interfaces: ["24x GbE RJ45 10/100/1000"],
+    powerRequirements: "Entrada interna AC 100-240V 50/60Hz (consumo máx 15W)",
+    poeType: "NONE",
+    powerConsumptionWatts: 15,
+    managementMode: "Local",
+    standards: ["IEEE 802.3ab Gigabit", "IEEE 802.3az Energy Efficient", "Auto-Negotiation"],
+    polymorphicSpecs: {
+      switch: {
+        switchingCapacityGbps: 48,
+        forwardingRateMpps: 35.71,
+        switchingLayer: "Unmanaged",
+        portDensity: "24x 1GbE RJ45",
+        poeStandard: undefined,
+        poeBudgetWatts: 0,
+        maxPowerPerPortWatts: 0,
+        uplinkPorts: ["24x 1GbE (Puertos conmutados compartidos)"]
+      }
+    },
+    keyAdvantages: [
+      "El switch de 24 puertos Gigabit en formato rack metálico más económico del catálogo",
+      "Cero ruido en despachos gracias a la arquitectura pasiva fanless",
+      "Instalación instantánea sin necesidad de técnicos de configuración"
+    ],
+    antiHallucinationNotes: [
+      "Switch NO gestionable y SIN alimentación PoE (los 24 puertos son sólo para datos).",
+      "No incluye slots de fibra SFP (todos los puertos son de cobre RJ45)."
+    ],
+    recommendedBundle: {
+      sku: "POE30Gv2",
+      name: "Inyector EnGenius POE30Gv2 Gigabit PoE+ 30W",
+      relationshipType: "ACCESSORY",
+      rationale: "Permite alimentar puntos de acceso o teléfonos en puertos concretos manteniendo la conmutación de bajo coste."
+    },
+    notebookSource: {
+      sourceId: "src-stonet-st3124g",
+      title: "Stonet ST3124G 24-Port Gigabit Switch Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/stonet-st3124g",
+      rationale: "Ficha oficial de Stonet ST3124G en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18"],
+    actionTitle: "Campaña Renovación Pyme: Switch 24p Gigabit Stonet ST3124G por <90€",
+    targetSegment: "Pymes, Talleres y Aulas de Informática",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "El coste por puerto Gigabit más bajo del mercado para proyectos con presupuestos cerrados.",
+      engineeringPerformance: "48 Gbps wire-speed garantizados para eliminar cuellos de botella de red local de 100M.",
+      operationsDeployment: "Montaje directo en rack de 19 pulgadas y puesta en marcha en 60 segundos."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 26, EDUCATION_CAMPUS: 22 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 22,
+      WIFI7_MULTIGIG_EXPANSION: 10,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 35
+    }
+  },
+
+  // ==========================================
+  // 10. NETALLY INSTRUMENTACIÓN & CERTIFICACIÓN (AIRCHECK-G3-PRO, ETHERSCOPE-NXG)
+  // ==========================================
+  {
+    id: "aircheck-g3-pro",
+    sku: "AIRCHECK-G3-PRO",
+    model: "AIRCHECK-G3-PRO",
+    name: "NetAlly AirCheck G3 Pro Probador de Redes Wi-Fi 6/6E y Cobre",
+    brand: "NetAlly",
+    deviceType: "TESTER",
+    category: "testers",
+    description: "Analizador de redes inalámbricas Wi-Fi 6/6E y cableado Gigabit con pantalla táctil, escaneo de espectro, roaming audit y pruebas de carga PoE.",
+    url: "https://www.ecomshop.es/netally-aircheck-g3-pro",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 2490,
+    wholesalePriceEur: 1890,
+    stockStatus: "IN_STOCK",
+    specs: [
+      "Pruebas de Wi-Fi 6/6E en bandas de 2.4 GHz, 5 GHz y 6 GHz",
+      "Auditoría de roaming 802.11k/v/r y mapas de cobertura inalámbrica en tiempo real",
+      "Prueba de carga PoE TruePower hasta 90W 802.3bt en puerto RJ45",
+      "Detección de puntos de acceso no autorizados (Rogue APs) e interferencias de canal",
+      "Pantalla táctil a color de 5 pulgadas y batería recargable de alta autonomía",
+      "Carga automatizada de informes de certificación a NetAlly Link-Live Cloud"
+    ],
+    interfaces: [
+      "1x GbE RJ45 para prueba de cable y PoE",
+      "Radios internas Wi-Fi 6E (2.4/5/6 GHz)",
+      "1x Conector SMA para antena externa direccional",
+      "1x USB-C para carga y datos"
+    ],
+    powerRequirements: "Batería recargable Li-Ion con hasta 10 horas de autonomía (carga USB-C)",
+    poeType: "NONE",
+    powerConsumptionWatts: 15,
+    managementMode: "Cloud",
+    standards: [
+      "Wi-Fi 6/6E (802.11ax en 2.4/5/6 GHz)",
+      "IEEE 802.3bt PoE TruePower Test",
+      "NetAlly Link-Live Cloud Integration"
+    ],
+    polymorphicSpecs: {
+      tester: {
+        testCapabilities: [
+          "Encuesta de cobertura Wi-Fi 6/6E (2.4/5/6 GHz)",
+          "Prueba de carga PoE TruePower hasta 90W (802.3bt)",
+          "Análisis de espectro y detección de interferencias",
+          "Test de conectividad y velocidad iPerf",
+          "Detección de VLANs y servidores DHCP/DNS"
+        ],
+        mediaSupported: ["Wi-Fi 6/6E", "Cobre Cat5e/6/6A", "PoE 802.3af/at/bt"],
+        batteryLifeHours: 10,
+        poeLoadTestWatts: 90,
+        screenSize: "5.0 pulgadas táctil a color"
+      }
+    },
+    keyAdvantages: [
+      "Ahorra hasta un 70% del tiempo de resolución de averías Wi-Fi complejas en clientes",
+      "Comprobación real de si el switch entrega los vatios PoE que promete antes de conectar el AP",
+      "Informes profesionales en PDF automáticos listos para entregar al cliente final"
+    ],
+    antiHallucinationNotes: [
+      "IMPORTANTE: Es un INSTRUMENTO PROFESIONAL DE MEDICIÓN Y AUDITORÍA DE RED; NO es un punto de acceso ni un switch.",
+      "Mide y analiza redes Wi-Fi 6/6E y cableado, no emite señal corporativa."
+    ],
+    recommendedBundle: {
+      sku: "ECW536",
+      name: "EnGenius ECW536 Cloud Tri-Band Wi-Fi 7 Access Point",
+      relationshipType: "ACCESSORY",
+      rationale: "Certifica y valida el despliegue del AP de alta densidad antes de la entrega al cliente."
+    },
+    notebookSource: {
+      sourceId: "src-netally-aircheck-g3",
+      title: "NetAlly AirCheck G3 Pro Wireless Analyzer Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/netally-aircheck-g3-pro",
+      rationale: "Ficha oficial de NetAlly en el catálogo de instrumentación EcomShop."
+    },
+    additionalSourceIds: ["src-18"],
+    actionTitle: "Instrumentación Oficial IT: NetAlly AirCheck G3 Pro para Certificación Wi-Fi 6E",
+    targetSegment: "Ingenieros de Campo, Instaladores Tipo A y Consultoras de Red",
+    defaultAngle: "OPERATIONS",
+    commercialAngles: {
+      executiveRoi: "Rentabiliza su coste en 3 despliegues al certificar la entrega de obra y evitar desplazamientos de garantía.",
+      engineeringPerformance: "Medición en banda de 6 GHz y test de estrés PoE TruePower hasta 90W bajo carga real.",
+      operationsDeployment: "Generación de informes de conformidad automáticos en la nube Link-Live con firma de instalador."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 28, LOGISTICS_INDUSTRY: 26, EDUCATION_CAMPUS: 25 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 25,
+      HOSPITALITY_SOLUTIONS: 20,
+      SWITCHING_POE_BACKBONE: 25,
+      STOCK_CLEARANCE_PROMO: 10
+    }
+  },
+  {
+    id: "etherscope-nxg",
+    sku: "ETHERSCOPE-NXG",
+    model: "ETHERSCOPE-NXG",
+    name: "NetAlly EtherScope nXG Analizador Portátil de Red 10G Cobre y Fibra",
+    brand: "NetAlly",
+    deviceType: "TESTER",
+    category: "testers",
+    description: "Analizador portátil de red de grado profesional con puertos duales de 10G cobre/fibra, pruebas de throughput a velocidad de línea, Wi-Fi 6 y diagnóstico de LAN/WAN.",
+    url: "https://www.ecomshop.es/netally-etherscope-nxg",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 4890,
+    wholesalePriceEur: 3790,
+    stockStatus: "IN_STOCK",
+    specs: [
+      "Prueba de conmutación y enlaces de 10G/5G/2.5G/1G cobre Base-T y fibra óptica 10G/1G SFP+",
+      "Generación de tráfico a velocidad de línea de hasta 10 Gbps para pruebas de estrés de backbone",
+      "Medición de PoE bajo carga real de hasta 90W 802.3bt Tipo 4",
+      "Auditoría completa de topología de red, switches, VLANs y servicios DHCP/DNS/Gateway",
+      "Pantalla táctil capacitiva HD de 7 pulgadas con sistema operativo Android",
+      "Integración con Link-Live Cloud para informes forenses y mapas de cableado"
+    ],
+    interfaces: [
+      "1x 10G/5G/2.5G/1G RJ45 Base-T",
+      "1x 10G/1G SFP+ Slot para fibra óptica",
+      "1x Puerto de administración auxiliar GbE RJ45",
+      "Radios Wi-Fi integradas para gestión y auditoría inalámbrica",
+      "USB-A y USB-C"
+    ],
+    powerRequirements: "Batería recargable Li-Ion con 8 horas de operación continua (cargador 15V incluido)",
+    poeType: "NONE",
+    powerConsumptionWatts: 30,
+    managementMode: "Cloud",
+    standards: [
+      "IEEE 802.3an 10GBASE-T",
+      "IEEE 802.3ae 10GBASE-R SFP+",
+      "IEEE 802.3bt PoE 90W",
+      "RFC 2544 / Y.1564 NetAlly Line-Rate Testing"
+    ],
+    polymorphicSpecs: {
+      tester: {
+        testCapabilities: [
+          "Prueba de caudal troncal a 10 Gbps wire-speed sin pérdida",
+          "Test de enlaces ópticos SFP+ con medición de potencia de recepción",
+          "Carga de potencia PoE TruePower hasta 90W",
+          "Mapeo de topología y conmutación VLAN/LACP",
+          "Análisis de retardo, jitter y pérdida de tramas"
+        ],
+        mediaSupported: ["Cobre 10G/Multi-Gig/1G", "Fibra Óptica 10G/1G SFP+", "Wi-Fi"],
+        batteryLifeHours: 8,
+        poeLoadTestWatts: 90,
+        screenSize: "7.0 pulgadas HD táctil"
+      }
+    },
+    keyAdvantages: [
+      "El equipo definitivo para validar enlaces troncales de 10 Gbps antes de poner en marcha servidores y Wi-Fi 7",
+      "Detecta fallos en transceptores SFP+ y atenuación de fibra en tiempo real",
+      "Certificación formal con validez contractual para auditorías de telecomunicaciones"
+    ],
+    antiHallucinationNotes: [
+      "INSTRUMENTO DE TESTEO Y CERTIFICACIÓN DE LÍNEA; NO es un switch de agregación ni un router.",
+      "Dispositivo portátil con pantalla de 7 pulgadas para ingenieros de telecomunicaciones."
+    ],
+    recommendedBundle: {
+      sku: "ECS5512F",
+      name: "Switch de Agregación de Fibra EnGenius ECS5512F 12x 10G SFP+",
+      relationshipType: "ACCESSORY",
+      rationale: "Certificación y validación de la conmutación de 10G de fibra entre racks."
+    },
+    notebookSource: {
+      sourceId: "src-netally-etherscope-nxg",
+      title: "NetAlly EtherScope nXG 10G Network Analyzer Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/netally-etherscope-nxg",
+      rationale: "Ficha oficial de EtherScope nXG en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-14", "src-18"],
+    actionTitle: "Auditoría de Red Troncal 10G: NetAlly EtherScope nXG para Enlaces Críticos",
+    targetSegment: "Directores TIC, Centros de Datos y Contratistas de Telecomunicaciones",
+    defaultAngle: "PERFORMANCE",
+    commercialAngles: {
+      executiveRoi: "Evita litigios y multas de cumplimiento al certificar por escrito el caudal contratado de 10 Gbps.",
+      engineeringPerformance: "Pruebas de estrés RFC 2544 a velocidad de línea de 10G con cero suposiciones teóricas.",
+      operationsDeployment: "Detección instantánea de cables cruzados, atenuación en fibra y switches saturados."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 28, LOGISTICS_INDUSTRY: 28, EDUCATION_CAMPUS: 26 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 25,
+      HOSPITALITY_SOLUTIONS: 18,
+      SWITCHING_POE_BACKBONE: 30,
+      STOCK_CLEARANCE_PROMO: 10
     }
   }
 ];

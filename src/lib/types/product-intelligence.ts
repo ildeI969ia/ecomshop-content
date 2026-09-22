@@ -1,4 +1,11 @@
-export type DeviceType = "ACCESS_POINT" | "SWITCH" | "GATEWAY" | "ACCESSORY";
+export type DeviceType =
+  | "ACCESS_POINT"
+  | "SWITCH"
+  | "ROUTER_CELLULAR"
+  | "GATEWAY"
+  | "FIBER_OPTIC"
+  | "TESTER"
+  | "ACCESSORY";
 
 export interface ProductEvidenceClaim {
   claim: string;
@@ -45,6 +52,20 @@ export interface ProductIntelligenceCard {
     wanFailover?: boolean;
     hasWifiRadios?: boolean;
     isCableOnly?: boolean;
+
+    // Campos para Router Celular Industrial
+    mobileTechnology?: string;
+    simSlots?: number;
+    dualSimFailover?: boolean;
+    cellularSpeedDownstream?: string;
+    gnssSupport?: boolean;
+    industrialInterfaces?: string[];
+
+    // Campos para Medición & Testers
+    testCapabilities?: string[];
+    mediaSupported?: string[];
+    batteryLifeHours?: number;
+    poeLoadTestWatts?: number;
   };
   evidenceLedger: ProductEvidenceClaim[];
   commercialAngles: {

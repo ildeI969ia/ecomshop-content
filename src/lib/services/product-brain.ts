@@ -40,7 +40,7 @@ export interface ProductBrainProfile {
     uplinkInterface: string;
     powerConsumptionWatts: number;
     poeType: "802.3af" | "802.3at" | "802.3bt" | "DC_PASSIVE" | "NONE";
-    managementMode: "Cloud" | "On-Premise" | "Hybrid" | "Standalone";
+    managementMode: "Cloud" | "On-Premise" | "Hybrid" | "Standalone" | "RMS" | "Local";
   };
 
   // Sales & Objections

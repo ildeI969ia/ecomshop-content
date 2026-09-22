@@ -128,6 +128,9 @@ export const ImageStudioView: React.FC<ImageStudioViewProps> = ({
 }) => {
   const { downloadingId, downloadImage } = useImageDownloader();
   const [selectedProductSku, setSelectedProductSku] = useState<string>(ECOMSHOP_CATALOG[0]?.sku || "ECW536");
+  const [urlInput, setUrlInput] = useState<string>('');
+  const [resolveLoading, setResolveLoading] = useState<boolean>(false);
+  const [resolveError, setResolveError] = useState<string | null>(null);
 
   const isAllSelected = images.length > 0 && images.every((img) => selectedImageIds.includes(img.id));
 
@@ -421,6 +424,83 @@ export const ImageStudioView: React.FC<ImageStudioViewProps> = ({
                     </div>
                   );
                 })()}
+              </div>
+            </details>
+            {/* Acordeón C: Resolver URL de producto EcomShop */}
+            <details className="group bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
+              <summary className="p-3 text-xs font-semibold text-indigo-400 hover:text-indigo-300 cursor-pointer flex items-center justify-between list-none select-none transition">
+                <div className="flex items-center gap-2">
+                  <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>🔗 Resolver URL de Producto (ecomshop.es)</span>
+                </div>
+              </summary>
+              <div className="p-3 pt-0 border-t border-slate-800/60 mt-2 space-y-2">
+                <input
+                  type="url"
+                  placeholder="https://www.ecomshop.es/producto/xyz"
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!urlInput) return;
+                    setResolveLoading(true);
+                    setResolveError(null);
+                    try {
+                      const res = await fetch('/api/catalog/resolve', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: urlInput }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) {
+                        const err = (data as any).error?.message || 'Error al resolver URL';
+                        setResolveError(err);
+                      } else {
+                        const prod = data as any;
+                        let star: any;
+                        if (prod.sku) {
+                          const dev = getCatalogDevice(prod.sku);
+                          star = dev ? catalogDeviceToStarProduct(dev) : {
+                            id: prod.sku,
+                            name: prod.name || prod.title || prod.sku,
+                            model: prod.sku,
+                            category: prod.category || 'engenius',
+                            description: prod.description || '',
+                            url: prod.url,
+                            imageUrl: prod.imageUrl,
+                            specs: prod.specs ? Object.values(prod.specs) : [],
+                          };
+                        } else {
+                          star = {
+                            id: prod.url,
+                            name: prod.name || prod.title || 'Producto',
+                            model: prod.model || '',
+                            category: prod.category || 'engenius',
+                            description: prod.description || '',
+                            url: prod.url,
+                            imageUrl: prod.imageUrl,
+                            specs: prod.specs ? Object.values(prod.specs) : [],
+                          };
+                        }
+                        onUseRealProductPhoto(star);
+                      }
+                    } catch (e: any) {
+                      setResolveError(e.message || 'Network error');
+                    } finally {
+                      setResolveLoading(false);
+                    }
+                  }}
+                  disabled={resolveLoading}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition"
+                >
+                  {resolveLoading ? 'Resolviendo...' : 'Analizar ficha'}
+                </button>
+                {resolveError && (
+                  <p className="text-xs text-red-400 mt-1">{resolveError}</p>
+                )}
               </div>
             </details>
 

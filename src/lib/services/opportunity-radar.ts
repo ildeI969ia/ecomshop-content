@@ -109,10 +109,10 @@ export class OpportunityRadarService {
     return ECOMSHOP_FULL_CATALOG.map(item => ({
       sku: item.sku,
       model: item.model,
-      category: (item.category.startsWith("WIFI") ? "wifi" :
-                item.category.startsWith("SWITCH") ? "switches" :
-                item.category.startsWith("GATEWAY") ? "gateways" :
-                item.category.startsWith("FIBRA") ? "fibra" : "accesorios") as "wifi" | "switches" | "gateways" | "fibra" | "accesorios",
+      category: (item.category === "wifi" ? "wifi" :
+                item.category === "switches" ? "switches" :
+                item.category === "gateways" ? "gateways" :
+                item.category === "fibra" ? "fibra" : "accesorios") as "wifi" | "switches" | "gateways" | "fibra" | "accesorios",
       brand: item.brand,
       priceEur: item.priceEur,
       url: item.url,

@@ -21,6 +21,8 @@ export interface CatalogDevice {
     | "SWITCH_GIGABIT"
     | "SWITCH_FIBER_L3"
     | "GATEWAY_SDWAN"
+    | "ROUTER_CELLULAR"
+    | "TESTER"
     | "ACCESSORY";
   shortDesc: string;
   recommendedBundle: string;
@@ -36,7 +38,7 @@ export interface CatalogDevice {
     poeBudget?: string;
     uplinks?: string;
     layer?: "L2+" | "L3" | "Unmanaged";
-    // Específico para Gateways
+    // Específico para Gateways & Celular
     throughput?: string;
     wanPorts?: string;
     vpnFeatures?: string[];
@@ -64,13 +66,19 @@ export function catalogProductToCatalogDevice(prod: CatalogProduct): CatalogDevi
   } else if (prod.deviceType === "SWITCH") {
     if (prod.sku === "ECS5512F") {
       category = "SWITCH_FIBER_L3";
-    } else if (prod.sku === "ECS2512FP" || prod.sku === "ECS5512FP") {
+    } else if (prod.sku === "ECS2512FP" || prod.sku === "ECS5512FP" || prod.sku === "ECS2510FP" || prod.sku === "ECS2530FP") {
       category = "SWITCH_MULTIGIG";
     } else {
       category = "SWITCH_GIGABIT";
     }
   } else if (prod.deviceType === "GATEWAY") {
     category = "GATEWAY_SDWAN";
+  } else if (prod.deviceType === "ROUTER_CELLULAR") {
+    category = "ROUTER_CELLULAR";
+  } else if (prod.deviceType === "TESTER") {
+    category = "TESTER";
+  } else if (prod.deviceType === "FIBER_OPTIC" || prod.category === "fibra") {
+    category = "SWITCH_FIBER_L3";
   } else {
     category = "ACCESSORY";
   }
