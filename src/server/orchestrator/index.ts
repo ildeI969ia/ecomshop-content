@@ -2,3 +2,6 @@ export * from "./types";
 export * from "./registry";
 export * from "./scheduler";
 export * from "./plan-builder";
+export * from "./runtime";
+export * from "./firestore-store";
+export * from "./lease";
