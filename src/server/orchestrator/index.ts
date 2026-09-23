@@ -5,3 +5,5 @@ export * from "./plan-builder";
 export * from "./runtime";
 export * from "./firestore-store";
 export * from "./lease";
+export * from "./provider";
+export * from "./worktree-manager";
