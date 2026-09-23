@@ -15,11 +15,17 @@ import {
  *  - Los assets de Firestore se escribían con `publicUrl: ""` cuando el data
  *    URL superaba 800.000 caracteres (commit 5150e78) o con una URL fabricada
  *    por el antiguo StorageProvider que nunca tocó GCS.
- *  - La galería descarta cualquier asset sin URL (page.tsx:716-725).
+ *  - La galería descartaba cualquier asset sin URL (page.tsx:716-725); desde F4
+ *    se muestran con placeholder y su storageStatus real en lugar de ocultarlos.
  */
 
-/** Punto exacto del frontend que convierte "asset sin URL" en "galería vacía". */
-export const GALLERY_DISCARD_POINT = "src/app/page.tsx:716-725 (.filter(a => Boolean(a.url)))";
+/**
+ * Punto HISTÓRICO del frontend que convertía "asset sin URL" en "galería vacía".
+ * El filtro `.filter(a => Boolean(a.url))` se eliminó en F4: la galería ahora
+ * renderiza el activo con placeholder y su storageStatus. Se conserva como
+ * referencia del incidente (lo usan los tests de regresión).
+ */
+export const GALLERY_DISCARD_POINT = "src/app/page.tsx:716-725 (.filter(a => Boolean(a.url)) — eliminado en F4)";
 
 /** Prefijo de storagePath que NO corresponde a ningún objeto real de GCS. */
 export const PLACEHOLDER_STORAGE_PREFIX = "generated/";
@@ -339,10 +345,11 @@ export async function runPersistenceDiagnostics(
         `${summary.classified.MISSING_URL} sin publicUrl, ` +
         `${summary.classified.PLACEHOLDER_STORAGE_PATH} con storagePath ficticio, ` +
         `${summary.classified.DATA_URL_IN_FIRESTORE} con data URL en Firestore. ` +
-        `El frontend los descarta en ${GALLERY_DISCARD_POINT}, por eso la galería muestra 0.`,
+        `Desde F4 la galería ya no los descarta (${GALLERY_DISCARD_POINT}): se muestran ` +
+        `con placeholder y su storageStatus, pero siguen sin URL servible.`,
       remediation:
-        "Cerrar el pipeline (subida real a GCS) y ejecutar la migración legacy (F5): " +
-        "nunca inventar URLs; marcar los irrecuperables como storageStatus=BROKEN_SOURCE.",
+        "Ejecutar la migración legacy (F5): recuperar el binario o marcar " +
+        "storageStatus=BROKEN_SOURCE; nunca inventar URLs.",
     });
   } else if (assets.length > 0) {
     checks.push({
@@ -380,15 +387,17 @@ export async function runPersistenceDiagnostics(
   checks.push({
     id: "pipeline.silentFailures",
     severity: "WARNING",
-    title: "Quedan puntos de fallo silencioso (F3/F4 pendientes)",
+    title: "Sin puntos de fallo silencioso en el flujo de assets (F3/F4 completados)",
     detail:
-      "src/app/api/images/generate/route.ts:121-123 (catch dbErr => 200), " +
-      "src/app/api/assets/route.ts:73 y :101 (repo.save().catch(() => {})), " +
-      "src/app/api/assets/route.ts:116-118 (catch => 200 con assets: []), " +
-      "src/server/repositories/index.ts listRecent => [] ante error.",
+      "Cerrados: generate/route.ts (F3: 502 con causa, sin data URL fallback), " +
+      "/api/assets GET (F4: 500 con error real, sin 200 {assets: []}), " +
+      "auto-recuperación lateral eliminada (ya no hay repo.save().catch(() => {})), " +
+      "AssetRepository.listRecent propaga el error total. " +
+      "Quedan puntos no bloqueantes fuera del alcance F4: " +
+      "ContentRepository.listRecent => [] ante error y .catch de auditorías (no bloqueantes).",
     remediation:
-      "Propagar errores tipados y devolver 4xx/5xx reales; eliminar los catch vacíos " +
-      "(plan por fases en PHASE_06A_PERSISTENCE_HARDENING.md).",
+      "Cuando se aborde F6, extender la misma regla a ContentRepository y añadir " +
+      "reglas de lint contra catch vacíos (PHASE_06A_PERSISTENCE_HARDENING.md).",
   });
 
   // ── Diagnóstico en lenguaje natural ──────────────────────────────────────
@@ -431,8 +440,6 @@ export async function runPersistenceDiagnostics(
     checks,
     diagnosis,
     pendingWork: [
-      "F3 · Pipeline de generación: optimizar el binario, subirlo a GCS, escribir metadatos verificados y propagar errores (src/app/api/images/generate/route.ts).",
-      "F4 · Lectura y UI: /api/assets sin fallbacks laterales ni 200 vacíos; galería que no descarte activos sin URL (src/app/page.tsx:716-725) y muestre el estado real.",
       "F5 · Migración de los assets legacy con publicUrl vacío (marcar BROKEN_SOURCE o recuperar el binario; nunca inventar URL).",
       "F6 · Blindaje: SESSION_SECRET/CORPORATE_ACCESS_PASSWORD en Secret Manager, src/middleware.ts:11, reglas de lint contra catch vacíos y CI gate con los tests de storage/persistencia.",
     ],

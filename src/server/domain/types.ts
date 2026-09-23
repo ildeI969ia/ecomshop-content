@@ -214,7 +214,12 @@ export const AssetSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   createdBy: z.string(),
-  updatedBy: z.string()
+  updatedBy: z.string(),
+  storageStatus: z
+    .enum(["VERIFIED", "EXTERNAL_URL", "MISSING_URL", "PLACEHOLDER_STORAGE_PATH", "BROKEN_SOURCE"])
+    .optional(),
+  sha256: z.string().optional(),
+  originalSizeBytes: z.number().optional()
 });
 export type Asset = z.infer<typeof AssetSchema>;
 

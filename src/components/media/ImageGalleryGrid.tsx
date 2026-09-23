@@ -65,9 +65,14 @@ export const ImageGalleryGrid: React.FC<ImageGalleryGridProps> = ({
                   onClick={() => onOpenLightbox(img)}
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center text-slate-600 gap-1 p-4">
-                  <ImageIcon className="w-8 h-8 text-slate-700 mb-1" />
-                  <span className="text-[11px]">Imagen no disponible</span>
+                <div className="flex flex-col items-center justify-center text-slate-600 gap-1 p-4 text-center">
+                  <ImageIcon className="w-8 h-8 text-amber-500/50 mb-1" />
+                  <span className="text-[11px] font-semibold text-amber-300">
+                    {img.storageStatus || "SIN_IMAGEN_SERVIBLE"}
+                  </span>
+                  <span className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                    {img.warning || "Sin binario verificado en GCS"}
+                  </span>
                 </div>
               )}
 
@@ -144,7 +149,7 @@ export const ImageGalleryGrid: React.FC<ImageGalleryGridProps> = ({
                 <button
                   type="button"
                   onClick={() => onDownloadImage(img.url, img.id)}
-                  disabled={downloadingId === img.id}
+                  disabled={!img.url || downloadingId === img.id}
                   title="Descargar imagen"
                   aria-label="Descargar imagen"
                   className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition disabled:opacity-50 cursor-pointer"
@@ -159,7 +164,7 @@ export const ImageGalleryGrid: React.FC<ImageGalleryGridProps> = ({
                 {/* 3. Insertar en el Blog de la Campaña */}
                 <button
                   type="button"
-                  onClick={() => onApplyToCampaignBlog(img)}
+                  onClick={() => { if (img.url) onApplyToCampaignBlog(img); }}
                   title="Insertar en el Blog de la campaña activa"
                   className="rounded-lg bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/30 text-xs px-2 py-1 transition font-medium cursor-pointer"
                 >

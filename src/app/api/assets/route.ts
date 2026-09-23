@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateServerRequest, authorizePermission } from "@/server/security/auth";
-import { AssetRepository, AuditRepository, ContentRepository } from "@/server/repositories";
-import { GoogleCloudStorageProvider } from "@/server/services/storage-provider";
+import { AssetRepository, AuditRepository } from "@/server/repositories";
+import { GoogleCloudStorageProvider, StorageProviderError } from "@/server/services/storage-provider";
 import { Asset } from "@/server/domain/types";
-import { STAR_PRODUCTS } from "@/lib/knowledge";
+import { prepareImageBinary, sha256Of } from "@/server/services/image-binary";
+import { summarizeAssetHealth } from "@/server/services/persistence-diagnostics";
 
 // Tipos MIME y extensiones estrictamente permitidas
 const ALLOWED_MIME_TYPES = [
@@ -32,89 +33,17 @@ export async function GET(req: NextRequest) {
       list = await repo.listRecent(100);
     }
 
-    // Auto-recuperación: Si no hay imágenes en la colección assets de Firestore,
-    // escanear la colección contents (los artículos existentes) para extraer cualquier imagen
-    if (list.length === 0) {
-      try {
-        const contentRepo = new ContentRepository();
-        const contents = await contentRepo.listRecent(100);
-        const extractedAssets: Asset[] = [];
-        const seenUrls = new Set<string>();
-
-        for (const c of contents) {
-          const body = c.versions?.[0]?.body || (c as any).content || {};
-          const html = body.blog?.htmlContent || "";
-          
-          // Extraer imágenes con regex de <img>
-          const imgMatches = html.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*alt=["']?([^"'>]*)["']?/gi);
-          for (const match of imgMatches) {
-            const src = match[1];
-            const alt = match[2] || c.title || "Imagen de artículo";
-            if (src && !seenUrls.has(src)) {
-              seenUrls.add(src);
-              const assetId = `asset-auto-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-              const asset: Asset = {
-                id: assetId,
-                workspaceId: user.workspaceId,
-                filename: `Artículo: ${alt.substring(0, 50)}`,
-                mimeType: src.startsWith("data:image/png") ? "image/png" : "image/jpeg",
-                sizeBytes: src.length,
-                storagePath: src,
-                publicUrl: src,
-                type: "image",
-                aiGenerated: true,
-                ownerId: user.uid,
-                createdAt: c.createdAt || new Date().toISOString(),
-                updatedAt: c.updatedAt || new Date().toISOString(),
-                createdBy: user.uid,
-                updatedBy: user.uid
-              };
-              extractedAssets.push(asset);
-              repo.save(asset).catch(() => {});
-            }
-          }
-
-          // Extraer photoPlacements si existen
-          const placements = body.blog?.editorialLayout?.photoPlacements;
-          if (Array.isArray(placements)) {
-            for (const p of placements) {
-              if (p.photoUrl && !seenUrls.has(p.photoUrl)) {
-                seenUrls.add(p.photoUrl);
-                const assetId = `asset-placement-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-                const asset: Asset = {
-                  id: assetId,
-                  workspaceId: user.workspaceId,
-                  filename: `Placement: ${p.description || p.photoType || "Foto editorial"}`,
-                  mimeType: "image/jpeg",
-                  sizeBytes: 0,
-                  storagePath: p.photoUrl,
-                  publicUrl: p.photoUrl,
-                  type: "image",
-                  aiGenerated: true,
-                  ownerId: user.uid,
-                  createdAt: c.createdAt || new Date().toISOString(),
-                  updatedAt: c.updatedAt || new Date().toISOString(),
-                  createdBy: user.uid,
-                  updatedBy: user.uid
-                };
-                extractedAssets.push(asset);
-                repo.save(asset).catch(() => {});
-              }
-            }
-          }
-        }
-
-        if (extractedAssets.length > 0) {
-          list = extractedAssets;
-        }
-      } catch (extractErr) {
-        console.warn("[api/assets GET] Error extrayendo imágenes de contenidos:", extractErr);
-      }
-    }
-
-    return NextResponse.json({ assets: list });
-  } catch (err: any) {
-    return NextResponse.json({ assets: [], error: err?.message }, { status: 200 });
+    // F4: sin auto-recuperacion lateral - la galeria refleja lo que hay en la coleccion assets.
+    const health = summarizeAssetHealth(list);
+    return NextResponse.json({
+      assets: list,
+      total: list.length,
+      health: { withUrl: health.withUrl, withoutUrl: health.withoutUrl, classified: health.classified }
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[api/assets GET] Error al leer assets:", err);
+    return NextResponse.json({ assets: [], total: 0, error: message }, { status: 500 });
   }
 }
 
@@ -151,26 +80,55 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "El archivo supera el límite de 25MB" }, { status: 400 });
     }
 
-    // 4. Subida a Cloud Storage
+    // 4. Subida a Cloud Storage (F3: si GCS falla => HTTP 502 y NO se escribe metadata)
     const storage = new GoogleCloudStorageProvider();
     const assetId = `asset-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const destinationPath = `workspaces/${user.workspaceId}/assets/${assetId}_${sanitizedFilename}`;
 
-    const uploadRes = await storage.uploadFile({
-      buffer,
-      destinationPath,
-      mimeType
-    });
+    // Optimización del binario raster antes de subir (F3) + SHA-256 del binario real
+    const isRasterImage = mimeType === "image/jpeg" || mimeType === "image/png" || mimeType === "image/webp";
+    const prepared = isRasterImage ? await prepareImageBinary(buffer, mimeType) : null;
+    const uploadBuffer = prepared ? prepared.buffer : buffer;
+    const uploadMime = prepared ? prepared.mimeType : mimeType;
+    const sha256 = sha256Of(uploadBuffer);
+    const originalSizeBytes = prepared && prepared.optimized ? buffer.length : undefined;
+    const dotIdx = destinationPath.lastIndexOf(".");
+    const uploadPath = prepared && prepared.optimized && dotIdx > 0 ? `${destinationPath.slice(0, dotIdx)}.${prepared.extension}` : destinationPath;
 
-    // 5. Persistencia de metadatos en Firestore
+    let uploadRes;
+    try {
+      uploadRes = await storage.uploadFile({
+        buffer: uploadBuffer,
+        destinationPath: uploadPath,
+        mimeType: uploadMime
+      });
+    } catch (storageErr) {
+      const message = storageErr instanceof Error ? storageErr.message : String(storageErr);
+      console.error("[api/assets POST] Subida a GCS fallida; no se persiste metadata:", message);
+      return NextResponse.json(
+        { error: `No se pudo guardar el archivo en Cloud Storage: ${message}`, persisted: false },
+        { status: 502 }
+      );
+    }
+    if (!uploadRes.publicUrl) {
+      return NextResponse.json(
+        { error: "GCS no devolvió una URL verificada. No se ha escrito ningún activo.", persisted: false },
+        { status: 502 }
+      );
+    }
+
+    // 5. Persistencia de metadatos en Firestore (sólo con el binario VERIFICADO en GCS)
     const asset: Asset = {
       id: assetId,
       workspaceId: user.workspaceId,
       filename: sanitizedFilename,
-      mimeType,
-      sizeBytes: buffer.length,
+      mimeType: uploadMime,
+      sizeBytes: uploadBuffer.length,
+      originalSizeBytes,
       storagePath: uploadRes.storagePath,
       publicUrl: uploadRes.publicUrl,
+      storageStatus: "VERIFIED",
+      sha256,
       type: mimeType.startsWith("image/") ? "image" : mimeType === "application/pdf" ? "pdf" : "audio",
       campaignId,
       productId,
@@ -185,7 +143,6 @@ export async function POST(req: NextRequest) {
 
     const repo = new AssetRepository();
     await repo.save(asset);
-
     // 6. Registro inmutable en Audit Log
     const auditRepo = new AuditRepository();
     await auditRepo.record({
@@ -202,9 +159,10 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, asset });
-  } catch (err: any) {
-    console.error("Error al procesar subida de asset:", err);
-    return NextResponse.json({ error: err.message || "Error al subir asset" }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Error al procesar subida de asset:", message);
+    return NextResponse.json({ error: message || "Error al subir asset", persisted: false }, { status: 500 });
   }
 }
 

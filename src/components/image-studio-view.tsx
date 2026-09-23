@@ -38,6 +38,7 @@ export interface GeneratedImageItem {
   createdAt: string;
   sourceType?: string;
   warning?: string;
+  storageStatus?: string;
   title?: string;
   source?: string;
 }
@@ -51,6 +52,7 @@ interface ImageStudioViewProps {
   onClearAll: () => void;
   onRefreshDatabase: () => void;
   loadingDatabaseAssets: boolean;
+  assetsSyncError?: string | null;
   onOpenLightbox: (img: GeneratedImageItem) => void;
   onDeleteImage: (id: string) => void;
   onApplyToCampaignBlog: (img: GeneratedImageItem) => void;
@@ -97,6 +99,7 @@ export const ImageStudioView: React.FC<ImageStudioViewProps> = ({
   onClearAll,
   onRefreshDatabase,
   loadingDatabaseAssets,
+  assetsSyncError,
   onOpenLightbox,
   onDeleteImage,
   onApplyToCampaignBlog,
@@ -702,6 +705,25 @@ export const ImageStudioView: React.FC<ImageStudioViewProps> = ({
           </div>
         </div>
 
+        {assetsSyncError && (
+          <div className="mb-3 flex items-start gap-2 text-xs text-rose-300 bg-rose-950/40 border border-rose-900/50 rounded-lg px-3 py-2">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 mr-2 text-rose-400" />
+            <div>
+              <p className="font-semibold">Error al sincronizar con Firestore</p>
+              <p className="text-rose-400/80 break-all">{assetsSyncError}</p>
+              <p className="text-rose-400/60 mt-0.5">Pulsa Recargar BBDD para reintentar la carga.</p>
+            </div>
+          </div>
+        )}
+        {images.filter((i) => !i.url).length > 0 && (
+          <div className="mb-3 flex items-start gap-2 text-xs text-amber-300 bg-amber-950/40 border border-amber-900/50 rounded-lg px-3 py-2">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 mr-2 text-amber-400" />
+            <div>
+              <p className="font-semibold">{images.filter((i) => !i.url).length} activo(s) sin imagen servible</p>
+              <p className="text-amber-400/70">Existen en Firestore pero su binario no esta verificado en GCS. Se muestran con placeholder hasta la migracion (F5).</p>
+            </div>
+          </div>
+        )}
         {/* CONTENIDO DEL PANEL DERECHO: GRID O ESTADO VACÍO */}
         {images.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-slate-500">

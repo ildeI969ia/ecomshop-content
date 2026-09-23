@@ -1,5 +1,7 @@
 import { ContentItem, ContentVariant, FinOpsRecord, AuditLog, Campaign, Asset } from "../domain/types";
 import { ContentRepository, FinOpsRepository, AuditRepository, CampaignRepository, AssetRepository } from "../repositories";
+import { GoogleCloudStorageProvider } from "./storage-provider";
+import { prepareImageBinary } from "./image-binary";
 
 export interface SyncPayload {
   historyItems?: any[];
@@ -33,11 +35,15 @@ export class PersistenceService {
     syncedArticles: number;
     syncedFinops: number;
     syncedImages: number;
+    failedImages: number;
+    imageErrors: string[];
   }> {
     const workspaceId = payload.workspaceId || "default-ecomspain";
     let syncedArticles = 0;
     let syncedFinops = 0;
     let syncedImages = 0;
+    let failedImages = 0;
+    const imageErrors: string[] = [];
 
     // 1. Migrar artículos de historial
     if (payload.historyItems && Array.isArray(payload.historyItems)) {
@@ -109,44 +115,90 @@ export class PersistenceService {
       }
     }
 
-    // 2. Migrar imágenes generadas
+    // 2. Migrar imágenes generadas (F3): el binario real se sube a GCS y se verifica.
+    //    Si algo falla NO se inventa storagePath: se registra en imageErrors (sin skips silenciosos).
     if (payload.generatedImages && Array.isArray(payload.generatedImages)) {
+      const storage = new GoogleCloudStorageProvider();
       for (const img of payload.generatedImages) {
         if (!img.url) continue;
-        const assetId = `asset-${img.id || Math.random().toString(36).substring(2, 9)}`;
-        const assetItem: Asset = {
-          id: assetId,
-          workspaceId,
-          filename: img.prompt ? `AI: ${img.prompt.substring(0, 60)}` : `img-${img.id}`,
-          mimeType: img.url.startsWith("data:image/png") ? "image/png" : "image/jpeg",
-          sizeBytes: img.url.length,
-          storagePath: `generated/${assetId}`,
-          publicUrl: img.url,
-          type: "image",
-          aiGenerated: true,
-          aiProvenance: {
-            provider: "google-vertex-genai",
-            model: img.sourceType || "imagen3",
-            requestId: assetId,
-            generatedAt: safeIsoDate(img.createdAt),
-            inputTokens: 0,
-            outputTokens: 0,
-            cachedTokens: 0,
-            latencyMs: 0,
-            estimatedCostEur: 0.03,
-            sourceIdsUsed: []
-          },
-          ownerId: payload.userId,
-          createdAt: safeIsoDate(img.createdAt),
-          updatedAt: new Date().toISOString(),
-          createdBy: payload.userId,
-          updatedBy: payload.userId
-        };
-        await this.assetRepo.save(assetItem);
-        syncedImages++;
+        const assetId = String(img.id || "").startsWith("asset-") ? String(img.id) : `asset-${img.id || Math.random().toString(36).substring(2, 9)}`;
+        try {
+          let storagePath = "";
+          let publicUrl = "";
+          let sizeBytes = 0;
+          let mimeType = "image/jpeg";
+          let sha256: string | undefined;
+          let originalSizeBytes: number | undefined;
+          let storageStatus: Asset["storageStatus"] = "EXTERNAL_URL";
+
+          if (img.url.startsWith("data:")) {
+            const semi = img.url.indexOf(";");
+            const comma = img.url.indexOf(",");
+            if (semi < 0 || comma < 0 || img.url.slice(semi + 1, comma) !== "base64") {
+              throw new Error("data URL mal formado (se esperaba ;base64,)");
+            }
+            const sourceMime = img.url.slice(5, semi);
+            const original = Buffer.from(img.url.slice(comma + 1), "base64");
+            originalSizeBytes = original.length;
+            const prepared = await prepareImageBinary(original, sourceMime);
+            const destinationPath = `workspaces/${workspaceId}/assets/${assetId}_migrated.${prepared.extension}`;
+            const upload = await storage.uploadFile({ buffer: prepared.buffer, destinationPath, mimeType: prepared.mimeType });
+            if (!upload.publicUrl) throw new Error("GCS no devolvio publicUrl verificada");
+            storagePath = upload.storagePath;
+            publicUrl = upload.publicUrl;
+            sizeBytes = upload.sizeBytes;
+            mimeType = prepared.mimeType;
+            sha256 = prepared.sha256;
+            storageStatus = "VERIFIED";
+          } else if (img.url.startsWith("http://") || img.url.startsWith("https://")) {
+            publicUrl = img.url;
+            storagePath = img.url;
+            storageStatus = "EXTERNAL_URL";
+          } else {
+            throw new Error(`Esquema de URL no soportado: ${String(img.url).slice(0, 60)}`);
+          }
+
+          const assetItem: Asset = {
+            id: assetId,
+            workspaceId,
+            filename: img.prompt ? `AI: ${img.prompt.substring(0, 60)}` : `img-${img.id}`,
+            mimeType,
+            sizeBytes,
+            storagePath,
+            publicUrl,
+            storageStatus,
+            sha256,
+            originalSizeBytes,
+            type: "image",
+            aiGenerated: true,
+            aiProvenance: {
+              provider: "google-vertex-genai",
+              model: img.sourceType || "imagen3",
+              requestId: assetId,
+              generatedAt: safeIsoDate(img.createdAt),
+              inputTokens: 0,
+              outputTokens: 0,
+              cachedTokens: 0,
+              latencyMs: 0,
+              estimatedCostEur: 0.03,
+              sourceIdsUsed: []
+            },
+            ownerId: payload.userId,
+            createdAt: safeIsoDate(img.createdAt),
+            updatedAt: new Date().toISOString(),
+            createdBy: payload.userId,
+            updatedBy: payload.userId
+          };
+          await this.assetRepo.save(assetItem);
+          syncedImages++;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          failedImages++;
+          if (imageErrors.length < 5) imageErrors.push(`${assetId}: ${message}`);
+          console.error(`[PersistenceService] Imagen ${assetId} NO sincronizada:`, message);
+        }
       }
     }
-
     // 3. Migrar registros de FinOps
     if (payload.finopsRecords && Array.isArray(payload.finopsRecords)) {
       for (const rec of payload.finopsRecords) {
@@ -179,10 +231,10 @@ export class PersistenceService {
       action: "EDIT",
       entity: "LOCALSTORAGE_SYNC",
       entityId: workspaceId,
-      diff: { syncedArticles, syncedFinops, syncedImages },
+      diff: { syncedArticles, syncedFinops, syncedImages, failedImages, imageErrors: imageErrors.slice(0, 5) },
       source: "UI"
     });
 
-    return { syncedArticles, syncedFinops, syncedImages };
+    return { syncedArticles, syncedFinops, syncedImages, failedImages, imageErrors };
   }
 }

@@ -207,7 +207,7 @@ export class AssetRepository {
         return items.sort((a: Asset, b: Asset) => (b.createdAt || "").localeCompare(a.createdAt || ""));
       } catch (fallbackErr) {
         console.error("[AssetRepository] Fallback listRecent falló:", fallbackErr);
-        return [];
+        throw fallbackErr; // F4: el error total se propaga (el caller responde 5xx), nunca lista vacía silenciosa.
       }
     }
   }

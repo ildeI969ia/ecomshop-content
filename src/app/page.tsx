@@ -617,6 +617,7 @@ export default function ContentDashboard() {
   // Estado de sincronización y carga con Firestore
   const [loadingDatabaseContents, setLoadingDatabaseContents] = useState(false);
   const [loadingDatabaseAssets, setLoadingDatabaseAssets] = useState(false);
+  const [assetsSyncError, setAssetsSyncError] = useState<string | null>(null);
   const [isSyncingWithDatabase, setIsSyncingWithDatabase] = useState(false);
 
   // Persistir un artículo en Firestore inmediatamente tras su generación
@@ -708,9 +709,11 @@ export default function ContentDashboard() {
   // Cargar todas las imágenes compartidas desde Firestore
   const loadDatabaseAssets = async () => {
     setLoadingDatabaseAssets(true);
+    setAssetsSyncError(null);
     try {
-      const res = await apiFetch<{ assets?: Array<any> }>("/api/assets");
+      const res = await apiFetch<{ assets?: Array<any>; total?: number; health?: { withUrl: number; withoutUrl: number } }>("/api/assets");
       if (res?.assets && Array.isArray(res.assets)) {
+        // F4: NO se descartan los assets sin URL - se muestran con placeholder + storageStatus.
         const dbImages = res.assets
           .map((a: any) => {
             const rawUrl = a.publicUrl || a.url || (a.storagePath && (a.storagePath.startsWith("http") || a.storagePath.startsWith("data:")) ? a.storagePath : "");
@@ -719,32 +722,32 @@ export default function ContentDashboard() {
               url: rawUrl,
               prompt: a.prompt || (a.filename ? a.filename.replace(/^(AI|Placement|Fotografía Oficial|Artículo):\s*/i, "") : "Imagen generada"),
               createdAt: a.createdAt ? (isNaN(new Date(a.createdAt).getTime()) ? a.createdAt : new Date(a.createdAt).toLocaleTimeString("es-ES")) : new Date().toLocaleTimeString("es-ES"),
-              sourceType: a.aiProvenance?.model || a.sourceType || "imagen3"
+              sourceType: a.aiProvenance?.model || a.sourceType || "imagen3",
+              storageStatus: a.storageStatus || (rawUrl ? undefined : "MISSING_URL"),
+              warning: rawUrl ? a.warning : "Este asset existe en Firestore pero sin binario verificado en GCS (pendiente de migracion F5)."
             };
-          })
-          .filter((a: any) => Boolean(a.url));
+          });
 
         setGeneratedImagesList((prev) => {
-          // Prevalecen las imágenes generadas por el usuario (más recientes y con alta resolución)
           const seenIds = new Set<string>();
           const seenUrls = new Set<string>();
-          const merged: Array<{ id: string; url: string; prompt: string; createdAt: string; sourceType?: string; warning?: string }> = [];
+          const merged: Array<{ id: string; url: string; prompt: string; createdAt: string; sourceType?: string; warning?: string; storageStatus?: string }> = [];
 
-          // 1. Prioridad: generaciones locales del usuario en IndexedDB/estado
+          // 1. Prioridad: generaciones locales del usuario (solo se deduplican por URL si la tienen)
           for (const localImg of prev) {
-            if (localImg.url && !seenIds.has(localImg.id) && !seenUrls.has(localImg.url)) {
+            if (!seenIds.has(localImg.id) && (!localImg.url || !seenUrls.has(localImg.url))) {
               merged.push(localImg);
               seenIds.add(localImg.id);
-              seenUrls.add(localImg.url);
+              if (localImg.url) seenUrls.add(localImg.url);
             }
           }
 
-          // 2. Activos remotos de Firestore que no estén ya en la lista
+          // 2. Activos remotos de Firestore (incluidos los sin URL: se muestran con placeholder)
           for (const dbImg of dbImages) {
-            if (dbImg.url && !seenIds.has(dbImg.id) && !seenUrls.has(dbImg.url)) {
+            if (!seenIds.has(dbImg.id) && (!dbImg.url || !seenUrls.has(dbImg.url))) {
               merged.push(dbImg);
               seenIds.add(dbImg.id);
-              seenUrls.add(dbImg.url);
+              if (dbImg.url) seenUrls.add(dbImg.url);
             }
           }
 
@@ -754,12 +757,13 @@ export default function ContentDashboard() {
         });
       }
     } catch (err) {
-      console.warn("[Database] No se pudo cargar assets de Firestore:", err);
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn("[Database] No se pudo cargar assets de Firestore:", message);
+      setAssetsSyncError(message);
     } finally {
       setLoadingDatabaseAssets(false);
     }
   };
-
   // Sincronizar elementos previos de localStorage hacia Firestore
   const syncLocalToDatabase = async () => {
     try {
@@ -801,7 +805,7 @@ export default function ContentDashboard() {
   const [varyingTemplateId, setVaryingTemplateId] = useState<string | null>(null);
   const [showInterrogatorModal, setShowInterrogatorModal] = useState(false);
   const [generatedImagesList, setGeneratedImagesList] = useState<
-    { id: string; url: string; prompt: string; createdAt: string; sourceType?: string; warning?: string }[]
+    { id: string; url: string; prompt: string; createdAt: string; sourceType?: string; warning?: string; storageStatus?: string }[]
   >([]);
   const [selectedImageForDetail, setSelectedImageForDetail] = useState<ImageDetailItem | null>(null);
   const [selectedImageIds, setSelectedImageIds] = useState<string[]>([]);
@@ -1612,6 +1616,9 @@ export default function ContentDashboard() {
         sourceType?: string;
         warning?: string;
         refinedPrompt?: string;
+        assetId?: string;
+        persisted?: boolean;
+        storageStatus?: string;
       }>("/api/images/generate", {
         method: "POST",
         body: JSON.stringify({
@@ -1627,12 +1634,13 @@ export default function ContentDashboard() {
           setImageNotice(data.warning);
         }
         const newImg = {
-          id: (data as any).assetId || Math.random().toString(36).substring(2, 9),
+          id: data.assetId || Math.random().toString(36).substring(2, 9),
           url: data.imageUrl,
           prompt: data.refinedPrompt || imagePrompt,
           createdAt: new Date().toLocaleTimeString("es-ES"),
           sourceType: data.sourceType,
-          warning: data.warning
+          warning: data.warning,
+          storageStatus: data.storageStatus
         };
         saveImageToIndexedDB(newImg);
         setGeneratedImagesList((prev) => {
@@ -3010,7 +3018,8 @@ export default function ContentDashboard() {
           onClearAll={handleClearAllImages}
           onRefreshDatabase={loadDatabaseAssets}
           loadingDatabaseAssets={loadingDatabaseAssets}
-          onOpenLightbox={(img) => setSelectedImageForDetail(img)}
+          assetsSyncError={assetsSyncError}
+          onOpenLightbox={(img) => { if (img.url) setSelectedImageForDetail(img); }}
           onDeleteImage={handleDeleteImage}
           onApplyToCampaignBlog={(img) => handleInsertImageIntoArticle(img, "body")}
           onUseAsBase={(url) => {
