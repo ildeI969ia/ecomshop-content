@@ -20,7 +20,8 @@
     "diag:assets:deep": "tsx scripts/diagnose-assets.ts --deep",
     "test:storage": "tsx scripts/test-phase-05b-storage.ts",
     "test:persistence": "tsx scripts/test-persistence-diagnostics.ts",
-    "test:security": "tsx scripts/test-phase-06-security.ts"
+    "test:security": "tsx scripts/test-phase-06-security.ts",
+    "test:orchestrator": "tsx scripts/test-orchestrator-execution.ts"
   },
   "dependencies": {
     "@google-cloud/firestore": "^9.1.0",
