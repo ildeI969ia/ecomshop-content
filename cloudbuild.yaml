@@ -23,7 +23,7 @@ steps:
       - '--image=gcr.io/$PROJECT_ID/ecomshop-content:latest'
       - '--region=europe-west1'
       - '--platform=managed'
-      - '--allow-unauthenticated'
+      - '--no-allow-unauthenticated'
       - '--min-instances=0'
       - '--max-instances=5'
       - '--memory=1Gi'

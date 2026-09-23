@@ -1,7 +1,14 @@
-﻿{
+{
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
+  },
+  "auth": {
+    "providers": [
+      { "provider": "google.com" },
+      { "provider": "password" }
+    ],
+    "rules": "firestore.rules"
   },
   "hosting": {
     "public": "public",

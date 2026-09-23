@@ -76,6 +76,7 @@ import { EditorialControls, BusinessGoal } from "@/lib/types/editorial-controls"
 import { SuggestedTopics } from "@/components/suggested-topics";
 import { EditorialTopicCard } from "@/lib/types/editorial-topics";
 import { compressImageToDataUrl } from "@/lib/image-compressor";
+import { ECOMSHOP_CATALOG, getEcomshopOnlyDevices, getDevicesGroupedByType } from "@/lib/catalog";
 import { OutlineEditorModal } from "@/components/outline-editor-modal";
 import { ArticleOutline } from "@/lib/types/article-outline";
 import { PromptRefinementCard, PromptRefinementData } from "@/components/PromptRefinementCard";
@@ -2515,26 +2516,53 @@ export default function ContentDashboard() {
 
                 <div>
                   <label className="text-[11px] font-semibold text-slate-400 block mb-1.5">
-                    Modelos estrella de EcomShop:
+                    Catálogo EcomShop ({getEcomshopOnlyDevices().length} modelos):
                   </label>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {["ECW510", "ECS2512FP", "ESG510", "ECW536"].map((quickSku) => (
-                      <button
-                        key={quickSku}
-                        type="button"
-                        onClick={() => {
-                          handleSelectSku(quickSku);
-                          setProductUrl(`https://www.ecomshop.es/catalogo?sku=${quickSku.toLowerCase()}`);
-                        }}
-                        className={`text-left px-2 py-1.5 rounded-lg text-[11px] font-mono border transition cursor-pointer ${
-                          selectedSku === quickSku
-                            ? "bg-indigo-600/30 text-indigo-300 border-indigo-500"
-                            : "bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700"
-                        }`}
-                      >
-                        {quickSku}
-                      </button>
-                    ))}
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    {(() => {
+                      const TYPE_LABELS: Record<string, string> = {
+                        ACCESS_POINT: "📡 APs Wi-Fi",
+                        SWITCH: "🔌 Switches",
+                        GATEWAY: "🛡️ Gateways",
+                        ACCESSORY: "🔧 Accesorios",
+                        FIBER_OPTIC: "🔗 Fibra",
+                      };
+                      const grouped = getDevicesGroupedByType(true);
+                      const typeOrder = ["ACCESS_POINT", "SWITCH", "GATEWAY", "ACCESSORY", "FIBER_OPTIC"];
+
+                      return typeOrder
+                        .filter((t) => grouped[t as keyof typeof grouped]?.length > 0)
+                        .map((type) => {
+                          const devices = grouped[type as keyof typeof grouped];
+                          return (
+                            <div key={type}>
+                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                {TYPE_LABELS[type] || type}
+                              </span>
+                              <div className="grid grid-cols-2 gap-1.5 mt-1">
+                                {devices.map((device) => (
+                                  <button
+                                    key={device.sku}
+                                    type="button"
+                                    onClick={() => {
+                                      handleSelectSku(device.sku);
+                                      setProductUrl(`https://www.ecomshop.es/catalogo?sku=${device.sku.toLowerCase()}`);
+                                    }}
+                                    className={`text-left px-2 py-1.5 rounded-lg text-[11px] font-mono border transition cursor-pointer ${
+                                      selectedSku === device.sku
+                                        ? "bg-indigo-600/30 text-indigo-300 border-indigo-500"
+                                        : "bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700"
+                                    }`}
+                                    title={device.name}
+                                  >
+                                    {device.sku}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        });
+                    })()}
                   </div>
                 </div>
               </div>

@@ -22,7 +22,7 @@ import {
   X
 } from "lucide-react";
 import { STAR_PRODUCTS, StarProduct } from "@/lib/knowledge";
-import { ECOMSHOP_CATALOG, getCatalogDevice, getAllCatalogDevices, catalogDeviceToStarProduct, CatalogDevice } from "@/lib/catalog";
+import { ECOMSHOP_CATALOG, getCatalogDevice, getAllCatalogDevices, getEcomshopOnlyDevices, catalogDeviceToStarProduct, CatalogDevice } from "@/lib/catalog";
 import { PRESET_IMAGE_PROMPTS } from "@/lib/image-generator";
 import { PromptRefinementCard, PromptRefinementData } from "@/components/PromptRefinementCard";
 import { compressImageToDataUrl } from "@/lib/image-compressor";
@@ -341,7 +341,7 @@ export const ImageStudioView: React.FC<ImageStudioViewProps> = ({
               </summary>
               <div className="p-3 pt-0 border-t border-slate-800/60 mt-2 space-y-2.5">
                 <p className="text-[11px] text-slate-400 leading-snug">
-                  Hardware oficial integrado en EcomShop (12 productos homologados). Selecciona un producto para importar su fotografía de fabricante libre de alucinaciones (0€) y ficha técnica:
+                  Hardware oficial integrado en EcomShop ({getEcomshopOnlyDevices().length} productos homologados). Selecciona un producto para importar su fotografía de fabricante libre de alucinaciones (0€) y ficha técnica:
                 </p>
                 <div className="flex items-center gap-2">
                   <select

@@ -243,6 +243,36 @@ export function catalogDeviceToStarProduct(device: CatalogDevice): StarProduct {
 }
 
 /**
+ * Marcas propias comercializadas oficialmente por EcomShop.
+ * Productos de marcas externas (Teltonika, Stonet, NetAlly, Wi-Tek) se excluyen de la UI principal.
+ */
+const ECOMSHOP_OWNED_BRANDS = ["EnGenius", "EcomSpain"] as const;
+
+/**
+ * Devuelve solo los dispositivos de marcas propias de EcomShop (EnGenius / EcomSpain).
+ * Filtra marcas externas (Teltonika, Stonet, NetAlly, Wi-Tek, etc.)
+ */
+export function getEcomshopOnlyDevices(): CatalogDevice[] {
+  return ECOMSHOP_CATALOG.filter((d) =>
+    ECOMSHOP_OWNED_BRANDS.some((b) => d.brand.toLowerCase() === b.toLowerCase())
+  );
+}
+
+/**
+ * Agrupa los dispositivos del catálogo por tipo de dispositivo.
+ * Opcionalmente filtra solo marcas propias de EcomShop.
+ */
+export function getDevicesGroupedByType(onlyOwnedBrands = true): Record<DeviceType, CatalogDevice[]> {
+  const devices = onlyOwnedBrands ? getEcomshopOnlyDevices() : ECOMSHOP_CATALOG;
+  const groups: Record<string, CatalogDevice[]> = {};
+  for (const d of devices) {
+    if (!groups[d.type]) groups[d.type] = [];
+    groups[d.type].push(d);
+  }
+  return groups as Record<DeviceType, CatalogDevice[]>;
+}
+
+/**
  * Devuelve todos los dispositivos del catálogo oficial en formato CatalogDevice
  */
 export function getAllCatalogDevices(): CatalogDevice[] {

@@ -33,7 +33,7 @@ import { ProductIntelligenceView } from "./product-intelligence-view";
 import { EvidenceAuditDrawer } from "./evidence-audit-drawer";
 import { CampaignStepper, GenerationStage } from "./campaign-stepper";
 import { SourceDrawer, CitationDetail } from "./source-drawer";
-import { ECOMSHOP_CATALOG, getCatalogDevice, getAllCatalogDevices } from "@/lib/catalog";
+import { ECOMSHOP_CATALOG, getCatalogDevice, getAllCatalogDevices, getEcomshopOnlyDevices, getDevicesGroupedByType } from "@/lib/catalog";
 import { Button, Badge, Card, CardHeader, CardTitle, CardDescription } from "@/components/ui";
 
 interface CampaignWorkspaceProps {
@@ -81,48 +81,42 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   const [activeCitationId, setActiveCitationId] = useState<string | null>(null);
   const [activeCitationData, setActiveCitationData] = useState<CitationDetail | null>(null);
 
-  const QUICK_TEST_SKUS = [
-    {
-      sku: "ECW510",
-      brand: "EnGenius",
-      name: "Cloud Wi-Fi 7 Dual-Band AP 2x2",
-      badge: "Wi-Fi 7 BE5000",
-      angle: "Transición eficiente a Wi-Fi 7 con puerto 2.5GbE y QR en 2 min",
-      bundle: "ECS2512FP",
-      specsSnippet: "2x2:2 | 3.6 Gbps | PoE+ 802.3at (18.5W)",
-      color: "from-blue-600 to-indigo-700"
-    },
-    {
-      sku: "ECS2512FP",
-      brand: "EnGenius",
-      name: "Switch Multi-Gigabit 8p 2.5G + 4p 10G SFP+",
-      badge: "PoE+ 240W Multi-Gig",
-      angle: "Backbone conmutado sin cuellos de botella para APs Wi-Fi 7",
-      bundle: "ECW510 / ECW536",
-      specsSnippet: "8x 2.5G PoE+ | 4x 10G SFP+ | 240W Budget",
-      color: "from-emerald-600 to-teal-700"
-    },
-    {
-      sku: "ESG510",
-      brand: "EnGenius",
-      name: "Cloud Security Gateway SD-WAN 4x 2.5G (Sin Wi-Fi)",
-      badge: "SD-WAN Dual-WAN",
-      angle: "Perímetro seguro con balanceo multi-WAN, VPN Mesh y 0€ licencias",
-      bundle: "ECS2512FP + ECW510",
-      specsSnippet: "2.5 Gbps Firewall | Dual-WAN Failover | WireGuard",
-      color: "from-amber-600 to-orange-700"
-    },
-    {
-      sku: "ECW536",
-      brand: "EnGenius",
-      name: "Flagship Wi-Fi 7 Tri-Band AP 4x4:4 (18.7 Gbps)",
-      badge: "6 GHz Tri-Band Flagship",
-      angle: "Máxima densidad y canales de 320 MHz con puerto 10GbE PoE++",
-      bundle: "ECS2512FP",
-      specsSnippet: "4x4:4 Tri-Banda | 18.7 Gbps | 10GbE PoE++ 802.3bt",
-      color: "from-indigo-600 to-sky-600"
-    }
-  ];
+  const [showAllStarProducts, setShowAllStarProducts] = useState(false);
+
+  // Genera tarjetas de prueba rápida dinámicamente desde el catálogo oficial (solo marcas propias)
+  const ALL_QUICK_TEST_SKUS = useMemo(() => {
+    const TYPE_BADGES: Record<string, string> = {
+      ACCESS_POINT: "Wi-Fi AP",
+      SWITCH: "Switch PoE",
+      GATEWAY: "SD-WAN Gateway",
+      ROUTER_CELLULAR: "Cellular Router",
+      TESTER: "Network Tester",
+      FIBER_OPTIC: "Fibra Óptica",
+      ACCESSORY: "Accesorio",
+    };
+    const TYPE_COLORS: Record<string, string> = {
+      ACCESS_POINT: "from-blue-600 to-indigo-700",
+      SWITCH: "from-emerald-600 to-teal-700",
+      GATEWAY: "from-amber-600 to-orange-700",
+      ROUTER_CELLULAR: "from-purple-600 to-violet-700",
+      TESTER: "from-rose-600 to-pink-700",
+      FIBER_OPTIC: "from-cyan-600 to-sky-700",
+      ACCESSORY: "from-slate-600 to-gray-700",
+    };
+
+    return getEcomshopOnlyDevices().map((device) => ({
+      sku: device.sku,
+      brand: device.brand,
+      name: device.name.replace("EnGenius Cloud ", "").replace("EnGenius ", ""),
+      badge: TYPE_BADGES[device.type] || device.type,
+      angle: device.shortDesc,
+      bundle: device.recommendedBundle ? device.recommendedBundle.split("(")[0].trim() : "",
+      specsSnippet: device.keyAdvantages.slice(0, 2).join(" | "),
+      color: TYPE_COLORS[device.type] || "from-slate-600 to-gray-700",
+    }));
+  }, []);
+
+  const QUICK_TEST_SKUS = showAllStarProducts ? ALL_QUICK_TEST_SKUS : ALL_QUICK_TEST_SKUS.slice(0, 4);
 
   const handleOpenCitation = (citationId: string, customData?: CitationDetail) => {
     setActiveCitationId(citationId);
@@ -321,13 +315,27 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             })}
           </div>
 
-          {/* Selector Rápido Catálogo Canónico Integrado (12 Modelos Oficiales) */}
+          {ALL_QUICK_TEST_SKUS.length > 4 && (
+            <div className="flex justify-center mt-2">
+              <button
+                type="button"
+                onClick={() => setShowAllStarProducts(!showAllStarProducts)}
+                className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 bg-indigo-950/40 hover:bg-indigo-950/60 border border-indigo-800/50 px-4 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5"
+              >
+                {showAllStarProducts
+                  ? `▲ Ver menos (4 de ${ALL_QUICK_TEST_SKUS.length})`
+                  : `▼ Ver todos los equipos (${ALL_QUICK_TEST_SKUS.length})`}
+              </button>
+            </div>
+          )}
+
+          {/* Selector Rápido Catálogo Canónico Integrado (Dinámico) */}
           <div className="mt-3.5 bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Package className="w-3.5 h-3.5 text-indigo-400" />
                 <h4 className="text-xs font-bold text-slate-200">
-                  Catálogo EcomShop integrado (12 productos)
+                  Catálogo EcomShop integrado ({getEcomshopOnlyDevices().length} productos)
                 </h4>
               </div>
               <span className="text-[11px] text-slate-400 font-mono">
@@ -335,43 +343,69 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-              {getAllCatalogDevices().map((device) => {
-                const isSelected = selectedSku === device.sku;
-                return (
-                  <button
-                    key={device.sku}
-                    type="button"
-                    onClick={() => onSelectQuickSku?.(device.sku)}
-                    className={`p-2 rounded-lg text-left transition flex flex-col justify-between border cursor-pointer ${
-                      isSelected
-                        ? "bg-indigo-600/30 border-indigo-500 text-white shadow-sm ring-1 ring-indigo-500/50"
-                        : "bg-slate-900/80 hover:bg-slate-800 border-slate-800 text-slate-300 hover:border-slate-700"
-                    }`}
-                    title={`${device.name}\n${device.shortDesc}\nBundle: ${device.recommendedBundle}`}
-                  >
-                    <div className="flex items-center justify-between w-full mb-1">
-                      <span className="font-mono font-bold text-[11px]">{device.sku}</span>
-                      <Badge 
-                        variant={
-                          device.type === "ACCESS_POINT" ? "cyan" :
-                          device.type === "SWITCH" ? "success" :
-                          device.type === "GATEWAY" ? "warning" : "neutral"
-                        }
-                        size="xs"
-                      >
-                        {device.type === "ACCESS_POINT" ? "AP" :
-                         device.type === "SWITCH" ? "SW" :
-                         device.type === "GATEWAY" ? "GW" : "ACC"}
-                      </Badge>
+            {(() => {
+              const TYPE_LABELS: Record<string, string> = {
+                ACCESS_POINT: "📡 Puntos de Acceso Wi-Fi",
+                SWITCH: "🔌 Switches PoE",
+                GATEWAY: "🛡️ Gateways SD-WAN",
+                ROUTER_CELLULAR: "📱 Routers Celulares",
+                TESTER: "🔬 Equipos de Test",
+                FIBER_OPTIC: "🔗 Fibra Óptica",
+                ACCESSORY: "🔧 Accesorios",
+              };
+              const grouped = getDevicesGroupedByType(true);
+              const typeOrder = ["ACCESS_POINT", "SWITCH", "GATEWAY", "ACCESSORY", "FIBER_OPTIC", "ROUTER_CELLULAR", "TESTER"];
+
+              return typeOrder
+                .filter((t) => grouped[t as keyof typeof grouped]?.length > 0)
+                .map((type) => {
+                  const devices = grouped[type as keyof typeof grouped];
+                  return (
+                    <div key={type} className="space-y-1.5">
+                      <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-1">
+                        {TYPE_LABELS[type] || type} ({devices.length})
+                      </h5>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                        {devices.map((device) => {
+                          const isSelected = selectedSku === device.sku;
+                          return (
+                            <button
+                              key={device.sku}
+                              type="button"
+                              onClick={() => onSelectQuickSku?.(device.sku)}
+                              className={`p-2 rounded-lg text-left transition flex flex-col justify-between border cursor-pointer ${
+                                isSelected
+                                  ? "bg-indigo-600/30 border-indigo-500 text-white shadow-sm ring-1 ring-indigo-500/50"
+                                  : "bg-slate-900/80 hover:bg-slate-800 border-slate-800 text-slate-300 hover:border-slate-700"
+                              }`}
+                              title={`${device.name}\n${device.shortDesc}\nBundle: ${device.recommendedBundle}`}
+                            >
+                              <div className="flex items-center justify-between w-full mb-1">
+                                <span className="font-mono font-bold text-[11px]">{device.sku}</span>
+                                <Badge 
+                                  variant={
+                                    device.type === "ACCESS_POINT" ? "cyan" :
+                                    device.type === "SWITCH" ? "success" :
+                                    device.type === "GATEWAY" ? "warning" : "neutral"
+                                  }
+                                  size="xs"
+                                >
+                                  {device.type === "ACCESS_POINT" ? "AP" :
+                                   device.type === "SWITCH" ? "SW" :
+                                   device.type === "GATEWAY" ? "GW" : "ACC"}
+                                </Badge>
+                              </div>
+                              <span className="text-[10px] text-slate-400 truncate w-full">
+                                {device.name.replace("EnGenius Cloud ", "").replace("EnGenius ", "")}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <span className="text-[10px] text-slate-400 truncate w-full">
-                      {device.name.replace("EnGenius Cloud ", "").replace("EnGenius ", "")}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                  );
+                });
+            })()}
           </div>
         </div>
 
