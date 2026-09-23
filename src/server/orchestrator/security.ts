@@ -18,6 +18,8 @@ export const SAFE_ENV_ALLOWLIST = new Set([
   "HOMEPATH",
   "HOMEDRIVE",
   "USERPROFILE",
+  "APPDATA",
+  "LOCALAPPDATA",
   "LANG",
   "LC_ALL",
   "CI"

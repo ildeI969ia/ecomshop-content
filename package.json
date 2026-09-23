@@ -21,7 +21,10 @@
     "test:storage": "tsx scripts/test-phase-05b-storage.ts",
     "test:persistence": "tsx scripts/test-persistence-diagnostics.ts",
     "test:security": "tsx scripts/test-phase-06-security.ts",
-    "test:orchestrator": "tsx scripts/test-orchestrator-execution.ts"
+    "test:orchestrator": "tsx scripts/test-orchestrator-execution.ts",
+    "test:antigravity": "tsx scripts/test-antigravity-provider.ts",
+    "test:marketing-matrix": "tsx scripts/test-marketing-matrix.ts",
+    "test:marketing-real-e2e": "tsx scripts/test-marketing-real-e2e.ts"
   },
   "dependencies": {
     "@google-cloud/firestore": "^9.1.0",

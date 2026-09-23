@@ -55,7 +55,8 @@ export class SecureProcessAgentProvider implements IAgentProvider {
       let isTimedOut = false;
 
       // Invocación con shell=false estricto y cwd explícito
-      const child: ChildProcess = spawn(command, ["-e", "console.log('AGENT_MANIFEST_READY');"], {
+      const nodeExe = process.execPath;
+      const child: ChildProcess = spawn(nodeExe, ["-e", "console.log('AGENT_MANIFEST_READY');"], {
         cwd: workspacePath,
         shell: false,
         env: cleanEnv as NodeJS.ProcessEnv
