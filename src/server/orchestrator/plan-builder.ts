@@ -15,5 +15,5 @@ export function buildF6AuditPlan(): OrchestrationPlan {
     { id: "F6-H", title: "Architecture dependency audit", objective: "Identify shared contracts and files that would prevent safe parallel implementation.", ownerAgent: "repository-analyst", dependencies: [], filesAllowed: ["src/**", "package.json"], filesForbidden: ["cloudbuild.yaml", "firestore.rules"], parallelism: "GREEN", risk: "MEDIUM", validation: ["audit-report"], status: "PENDING" },
   ];
   assertPlanIntegrity(tasks);
-  return { id: randomUUID(), objective: "F6 security and hardening audit", createdAt: new Date().toISOString(), maxConcurrentAgents: 6, tasks };
+  return { id: randomUUID(), objective: "F6 security and hardening audit", createdAt: new Date().toISOString(), maxConcurrentAgents: 6, tasks, artifacts: [] };
 }
