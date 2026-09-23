@@ -7,6 +7,7 @@ if (ready.length !== 8) throw new Error(`Expected 8 READY tasks, got ${ready.len
 
 const lease = createLease("F6-A", "security");
 if (isLeaseExpired(lease)) throw new Error("Fresh lease unexpectedly expired");
+if (isLeaseExpired(lease, Date.now() + 61_000) === false) throw new Error("Expired lease unexpectedly valid");
 
 console.log("ORCHESTRATOR TESTS: PASS");
 console.log(`Ready tasks: ${ready.map((task) => task.id).join(", ")}`);
