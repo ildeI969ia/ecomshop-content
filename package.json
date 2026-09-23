@@ -14,7 +14,12 @@
     "wt:dev": "powershell -ExecutionPolicy Bypass -File ./scripts/wt.ps1 dev",
     "ship": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1",
     "push": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1 -SkipCloud",
-    "deploy:cloud": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1 -SkipGit"
+    "deploy:cloud": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1 -SkipGit",
+    "typecheck": "tsc --noEmit",
+    "diag:assets": "tsx scripts/diagnose-assets.ts",
+    "diag:assets:deep": "tsx scripts/diagnose-assets.ts --deep",
+    "test:storage": "tsx scripts/test-phase-05b-storage.ts",
+    "test:persistence": "tsx scripts/test-persistence-diagnostics.ts"
   },
   "dependencies": {
     "@google-cloud/firestore": "^9.1.0",

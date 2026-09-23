@@ -28,7 +28,7 @@ steps:
       - '--max-instances=5'
       - '--memory=1Gi'
       - '--cpu=1'
-      - '--update-env-vars=GOOGLE_CLOUD_PROJECT=ecomshop-marketing-prod,GOOGLE_CLOUD_LOCATION=europe-west1,VERTEX_LOCATION=us-central1,GOOGLE_GENAI_USE_VERTEXAI=true'
+      - '--update-env-vars=GOOGLE_CLOUD_PROJECT=ecomshop-marketing-prod,GOOGLE_CLOUD_LOCATION=europe-west1,VERTEX_LOCATION=us-central1,GOOGLE_GENAI_USE_VERTEXAI=true,GCS_BUCKET_NAME=ecomshop-marketing-assets'
 
 images:
   - 'gcr.io/$PROJECT_ID/ecomshop-content:latest'
