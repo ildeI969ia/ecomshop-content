@@ -45,12 +45,24 @@ export interface TaskDefinition {
   validation: string[];
 }
 
+export interface AgentLease {
+  taskId: string;
+  agentId: string;
+  acquiredAt: string;
+  expiresAt: string;
+  heartbeatAt: string;
+}
+
 export interface TaskState extends TaskDefinition {
   status: TaskStatus;
   startedAt?: string;
   finishedAt?: string;
   commit?: string;
   error?: string;
+  attempts?: number;
+  maxAttempts?: number;
+  nextAttemptAt?: string;
+  lease?: AgentLease;
 }
 
 export interface Artifact {
