@@ -5,6 +5,7 @@ import type { AgentLease } from "./types";
 export interface TaskStore {
   get(runId: string): Promise<OrchestrationPlan | null>;
   save(plan: OrchestrationPlan): Promise<void>;
+  updateTask(runId: string, taskId: string, update: (task: TaskState, plan: OrchestrationPlan) => void): Promise<void>;
 }
 
 export interface AgentExecutor {
@@ -54,8 +55,6 @@ export async function executeReadyTasks(
       claimed.push({ task, lease });
     }
   }
-  await store.save(plan);
-
   await Promise.all(claimed.map(async ({ task, lease }) => {
     try {
       const result = await executor.execute(task, plan);
@@ -64,7 +63,11 @@ export async function executeReadyTasks(
       task.commit = result.commit;
       task.error = undefined;
       task.nextAttemptAt = undefined;
-      plan.artifacts.push(...(result.artifacts ?? []));
+      await store.updateTask(plan.id, task.id, (storedTask, storedPlan) => {
+        Object.assign(storedTask, task);
+        storedTask.lease = undefined;
+        storedPlan.artifacts.push(...(result.artifacts ?? []));
+      });
     } catch (error) {
       const attempts = task.attempts ?? 1;
       const maxAttempts = task.maxAttempts ?? 3;
@@ -76,12 +79,14 @@ export async function executeReadyTasks(
       } else {
         task.status = "FAILED";
       }
+      await store.updateTask(plan.id, task.id, (storedTask) => {
+        Object.assign(storedTask, task);
+        storedTask.lease = undefined;
+      });
     } finally {
       await claimer.release(plan.id, task.id, lease.agentId);
     }
   }));
-
-  await store.save(plan);
   return plan;
 }
 
