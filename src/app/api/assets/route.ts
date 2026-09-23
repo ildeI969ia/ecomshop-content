@@ -28,10 +28,8 @@ export async function GET(req: NextRequest) {
 
   const repo = new AssetRepository();
   try {
-    let list = await repo.listRecent(100, user.workspaceId);
-    if (list.length === 0) {
-      list = await repo.listRecent(100);
-    }
+    // F6-FS-001: Aislamiento multi-tenant estricto. NUNCA consultar sin workspaceId.
+    const list = await repo.listRecent(100, user.workspaceId);
 
     // F4: sin auto-recuperacion lateral - la galeria refleja lo que hay en la coleccion assets.
     const health = summarizeAssetHealth(list);
@@ -218,11 +216,20 @@ export async function DELETE(req: NextRequest) {
 
     for (const id of idsToDelete) {
       try {
-        // 1. Obtener el asset para extraer storagePath
+        // 1. Obtener el asset para extraer storagePath y validar pertenencia al workspace
         const asset = await repo.findById(id);
+        if (!asset) {
+          continue;
+        }
+
+        // F6-FS-001: Bloquear cualquier intento de eliminación cruzada entre workspaces
+        if (asset.workspaceId !== user.workspaceId && user.role !== "ADMIN") {
+          console.warn(`[api/assets DELETE] Intento no autorizado de eliminar asset ${id} del workspace ${asset.workspaceId} por usuario ${user.email} (workspace ${user.workspaceId})`);
+          continue;
+        }
 
         // 2. Si storagePath existe, eliminar binario físico de GCS
-        if (asset?.storagePath) {
+        if (asset.storagePath) {
           try {
             await storage.deleteFile(asset.storagePath);
           } catch (storageErr) {

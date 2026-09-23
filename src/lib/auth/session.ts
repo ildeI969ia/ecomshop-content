@@ -6,10 +6,14 @@ export interface SessionPayload {
   exp: number;
 }
 
-const DEFAULT_SECRET = "ecomspain-default-secret-change-in-prod-2026";
-
 function getSecretKey(): string {
-  return process.env.SESSION_SECRET || DEFAULT_SECRET;
+  const secret = process.env.SESSION_SECRET?.trim();
+  if (!secret) {
+    throw new Error(
+      "[SecurityConfig] La variable de entorno SESSION_SECRET es obligatoria para firmar y verificar tokens de sesión. Configure SESSION_SECRET en Google Cloud Secret Manager o .env."
+    );
+  }
+  return secret;
 }
 
 function strToBuffer(str: string): BufferSource {

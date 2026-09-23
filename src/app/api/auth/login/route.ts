@@ -3,6 +3,7 @@ import { isEcomSpainCorporateEmail } from "@/server/security/rbac";
 import { getAdminFirestore } from "@/server/config/firebase";
 import { UserProfile } from "@/server/domain/types";
 import { createSessionToken } from "@/lib/auth/session";
+import { getRequiredCorporatePassword, getRequiredAdminPassword } from "@/server/config/secrets";
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,9 +33,22 @@ export async function POST(req: NextRequest) {
       role = "MARKETING_MANAGER";
     }
 
-    // Validar contraseña corporativa (Master Passcode)
-    const corporatePassword = process.env.CORPORATE_ACCESS_PASSWORD || "EcomSpain2026!";
-    const adminPassword = process.env.ADMIN_ACCESS_PASSWORD || "AdminEcom2026!";
+    // Validar contraseña corporativa obligatoria (sin fallbacks hardcodeados en código)
+    let corporatePassword: string;
+    let adminPassword: string;
+    try {
+      corporatePassword = getRequiredCorporatePassword();
+      adminPassword = getRequiredAdminPassword();
+    } catch (configErr) {
+      console.error("[api/auth/login] Error de configuración de seguridad:", configErr);
+      return NextResponse.json(
+        {
+          error: "Servicio de autenticación no configurado. Las contraseñas corporativas deben inyectarse mediante Secret Manager o variables de entorno.",
+          code: "CONFIGURATION_ERROR"
+        },
+        { status: 500 }
+      );
+    }
 
     const isValidPassword =
       role === "ADMIN"

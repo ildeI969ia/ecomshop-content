@@ -7,14 +7,30 @@ param(
 $ErrorActionPreference = "Stop"
 Write-Host "`n=== INICIANDO PIPELINE DE PUBLICACION Y DESPLIEGUE ===`n" -ForegroundColor Cyan
 
-# 1. Pre-flight: Verificacion de TypeScript
+# 1. Pre-flight: Verificacion de TypeScript y Compuertas de Calidad (F6-CI-001)
 Write-Host "[1/3] Verificando compilacion de TypeScript..." -ForegroundColor Yellow
 $tscResult = node ./node_modules/typescript/bin/tsc --project tsconfig.json --noEmit
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: Fallo la compilacion en TypeScript. Corrige los tipos antes de publicar." -ForegroundColor Red
     exit 1
 }
-Write-Host "[OK] TypeScript verificado sin errores (0 errores).`n" -ForegroundColor Green
+Write-Host "[OK] TypeScript verificado sin errores (0 errores)." -ForegroundColor Green
+
+Write-Host "  -> Ejecutando compuerta de pruebas de persistencia (test:persistence)..." -ForegroundColor Yellow
+npm run test:persistence
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: Las pruebas de persistencia (test:persistence) fallaron. Despliegue abortado." -ForegroundColor Red
+    exit 1
+}
+Write-Host "[OK] Pruebas de persistencia validadas." -ForegroundColor Green
+
+Write-Host "  -> Ejecutando compuerta de pruebas de almacenamiento (test:storage)..." -ForegroundColor Yellow
+npm run test:storage
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: Las pruebas de almacenamiento (test:storage) fallaron. Despliegue abortado." -ForegroundColor Red
+    exit 1
+}
+Write-Host "[OK] Pruebas de almacenamiento validadas.`n" -ForegroundColor Green
 
 # 2. Git Commit & Push a GitHub
 if (-not $SkipGit) {
