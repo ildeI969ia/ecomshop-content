@@ -9,6 +9,7 @@ export async function POST(req: NextRequest) {
   const auth = await requireOrchestratorPermission(req, "ai:execute");
   if (auth instanceof NextResponse) return auth;
   const body = await req.json().catch(() => ({}));
+  if (body !== null && typeof body !== "object") return NextResponse.json({ error: "INVALID_REQUEST" }, { status: 400 });
   const plan = buildF6AuditPlan();
   plan.id = randomUUID();
   plan.tasks = advanceStatuses(plan.tasks);
