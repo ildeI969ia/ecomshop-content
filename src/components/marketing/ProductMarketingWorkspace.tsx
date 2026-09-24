@@ -435,27 +435,27 @@ export function ProductMarketingWorkspace({ onCreateCampaign, initialTab }: Prod
                     key={p.sku}
                     type="button"
                     onClick={() => setSelectedSku(p.sku)}
-                    className={`text-left p-3 rounded-xl border transition flex flex-col gap-1.5 cursor-pointer ${
+                    className={`text-left p-3.5 rounded-xl border transition-all duration-200 flex flex-col gap-1.5 cursor-pointer ${
                       isSelected
-                        ? "bg-indigo-950/40 border-indigo-500 ring-1 ring-indigo-500/50 shadow-md"
-                        : "bg-slate-950/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-800/50"
+                        ? "bg-indigo-950/50 border-indigo-500 shadow-md shadow-indigo-950/50 ring-1 ring-indigo-500/50 scale-[1.01]"
+                        : "bg-slate-950/70 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/80 hover:scale-[1.005]"
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-indigo-300">{p.sku}</span>
+                      <span className="font-mono text-xs font-bold text-indigo-300 tracking-wide">{p.sku}</span>
                       <div className="flex items-center gap-1.5">
-                        <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border ${statusInfo.color}`}>
+                        <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border shadow-xs ${statusInfo.color}`}>
                           {statusInfo.label}
                         </span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-slate-400">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700/80 text-slate-300">
                           {p.deviceType}
                         </span>
                       </div>
                     </div>
-                    <div className="text-xs font-semibold text-white line-clamp-1">{p.name}</div>
-                    <div className="text-[11px] text-slate-400 flex items-center justify-between mt-1">
-                      <span>{p.brand}</span>
-                      <span className="font-mono text-emerald-400">{p.priceEur}€</span>
+                    <div className="text-xs font-semibold text-slate-100 line-clamp-1">{p.name}</div>
+                    <div className="text-[11px] text-slate-400 flex items-center justify-between mt-1 pt-1 border-t border-slate-800/40">
+                      <span className="font-medium text-slate-300">{p.brand}</span>
+                      <span className="font-mono font-bold text-emerald-400">{p.priceEur}€</span>
                     </div>
                   </button>
                 );

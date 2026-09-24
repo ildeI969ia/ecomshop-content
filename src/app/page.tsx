@@ -2226,17 +2226,17 @@ export default function ContentDashboard() {
         </div>
 
         {/* Módulos de Navegación del Panel Agrupados (COMMAND, CREATE, INTELLIGENCE, CONTROL) */}
-        <nav className="hidden xl:flex items-center gap-2 bg-slate-950/80 p-1.5 rounded-xl border border-slate-800 shadow-inner">
+        <nav className="hidden xl:flex items-center gap-2 bg-slate-950/90 p-1.5 rounded-2xl border border-slate-800/80 shadow-2xl backdrop-blur-md">
           {/* GRUPO COMMAND */}
-          <div className="flex items-center gap-1 border-r border-slate-800 pr-2">
-            <span className="text-[9px] uppercase font-mono font-bold text-slate-500 px-1">Command</span>
+          <div className="flex items-center gap-1 border-r border-slate-800/90 pr-2">
+            <span className="text-[9px] uppercase font-mono font-bold text-slate-400 px-1 tracking-wider">Command</span>
             <button
               type="button"
               onClick={() => setMainView("dashboard")}
-              className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
                 mainView === "dashboard"
-                  ? "bg-indigo-600 text-white shadow-xs font-bold"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold scale-[1.02]"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
               }`}
             >
               <LayoutDashboard className="w-3.5 h-3.5 text-indigo-300" />
@@ -2249,10 +2249,10 @@ export default function ContentDashboard() {
                 setMainView("opportunities");
                 setEntryOrigin("radar");
               }}
-              className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
                 mainView === "opportunities"
-                  ? "bg-indigo-600 text-white shadow-xs font-bold"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold scale-[1.02]"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
               }`}
             >
               <Zap className="w-3.5 h-3.5 text-amber-300" />
@@ -2262,10 +2262,10 @@ export default function ContentDashboard() {
             <button
               type="button"
               onClick={() => setMainView("campaigns")}
-              className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
                 mainView === "campaigns" || mainView === "generator"
-                  ? "bg-indigo-600 text-white shadow-xs font-bold"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold scale-[1.02]"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
               }`}
             >
               <Layers className="w-3.5 h-3.5 text-sky-300" />
@@ -2274,15 +2274,15 @@ export default function ContentDashboard() {
           </div>
 
           {/* GRUPO CREATE */}
-          <div className="flex items-center gap-1 border-r border-slate-800 pr-2">
-            <span className="text-[9px] uppercase font-mono font-bold text-slate-500 px-1">Create</span>
+          <div className="flex items-center gap-1 border-r border-slate-800/90 pr-2">
+            <span className="text-[9px] uppercase font-mono font-bold text-slate-400 px-1 tracking-wider">Create</span>
             <button
               type="button"
               onClick={() => setMainView("content")}
-              className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
                 mainView === "content"
-                  ? "bg-indigo-600 text-white shadow-xs font-bold"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold scale-[1.02]"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
               }`}
             >
               <FileText className="w-3.5 h-3.5 text-emerald-300" />
@@ -2292,10 +2292,10 @@ export default function ContentDashboard() {
             <button
               type="button"
               onClick={() => setMainView("image_studio")}
-              className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
                 mainView === "image_studio"
-                  ? "bg-indigo-600 text-white shadow-xs font-bold"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold scale-[1.02]"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
               }`}
             >
               <ImageIcon className="w-3.5 h-3.5 text-indigo-400" />
@@ -2304,15 +2304,15 @@ export default function ContentDashboard() {
           </div>
 
           {/* GRUPO INTELLIGENCE */}
-          <div className="flex items-center gap-1 border-r border-slate-800 pr-2">
-            <span className="text-[9px] uppercase font-mono font-bold text-slate-500 px-1">Intel</span>
+          <div className="flex items-center gap-1 border-r border-slate-800/90 pr-2">
+            <span className="text-[9px] uppercase font-mono font-bold text-slate-400 px-1 tracking-wider">Intel</span>
             <button
               type="button"
               onClick={() => setMainView("marketing")}
-              className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
                 mainView === "marketing"
-                  ? "bg-indigo-600 text-white shadow-xs font-bold"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold scale-[1.02]"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
@@ -2322,10 +2322,10 @@ export default function ContentDashboard() {
             <button
               type="button"
               onClick={() => setMainView("advisor")}
-              className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
                 mainView === "advisor"
-                  ? "bg-indigo-600 text-white shadow-xs font-bold"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold scale-[1.02]"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
               }`}
             >
               <Bot className="w-3.5 h-3.5 text-amber-300" />
@@ -2335,14 +2335,14 @@ export default function ContentDashboard() {
 
           {/* GRUPO CONTROL */}
           <div className="flex items-center gap-1">
-            <span className="text-[9px] uppercase font-mono font-bold text-slate-500 px-1">Control</span>
+            <span className="text-[9px] uppercase font-mono font-bold text-slate-400 px-1 tracking-wider">Control</span>
             <button
               type="button"
               onClick={() => setMainView("history")}
-              className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
                 mainView === "history"
-                  ? "bg-indigo-600 text-white shadow-xs font-bold"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold scale-[1.02]"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
               }`}
             >
               <History className="w-3.5 h-3.5 text-indigo-300" />
@@ -2357,10 +2357,10 @@ export default function ContentDashboard() {
             <button
               type="button"
               onClick={() => setMainView("finops")}
-              className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
                 mainView === "finops"
-                  ? "bg-indigo-600 text-white shadow-xs font-bold"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold scale-[1.02]"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
               }`}
             >
               <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
