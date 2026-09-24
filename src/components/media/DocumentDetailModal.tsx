@@ -21,6 +21,7 @@ import {
   MessageSquare
 } from "lucide-react";
 import { ContentOutput } from "@/lib/schema";
+import { SafeHtml } from "@/components/SafeHtml";
 
 export interface StoredDocument {
   id: string;
@@ -258,9 +259,9 @@ ${bodyMd}
         <div className="flex-1 overflow-y-auto p-6 bg-slate-950/70 min-h-[350px]">
           {activeTab === "preview" && (
             <div className="bg-white text-slate-900 rounded-xl p-8 shadow-inner border border-slate-200 max-w-4xl mx-auto">
-              <div 
+              <SafeHtml
                 className="prose prose-slate max-w-none prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:leading-relaxed prose-img:rounded-xl prose-img:shadow-md"
-                dangerouslySetInnerHTML={{ __html: htmlContent || `<p>${plainExcerpt || "Sin contenido disponible"}</p>` }}
+                html={htmlContent || `<p>${plainExcerpt || "Sin contenido disponible"}</p>`}
               />
             </div>
           )}

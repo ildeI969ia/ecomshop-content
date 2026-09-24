@@ -37,6 +37,7 @@ import { CampaignStepper, GenerationStage } from "./campaign-stepper";
 import { SourceDrawer, CitationDetail } from "./source-drawer";
 import { ECOMSHOP_CATALOG, getCatalogDevice, getAllCatalogDevices, getEcomshopOnlyDevices, getDevicesGroupedByType } from "@/lib/catalog";
 import { injectInternalLinks } from "@/lib/services/internal-linking-engine";
+import { SafeHtml } from "@/components/SafeHtml";
 import { Button, Badge, Card, CardHeader, CardTitle, CardDescription } from "@/components/ui";
 
 interface CampaignWorkspaceProps {
@@ -977,9 +978,9 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                   onClick={handleContainerClick}
                   className="border border-slate-200 rounded-xl p-6 bg-white text-slate-900 shadow-xs max-h-[600px] overflow-y-auto"
                 >
-                  <div 
+                  <SafeHtml
                     className="prose max-w-none text-sm font-sans leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: enrichedBlogHtml }}
+                    html={enrichedBlogHtml}
                   />
                 </div>
               </div>
@@ -1059,9 +1060,9 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                   onClick={handleContainerClick}
                   className="border border-slate-200 rounded-xl p-6 bg-white text-slate-900 shadow-xs max-h-[500px] overflow-y-auto"
                 >
-                  <div 
+                  <SafeHtml
                     className="prose max-w-none text-sm font-sans"
-                    dangerouslySetInnerHTML={{ __html: enrichedMailchimpHtml }}
+                    html={enrichedMailchimpHtml}
                   />
                 </div>
               </div>
