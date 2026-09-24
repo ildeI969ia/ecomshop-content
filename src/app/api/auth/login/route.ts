@@ -1,97 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isEcomSpainCorporateEmail } from "@/server/security/rbac";
-import { getAdminFirestore } from "@/server/config/firebase";
-import { UserProfile } from "@/server/domain/types";
-import { createSessionToken } from "@/lib/auth/session";
-import { getRequiredCorporatePassword, getRequiredAdminPassword } from "@/server/config/secrets";
+import { getAdminAuth } from "@/server/config/firebase";
+import { isEcomSpainCorporateEmail, getUserRole } from "@/server/security/rbac";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-    const password = typeof body.password === "string" ? body.password : "";
+    const idToken = typeof body.idToken === "string" ? body.idToken : typeof body.token === "string" ? body.token : "";
 
-    if (!email || !isEcomSpainCorporateEmail(email)) {
+    if (!idToken) {
       return NextResponse.json(
-        { error: "Acceso restringido. Utilice su cuenta corporativa @ecomspain.com" },
-        { status: 403 }
-      );
-    }
-
-    if (!password) {
-      return NextResponse.json(
-        { error: "Debe ingresar la contraseña de acceso corporativo" },
+        { error: "Se requiere ID Token de Firebase emitido por Google OAuth", code: "MISSING_ID_TOKEN" },
         { status: 400 }
       );
     }
 
-    // Identificar rol corporativo asignado
-    let role: "ADMIN" | "MARKETING_MANAGER" | "CONTENT_MANAGER" = "CONTENT_MANAGER";
-    if (email === "carlos@ecomspain.com" || email.startsWith("admin")) {
-      role = "ADMIN";
-    } else if (email.startsWith("marketing") || email.startsWith("director")) {
-      role = "MARKETING_MANAGER";
-    }
-
-    // Validar contraseña corporativa obligatoria (sin fallbacks hardcodeados en código)
-    let corporatePassword: string;
-    let adminPassword: string;
+    // 1. Validar ID Token usando Firebase Admin SDK
+    const adminAuth = getAdminAuth();
+    let decodedToken;
     try {
-      corporatePassword = getRequiredCorporatePassword();
-      adminPassword = getRequiredAdminPassword();
-    } catch (configErr) {
-      console.error("[api/auth/login] Error de configuración de seguridad:", configErr);
+      decodedToken = await adminAuth.verifyIdToken(idToken);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "ID Token inválido o expirado";
       return NextResponse.json(
-        {
-          error: "Servicio de autenticación no configurado. Las contraseñas corporativas deben inyectarse mediante Secret Manager o variables de entorno.",
-          code: "CONFIGURATION_ERROR"
-        },
-        { status: 500 }
-      );
-    }
-
-    const isValidPassword =
-      role === "ADMIN"
-        ? password === adminPassword || password === corporatePassword
-        : password === corporatePassword;
-
-    if (!isValidPassword) {
-      return NextResponse.json(
-        { error: "Contraseña de acceso corporativo incorrecta", code: "INVALID_CREDENTIALS" },
+        { error: `ID Token no válido: ${msg}`, code: "INVALID_TOKEN" },
         { status: 401 }
       );
     }
 
-    const uid = `user-${Buffer.from(email).toString("hex").substring(0, 12)}`;
+    const { uid, email, email_verified } = decodedToken;
 
-    // Guardar o actualizar en Firestore si la conexión está disponible
-    try {
-      const db = getAdminFirestore();
-      const userRef = db.collection("users").doc(uid);
-      const profile: UserProfile = {
-        id: uid,
-        email,
-        displayName: email.split("@")[0].toUpperCase(),
-        role,
-        workspaceId: "default-ecomspain",
-        organizationId: "org-ecomspain",
-        active: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        lastLoginAt: new Date().toISOString()
-      };
-      await userRef.set(profile, { merge: true });
-    } catch (dbErr) {
-      console.warn("Firestore not available for login persistence, continuing with session cookie:", dbErr);
+    // 2. Verificar email corporativo @ecomspain.com y email_verified === true
+    if (!email || !isEcomSpainCorporateEmail(email) || email_verified !== true) {
+      return NextResponse.json(
+        {
+          error: "Acceso restringido. Solo se permiten cuentas corporativas @ecomspain.com con email verificado.",
+          code: "FORBIDDEN_DOMAIN"
+        },
+        { status: 403 }
+      );
     }
 
-    // Generar token de sesión firmado mediante HMAC-SHA256
-    const sessionToken = await createSessionToken({
-      uid,
-      email,
-      role,
-      workspaceId: "default-ecomspain"
-    });
+    // 3. Crear cookie de sesión oficial mediante Firebase Admin SDK
+    const expiresIn = 60 * 60 * 24 * 7 * 1000; // 7 días en milisegundos
+    let sessionCookie: string;
+    try {
+      sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+    } catch (err: unknown) {
+      console.error("[api/auth/login] Error al crear la cookie de sesión:", err);
+      return NextResponse.json(
+        { error: "Error al generar la sesión de usuario corporativo", code: "SESSION_CREATION_FAILED" },
+        { status: 500 }
+      );
+    }
+
+    // 4. Leer rol desde la colección Firestore user_roles/{uid}
+    const role = await getUserRole(uid);
 
     const response = NextResponse.json({
       success: true,
@@ -103,12 +66,12 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    response.cookies.set("__session", sessionToken, {
+    response.cookies.set("__session", sessionCookie, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24 * 7 // 7 días
+      maxAge: 60 * 60 * 24 * 7 // 7 días en segundos
     });
 
     return response;

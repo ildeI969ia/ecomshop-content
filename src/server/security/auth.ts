@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
-import { getAdminAuth, getAdminFirestore } from "../config/firebase";
+import { DecodedIdToken } from "firebase-admin/auth";
+import { getAdminAuth } from "../config/firebase";
 import { UserProfile, UserRole } from "../domain/types";
-import { Permission, hasPermission, isEcomSpainCorporateEmail } from "./rbac";
-import { verifySessionToken } from "@/lib/auth/session";
+import { Permission, hasPermission, isEcomSpainCorporateEmail, getUserRole } from "./rbac";
 
 export interface AuthenticatedUser {
   uid: string;
@@ -28,63 +28,42 @@ export async function authenticateServerRequest(req: NextRequest): Promise<Authe
     return null;
   }
 
-  // 2. Verificar token de sesión firmado criptográficamente
-  const sessionData = await verifySessionToken(token);
-  if (sessionData && isEcomSpainCorporateEmail(sessionData.email)) {
-    return {
-      uid: sessionData.uid,
-      email: sessionData.email,
-      role: (sessionData.role as UserRole) || "CONTENT_MANAGER",
-      workspaceId: sessionData.workspaceId || "default-ecomspain"
-    };
-  }
-
+  // 2. Verificar Firebase Session Cookie o Firebase ID Token
   try {
     const adminAuth = getAdminAuth();
-    const decodedToken = await adminAuth.verifyIdToken(token);
+    let decodedToken: DecodedIdToken | null = null;
 
-    if (!decodedToken.email || !isEcomSpainCorporateEmail(decodedToken.email)) {
-      console.warn(`Unauthorized login attempt from non-corporate email: ${decodedToken.email}`);
+    try {
+      decodedToken = await adminAuth.verifySessionCookie(token, true);
+    } catch {
+      try {
+        decodedToken = await adminAuth.verifyIdToken(token);
+      } catch {
+        return null;
+      }
+    }
+
+    if (!decodedToken || !decodedToken.email) {
       return null;
     }
 
-    // Consultar rol en Firestore
-    const db = getAdminFirestore();
-    const userDoc = await db.collection("users").doc(decodedToken.uid).get();
-
-    let role: UserRole = "VIEWER";
-    let workspaceId = "default-ecomspain";
-
-    if (userDoc.exists) {
-      const data = userDoc.data() as UserProfile;
-      role = data.role || "VIEWER";
-      workspaceId = data.workspaceId || "default-ecomspain";
-    } else {
-      // Auto-registro inicial del usuario corporativo con rol VIEWER por defecto
-      const newUser: UserProfile = {
-        id: decodedToken.uid,
-        email: decodedToken.email,
-        displayName: decodedToken.name || decodedToken.email.split("@")[0],
-        avatarUrl: decodedToken.picture,
-        role: decodedToken.email === "carlos@ecomspain.com" || decodedToken.email.startsWith("admin") ? "ADMIN" : "CONTENT_MANAGER",
-        workspaceId: "default-ecomspain",
-        organizationId: "org-ecomspain",
-        active: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      await db.collection("users").doc(decodedToken.uid).set(newUser);
-      role = newUser.role;
+    // 3. Verificación estricta de Google Workspace (@ecomspain.com y email_verified === true)
+    if (!isEcomSpainCorporateEmail(decodedToken.email) || decodedToken.email_verified !== true) {
+      console.warn(`[AUTH] Intento de acceso denegado para email no corporativo o no verificado: ${decodedToken.email}`);
+      return null;
     }
+
+    // 4. Leer rol exclusivamente desde la colección Firestore user_roles/{uid}
+    const role: UserRole = await getUserRole(decodedToken.uid);
 
     return {
       uid: decodedToken.uid,
       email: decodedToken.email,
       role,
-      workspaceId
+      workspaceId: "default-ecomspain"
     };
   } catch (err) {
-    console.error("Token verification failed:", err);
+    console.error("[AUTH] Fallo en la verificación de autenticación:", err);
     return null;
   }
 }
