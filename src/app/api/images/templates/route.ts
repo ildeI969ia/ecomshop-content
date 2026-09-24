@@ -17,7 +17,6 @@ export interface TemplatesRequestBody {
     prompt?: string;
     aspectRatio?: string;
   };
-  apiKey?: string;
 }
 
 const SYSTEM_INSTRUCTION = `You are a Senior Creative Director and Commercial Photographer specialized in B2B telecommunications and network engineering photography.
@@ -148,18 +147,14 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest)
       body = {};
     }
 
-    const { mode = "full_set", currentTemplate, apiKey } = body;
-    const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT));
-    const key = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-    const canUseAi = Boolean(key || isVertex);
+    const { mode = "full_set", currentTemplate } = body;
 
     if (mode === "full_set") {
-      if (canUseAi) {
-        try {
-          const ai = getGenAIClient(apiKey);
-          const model = getActiveGeminiModel(apiKey);
+      try {
+        const ai = getGenAIClient();
+        const model = getActiveGeminiModel();
 
-          const promptInstruction = `Generate exactly 4 distinct, highly qualified, photorealistic image templates for enterprise B2B telecommunications and networking installations.
+        const promptInstruction = `Generate exactly 4 distinct, highly qualified, photorealistic image templates for enterprise B2B telecommunications and networking installations.
 Cover a balanced variety across these technical domains:
 1. Multi-gigabit PoE++ switch in an IT server rack or cabinet (EnGenius hardware).
 2. Sleek Wi-Fi 7 ceiling-mounted access point in a high-end corporate office.
@@ -174,39 +169,38 @@ Requirements for each item:
 
 Respond ONLY with a valid JSON array of 4 objects with keys "id", "title", "prompt", "aspectRatio".`;
 
-          const res = await ai.models.generateContent({
-            model,
-            contents: promptInstruction,
-            config: {
-              systemInstruction: SYSTEM_INSTRUCTION,
-              responseMimeType: "application/json",
-              temperature: 0.7,
-            },
-          });
+        const res = await ai.models.generateContent({
+          model,
+          contents: promptInstruction,
+          config: {
+            systemInstruction: SYSTEM_INSTRUCTION,
+            responseMimeType: "application/json",
+            temperature: 0.7,
+          },
+        });
 
-          const rawText = res.text?.trim() || "";
-          if (rawText) {
-            const parsed = JSON.parse(rawText);
-            const list = Array.isArray(parsed) ? parsed : parsed.templates || [];
-            if (Array.isArray(list) && list.length > 0) {
-              const validatedTemplates: ImageTemplate[] = list.slice(0, 4).map((item, idx) => ({
-                id: typeof item.id === "string" && item.id.trim() ? item.id.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-") : `template-${idx + 1}-${Date.now().toString(36)}`,
-                title: typeof item.title === "string" && item.title.trim() ? item.title.trim() : `Plantilla Técnica #${idx + 1}`,
-                prompt: typeof item.prompt === "string" && item.prompt.trim() ? item.prompt.trim() : FALLBACK_SETS[0][idx % FALLBACK_SETS[0].length].prompt,
-                aspectRatio: normalizeAspectRatio(item.aspectRatio),
-              }));
+        const rawText = res.text?.trim() || "";
+        if (rawText) {
+          const parsed = JSON.parse(rawText);
+          const list = Array.isArray(parsed) ? parsed : parsed.templates || [];
+          if (Array.isArray(list) && list.length > 0) {
+            const validatedTemplates: ImageTemplate[] = list.slice(0, 4).map((item, idx) => ({
+              id: typeof item.id === "string" && item.id.trim() ? item.id.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-") : `template-${idx + 1}-${Date.now().toString(36)}`,
+              title: typeof item.title === "string" && item.title.trim() ? item.title.trim() : `Plantilla Técnica #${idx + 1}`,
+              prompt: typeof item.prompt === "string" && item.prompt.trim() ? item.prompt.trim() : FALLBACK_SETS[0][idx % FALLBACK_SETS[0].length].prompt,
+              aspectRatio: normalizeAspectRatio(item.aspectRatio),
+            }));
 
-              if (validatedTemplates.length >= 2) {
-                return NextResponse.json({
-                  success: true,
-                  templates: validatedTemplates,
-                });
-              }
+            if (validatedTemplates.length >= 2) {
+              return NextResponse.json({
+                success: true,
+                templates: validatedTemplates,
+              });
             }
           }
-        } catch (err) {
-          console.warn("[TemplatesAPI] Error invocando Gemini para full_set, usando catálogo de respaldo:", err);
         }
+      } catch (err) {
+        console.warn("[TemplatesAPI] Error invocando Gemini para full_set, usando catálogo de respaldo:", err);
       }
 
       const randomSetIndex = Math.floor(Math.random() * FALLBACK_SETS.length);
@@ -217,10 +211,10 @@ Respond ONLY with a valid JSON array of 4 objects with keys "id", "title", "prom
     }
 
     if (mode === "single_variation") {
-      if (canUseAi && currentTemplate && (currentTemplate.prompt || currentTemplate.title)) {
+      if (currentTemplate && (currentTemplate.prompt || currentTemplate.title)) {
         try {
-          const ai = getGenAIClient(apiKey);
-          const model = getActiveGeminiModel(apiKey);
+          const ai = getGenAIClient();
+          const model = getActiveGeminiModel();
 
           const promptInstruction = `Given this existing enterprise networking photographic template:
 Title: "${currentTemplate.title || "Equipo de Red"}"

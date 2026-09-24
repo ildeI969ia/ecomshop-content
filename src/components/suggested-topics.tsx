@@ -25,7 +25,6 @@ import { CreateCustomTopicModal } from "./create-custom-topic-modal";
 interface SuggestedTopicsProps {
   selectedTopicId: string;
   onSelectTopic: (topic: EditorialTopicCard) => void;
-  geminiApiKey?: string;
 }
 
 const CATEGORY_TABS: { id: TopicCategory; label: string }[] = [
@@ -38,8 +37,7 @@ const CATEGORY_TABS: { id: TopicCategory; label: string }[] = [
 
 export function SuggestedTopics({
   selectedTopicId,
-  onSelectTopic,
-  geminiApiKey
+  onSelectTopic
 }: SuggestedTopicsProps) {
   const [topics, setTopics] = useState<EditorialTopicCard[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,8 +55,7 @@ export function SuggestedTopics({
         body: JSON.stringify({
           category: cat,
           vertical,
-          arquetipo: archetype,
-          apiKey: geminiApiKey || undefined
+          arquetipo: archetype
         })
       });
 

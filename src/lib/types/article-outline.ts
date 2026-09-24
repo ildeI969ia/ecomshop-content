@@ -39,8 +39,7 @@ export const GenerateOutlineRequestSchema = z.object({
   topicOrProduct: z.string().min(2),
   targetAudience: z.string().optional(),
   vertical: z.string().optional(),
-  category: z.string().optional(),
-  apiKey: z.string().optional()
-});
+  category: z.string().optional()
+}).strict();
 
 export type GenerateOutlineRequest = z.infer<typeof GenerateOutlineRequestSchema>;

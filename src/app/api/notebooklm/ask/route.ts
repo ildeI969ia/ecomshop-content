@@ -8,7 +8,7 @@ export const maxDuration = 60;
 export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
   try {
     const body = await req.json();
-    const { question, suggestNewSources, apiKey } = body;
+    const { question, suggestNewSources } = body;
 
     if (!question || typeof question !== "string") {
       return NextResponse.json(
@@ -17,20 +17,16 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest)
       );
     }
 
-    const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT));
-    const key = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    try {
+      const { getGenAIClient, getActiveGeminiModel } = await import("@/lib/genai-client");
+      const ai = getGenAIClient();
+      const activeModel = getActiveGeminiModel();
 
-    if (key || isVertex) {
-      try {
-        const { getGenAIClient, getActiveGeminiModel } = await import("@/lib/genai-client");
-        const ai = getGenAIClient(apiKey);
-        const activeModel = getActiveGeminiModel(apiKey);
+      const sourcesSummary = OFFICIAL_NOTEBOOK.sources.map((s, i) =>
+        `[Fuente ${i + 1}] ID: ${s.id} | Tipo: ${s.type} | Título: ${s.title} | Descripción: ${s.description} | URL: ${s.url || "N/A"}`
+      ).join("\n");
 
-        const sourcesSummary = OFFICIAL_NOTEBOOK.sources.map((s, i) => 
-          `[Fuente ${i + 1}] ID: ${s.id} | Tipo: ${s.type} | Título: ${s.title} | Descripción: ${s.description} | URL: ${s.url || "N/A"}`
-        ).join("\n");
-
-        const systemInstruction = `
+      const systemInstruction = `
 Eres el Documentalista Jefe y Analista Preventa de ${ECOM_BRAND.name} especializado en el cuaderno oficial de Google NotebookLM (ID: ${OFFICIAL_NOTEBOOK.notebookId}).
 Tienes acceso al repositorio indexado de las 20 fuentes documentales oficiales sobre EnGenius Networks, switches PoE++, fibra óptica, comparativas de TCO y servicios de distribución de EcomSpain.
 
@@ -60,7 +56,7 @@ Debes responder SIEMPRE en formato JSON válido con la siguiente estructura:
 }
 `;
 
-        const prompt = `
+      const prompt = `
 Pregunta o requerimiento del operador: "${question}"
 ¿Solicita o conviene sugerir nuevas fuentes?: ${suggestNewSources ? "SÍ, analiza vacíos documentales y sugiere de 1 a 3 fuentes clave para 2026" : "Opcional"}
 
@@ -68,33 +64,32 @@ Pregunta o requerimiento del operador: "${question}"
 ${sourcesSummary}
 `;
 
-        const res = await ai.models.generateContent({
-          model: activeModel,
-          contents: prompt,
-          config: {
-            systemInstruction,
-            responseMimeType: "application/json"
-          }
-        });
+      const res = await ai.models.generateContent({
+        model: activeModel,
+        contents: prompt,
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json"
+        }
+      });
 
-        let rawText = res.text || "{}";
-        rawText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
-        const parsed = JSON.parse(rawText);
+      let rawText = res.text || "{}";
+      rawText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(rawText);
 
-        return NextResponse.json({
-          success: true,
-          data: {
-            answer: parsed.answer,
-            citedSources: parsed.citedSources || [],
-            suggestedNewSources: parsed.suggestedNewSources || [],
-            transferableTopic: parsed.transferableTopic || null,
-            tokensInput: (res as any).usageMetadata?.promptTokenCount || 850,
-            tokensOutput: (res as any).usageMetadata?.candidatesTokenCount || 600
-          }
-        });
-      } catch (geminiErr) {
-        console.warn("Error con Gemini API en notebooklm ask, usando fallback heurístico:", geminiErr);
-      }
+      return NextResponse.json({
+        success: true,
+        data: {
+          answer: parsed.answer,
+          citedSources: parsed.citedSources || [],
+          suggestedNewSources: parsed.suggestedNewSources || [],
+          transferableTopic: parsed.transferableTopic || null,
+          tokensInput: (res as any).usageMetadata?.promptTokenCount || 850,
+          tokensOutput: (res as any).usageMetadata?.candidatesTokenCount || 600
+        }
+      });
+    } catch (geminiErr) {
+      console.warn("Error con Gemini API en notebooklm ask, usando fallback heurístico:", geminiErr);
     }
 
     const fallbackResponse = generateDeterministicNotebookAnswer(question);

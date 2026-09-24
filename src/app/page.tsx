@@ -445,8 +445,7 @@ export default function ContentDashboard() {
           editorialControls,
           businessGoal: selectedBusinessGoal,
           narrativeAnchor: opp.narrativeAnchor,
-          selectedSourceIds: selectedSourceIds.length > 0 ? selectedSourceIds : undefined,
-          apiKey: geminiApiKey || undefined
+          selectedSourceIds: selectedSourceIds.length > 0 ? selectedSourceIds : undefined
         })
       });
 
@@ -1183,8 +1182,7 @@ export default function ContentDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           question: q,
-          suggestNewSources,
-          apiKey: geminiApiKey || undefined
+          suggestNewSources
         })
       });
 
@@ -1241,72 +1239,15 @@ export default function ContentDashboard() {
   };
 
   // Configuración Gemini API & Agente Estratégico
-  const [geminiApiKey, setGeminiApiKey] = useState("");
-  const [keyStatus, setKeyStatus] = useState<"unchecked" | "valid" | "invalid">("unchecked");
-  const [showKeyModal, setShowKeyModal] = useState(false);
-  const [validatingKey, setValidatingKey] = useState(false);
-  
   const [strategicAngles, setStrategicAngles] = useState<StrategicAngle[]>([]);
   const [selectedAngleId, setSelectedAngleId] = useState<string | null>(null);
   const [loadingAngles, setLoadingAngles] = useState(false);
 
-  const [activeBackendLabel, setActiveBackendLabel] = useState<string>("Gemini Conectado");
+  const [activeBackendLabel, setActiveBackendLabel] = useState<string>("Google GenAI Servidor");
   const [connectedModel, setConnectedModel] = useState<string>("gemini-2.5-flash");
 
-  useEffect(() => {
-    const saved = localStorage.getItem("ecomshop_gemini_key");
-    if (saved) {
-      setGeminiApiKey(saved);
-      checkKeyValidity(saved);
-    } else {
-      // Probar si el servidor ya tiene conexión directa (Vertex AI en Cloud Run o local)
-      checkKeyValidity("");
-    }
-  }, []);
-
-  const [keyErrorMessage, setKeyErrorMessage] = useState<string | null>(null);
-
-  const checkKeyValidity = async (keyToTest: string) => {
-    setValidatingKey(true);
-    setKeyErrorMessage(null);
-    try {
-      const res = await fetch("/api/validate-key", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: keyToTest || undefined })
-      });
-      const data = await res.json();
-      if (res.ok && data.valid) {
-        setKeyStatus("valid");
-        const detectedModel = data.model || "gemini-2.5-flash";
-        setConnectedModel(detectedModel);
-        if (data.backend) {
-          setActiveBackendLabel(data.backend.includes("Vertex") ? "Vertex AI Conectado" : `${detectedModel} Activo`);
-        }
-        if (keyToTest) {
-          localStorage.setItem("ecomshop_gemini_key", keyToTest);
-        }
-      } else {
-        if (keyToTest) {
-          setKeyStatus("invalid");
-          setKeyErrorMessage(data.message || "Clave inválida o sin permisos en Google Cloud");
-        } else {
-          setKeyStatus("unchecked");
-        }
-      }
-    } catch (err: any) {
-      if (keyToTest) {
-        setKeyStatus("invalid");
-        setKeyErrorMessage(err?.message || "Error de conexión al verificar la clave");
-      } else {
-        setKeyStatus("unchecked");
-      }
-    } finally {
-      setValidatingKey(false);
-    }
-  };
-
-  const handleFetchStrategicAngles = async () => {
+  const handleGenerateStrategicAngles = async () => {
+    if (!topicTitle) return;
     setLoadingAngles(true);
     try {
       const res = await fetch("/api/strategy/angles", {
@@ -1314,8 +1255,7 @@ export default function ContentDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           topicTitle,
-          category,
-          apiKey: geminiApiKey || undefined
+          category
         })
       });
       const data = await res.json();
@@ -1328,6 +1268,8 @@ export default function ContentDashboard() {
       setLoadingAngles(false);
     }
   };
+
+
 
   const handleApplyAngle = (angle: StrategicAngle) => {
     setSelectedAngleId(angle.id);
@@ -1397,8 +1339,7 @@ export default function ContentDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           topicTitle: topic.title,
-          category: cat,
-          apiKey: geminiApiKey || undefined
+          category: cat
         })
       });
       const data = await res.json();
@@ -1498,8 +1439,7 @@ export default function ContentDashboard() {
           customAngle,
           editorialControls,
           businessGoal: selectedBusinessGoal,
-          selectedSourceIds: selectedSourceIds.length > 0 ? selectedSourceIds : undefined,
-          apiKey: geminiApiKey || undefined
+          selectedSourceIds: selectedSourceIds.length > 0 ? selectedSourceIds : undefined
         })
       });
 
@@ -1577,8 +1517,7 @@ export default function ContentDashboard() {
           topicOrProduct: targetTopic,
           targetAudience,
           vertical: editorialControls.targetSector,
-          category: targetCat,
-          apiKey: geminiApiKey || undefined
+          category: targetCat
         })
       });
 
@@ -1646,8 +1585,7 @@ export default function ContentDashboard() {
         body: JSON.stringify({
           prompt: imagePrompt,
           baseImage: imageBase || undefined,
-          aspectRatio: imageAspectRatio,
-          apiKey: geminiApiKey || undefined,
+          aspectRatio: imageAspectRatio
         }),
       });
       const data = await res.json();
@@ -1702,7 +1640,6 @@ export default function ContentDashboard() {
           prompt: promptToUse,
           aspectRatio: ratioToUse,
           baseImage: imageBase || undefined,
-          apiKey: geminiApiKey || undefined,
           mode
         })
       });
@@ -2416,33 +2353,6 @@ export default function ContentDashboard() {
               <span>Acceso Corporativo</span>
             </button>
           )}
-
-          {/* Gemini API Status Badge */}
-          <button
-            type="button"
-            onClick={() => setShowKeyModal(true)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-medium transition shadow-xs cursor-pointer ${
-              keyStatus === "valid"
-                ? "bg-slate-950/80 border-slate-800 text-slate-300 hover:border-emerald-500/40"
-                : keyStatus === "invalid"
-                ? "bg-rose-500/10 border-rose-500/30 text-rose-300 hover:bg-rose-500/20"
-                : "bg-slate-950/80 border-slate-800 text-slate-400 hover:border-slate-700"
-            }`}
-          >
-            <Bot className="w-3.5 h-3.5 text-slate-400" />
-            <span className="font-semibold text-xs hidden sm:inline">
-              {keyStatus === "valid"
-                ? activeBackendLabel
-                : keyStatus === "invalid"
-                ? "API Key Inválida"
-                : "Conectar Gemini API"}
-            </span>
-            <div
-              className={`w-1.5 h-1.5 rounded-full ${
-                keyStatus === "valid" ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
-              }`}
-            />
-          </button>
         </div>
       </header>
 
@@ -2748,7 +2658,6 @@ export default function ContentDashboard() {
       {mainView === "advisor" && (
         <div className="flex-1 p-6 sm:p-8 max-w-[1780px] 2xl:max-w-[1920px] mx-auto w-full">
           <MultimodalAdvisor
-            apiKey={geminiApiKey}
             onApplyRecommendation={handleApplyMultimodalRecommendation}
             onLaunchJuniaEngine={(rec) => {
               handleApplyMultimodalRecommendation(rec);
@@ -3787,97 +3696,7 @@ export default function ContentDashboard() {
         </div>
       )}
 
-      {/* Modal de Configuración Gemini API */}
-      {showKeyModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-indigo-950/80 text-indigo-400 border border-indigo-800/50">
-                  <Key className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-editorial text-base font-bold text-white">Configuración Agente Gemini</h3>
-                  <p className="text-[11px] text-slate-400">Gemini 2.5 Flash B2B Strategist</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowKeyModal(false)}
-                className="text-slate-400 hover:text-slate-200 text-xs px-2 py-1 rounded-lg hover:bg-slate-800 transition cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
 
-            <div className="text-xs text-slate-300 flex flex-col gap-2">
-              <p>
-                Introduce tu <strong className="text-white">Google Gemini API Key</strong> para que el agente estratégico genere contenido dinámico B2B con razonamiento avanzado.
-              </p>
-              <p className="text-slate-400 text-[11px]">
-                La clave se almacena de forma segura en tu navegador (localStorage) y se utiliza para las peticiones al motor de generación.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold text-slate-200">Gemini API Key</label>
-              <input
-                type="password"
-                value={geminiApiKey}
-                onChange={(e) => {
-                  setGeminiApiKey(e.target.value);
-                  setKeyStatus("unchecked");
-                }}
-                placeholder="AQ... o AIzaSy..."
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 font-mono"
-              />
-            </div>
-
-            {/* Estado de la Key */}
-            <div className="flex items-center gap-2 text-xs">
-              {validatingKey ? (
-                <span className="text-sky-400 flex items-center gap-1.5">
-                  <div className="w-3 h-3 border-2 border-sky-400/30 border-t-sky-400 rounded-full animate-spin" />
-                  Comprobando conexión con Gemini...
-                </span>
-              ) : keyStatus === "valid" ? (
-                <span className="text-emerald-400 font-medium flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  API Key válida. Modelo <strong className="text-white">{connectedModel}</strong> conectado.
-                </span>
-              ) : keyStatus === "invalid" ? (
-                <span className="text-rose-400 font-medium flex items-center gap-1">
-                  <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                  <span>{keyErrorMessage || "Clave inválida o sin permisos en Google Cloud."}</span>
-                </span>
-              ) : (
-                <span className="text-slate-400 text-[11px]">
-                  Introduce la clave y haz clic en Validar.
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
-              <button
-                onClick={() => {
-                  setGeminiApiKey("");
-                  localStorage.removeItem("ecomshop_gemini_key");
-                  setKeyStatus("unchecked");
-                }}
-                className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition cursor-pointer"
-              >
-                Limpiar
-              </button>
-              <button
-                onClick={() => checkKeyValidity(geminiApiKey)}
-                disabled={!geminiApiKey || validatingKey}
-                className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold px-4 py-2 rounded-xl text-xs transition shadow-xs cursor-pointer"
-              >
-                Validar y Guardar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modal de NotebookLM */}
       {showNotebookModal && (
@@ -4231,7 +4050,6 @@ export default function ContentDashboard() {
       <ImageInterrogatorModal
         isOpen={showInterrogatorModal}
         onClose={() => setShowInterrogatorModal(false)}
-        apiKey={geminiApiKey || undefined}
         currentBaseImage={imageBase}
         onApplyPrompt={(newPrompt, newRatio, baseImg) => {
           setImagePrompt(newPrompt);

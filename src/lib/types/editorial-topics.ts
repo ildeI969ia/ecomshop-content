@@ -43,7 +43,7 @@ export const EditorialTopicsQuerySchema = z.object({
   category: TopicCategorySchema.default("ALL"),
   vertical: TopicVerticalSchema.default("EMPRESAS_OFICINAS"),
   arquetipo: TopicArchetypeSchema.default("TROUBLESHOOTING")
-});
+}).strict();
 export type EditorialTopicsQuery = z.infer<typeof EditorialTopicsQuerySchema>;
 
 export const CreateCustomTopicSchema = z.object({
@@ -53,5 +53,5 @@ export const CreateCustomTopicSchema = z.object({
   suggestedSKUs: z.array(z.string()).default([]),
   coreArgument: z.string().optional(),
   badge: z.string().optional()
-});
+}).strict();
 export type CreateCustomTopicInput = z.infer<typeof CreateCustomTopicSchema>;

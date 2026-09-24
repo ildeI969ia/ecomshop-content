@@ -35,7 +35,6 @@ export const FIELD_SCENARIOS = CURATED_FIELD_SCENARIOS_POOL;
 
 
 interface MultimodalAdvisorProps {
-  apiKey?: string;
   onApplyRecommendation: (rec: CampaignRecommendation) => void;
   onLaunchJuniaEngine?: (rec: CampaignRecommendation) => void;
   onRecordFinops: (record: {
@@ -47,7 +46,6 @@ interface MultimodalAdvisorProps {
 }
 
 export function MultimodalAdvisor({
-  apiKey,
   onApplyRecommendation,
   onLaunchJuniaEngine,
   onRecordFinops
@@ -274,8 +272,7 @@ export function MultimodalAdvisor({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          category: activeCategory,
-          apiKey: apiKey || undefined
+          category: activeCategory
         })
       });
       const data = await res.json();
@@ -336,8 +333,7 @@ export function MultimodalAdvisor({
           mediaBase64: selectedFile?.base64,
           mimeType: selectedFile?.mimeType,
           scenarioId: selectedScenarioId || undefined,
-          category: activeCategory !== "ALL" ? activeCategory : undefined,
-          apiKey: apiKey || undefined
+          category: activeCategory !== "ALL" ? activeCategory : undefined
         })
       });
 

@@ -24,7 +24,6 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     }
 
     const inputData = parsed.data;
-    const apiKey = process.env.GEMINI_API_KEY || json.apiKey;
 
     // Detectar si el SKU corresponde a un dispositivo canónico de ECOMSHOP_CATALOG
     const targetSku = inputData.sku || inputData.customEquipmentName || (inputData.promotedProductIds && inputData.promotedProductIds[0]) || "";
@@ -57,14 +56,14 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       try {
         const { ProductIntelligenceService } = await import("@/server/services/product-intelligence-service");
         const intelService = new ProductIntelligenceService();
-        intelligenceCard = await intelService.getOrGenerateCard(catalogDevice.sku, apiKey);
+        intelligenceCard = await intelService.getOrGenerateCard(catalogDevice.sku);
       } catch (intelErr) {
         console.warn("[API Generate] No se pudo obtener tarjeta de inteligencia para catalogDevice:", intelErr);
       }
     } else if (productUrl) {
       try {
         const rawProduct = await extractEcomshopProduct(productUrl);
-        intelligenceCard = await buildProductIntelligenceCard(rawProduct, apiKey);
+        intelligenceCard = await buildProductIntelligenceCard(rawProduct);
 
         if (!effectiveTitle) {
           effectiveTitle = `${rawProduct.brand} ${rawProduct.sku}: Despliegue y Ventajas Técnicas B2B`;
@@ -91,25 +90,24 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       sku: catalogDevice?.sku || inputData.sku,
       productUrl: productUrl || catalogDevice?.productUrl,
       topicTitle: effectiveTitle,
-      category: effectiveCategory,
-      apiKey
+      category: effectiveCategory
     });
 
     // 3. Auditoría con EvidenceEngine (Podar o corregir claims técnicos erróneos en paralelo)
     if (intelligenceCard) {
       try {
         const [blogAudit, mailAudit, linkedinAudit, waAudit] = await Promise.all([
-          content.blog?.htmlContent 
-            ? verifyAndSanitizeContent(content.blog.htmlContent, "blog", intelligenceCard, apiKey) 
+          content.blog?.htmlContent
+            ? verifyAndSanitizeContent(content.blog.htmlContent, "blog", intelligenceCard)
             : Promise.resolve(null),
-          content.mailchimp?.newsletterHtml 
-            ? verifyAndSanitizeContent(content.mailchimp.newsletterHtml, "mailchimp", intelligenceCard, apiKey) 
+          content.mailchimp?.newsletterHtml
+            ? verifyAndSanitizeContent(content.mailchimp.newsletterHtml, "mailchimp", intelligenceCard)
             : Promise.resolve(null),
-          content.linkedin?.fullPostText 
-            ? verifyAndSanitizeContent(content.linkedin.fullPostText, "linkedin", intelligenceCard, apiKey) 
+          content.linkedin?.fullPostText
+            ? verifyAndSanitizeContent(content.linkedin.fullPostText, "linkedin", intelligenceCard)
             : Promise.resolve(null),
-          content.whatsapp?.formattedMessage 
-            ? verifyAndSanitizeContent(content.whatsapp.formattedMessage, "whatsapp", intelligenceCard, apiKey) 
+          content.whatsapp?.formattedMessage
+            ? verifyAndSanitizeContent(content.whatsapp.formattedMessage, "whatsapp", intelligenceCard)
             : Promise.resolve(null)
         ]);
 

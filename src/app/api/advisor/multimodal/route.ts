@@ -7,7 +7,7 @@ export const maxDuration = 60; // 60 segundos para Cloud Run
 export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
   try {
     const body = await req.json();
-    const { textPrompt, mediaBase64, mimeType, apiKey, scenarioId, category } = body;
+    const { textPrompt, mediaBase64, mimeType, scenarioId, category } = body;
 
     if (!textPrompt && !mediaBase64) {
       return NextResponse.json(
@@ -20,7 +20,6 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       textPrompt,
       mediaBase64,
       mimeType,
-      apiKey,
       scenarioId,
       category
     });

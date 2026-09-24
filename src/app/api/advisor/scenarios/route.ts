@@ -31,9 +31,9 @@ export const GET = withAuthAndPermission("ai:execute", async (req: NextRequest) 
 export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
   try {
     const body = await req.json().catch(() => ({}));
-    const { category = "ALL", apiKey } = body;
+    const { category = "ALL" } = body;
 
-    const scenarios = await generateFieldScenariosWithAI(category, apiKey);
+    const scenarios = await generateFieldScenariosWithAI(category);
 
     return NextResponse.json({
       scenarios,

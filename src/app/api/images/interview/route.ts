@@ -17,30 +17,27 @@ interface InterviewQuestion {
 
 export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
   try {
-    const { mode, userIdea, answers, baseImage, apiKey } = await req.json();
-    const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT));
-    const key = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    const { mode, userIdea, answers, baseImage } = await req.json();
 
     const baseImageData = await resolveBaseImageToData(baseImage);
 
     if (mode === "interrogate") {
-      if (key || isVertex) {
-        try {
-          const ai = getGenAIClient(apiKey);
-          const activeModel = getActiveGeminiModel(apiKey);
+      try {
+        const ai = getGenAIClient();
+        const activeModel = getActiveGeminiModel();
 
-          const promptParts: any[] = [];
-          if (baseImageData?.data) {
-            promptParts.push({
-              inlineData: {
-                mimeType: baseImageData.mimeType,
-                data: baseImageData.data
-              }
-            });
-          }
-
+        const promptParts: any[] = [];
+        if (baseImageData?.data) {
           promptParts.push({
-            text: `Eres un Director de Arte y Fotógrafo B2B especializado en Telecomunicaciones, Redes Empresariales y Hardware (Switches EnGenius, Routers, Racks, Wi-Fi 7, Fibra Óptica).
+            inlineData: {
+              mimeType: baseImageData.mimeType,
+              data: baseImageData.data
+            }
+          });
+        }
+
+        promptParts.push({
+          text: `Eres un Director de Arte y Fotógrafo B2B especializado en Telecomunicaciones, Redes Empresariales y Hardware (Switches EnGenius, Routers, Racks, Wi-Fi 7, Fibra Óptica).
 El usuario quiere generar una imagen con esta idea o intención: "${userIdea || "Infraestructura de red profesional"}".
 Genera exactamente 3 preguntas con 3-4 opciones cada una para interrogar al usuario y definir la toma perfecta (por ejemplo: atmósfera y estilo, plano y ángulo, y elemento de hardware o acción).
 Devuelve ÚNICAMENTE un JSON válido con este formato:
@@ -56,22 +53,21 @@ Devuelve ÚNICAMENTE un JSON válido con este formato:
     }
   ]
 }`
-          });
+        });
 
-          const res = await ai.models.generateContent({
-            model: activeModel,
-            contents: [{ role: "user", parts: promptParts }],
-            config: { responseMimeType: "application/json" }
-          });
+        const res = await ai.models.generateContent({
+          model: activeModel,
+          contents: [{ role: "user", parts: promptParts }],
+          config: { responseMimeType: "application/json" }
+        });
 
-          const rawText = res.text?.trim();
-          if (rawText) {
-            const parsed = JSON.parse(rawText);
-            return NextResponse.json({ success: true, questions: parsed.questions });
-          }
-        } catch (err: any) {
-          console.warn("Error en Gemini interview interrogation:", err?.message);
+        const rawText = res.text?.trim();
+        if (rawText) {
+          const parsed = JSON.parse(rawText);
+          return NextResponse.json({ success: true, questions: parsed.questions });
         }
+      } catch (err: any) {
+        console.warn("Error en Gemini interview interrogation:", err?.message);
       }
 
       const defaultQuestions: InterviewQuestion[] = [
@@ -109,23 +105,22 @@ Devuelve ÚNICAMENTE un JSON válido con este formato:
     }
 
     if (mode === "synthesize") {
-      if (key || isVertex) {
-        try {
-          const ai = getGenAIClient(apiKey);
-          const activeModel = getActiveGeminiModel(apiKey);
+      try {
+        const ai = getGenAIClient();
+        const activeModel = getActiveGeminiModel();
 
-          const promptParts: any[] = [];
-          if (baseImageData?.data) {
-            promptParts.push({
-              inlineData: {
-                mimeType: baseImageData.mimeType,
-                data: baseImageData.data
-              }
-            });
-          }
-
+        const promptParts: any[] = [];
+        if (baseImageData?.data) {
           promptParts.push({
-            text: `Eres el Director de Arte de Imagen B2B para Telecomunicaciones.
+            inlineData: {
+              mimeType: baseImageData.mimeType,
+              data: baseImageData.data
+            }
+          });
+        }
+
+        promptParts.push({
+          text: `Eres el Director de Arte de Imagen B2B para Telecomunicaciones.
 La idea original del usuario es: "${userIdea || "Infraestructura de red empresarial"}".
 Las respuestas seleccionadas en el interrogatorio son:
 ${JSON.stringify(answers, null, 2)}
@@ -137,22 +132,21 @@ Devuelve ÚNICAMENTE un JSON:
   "recommendedAspectRatio": "16:9",
   "technicalNotes": "Breve resumen en español de los detalles fotográficos aplicados"
 }`
-          });
+        });
 
-          const res = await ai.models.generateContent({
-            model: activeModel,
-            contents: [{ role: "user", parts: promptParts }],
-            config: { responseMimeType: "application/json" }
-          });
+        const res = await ai.models.generateContent({
+          model: activeModel,
+          contents: [{ role: "user", parts: promptParts }],
+          config: { responseMimeType: "application/json" }
+        });
 
-          const rawText = res.text?.trim();
-          if (rawText) {
-            const parsed = JSON.parse(rawText);
-            return NextResponse.json({ success: true, data: parsed });
-          }
-        } catch (err: any) {
-          console.warn("Error en Gemini prompt synthesis:", err?.message);
+        const rawText = res.text?.trim();
+        if (rawText) {
+          const parsed = JSON.parse(rawText);
+          return NextResponse.json({ success: true, data: parsed });
         }
+      } catch (err: any) {
+        console.warn("Error en Gemini prompt synthesis:", err?.message);
       }
 
       const partsSummary = Object.values(answers || {}).join(", ");

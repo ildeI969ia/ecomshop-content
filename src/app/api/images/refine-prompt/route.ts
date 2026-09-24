@@ -13,7 +13,7 @@ export interface PromptRefinementResponse {
 
 export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
   try {
-    const { prompt, baseImage, aspectRatio, apiKey } = await req.json();
+    const { prompt, baseImage, aspectRatio } = await req.json();
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
       return NextResponse.json(
@@ -26,8 +26,8 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest)
     const currentAspectRatio = aspectRatio === "4:3" || aspectRatio === "1:1" ? aspectRatio : "16:9";
 
     try {
-      const ai = getGenAIClient(apiKey);
-      const model = getActiveGeminiModel(apiKey);
+      const ai = getGenAIClient();
+      const model = getActiveGeminiModel();
       const baseImageData = await resolveBaseImageToData(baseImage);
 
       const parts: any[] = [];

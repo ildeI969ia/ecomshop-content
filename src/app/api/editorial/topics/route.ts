@@ -82,13 +82,12 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest)
       return NextResponse.json({ topic: customCard });
     }
 
-    const { category = "ALL", vertical = "EMPRESAS_OFICINAS", arquetipo = "TROUBLESHOOTING", apiKey } = body;
+    const { category = "ALL", vertical = "EMPRESAS_OFICINAS", arquetipo = "TROUBLESHOOTING" } = body;
 
     const topics = await generateEditorialTopicsWithAI(
       category,
       vertical,
-      arquetipo,
-      apiKey
+      arquetipo
     );
 
     return NextResponse.json({

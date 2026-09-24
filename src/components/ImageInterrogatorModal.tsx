@@ -23,15 +23,13 @@ interface ImageInterrogatorModalProps {
   onClose: () => void;
   onApplyPrompt: (prompt: string, aspectRatio: "16:9" | "1:1" | "4:3", baseImage?: string) => void;
   currentBaseImage?: string | null;
-  apiKey?: string;
 }
 
 export function ImageInterrogatorModal({
   isOpen,
   onClose,
   onApplyPrompt,
-  currentBaseImage,
-  apiKey
+  currentBaseImage
 }: ImageInterrogatorModalProps) {
   const [step, setStep] = useState<"idea" | "questions" | "result">("idea");
   const [userIdea, setUserIdea] = useState("");
@@ -72,8 +70,7 @@ export function ImageInterrogatorModal({
         body: JSON.stringify({
           action: "start",
           userIdea,
-          hasBaseImage: !!baseImage,
-          apiKey
+          hasBaseImage: !!baseImage
         })
       });
       const data = await res.json();
@@ -98,8 +95,7 @@ export function ImageInterrogatorModal({
           action: "synthesize",
           userIdea,
           answers: selectedAnswers,
-          hasBaseImage: !!baseImage,
-          apiKey
+          hasBaseImage: !!baseImage
         })
       });
       const data = await res.json();

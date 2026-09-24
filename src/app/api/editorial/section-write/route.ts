@@ -24,9 +24,8 @@ const WriteSectionRequestSchema = z.object({
   section: ArticleOutlineSectionSchema.optional(),
   writtenSections: z.array(WrittenSectionResultSchema).optional(),
   previousSectionsSummary: z.string().optional(),
-  category: z.string().default("wifi"),
-  apiKey: z.string().optional()
-});
+  category: z.string().default("wifi")
+}).strict();
 
 export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
   try {
@@ -39,7 +38,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest)
       );
     }
 
-    const { action, outline, section, writtenSections, previousSectionsSummary, category, apiKey } = parsed.data;
+    const { action, outline, section, writtenSections, previousSectionsSummary, category } = parsed.data;
 
     if (action === "WRITE_SECTION") {
       if (!section) {
@@ -49,7 +48,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest)
         );
       }
 
-      const written = await writeArticleSection(section, outline, previousSectionsSummary || "", apiKey);
+      const written = await writeArticleSection(section, outline, previousSectionsSummary || "");
       return NextResponse.json({ section: written });
     }
 
@@ -65,8 +64,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest)
       const contentOutput = await deriveOmnichannelAssets(
         fullArticle,
         `junia-${Date.now()}`,
-        category,
-        apiKey
+        category
       );
 
       return NextResponse.json({
@@ -75,12 +73,11 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest)
       });
     }
 
-    const fullArticle = await writeFullArticleFromOutline(outline, undefined, apiKey);
+    const fullArticle = await writeFullArticleFromOutline(outline, undefined);
     const contentOutput = await deriveOmnichannelAssets(
       fullArticle,
       `junia-${Date.now()}`,
-      category,
-      apiKey
+      category
     );
 
     return NextResponse.json({

@@ -14,13 +14,12 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest)
       );
     }
 
-    const { topicOrProduct, targetAudience, vertical, apiKey } = parsed.data;
+    const { topicOrProduct, targetAudience, vertical } = parsed.data;
 
     const outline = await generateArticleOutline(
       topicOrProduct,
       targetAudience || "Instaladores de Telecomunicaciones e Integradores IT",
-      vertical || "EMPRESAS_OFICINAS",
-      apiKey
+      vertical || "EMPRESAS_OFICINAS"
     );
 
     return NextResponse.json({

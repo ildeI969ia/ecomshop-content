@@ -6,8 +6,7 @@ import { z } from "zod";
 
 const QuerySchema = z.object({
   skuOrModel: z.string().min(2),
-  apiKey: z.string().optional()
-});
+}).strict();
 
 export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest, user) => {
   try {
@@ -22,8 +21,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
 
     const intelService = new ProductIntelligenceService();
     const card = await intelService.getOrGenerateCard(
-      parsed.data.skuOrModel,
-      process.env.GEMINI_API_KEY || parsed.data.apiKey
+      parsed.data.skuOrModel
     );
 
     try {

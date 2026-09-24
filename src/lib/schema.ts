@@ -124,9 +124,8 @@ export const GenerateRequestSchema = z.object({
   }).optional(),
 
   // Fuentes Seleccionadas del NotebookLM
-  selectedSourceIds: z.array(z.string()).optional(),
-  apiKey: z.string().optional()
-});
+  selectedSourceIds: z.array(z.string()).optional()
+}).strict();
 
 export type GenerateRequest = z.infer<typeof GenerateRequestSchema>;
 

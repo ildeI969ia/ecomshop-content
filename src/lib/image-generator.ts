@@ -269,7 +269,6 @@ async function tryVertexLegacyImagen(
 export async function generateImageWithImagen(params: {
   prompt: string;
   aspectRatio: "16:9" | "1:1" | "4:3";
-  apiKey?: string;
   baseImage?: string;
   mode?: "ai" | "curated";
 }): Promise<GenerateImageResult> {
@@ -295,7 +294,6 @@ export async function generateImageWithImagen(params: {
     };
   }
   const serverApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  const userApiKey = params.apiKey?.trim();
   const gcpProject =
     process.env.GOOGLE_CLOUD_PROJECT ||
     process.env.GCP_PROJECT ||
@@ -310,8 +308,8 @@ export async function generateImageWithImagen(params: {
   if (baseImageData) {
     try {
       const { getGenAIClient, getActiveGeminiModel } = await import("./genai-client");
-      const ai = getGenAIClient(userApiKey);
-      const activeModel = getActiveGeminiModel(userApiKey);
+      const ai = getGenAIClient();
+      const activeModel = getActiveGeminiModel();
 
       const visionAnalysis = await ai.models.generateContent({
         model: activeModel,
@@ -383,10 +381,9 @@ export async function generateImageWithImagen(params: {
     }
   }
 
-  // ─── PASO 3: Google AI Studio con Gemini Flash Image (user key o server key) ───
-  const activeApiKey = userApiKey || serverApiKey;
-  if (activeApiKey) {
-    const aiStudioClient = new GoogleGenAI({ vertexai: false, apiKey: activeApiKey });
+  // ─── PASO 3: Google AI Studio con Gemini Flash Image (server key) ───
+  if (serverApiKey) {
+    const aiStudioClient = new GoogleGenAI({ vertexai: false, apiKey: serverApiKey });
     const result = await tryGeminiGenerateContentImage(
       aiStudioClient,
       refinedPrompt,
@@ -431,7 +428,7 @@ export async function generateImageWithImagen(params: {
   const selectedUrl = pool[randomIndex];
   const variedUrl = `${selectedUrl}&sig=${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
-  const hasAnyKey = Boolean(hasGcpProject || userApiKey || serverApiKey);
+  const hasAnyKey = Boolean(hasGcpProject || serverApiKey);
   return {
     imageUrl: variedUrl,
     sourceType: "curated_varied",
