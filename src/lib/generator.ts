@@ -307,6 +307,12 @@ JSON Schema requerido:
   try {
     const parsed = JSON.parse(cleanedText);
     if (parsed.blog && parsed.mailchimp) {
+      if (response.usageMetadata) {
+        parsed._usageMetadata = {
+          promptTokenCount: response.usageMetadata.promptTokenCount,
+          candidatesTokenCount: response.usageMetadata.candidatesTokenCount
+        };
+      }
       return parsed as ContentOutput;
     }
   } catch (parseError) {

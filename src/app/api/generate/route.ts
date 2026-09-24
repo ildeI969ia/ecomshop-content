@@ -270,8 +270,15 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         },
         source: "UI"
       });
-      // Registrar consumo real de IA en ai_usage
-      await recordAiUsage(user.uid, "gemini_generation", 1850, 3200, 0);
+      // Registrar consumo real de IA en ai_usage con Fail-Safe
+      const usageMeta = (content as any)._usageMetadata;
+      const tokensIn = usageMeta?.promptTokenCount || 1850;
+      const tokensOut = usageMeta?.candidatesTokenCount || 3200;
+      try {
+        await recordAiUsage(user.uid, "gemini_generation", tokensIn, tokensOut, 0);
+      } catch (usageErr) {
+        console.error("[API Generate] Error al registrar ai_usage en Firestore (Fail-Safe activado):", usageErr);
+      }
     } catch (persistErr: any) {
       console.error("[API Generate] Fallo en persistencia Firestore:", persistErr);
       return NextResponse.json(
