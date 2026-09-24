@@ -11,6 +11,8 @@ import { verifyAndSanitizeContent } from "@/lib/services/evidence-engine";
 import { ProductIntelligenceCard } from "@/lib/types/product-intelligence";
 import { getCatalogDevice, ECOMSHOP_CATALOG } from "@/lib/catalog";
 
+import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
+
 export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
   try {
     const json = await req.json();
@@ -20,6 +22,22 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       return NextResponse.json(
         { error: "Datos de entrada inválidos", details: parsed.error.format() },
         { status: 400 }
+      );
+    }
+
+    // 0. Comprobar presupuesto FinOps (estimación ~0.0045€ para generación multicanal completa)
+    const budgetCheck = await checkAiBudget(user.uid, user.role, 0.0045);
+    if (!budgetCheck.allowed) {
+      return NextResponse.json(
+        {
+          code: "AI_BUDGET_EXCEEDED",
+          error: "Has superado el límite de presupuesto de IA asignado para este mes.",
+          limitEur: budgetCheck.limitEur,
+          spentEur: budgetCheck.currentSpentEur,
+          pct: budgetCheck.pct,
+          resetsAt: "Inicio del próximo mes (Hora de Madrid)"
+        },
+        { status: 429 }
       );
     }
 
@@ -252,6 +270,8 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         },
         source: "UI"
       });
+      // Registrar consumo real de IA en ai_usage
+      await recordAiUsage(user.uid, "gemini_generation", 1850, 3200, 0);
     } catch (persistErr: any) {
       console.error("[API Generate] Fallo en persistencia Firestore:", persistErr);
       return NextResponse.json(
@@ -265,10 +285,17 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       );
     }
 
+    const latestBudget = await checkAiBudget(user.uid, user.role, 0);
+
     return NextResponse.json({
       ...content,
       id: contentId,
-      intelligenceCard: intelligenceCard || undefined
+      intelligenceCard: intelligenceCard || undefined,
+      budget: {
+        spentEur: latestBudget.currentSpentEur,
+        limitEur: latestBudget.limitEur,
+        pct: latestBudget.pct
+      }
     });
   } catch (error: any) {
     console.error("Error generating content:", error);

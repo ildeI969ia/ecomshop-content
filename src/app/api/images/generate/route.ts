@@ -28,11 +28,29 @@ function isHttpUrl(value: string): boolean {
  * Un 200 significa binario verificado en GCS Y metadatos escritos en Firestore.
  * Cualquier fallo devuelve 502 con la causa real: nunca data URL ni ruta ficticia.
  */
+import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
+
 export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
   try {
     const { prompt, aspectRatio, baseImage, mode } = await req.json();
     if (!prompt) {
       return NextResponse.json({ error: "Falta el prompt para generar la imagen" }, { status: 400 });
+    }
+
+    // Comprobar presupuesto FinOps (estimado ~0.0038€ por imagen)
+    const budgetCheck = await checkAiBudget(user.uid, user.role, 0.0038);
+    if (!budgetCheck.allowed) {
+      return NextResponse.json(
+        {
+          code: "AI_BUDGET_EXCEEDED",
+          error: "Has superado el límite de presupuesto de IA asignado para este mes.",
+          limitEur: budgetCheck.limitEur,
+          spentEur: budgetCheck.currentSpentEur,
+          pct: budgetCheck.pct,
+          resetsAt: "Inicio del próximo mes (Hora de Madrid)"
+        },
+        { status: 429 }
+      );
     }
 
     const result = await generateImageWithImagen({
@@ -180,6 +198,14 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       console.warn("[api/images/generate] Activo persistido; falló el registro de auditoría:", auditErr);
     }
 
+    try {
+      await recordAiUsage(user.uid, "imagen_image", 0, 0, 1);
+    } catch (finopsErr) {
+      console.warn("[api/images/generate] Imagen registrada; fallo al grabar ai_usage:", finopsErr);
+    }
+
+    const latestBudget = await checkAiBudget(user.uid, user.role, 0);
+
     return NextResponse.json({
       imageUrl: finalPublicUrl,
       sourceType: result.sourceType,
@@ -187,7 +213,12 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       refinedPrompt: result.refinedPrompt,
       assetId,
       persisted: true,
-      storageStatus
+      storageStatus,
+      budget: {
+        spentEur: latestBudget.currentSpentEur,
+        limitEur: latestBudget.limitEur,
+        pct: latestBudget.pct
+      }
     });
   } catch (error: unknown) {
     const errorMsg = error instanceof Error ? error.message : "Error al generar imagen";

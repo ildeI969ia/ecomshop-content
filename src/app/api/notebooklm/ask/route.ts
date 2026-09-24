@@ -3,9 +3,11 @@ import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { OFFICIAL_NOTEBOOK } from "@/lib/notebooklm";
 import { ECOM_BRAND } from "@/lib/knowledge";
 
+import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
+
 export const maxDuration = 60;
 
-export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest, user) => {
   try {
     const body = await req.json();
     const { question, suggestNewSources } = body;
@@ -14,6 +16,22 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest)
       return NextResponse.json(
         { error: "Debes proporcionar una pregunta o consulta sobre las fuentes." },
         { status: 400 }
+      );
+    }
+
+    // Comprobar presupuesto FinOps (estimado ~0.0008€ para consulta de NotebookLM)
+    const budgetCheck = await checkAiBudget(user.uid, user.role, 0.0008);
+    if (!budgetCheck.allowed) {
+      return NextResponse.json(
+        {
+          code: "AI_BUDGET_EXCEEDED",
+          error: "Has superado el límite de presupuesto de IA asignado para este mes.",
+          limitEur: budgetCheck.limitEur,
+          spentEur: budgetCheck.currentSpentEur,
+          pct: budgetCheck.pct,
+          resetsAt: "Inicio del próximo mes (Hora de Madrid)"
+        },
+        { status: 429 }
       );
     }
 
@@ -77,6 +95,11 @@ ${sourcesSummary}
       rawText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
       const parsed = JSON.parse(rawText);
 
+      const tokensIn = (res as any).usageMetadata?.promptTokenCount || 850;
+      const tokensOut = (res as any).usageMetadata?.candidatesTokenCount || 600;
+      await recordAiUsage(user.uid, "notebooklm_query", tokensIn, tokensOut, 0);
+      const latestBudget = await checkAiBudget(user.uid, user.role, 0);
+
       return NextResponse.json({
         success: true,
         data: {
@@ -84,8 +107,13 @@ ${sourcesSummary}
           citedSources: parsed.citedSources || [],
           suggestedNewSources: parsed.suggestedNewSources || [],
           transferableTopic: parsed.transferableTopic || null,
-          tokensInput: (res as any).usageMetadata?.promptTokenCount || 850,
-          tokensOutput: (res as any).usageMetadata?.candidatesTokenCount || 600
+          tokensInput: tokensIn,
+          tokensOutput: tokensOut
+        },
+        budget: {
+          spentEur: latestBudget.currentSpentEur,
+          limitEur: latestBudget.limitEur,
+          pct: latestBudget.pct
         }
       });
     } catch (geminiErr) {

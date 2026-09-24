@@ -27,7 +27,9 @@ const WriteSectionRequestSchema = z.object({
   category: z.string().default("wifi")
 }).strict();
 
-export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
+import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
+
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest, user) => {
   try {
     const body = await req.json();
     const parsed = WriteSectionRequestSchema.safeParse(body);
@@ -40,6 +42,23 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest)
 
     const { action, outline, section, writtenSections, previousSectionsSummary, category } = parsed.data;
 
+    // Comprobar presupuesto FinOps (estimado 0.001€ por sección, 0.005€ por artículo completo)
+    const estimatedCost = action === "WRITE_SECTION" ? 0.001 : 0.005;
+    const budgetCheck = await checkAiBudget(user.uid, user.role, estimatedCost);
+    if (!budgetCheck.allowed) {
+      return NextResponse.json(
+        {
+          code: "AI_BUDGET_EXCEEDED",
+          error: "Has superado el límite de presupuesto de IA asignado para este mes.",
+          limitEur: budgetCheck.limitEur,
+          spentEur: budgetCheck.currentSpentEur,
+          pct: budgetCheck.pct,
+          resetsAt: "Inicio del próximo mes (Hora de Madrid)"
+        },
+        { status: 429 }
+      );
+    }
+
     if (action === "WRITE_SECTION") {
       if (!section) {
         return NextResponse.json(
@@ -49,7 +68,12 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest)
       }
 
       const written = await writeArticleSection(section, outline, previousSectionsSummary || "");
-      return NextResponse.json({ section: written });
+      await recordAiUsage(user.uid, "gemini_generation", 600, 800, 0);
+      const budgetState = await checkAiBudget(user.uid, user.role, 0);
+      return NextResponse.json({
+        section: written,
+        budget: { spentEur: budgetState.currentSpentEur, limitEur: budgetState.limitEur, pct: budgetState.pct }
+      });
     }
 
     if (action === "FINALIZE_ARTICLE") {
@@ -66,10 +90,13 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest)
         `junia-${Date.now()}`,
         category
       );
+      await recordAiUsage(user.uid, "gemini_generation", 1200, 2000, 0);
+      const budgetState = await checkAiBudget(user.uid, user.role, 0);
 
       return NextResponse.json({
         article: fullArticle,
-        contentOutput
+        contentOutput,
+        budget: { spentEur: budgetState.currentSpentEur, limitEur: budgetState.limitEur, pct: budgetState.pct }
       });
     }
 
@@ -79,10 +106,13 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest)
       `junia-${Date.now()}`,
       category
     );
+    await recordAiUsage(user.uid, "gemini_generation", 2500, 4000, 0);
+    const budgetState = await checkAiBudget(user.uid, user.role, 0);
 
     return NextResponse.json({
       article: fullArticle,
-      contentOutput
+      contentOutput,
+      budget: { spentEur: budgetState.currentSpentEur, limitEur: budgetState.limitEur, pct: budgetState.pct }
     });
   } catch (err: any) {
     console.error("[POST /api/editorial/section-write] Error:", err);
