@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateServerRequest, authorizePermission } from "@/server/security/auth";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { CampaignRepository } from "@/server/repositories";
 import { Campaign } from "@/server/domain/types";
 
-export async function GET(req: NextRequest) {
-  const user = await authenticateServerRequest(req);
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
+export const GET = withAuthAndPermission("campaign:view", async (req: NextRequest, user) => {
   const repo = new CampaignRepository();
   try {
     const list = await repo.listByWorkspace(user.workspaceId);
@@ -16,18 +11,9 @@ export async function GET(req: NextRequest) {
   } catch (err: any) {
     return NextResponse.json({ campaigns: [], error: err?.message }, { status: 200 });
   }
-}
+});
 
-export async function POST(req: NextRequest) {
-  const user = await authenticateServerRequest(req);
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
-  if (!authorizePermission(user, "campaign:create")) {
-    return NextResponse.json({ error: "Permisos insuficientes" }, { status: 403 });
-  }
-
+export const POST = withAuthAndPermission("campaign:create", async (req: NextRequest, user) => {
   try {
     const body = await req.json();
     const repo = new CampaignRepository();
@@ -67,4 +53,4 @@ export async function POST(req: NextRequest) {
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-}
+});

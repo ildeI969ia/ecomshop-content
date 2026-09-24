@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateServerRequest } from "@/server/security/auth";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import {
   generateFieldScenariosWithAI,
   getRandomCuratedScenarios
 } from "@/lib/services/field-scenarios-service";
 
-export async function GET(req: NextRequest) {
+export const GET = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
   try {
-    const user = await authenticateServerRequest(req);
-    if (!user) {
-      return NextResponse.json(
-        { error: "No autorizado. Sesión corporativa requerida." },
-        { status: 401 }
-      );
-    }
-
     const { searchParams } = new URL(req.url);
     const category = searchParams.get("category") || "ALL";
 
@@ -34,18 +26,10 @@ export async function GET(req: NextRequest) {
       { status: 200 }
     );
   }
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
   try {
-    const user = await authenticateServerRequest(req);
-    if (!user) {
-      return NextResponse.json(
-        { error: "No autorizado. Sesión corporativa requerida." },
-        { status: 401 }
-      );
-    }
-
     const body = await req.json().catch(() => ({}));
     const { category = "ALL", apiKey } = body;
 
@@ -69,4 +53,4 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
   }
-}
+});

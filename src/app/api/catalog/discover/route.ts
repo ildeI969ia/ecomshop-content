@@ -1,27 +1,29 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import {
   buildDiscoveryPrompt,
   parseDiscoveryResponse,
   compareWithCatalog,
 } from "@/lib/services/notebook-product-discovery";
 
-/**
- * POST /api/catalog/discover
- * Interroga NotebookLM para descubrir productos y compara con el catálogo canónico.
- */
-export async function POST(request: Request) {
+export const POST = withAuthAndPermission("ai:execute", async (request: NextRequest) => {
   try {
     const body = await request.json().catch(() => ({}));
     const notebookApiUrl = body.notebookApiUrl || "/api/notebooklm/ask";
 
-    // Construir el prompt de interrogación
     const prompt = buildDiscoveryPrompt();
 
-    // Llamar a NotebookLM internamente
     const origin = new URL(request.url).origin;
+    const authHeader = request.headers.get("authorization");
+    const cookieHeader = request.headers.get("cookie");
+
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (authHeader) headers["authorization"] = authHeader;
+    if (cookieHeader) headers["cookie"] = cookieHeader;
+
     const notebookResponse = await fetch(`${origin}${notebookApiUrl}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ question: prompt }),
     });
 
@@ -41,16 +43,14 @@ export async function POST(request: Request) {
     const notebookData = await notebookResponse.json();
     const responseText = notebookData.answer || notebookData.response || JSON.stringify(notebookData);
 
-    // Parsear productos descubiertos
     const discovered = parseDiscoveryResponse(responseText);
 
-    // Comparar con catálogo canónico
     const report = compareWithCatalog(discovered);
 
     return NextResponse.json({
       success: true,
       report,
-      rawResponse: responseText.slice(0, 2000), // Truncar para debug
+      rawResponse: responseText.slice(0, 2000),
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Error desconocido";
@@ -65,4 +65,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
+});

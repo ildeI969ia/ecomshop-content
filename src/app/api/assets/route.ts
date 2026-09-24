@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateServerRequest, authorizePermission } from "@/server/security/auth";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { AssetRepository, AuditRepository } from "@/server/repositories";
-import { GoogleCloudStorageProvider, StorageProviderError } from "@/server/services/storage-provider";
+import { GoogleCloudStorageProvider } from "@/server/services/storage-provider";
 import { Asset } from "@/server/domain/types";
 import { prepareImageBinary, sha256Of } from "@/server/services/image-binary";
 import { summarizeAssetHealth } from "@/server/services/persistence-diagnostics";
 
-// Tipos MIME y extensiones estrictamente permitidas
 const ALLOWED_MIME_TYPES = [
   "image/jpeg",
   "image/png",
@@ -20,18 +19,10 @@ const ALLOWED_MIME_TYPES = [
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
 
-export async function GET(req: NextRequest) {
-  const user = await authenticateServerRequest(req);
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
+export const GET = withAuthAndPermission("content:view", async (req: NextRequest, user) => {
   const repo = new AssetRepository();
   try {
-    // F6-FS-001: Aislamiento multi-tenant estricto. NUNCA consultar sin workspaceId.
     const list = await repo.listRecent(100, user.workspaceId);
-
-    // F4: sin auto-recuperacion lateral - la galeria refleja lo que hay en la coleccion assets.
     const health = summarizeAssetHealth(list);
     return NextResponse.json({
       assets: list,
@@ -43,19 +34,9 @@ export async function GET(req: NextRequest) {
     console.error("[api/assets GET] Error al leer assets:", err);
     return NextResponse.json({ assets: [], total: 0, error: message }, { status: 500 });
   }
-}
+});
 
-export async function POST(req: NextRequest) {
-  const user = await authenticateServerRequest(req);
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
-  // Verificar rol que tenga permisos de creación de contenidos / assets
-  if (!authorizePermission(user, "content:create") && !authorizePermission(user, "ai:execute")) {
-    return NextResponse.json({ error: "Permisos insuficientes para subir assets" }, { status: 403 });
-  }
-
+export const POST = withAuthAndPermission("content:create", async (req: NextRequest, user) => {
   try {
     const body = await req.json();
     const { filename, mimeType, base64Data, campaignId, productId, contentId } = body;
@@ -64,26 +45,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Faltan parámetros obligatorios del asset" }, { status: 400 });
     }
 
-    // 1. Sanitización de nombres de archivo y neutralización de Path Traversal
     const sanitizedFilename = filename.replace(/[^a-zA-Z0-9_.-]/g, "_").replace(/\.\./g, "");
 
-    // 2. Validación estricta de tipo MIME
     if (!ALLOWED_MIME_TYPES.includes(mimeType.toLowerCase())) {
       return NextResponse.json({ error: `Tipo MIME no permitido: ${mimeType}` }, { status: 400 });
     }
 
-    // 3. Decodificación y control de tamaño
     const buffer = Buffer.from(base64Data.replace(/^data:.*,/, ""), "base64");
     if (buffer.length > MAX_FILE_SIZE_BYTES) {
       return NextResponse.json({ error: "El archivo supera el límite de 25MB" }, { status: 400 });
     }
 
-    // 4. Subida a Cloud Storage (F3: si GCS falla => HTTP 502 y NO se escribe metadata)
     const storage = new GoogleCloudStorageProvider();
     const assetId = `asset-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const destinationPath = `workspaces/${user.workspaceId}/assets/${assetId}_${sanitizedFilename}`;
 
-    // Optimización del binario raster antes de subir (F3) + SHA-256 del binario real
     const isRasterImage = mimeType === "image/jpeg" || mimeType === "image/png" || mimeType === "image/webp";
     const prepared = isRasterImage ? await prepareImageBinary(buffer, mimeType) : null;
     const uploadBuffer = prepared ? prepared.buffer : buffer;
@@ -115,7 +91,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 5. Persistencia de metadatos en Firestore (sólo con el binario VERIFICADO en GCS)
     const asset: Asset = {
       id: assetId,
       workspaceId: user.workspaceId,
@@ -141,7 +116,7 @@ export async function POST(req: NextRequest) {
 
     const repo = new AssetRepository();
     await repo.save(asset);
-    // 6. Registro inmutable en Audit Log
+
     const auditRepo = new AuditRepository();
     await auditRepo.record({
       id: `audit-${Date.now()}`,
@@ -162,14 +137,9 @@ export async function POST(req: NextRequest) {
     console.error("Error al procesar subida de asset:", message);
     return NextResponse.json({ error: message || "Error al subir asset", persisted: false }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(req: NextRequest) {
-  const user = await authenticateServerRequest(req);
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
+export const DELETE = withAuthAndPermission("content:delete", async (req: NextRequest, user) => {
   try {
     const { searchParams } = new URL(req.url);
     const assetId = searchParams.get("id");
@@ -201,7 +171,7 @@ export async function DELETE(req: NextRequest) {
           idsToDelete = [body.id.trim()];
         }
       } catch {
-        // Body may be empty if using query params
+        // Body may be empty
       }
     }
 
@@ -216,19 +186,16 @@ export async function DELETE(req: NextRequest) {
 
     for (const id of idsToDelete) {
       try {
-        // 1. Obtener el asset para extraer storagePath y validar pertenencia al workspace
         const asset = await repo.findById(id);
         if (!asset) {
           continue;
         }
 
-        // F6-FS-001: Bloquear cualquier intento de eliminación cruzada entre workspaces
         if (asset.workspaceId !== user.workspaceId && user.role !== "ADMIN") {
-          console.warn(`[api/assets DELETE] Intento no autorizado de eliminar asset ${id} del workspace ${asset.workspaceId} por usuario ${user.email} (workspace ${user.workspaceId})`);
+          console.warn(`[api/assets DELETE] Intento no autorizado de eliminar asset ${id}`);
           continue;
         }
 
-        // 2. Si storagePath existe, eliminar binario físico de GCS
         if (asset.storagePath) {
           try {
             await storage.deleteFile(asset.storagePath);
@@ -237,10 +204,8 @@ export async function DELETE(req: NextRequest) {
           }
         }
 
-        // 3. Eliminar documento de Firestore
         await repo.delete(id);
 
-        // 4. Registrar auditoría inmutable
         await auditRepo.record({
           id: `audit-del-asset-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           workspaceId: user.workspaceId,
@@ -250,11 +215,7 @@ export async function DELETE(req: NextRequest) {
           action: "DELETE",
           entity: "ASSET",
           entityId: id,
-          diff: {
-            id,
-            filename: asset?.filename,
-            storagePath: asset?.storagePath
-          },
+          diff: { id, filename: asset?.filename, storagePath: asset?.storagePath },
           source: "UI"
         }).catch((auditErr) => {
           console.warn(`[api/assets DELETE] Error al registrar auditoría para asset ${id}:`, auditErr);
@@ -272,5 +233,4 @@ export async function DELETE(req: NextRequest) {
     console.error("[api/assets DELETE] Error:", err);
     return NextResponse.json({ error: errorMsg }, { status: 500 });
   }
-}
-
+});

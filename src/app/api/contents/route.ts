@@ -1,23 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateServerRequest, authorizePermission } from "@/server/security/auth";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { ContentRepository, AuditRepository } from "@/server/repositories";
 import { ContentItem } from "@/server/domain/types";
 
-export async function GET(req: NextRequest) {
-  const user = await authenticateServerRequest(req);
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
+export const GET = withAuthAndPermission("content:view", async (req: NextRequest, user) => {
   const repo = new ContentRepository();
   try {
-    // Buscar en el workspace actual o fallback a todos los recientes compartidos
     let list = await repo.listRecent(100, user.workspaceId);
     if (list.length === 0) {
       list = await repo.listRecent(100);
     }
 
-    // Normalizar para consumo inmediato en el cliente
     const formatted = list.map((item: ContentItem) => {
       const versionBody = item.versions?.[0]?.body;
       const content = versionBody || (item as any).content || (typeof (item as any).body === "object" ? (item as any).body : null) || {
@@ -47,18 +40,9 @@ export async function GET(req: NextRequest) {
     console.error("[api/contents GET] Error al listar contenidos:", err);
     return NextResponse.json({ contents: [], error: err?.message }, { status: 200 });
   }
-}
+});
 
-export async function POST(req: NextRequest) {
-  const user = await authenticateServerRequest(req);
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
-  if (!authorizePermission(user, "content:create")) {
-    return NextResponse.json({ error: "Permisos insuficientes para crear contenido" }, { status: 403 });
-  }
-
+export const POST = withAuthAndPermission("content:create", async (req: NextRequest, user) => {
   try {
     const body = await req.json();
     const repo = new ContentRepository();
@@ -103,7 +87,6 @@ export async function POST(req: NextRequest) {
 
     await repo.save(contentItem);
 
-    // Guardar variantes si existen en el ContentOutput
     if (body.content?.mailchimp) {
       await repo.saveVariant(contentId, {
         id: `var-${contentId}-mailchimp`,
@@ -134,7 +117,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Registrar auditoría
     const auditRepo = new AuditRepository();
     await auditRepo.record({
       id: `audit-${Date.now()}`,
@@ -154,14 +136,9 @@ export async function POST(req: NextRequest) {
     console.error("[api/contents POST] Error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(req: NextRequest) {
-  const user = await authenticateServerRequest(req);
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
+export const PATCH = withAuthAndPermission("content:edit", async (req: NextRequest, user) => {
   try {
     const body = await req.json();
     const { id, status } = body;
@@ -199,18 +176,9 @@ export async function PATCH(req: NextRequest) {
     console.error("[api/contents PATCH] Error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(req: NextRequest) {
-  const user = await authenticateServerRequest(req);
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
-  if (!authorizePermission(user, "content:create") && user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Permisos insuficientes para eliminar contenidos" }, { status: 403 });
-  }
-
+export const DELETE = withAuthAndPermission("content:delete", async (req: NextRequest, user) => {
   try {
     const { searchParams } = new URL(req.url);
     const queryId = searchParams.get("id");
@@ -228,7 +196,7 @@ export async function DELETE(req: NextRequest) {
           idsToDelete.push(body.id);
         }
       } catch {
-        // Body may be empty if using query params
+        // Body may be empty
       }
     }
 
@@ -241,7 +209,6 @@ export async function DELETE(req: NextRequest) {
     const repo = new ContentRepository();
     const auditRepo = new AuditRepository();
 
-    // Normalizar o expandir IDs para asegurar la eliminación sin importar el formato del prefijo
     const expandedIds = Array.from(
       new Set(
         idsToDelete.flatMap((id) => [
@@ -257,7 +224,6 @@ export async function DELETE(req: NextRequest) {
       await repo.deleteBulk(expandedIds);
     }
 
-    // Registrar auditoría por cada contenido eliminado
     const nowIso = new Date().toISOString();
     await Promise.all(
       idsToDelete.map((id) =>
@@ -284,7 +250,4 @@ export async function DELETE(req: NextRequest) {
     console.error("[api/contents DELETE] Error:", err);
     return NextResponse.json({ error: errorMsg }, { status: 500 });
   }
-}
-
-
-
+});

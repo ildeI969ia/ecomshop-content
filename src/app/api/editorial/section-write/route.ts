@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateServerRequest } from "@/server/security/auth";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { ArticleOutlineSchema, ArticleOutlineSectionSchema } from "@/lib/types/article-outline";
 import {
   writeArticleSection,
@@ -28,16 +28,8 @@ const WriteSectionRequestSchema = z.object({
   apiKey: z.string().optional()
 });
 
-export async function POST(req: NextRequest) {
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
   try {
-    const user = await authenticateServerRequest(req);
-    if (!user) {
-      return NextResponse.json(
-        { error: "No autorizado. Sesión corporativa requerida." },
-        { status: 401 }
-      );
-    }
-
     const body = await req.json();
     const parsed = WriteSectionRequestSchema.safeParse(body);
     if (!parsed.success) {
@@ -49,7 +41,6 @@ export async function POST(req: NextRequest) {
 
     const { action, outline, section, writtenSections, previousSectionsSummary, category, apiKey } = parsed.data;
 
-    // Caso A: Redactar una sola sección individual
     if (action === "WRITE_SECTION") {
       if (!section) {
         return NextResponse.json(
@@ -62,7 +53,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ section: written });
     }
 
-    // Caso B: Finalizar y ensamblar el artículo a partir de secciones redactadas en el cliente
     if (action === "FINALIZE_ARTICLE") {
       if (!writtenSections || writtenSections.length === 0) {
         return NextResponse.json(
@@ -85,7 +75,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Caso C: Redactar artículo completo de una vez (legacy / headless)
     const fullArticle = await writeFullArticleFromOutline(outline, undefined, apiKey);
     const contentOutput = await deriveOmnichannelAssets(
       fullArticle,
@@ -105,4 +94,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

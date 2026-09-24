@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateServerRequest, authorizePermission } from "@/server/security/auth";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { CampaignRepository } from "@/server/repositories";
-import { CampaignLifecycleStage } from "@/server/domain/types";
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ campaignId: string }> }
-) {
-  const user = await authenticateServerRequest(req);
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+export const GET = withAuthAndPermission("campaign:view", async (req: NextRequest, user) => {
+  const url = new URL(req.url);
+  const campaignId = url.pathname.split("/").pop();
+
+  if (!campaignId) {
+    return NextResponse.json({ error: "ID de campaña requerido" }, { status: 400 });
   }
 
-  const { campaignId } = await params;
   const repo = new CampaignRepository();
   const campaign = await repo.findById(campaignId);
 
@@ -21,22 +18,16 @@ export async function GET(
   }
 
   return NextResponse.json({ campaign });
-}
+});
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ campaignId: string }> }
-) {
-  const user = await authenticateServerRequest(req);
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+export const PATCH = withAuthAndPermission("campaign:edit", async (req: NextRequest, user) => {
+  const url = new URL(req.url);
+  const campaignId = url.pathname.split("/").pop();
+
+  if (!campaignId) {
+    return NextResponse.json({ error: "ID de campaña requerido" }, { status: 400 });
   }
 
-  if (!authorizePermission(user, "campaign:edit")) {
-    return NextResponse.json({ error: "Permisos insuficientes" }, { status: 403 });
-  }
-
-  const { campaignId } = await params;
   try {
     const body = await req.json();
     const repo = new CampaignRepository();
@@ -48,7 +39,6 @@ export async function PATCH(
     const updates: Record<string, any> = {};
     if (body.name !== undefined) updates.name = body.name;
 
-    // Validar máquina de estados si se intenta cambiar lifecycleStage o status
     const targetStage = body.lifecycleStage || (body.status as any);
     if (targetStage && targetStage !== existing.lifecycleStage) {
       const { validateCampaignTransition } = await import("@/server/domain/types");
@@ -83,7 +73,6 @@ export async function PATCH(
     if (body.spentEur !== undefined) updates.spentEur = body.spentEur;
     if (body.aiCostEur !== undefined) updates.aiCostEur = body.aiCostEur;
 
-    // Handle version snapshots
     if (body.newVersionSnapshot) {
       const currentVersions = existing.versions || [];
       updates.versions = [
@@ -105,4 +94,4 @@ export async function PATCH(
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
-}
+});

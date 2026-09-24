@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { OFFICIAL_NOTEBOOK, NotebookSource } from "@/lib/notebooklm";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
+import { OFFICIAL_NOTEBOOK } from "@/lib/notebooklm";
 import { ECOM_BRAND } from "@/lib/knowledge";
 
 export const maxDuration = 60;
 
-export async function POST(req: NextRequest) {
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
   try {
     const body = await req.json();
     const { question, suggestNewSources, apiKey } = body;
@@ -96,7 +97,6 @@ ${sourcesSummary}
       }
     }
 
-    // Fallback inteligente cuando no hay API key inmediata configurada
     const fallbackResponse = generateDeterministicNotebookAnswer(question);
     return NextResponse.json({
       success: true,
@@ -110,7 +110,7 @@ ${sourcesSummary}
       { status: 500 }
     );
   }
-}
+});
 
 function generateDeterministicNotebookAnswer(question: string) {
   const qLower = question.toLowerCase();
@@ -166,7 +166,6 @@ function generateDeterministicNotebookAnswer(question: string) {
     };
   }
 
-  // Respuesta general
   return {
     answer: "El cuaderno oficial de Google NotebookLM contiene 20 fuentes sincronizadas sobre tecnologías de red EnGenius, switches L2+, fibra óptica y condiciones mayoristas de EcomSpain. Para desplegar proyectos B2B de alta disponibilidad dispones de asistencia técnica preventa gratuita y stock inmediato en 24h.",
     citedSources: [

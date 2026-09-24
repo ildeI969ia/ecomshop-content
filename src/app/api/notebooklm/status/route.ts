@@ -1,13 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { OFFICIAL_NOTEBOOK, NotebookSource } from "@/lib/notebooklm";
 
 let currentNotebookState = { ...OFFICIAL_NOTEBOOK };
 
-export async function GET() {
+export const GET = withAuthAndPermission("content:view", async () => {
   return NextResponse.json(currentNotebookState);
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
   try {
     const { title, type, description, url } = await req.json();
     if (!title || !description) {
@@ -33,4 +34,4 @@ export async function POST(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: "Error al registrar fuente" }, { status: 500 });
   }
-}
+});

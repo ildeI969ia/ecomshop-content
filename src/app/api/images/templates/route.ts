@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { getGenAIClient, getActiveGeminiModel } from "@/lib/genai-client";
 
 export interface ImageTemplate {
@@ -35,7 +36,6 @@ Photographic standards:
 4. Aspect ratios must strictly be one of: "16:9", "4:3", or "1:1".
 `;
 
-// Conjuntos técnicos de respaldo con hardware real EnGenius / EcomShop
 const FALLBACK_SETS: ImageTemplate[][] = [
   [
     {
@@ -131,7 +131,6 @@ function generateFallbackVariation(current?: TemplatesRequestBody["currentTempla
     };
   }
 
-  // Datacenter / rack / infraestructura general
   return {
     id: `${baseId}-var-${Date.now().toString(36)}`,
     title: "Perspectiva Angular 45° de Rack 42U",
@@ -140,7 +139,7 @@ function generateFallbackVariation(current?: TemplatesRequestBody["currentTempla
   };
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
   try {
     let body: TemplatesRequestBody = {};
     try {
@@ -154,7 +153,6 @@ export async function POST(req: NextRequest) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
     const canUseAi = Boolean(key || isVertex);
 
-    // ─── MODO 1: FULL SET (4 plantillas fotográficas técnicas completas) ──────
     if (mode === "full_set") {
       if (canUseAi) {
         try {
@@ -211,7 +209,6 @@ Respond ONLY with a valid JSON array of 4 objects with keys "id", "title", "prom
         }
       }
 
-      // Fallback rico si no hay API key disponible o si falla Gemini
       const randomSetIndex = Math.floor(Math.random() * FALLBACK_SETS.length);
       return NextResponse.json({
         success: true,
@@ -219,7 +216,6 @@ Respond ONLY with a valid JSON array of 4 objects with keys "id", "title", "prom
       });
     }
 
-    // ─── MODO 2: SINGLE VARIATION (Variación de perspectiva/entorno) ──────────
     if (mode === "single_variation") {
       if (canUseAi && currentTemplate && (currentTemplate.prompt || currentTemplate.title)) {
         try {
@@ -280,7 +276,6 @@ Respond ONLY with a valid JSON object with keys "id", "title", "prompt", "aspect
         }
       }
 
-      // Fallback determinista si no hay API key o si falla Gemini
       const fallbackTemplate = generateFallbackVariation(currentTemplate);
       return NextResponse.json({
         success: true,
@@ -288,18 +283,16 @@ Respond ONLY with a valid JSON object with keys "id", "title", "prompt", "aspect
       });
     }
 
-    // Modo no reconocido
     return NextResponse.json(
       { success: false, error: `Modo '${mode}' no reconocido. Utiliza 'full_set' o 'single_variation'.` },
       { status: 400 }
     );
   } catch (err: unknown) {
     console.error("[TemplatesAPI] Error inesperado:", err);
-    // En caso de fallo crítico, responder con el catálogo de respaldo para no bloquear al cliente
     return NextResponse.json({
       success: true,
       templates: FALLBACK_SETS[0],
       warning: err instanceof Error ? err.message : "Fallback activado por error inesperado",
     });
   }
-}
+});

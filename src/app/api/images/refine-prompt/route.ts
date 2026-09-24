@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { getGenAIClient, getActiveGeminiModel } from "@/lib/genai-client";
 import { resolveBaseImageToData } from "@/lib/image-generator";
 
@@ -10,7 +11,7 @@ export interface PromptRefinementResponse {
   suggestedAspectRatio: "16:9" | "1:1" | "4:3";
 }
 
-export async function POST(req: Request) {
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
   try {
     const { prompt, baseImage, aspectRatio, apiKey } = await req.json();
 
@@ -24,7 +25,6 @@ export async function POST(req: Request) {
     const trimmedPrompt = prompt.trim();
     const currentAspectRatio = aspectRatio === "4:3" || aspectRatio === "1:1" ? aspectRatio : "16:9";
 
-    // Intentar cualificación inteligente mediante Gemini
     try {
       const ai = getGenAIClient(apiKey);
       const model = getActiveGeminiModel(apiKey);
@@ -106,7 +106,6 @@ Respond ONLY with valid JSON in this exact structure:
       console.warn("[RefinePrompt] Error invocando Gemini, recurriendo a cualificador determinista:", aiErr);
     }
 
-    // Fallback cualificador determinista de alta calidad técnica B2B
     const lower = trimmedPrompt.toLowerCase();
     let categoryFocus = "general";
     let hardwareKeywords = "enterprise networking hardware, clean server rack, patch panels";
@@ -146,4 +145,4 @@ Respond ONLY with valid JSON in this exact structure:
       { status: 500 }
     );
   }
-}
+});

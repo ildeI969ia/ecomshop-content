@@ -1,15 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { GoogleGenAI } from "@google/genai";
-
-/**
- * Valida la conectividad con Gemini/Vertex AI.
- *
- * Estrategia en Cloud Run (producción):
- * 1. Si el usuario envía su propia API Key → valida contra Google AI Studio
- *    usando vertexai: false para evitar que el SDK enrute a aiplatform.googleapis.com
- * 2. Si no hay key de usuario pero hay GEMINI_API_KEY en Secret Manager → AI Studio
- * 3. Si no hay ninguna key → intenta Vertex AI con ADC (Service Account de Cloud Run)
- */
 
 const CANDIDATE_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
 
@@ -26,15 +17,14 @@ async function pingModel(ai: GoogleGenAI, model: string): Promise<boolean> {
   }
 }
 
-export async function POST(req: Request) {
+export const POST = withAuthAndPermission("admin", async (req: NextRequest) => {
   try {
     const body = await req.json().catch(() => ({}));
     const userApiKey = (body.apiKey as string | undefined)?.trim() || "";
 
-    // ── CAMINO 1: API Key del usuario (siempre → AI Studio, nunca Vertex) ────
     if (userApiKey) {
       const ai = new GoogleGenAI({
-        vertexai: false, // OBLIGATORIO: evita auto-routing a aiplatform.googleapis.com
+        vertexai: false,
         apiKey: userApiKey,
         httpOptions: { headers: { "x-goog-api-key": userApiKey } },
       });
@@ -66,7 +56,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // ── CAMINO 2: GEMINI_API_KEY de Secret Manager (Cloud Run) → AI Studio ───
     const serverKey =
       process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim() || "";
 
@@ -93,7 +82,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── CAMINO 3: Vertex AI con ADC — Service Account de Cloud Run ────────────
     const gcpProject =
       process.env.GOOGLE_CLOUD_PROJECT?.trim() ||
       process.env.GCP_PROJECT?.trim() ||
@@ -128,7 +116,6 @@ export async function POST(req: Request) {
       }
 
       if (lastErrMsg) {
-        // Mensaje de error legible cuando la SA no tiene permisos Vertex
         const isBlocked =
           lastErrMsg.includes("blocked") ||
           lastErrMsg.includes("PERMISSION_DENIED") ||
@@ -146,7 +133,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── Sin credenciales ──────────────────────────────────────────────────────
     return NextResponse.json(
       {
         valid: false,
@@ -160,4 +146,4 @@ export async function POST(req: Request) {
     const msg = error instanceof Error ? error.message : "Error interno al verificar credenciales";
     return NextResponse.json({ valid: false, message: msg }, { status: 500 });
   }
-}
+});

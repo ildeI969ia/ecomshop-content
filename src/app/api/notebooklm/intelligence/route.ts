@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { NotebookIntelligenceService } from "@/lib/services/notebook-intelligence";
 
 export const maxDuration = 60;
 
-export async function GET(req: NextRequest) {
+export const GET = withAuthAndPermission("content:view", async (req: NextRequest) => {
   try {
     const { searchParams } = new URL(req.url);
     const skuOrTopic = searchParams.get("query") || searchParams.get("sku") || "ECW510";
@@ -26,9 +27,9 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
   try {
     const body = await req.json().catch(() => ({}));
     const skuOrTopic = body.skuOrTopic || body.sku || "ECW510";
@@ -50,4 +51,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

@@ -1,24 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateServerRequest, authorizePermission } from "@/server/security/auth";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { PersistenceService } from "@/server/services/persistence-service";
 
-export async function POST(req: NextRequest) {
+export const POST = withAuthAndPermission("admin", async (req: NextRequest, user) => {
   try {
-    const user = await authenticateServerRequest(req);
-    if (!user) {
-      return NextResponse.json(
-        { error: "No autorizado. Inicie sesión con una cuenta corporativa @ecomspain.com" },
-        { status: 401 }
-      );
-    }
-
-    if (!authorizePermission(user, "content:create")) {
-      return NextResponse.json(
-        { error: "Permisos insuficientes para sincronizar datos" },
-        { status: 403 }
-      );
-    }
-
     const body = await req.json();
     const service = new PersistenceService();
 
@@ -43,4 +28,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

@@ -1,18 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateServerRequest } from "@/server/security/auth";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { generateArticleOutline } from "@/lib/services/outline-generator";
 import { GenerateOutlineRequestSchema } from "@/lib/types/article-outline";
 
-export async function POST(req: NextRequest) {
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
   try {
-    const user = await authenticateServerRequest(req);
-    if (!user) {
-      return NextResponse.json(
-        { error: "No autorizado. Sesión corporativa requerida." },
-        { status: 401 }
-      );
-    }
-
     const body = await req.json();
     const parsed = GenerateOutlineRequestSchema.safeParse(body);
     if (!parsed.success) {
@@ -48,4 +40,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

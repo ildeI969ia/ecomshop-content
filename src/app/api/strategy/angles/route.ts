@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { generateStrategicAngles } from "@/lib/gemini-agent";
 
-export async function POST(req: Request) {
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
   try {
     const { topicTitle, category, apiKey } = await req.json();
     if (!topicTitle) {
@@ -14,4 +15,4 @@ export async function POST(req: Request) {
     console.error("Error generating strategic angles:", error);
     return NextResponse.json({ error: "Error al generar ángulos estratégicos" }, { status: 500 });
   }
-}
+});

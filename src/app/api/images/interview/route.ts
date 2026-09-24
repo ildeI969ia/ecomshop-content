@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { getGenAIClient, getActiveGeminiModel } from "@/lib/genai-client";
 import { resolveBaseImageToData } from "@/lib/image-generator";
 
@@ -14,16 +15,14 @@ interface InterviewQuestion {
   options: QuestionOption[];
 }
 
-export async function POST(req: Request) {
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
   try {
     const { mode, userIdea, answers, baseImage, apiKey } = await req.json();
     const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT));
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
-    // Resolver imagen base (ya sea data: URL o URL HTTP de producto)
     const baseImageData = await resolveBaseImageToData(baseImage);
 
-    // MODO 1: INTERROGAR -> Generar preguntas contextuales
     if (mode === "interrogate") {
       if (key || isVertex) {
         try {
@@ -75,7 +74,6 @@ Devuelve ÚNICAMENTE un JSON válido con este formato:
         }
       }
 
-      // Fallback predeterminado de preguntas de interrogación
       const defaultQuestions: InterviewQuestion[] = [
         {
           id: "scenario",
@@ -110,7 +108,6 @@ Devuelve ÚNICAMENTE un JSON válido con este formato:
       return NextResponse.json({ success: true, questions: defaultQuestions });
     }
 
-    // MODO 2: SINTETIZAR -> Compilar prompt final a partir de las respuestas
     if (mode === "synthesize") {
       if (key || isVertex) {
         try {
@@ -158,7 +155,6 @@ Devuelve ÚNICAMENTE un JSON:
         }
       }
 
-      // Fallback de síntesis de prompt en inglés
       const partsSummary = Object.values(answers || {}).join(", ");
       const synthesized = `High-end enterprise telecommunications infrastructure, professional editorial photography of ${userIdea || "enterprise network switches and fiber cables"}, ${partsSummary || "clean server room, glowing LED indicators, organized patch cords"}, shot on Sony A7R V with 35mm f/1.8 lens, natural corporate studio lighting, ultra-sharp 8k, photorealistic architectural detail.`;
 
@@ -177,4 +173,4 @@ Devuelve ÚNICAMENTE un JSON:
     console.error("Error in /api/images/interview:", error);
     return NextResponse.json({ error: error.message || "Error en el agente interrogador" }, { status: 500 });
   }
-}
+});

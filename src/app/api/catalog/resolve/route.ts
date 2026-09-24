@@ -1,13 +1,9 @@
-// src/app/api/catalog/resolve/route.ts
-
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { isAllowedEcomshopUrl, fetchWithRedirects, extractProductFromHtml, mapStringToDeviceType } from "@/lib/catalog/resolve";
 import { getCatalogDevice } from "@/lib/catalog";
 import type { CatalogDevice } from "@/lib/catalog";
 
-/**
- * Structured error response shape.
- */
 interface CatalogResolveError {
   error: {
     code: string;
@@ -16,15 +12,12 @@ interface CatalogResolveError {
   };
 }
 
-/**
- * Successful response shape – mirrors the design from the implementation plan.
- */
 export interface ResolvedProduct {
   sku?: string;
   name?: string;
   model?: string;
   brand?: string;
-  type?: string; // DeviceType string if known
+  type?: string;
   category?: string;
   description?: string;
   url: string;
@@ -33,15 +26,14 @@ export interface ResolvedProduct {
   sourceMetadata: {
     sourceType: "ecomshop_url";
     sourceUrl: string;
-    resolvedAt: string; // ISO timestamp
+    resolvedAt: string;
     extractionStatus: "SUCCESS" | "PARTIAL" | "FAILED";
     extractionWarnings: string[];
-    confidenceScore: number; // 0‑1
+    confidenceScore: number;
     notebookGrounded: false;
   };
 }
 
-/** Helper to build error response */
 function errorResponse(status: number, code: string, message: string, retryable = false): NextResponse {
   const payload: CatalogResolveError = {
     error: { code, message, retryable },
@@ -49,7 +41,7 @@ function errorResponse(status: number, code: string, message: string, retryable 
   return NextResponse.json(payload, { status });
 }
 
-export async function POST(request: Request) {
+export const POST = withAuthAndPermission("ai:execute", async (request: NextRequest) => {
   let body: { url?: string };
   try {
     body = await request.json();
@@ -127,4 +119,4 @@ export async function POST(request: Request) {
   };
 
   return NextResponse.json(resolved, { status: 200 });
-}
+});

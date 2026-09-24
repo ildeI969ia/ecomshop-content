@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateServerRequest } from "@/server/security/auth";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import {
   generateEditorialTopicsWithAI,
   getDeterministicTopicsFallback
@@ -13,16 +13,8 @@ import {
   EditorialTopicCard
 } from "@/lib/types/editorial-topics";
 
-export async function GET(req: NextRequest) {
+export const GET = withAuthAndPermission("content:view", async (req: NextRequest) => {
   try {
-    const user = await authenticateServerRequest(req);
-    if (!user) {
-      return NextResponse.json(
-        { error: "No autorizado. Sesión corporativa requerida." },
-        { status: 401 }
-      );
-    }
-
     const { searchParams } = new URL(req.url);
     const categoryParam = searchParams.get("category") || "ALL";
     const verticalParam = searchParams.get("vertical") || "EMPRESAS_OFICINAS";
@@ -60,21 +52,12 @@ export async function GET(req: NextRequest) {
       { status: 200 }
     );
   }
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
   try {
-    const user = await authenticateServerRequest(req);
-    if (!user) {
-      return NextResponse.json(
-        { error: "No autorizado. Sesión corporativa requerida." },
-        { status: 401 }
-      );
-    }
-
     const body = await req.json();
 
-    // Caso A: Creación de línea editorial propia personalizada
     if (body.action === "CREATE_CUSTOM") {
       const parsed = CreateCustomTopicSchema.safeParse(body.topic);
       if (!parsed.success) {
@@ -99,7 +82,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ topic: customCard });
     }
 
-    // Caso B: Solicitud de regeneración fresca vía POST con opciones de override
     const { category = "ALL", vertical = "EMPRESAS_OFICINAS", arquetipo = "TROUBLESHOOTING", apiKey } = body;
 
     const topics = await generateEditorialTopicsWithAI(
@@ -126,4 +108,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

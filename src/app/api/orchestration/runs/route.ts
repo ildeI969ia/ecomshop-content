@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { authenticateServerRequest } from "@/server/security/auth";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { OrchestrationPlan, OrchestratorEnvironment } from "@/server/orchestrator/types";
 
 const CreateRunSchema = z.object({
@@ -27,15 +27,9 @@ const CreateRunSchema = z.object({
   baseCommit: z.string().min(7).optional()
 });
 
-// Almacén en memoria seguro para el runtime de runs (extensible a Firestore)
 const activeRuns = new Map<string, OrchestrationPlan>();
 
-export async function POST(req: NextRequest) {
-  const user = await authenticateServerRequest(req);
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
+export const POST = withAuthAndPermission("admin", async (req: NextRequest, user) => {
   try {
     const rawBody = await req.json();
     const parsed = CreateRunSchema.safeParse(rawBody);
@@ -49,7 +43,6 @@ export async function POST(req: NextRequest) {
 
     const { environment, tasks, baseCommit } = parsed.data;
 
-    // Regla de seguridad obligatoria: PRODUCTION requiere rol ADMIN y confirmación explícita
     if (environment === "PRODUCTION" && user.role !== "ADMIN") {
       return NextResponse.json(
         { error: "Permiso denegado. Solo administradores pueden crear runs con target PRODUCTION" },
@@ -91,14 +84,9 @@ export async function POST(req: NextRequest) {
     console.error("[api/orchestration/runs POST] Error:", err);
     return NextResponse.json({ error: "Fallo al crear el run", details: message }, { status: 500 });
   }
-}
+});
 
-export async function GET(req: NextRequest) {
-  const user = await authenticateServerRequest(req);
-  if (!user) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
+export const GET = withAuthAndPermission("finops:view", async () => {
   const runList = Array.from(activeRuns.values()).map((p) => ({
     runId: p.runId,
     requestedBy: p.requestedBy,
@@ -110,4 +98,4 @@ export async function GET(req: NextRequest) {
   }));
 
   return NextResponse.json({ runs: runList, total: runList.length });
-}
+});

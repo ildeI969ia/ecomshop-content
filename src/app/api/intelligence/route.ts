@@ -1,5 +1,5 @@
-﻿import { NextRequest, NextResponse } from "next/server";
-import { authenticateServerRequest, authorizePermission } from "@/server/security/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { ProductIntelligenceService } from "@/server/services/product-intelligence-service";
 import { AuditRepository } from "@/server/repositories";
 import { z } from "zod";
@@ -9,23 +9,8 @@ const QuerySchema = z.object({
   apiKey: z.string().optional()
 });
 
-export async function POST(req: NextRequest) {
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest, user) => {
   try {
-    const user = await authenticateServerRequest(req);
-    if (!user) {
-      return NextResponse.json(
-        { error: "No autorizado. Requiere sesión corporativa @ecomspain.com" },
-        { status: 401 }
-      );
-    }
-
-    if (!authorizePermission(user, "ai:execute")) {
-      return NextResponse.json(
-        { error: "Su rol no tiene autorización para ejecutar el motor de inteligencia" },
-        { status: 403 }
-      );
-    }
-
     const json = await req.json();
     const parsed = QuerySchema.safeParse(json);
     if (!parsed.success) {
@@ -41,7 +26,6 @@ export async function POST(req: NextRequest) {
       process.env.GEMINI_API_KEY || parsed.data.apiKey
     );
 
-    // Auditoría
     try {
       const auditRepo = new AuditRepository();
       await auditRepo.record({
@@ -68,4 +52,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
