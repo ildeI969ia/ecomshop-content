@@ -68,7 +68,7 @@ async function runMatrix() {
 
       const qReport = engine.evaluateQualityGate(gatewayProduct, [], hallucinatedOutput);
       const claimCheck = qReport.checks.find((c) => c.name === "CLAIM_CHECK");
-      if (claimCheck?.status !== "FAIL") {
+      if (claimCheck?.status !== "FAIL" && claimCheck?.status !== "BLOCKED") {
         throw new Error("QualityGate no bloqueó la alucinación de Wi-Fi en Gateway");
       }
       console.log("   ✅ QualityGate bloqueó con éxito claim no verificado (alucinación de Wi-Fi en Gateway)");

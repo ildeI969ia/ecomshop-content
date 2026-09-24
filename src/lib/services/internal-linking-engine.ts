@@ -1,3 +1,5 @@
+import { ECOMSHOP_FULL_CATALOG } from "@/lib/data/ecomshop-catalog";
+
 /**
  * Motor de Enlazado Interno B2B para EcomShop.es
  * Mapea términos técnicos de telecomunicaciones y SKUs de hardware
@@ -11,6 +13,28 @@ export interface EcomLinkEntry {
   title: string;
   category: "ap" | "switch" | "sfp" | "gateway" | "poe" | "support";
 }
+
+/**
+ * Entradas dinámicas generadas desde el catálogo canónico oficial de 27 SKUs
+ */
+export const CANONICAL_27_SKU_LINKS: EcomLinkEntry[] = ECOMSHOP_FULL_CATALOG.map((prod) => {
+  const catMap: Record<string, "ap" | "switch" | "sfp" | "gateway" | "poe" | "support"> = {
+    ACCESS_POINT: "ap",
+    SWITCH: "switch",
+    GATEWAY: "gateway",
+    ROUTER_CELLULAR: "gateway",
+    FIBER_OPTIC: "sfp",
+    TESTER: "support",
+    ACCESSORY: "poe"
+  };
+  return {
+    keyword: prod.sku,
+    url: prod.url || `https://www.ecomshop.es/${prod.sku.toLowerCase()}`,
+    sku: prod.sku,
+    title: `${prod.brand} ${prod.model || prod.sku} - ${prod.name}`,
+    category: catMap[prod.deviceType] || "support"
+  };
+});
 
 export const ECOM_INTERNAL_CATALOG: EcomLinkEntry[] = [
   // Puntos de acceso Wi-Fi 7 y Cloud
@@ -125,19 +149,51 @@ export interface InternalLinkingResult {
   injectedKeywords: string[];
 }
 
+export interface LinkRecommendation {
+  sourceSku: string;
+  targetSku: string;
+  targetUrl: string;
+  anchor: string;
+  relevanceScore: number;
+  reason: string;
+}
+
 /**
- * Inyecta enlaces internos en un fragmento de HTML o artículo completo.
- * Reglas estrictas:
- * 1. No reemplaza dentro de enlaces existentes <a>...</a>
- * 2. No reemplaza encabezados <h1>, <h2>, <h3>
- * 3. No reemplaza atributos HTML ni etiquetas <script>, <style>, <code>, <pre>
- * 4. Máximo un enlace por término/SKU por artículo
- * 5. Límite configurable de enlaces totales para mantener máxima calidad editorial
+ * Genera recomendaciones semánticas y canónicas de enlaces cruzados
  */
+export function generateLinkRecommendations(sourceSku: string, textContext: string): LinkRecommendation[] {
+  const recommendations: LinkRecommendation[] = [];
+  const cleanSource = sourceSku.toUpperCase();
+  const lowerText = textContext.toLowerCase();
+
+  for (const entry of CANONICAL_27_SKU_LINKS) {
+    if (!entry.sku || entry.sku.toUpperCase() === cleanSource) continue;
+
+    // Verificar existencia de SKU en el texto y calcular relevancia
+    if (lowerText.includes(entry.sku.toLowerCase()) || lowerText.includes(entry.keyword.toLowerCase())) {
+      recommendations.push({
+        sourceSku: cleanSource,
+        targetSku: entry.sku,
+        targetUrl: entry.url,
+        anchor: entry.keyword,
+        relevanceScore: 0.95,
+        reason: `Mención explícita del hardware complementario ${entry.sku} en el contenido de ${cleanSource}`
+      });
+    }
+  }
+
+  return recommendations;
+}
+
+export const COMBINED_INTERNAL_CATALOG: EcomLinkEntry[] = [
+  ...CANONICAL_27_SKU_LINKS,
+  ...ECOM_INTERNAL_CATALOG.filter((e) => !CANONICAL_27_SKU_LINKS.some((c) => c.sku === e.sku))
+];
+
 export function injectInternalLinks(
   htmlContent: string,
   maxTotalLinks = 6,
-  catalog: EcomLinkEntry[] = ECOM_INTERNAL_CATALOG
+  catalog: EcomLinkEntry[] = COMBINED_INTERNAL_CATALOG
 ): InternalLinkingResult {
   if (!htmlContent) {
     return { enrichedHtml: "", linksCount: 0, injectedKeywords: [] };
@@ -220,7 +276,7 @@ export function injectInternalLinks(
  */
 export function resolveEcomProductUrl(skuOrKeyword: string): string | undefined {
   const clean = skuOrKeyword.trim().toUpperCase();
-  const entry = ECOM_INTERNAL_CATALOG.find(
+  const entry = COMBINED_INTERNAL_CATALOG.find(
     (e) => (e.sku && e.sku.toUpperCase() === clean) || e.keyword.toUpperCase().includes(clean)
   );
   return entry?.url;

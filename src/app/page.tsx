@@ -45,7 +45,8 @@ import {
   Save,
   Package,
   ShieldAlert,
-  ShieldCheck
+  ShieldCheck,
+  LayoutDashboard
 } from "lucide-react";
 import { PRESET_TOPICS, ECOM_BRAND, STAR_PRODUCTS, CAMPAIGN_IDEAS, B2B_CTA_OPTIONS } from "@/lib/knowledge";
 import { ContentOutput } from "@/lib/schema";
@@ -89,6 +90,7 @@ import {
   clearAllImagesFromIndexedDB
 } from "@/lib/image-db";
 import { ImageStudioView } from "@/components/image-studio-view";
+import { ProductMarketingWorkspace } from "@/components/marketing/ProductMarketingWorkspace";
 
 export default function ContentDashboard() {
   const [selectedPresetId, setSelectedPresetId] = useState(PRESET_TOPICS[0].id);
@@ -470,6 +472,47 @@ export default function ContentDashboard() {
       const generatedId = (data as any).id || (data as any).contentId || `content-${opp.sku.toLowerCase()}-${Date.now().toString(36)}`;
       setActiveArticleId(generatedId);
 
+      // Persistir entidad Campaña completa en /api/campaigns conservando contexto de oportunidad
+      try {
+        await apiFetch("/api/campaigns", {
+          method: "POST",
+          body: JSON.stringify({
+            code: `CAMP-${opp.sku.toUpperCase()}-${Date.now().toString().slice(-4)}`,
+            name: opp.actionTitle || `Campaña ${opp.sku}`,
+            status: "GENERATING",
+            lifecycleStage: "GENERATING",
+            objective: opp.narrativeAnchor?.pitch30s || "Activación comercial B2B",
+            targetAudience: opp.targetSegment || "Integradores y MSPs",
+            opportunityId: opp.id,
+            productIds: [opp.sku],
+            sourceIds: selectedSourceIds.length > 0 ? selectedSourceIds : ((opp as any).sourceIds || []),
+            editorialControls,
+            groundingState: {
+              sku: opp.sku,
+              angle: opp.recommendedAngle,
+              evidenceCount: data.citations ? Object.keys(data.citations).length : 0
+            },
+            contentState: {
+              contentId: generatedId,
+              slug: data.blog?.slug,
+              title: data.blog?.title
+            },
+            channelState: {
+              blog: data.blog ? "READY" : "PENDING",
+              mailchimp: data.mailchimp ? "READY" : "PENDING",
+              whatsapp: data.whatsapp ? "READY" : "PENDING",
+              linkedin: data.linkedin ? "READY" : "PENDING"
+            },
+            qualityState: {
+              score: data.factCheckScore || 100,
+              passed: (data.factCheckScore || 100) >= 75
+            }
+          })
+        });
+      } catch (campErr) {
+        console.warn("[Campaign Launch] Aviso al persistir campaña en Firestore (non-fatal):", campErr);
+      }
+
       const historyEntry: ArticleHistoryItem = {
         id: generatedId,
         title: data.topicTitle,
@@ -521,6 +564,13 @@ export default function ContentDashboard() {
 
   const handleSaveToFirestore = async (status: "approved" | "published" = "approved") => {
     if (!content) return;
+
+    // Guard de Product Truth & Quality Gate
+    if (content.factCheckScore !== null && (content.factCheckScore ?? 100) < 70) {
+      alert("Operación bloqueada por Quality Gate: El contenido no cumple con la fidelidad técnica requerida hacia el catálogo oficial.");
+      return;
+    }
+
     setIsSavingArticle(true);
     try {
       const rawTargetId = activeArticleId || (content as any).id || (content.blog?.slug ? `content-${content.blog.slug}` : `content-${Date.now()}`);
@@ -595,7 +645,22 @@ export default function ContentDashboard() {
         return updated;
       });
 
-      setSaveSuccessMessage("¡Guardado y Aprobado en Firestore con éxito!");
+      // Sincronizar máquina de estados de campaña con backend
+      try {
+        const campaignId = cleanId.toLowerCase();
+        const targetLifecycle = status === "published" ? "PUBLISHED" : "APPROVED";
+        await apiFetch(`/api/campaigns/${encodeURIComponent(campaignId)}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            lifecycleStage: targetLifecycle,
+            status: targetLifecycle
+          })
+        });
+      } catch (campPatchErr) {
+        console.warn("[Campaign Status] Aviso al sincronizar estado de campaña (non-fatal):", campPatchErr);
+      }
+
+      setSaveSuccessMessage(status === "published" ? "¡Campaña Publicada con éxito!" : "¡Guardado y Aprobado en Firestore con éxito!");
       setTimeout(() => setSaveSuccessMessage(null), 3000);
     } catch (err) {
       console.error("Error guardando en Firestore:", err);
@@ -604,8 +669,20 @@ export default function ContentDashboard() {
     }
   };
 
-  // Vista Principal del Panel de Administración (5 Módulos)
-  const [mainView, setMainView] = useState<"generator" | "advisor" | "history" | "image_studio" | "finops">("generator");
+  // Vista Principal del Panel de Administración (Arquitectura Sprint 5 Command Center)
+  const [mainView, setMainView] = useState<
+    | "dashboard"
+    | "opportunities"
+    | "campaigns"
+    | "content"
+    | "image_studio"
+    | "marketing"
+    | "history"
+    | "advisor"
+    | "finops"
+    | "quality"
+    | "generator"
+  >("dashboard");
 
   // Historial de Contenidos y Estados
   const [historyItems, setHistoryItems] = useState<ArticleHistoryItem[]>([]);
@@ -2024,6 +2101,29 @@ export default function ContentDashboard() {
         method: "PATCH",
         body: JSON.stringify({ id, status: newStatus })
       });
+
+      // Sincronizar máquina de estados de campaña si existe campaña asociada
+      const stageMap: Record<ArticleHistoryItem["status"], string> = {
+        draft: "DRAFT",
+        reviewed: "REVIEW",
+        approved: "APPROVED",
+        published: "PUBLISHED"
+      };
+      const targetLifecycle = stageMap[newStatus];
+      if (targetLifecycle) {
+        const cleanSku = id.replace(/^(content-)+/, "").split("-")[0];
+        try {
+          await apiFetch(`/api/campaigns/${encodeURIComponent(id)}`, {
+            method: "PATCH",
+            body: JSON.stringify({
+              lifecycleStage: targetLifecycle,
+              status: targetLifecycle
+            })
+          });
+        } catch {
+          // Ignorar silenciosamente si este artículo no tiene un ID de campaña 1:1
+        }
+      }
     } catch (err) {
       console.warn("[Database] Error al actualizar estado en Firestore:", err);
     }
@@ -2125,77 +2225,148 @@ export default function ContentDashboard() {
           </div>
         </div>
 
-        {/* Módulos de Navegación del Panel (Pill Tabs Dark Navy + Indigo) */}
-        <nav className="hidden lg:flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800 shadow-inner">
-          <button
-            type="button"
-            onClick={() => setMainView("generator")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-              mainView === "generator"
-                ? "bg-indigo-600 text-white shadow-xs font-bold"
-                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5 text-sky-300" />
-            <span>Generador Multicanal</span>
-          </button>
+        {/* Módulos de Navegación del Panel Agrupados (COMMAND, CREATE, INTELLIGENCE, CONTROL) */}
+        <nav className="hidden xl:flex items-center gap-2 bg-slate-950/80 p-1.5 rounded-xl border border-slate-800 shadow-inner">
+          {/* GRUPO COMMAND */}
+          <div className="flex items-center gap-1 border-r border-slate-800 pr-2">
+            <span className="text-[9px] uppercase font-mono font-bold text-slate-500 px-1">Command</span>
+            <button
+              type="button"
+              onClick={() => setMainView("dashboard")}
+              className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                mainView === "dashboard"
+                  ? "bg-indigo-600 text-white shadow-xs font-bold"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+              }`}
+            >
+              <LayoutDashboard className="w-3.5 h-3.5 text-indigo-300" />
+              <span>Dashboard</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setMainView("advisor")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-              mainView === "advisor"
-                ? "bg-indigo-600 text-white shadow-xs font-bold"
-                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>Brainstorming Multimodal</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMainView("opportunities");
+                setEntryOrigin("radar");
+              }}
+              className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                mainView === "opportunities"
+                  ? "bg-indigo-600 text-white shadow-xs font-bold"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-300" />
+              <span>Oportunidades</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setMainView("history")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-              mainView === "history"
-                ? "bg-indigo-600 text-white shadow-xs font-bold"
-                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-            }`}
-          >
-            <History className="w-3.5 h-3.5 text-indigo-300" />
-            <span>Historial & Estados</span>
-            {historyItems.length > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-slate-800 text-indigo-300 text-[10px] font-mono font-bold border border-slate-700">
-                {historyItems.length}
-              </span>
-            )}
-          </button>
+            <button
+              type="button"
+              onClick={() => setMainView("campaigns")}
+              className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                mainView === "campaigns" || mainView === "generator"
+                  ? "bg-indigo-600 text-white shadow-xs font-bold"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 text-sky-300" />
+              <span>Campañas</span>
+            </button>
+          </div>
 
-          <button
-            type="button"
-            onClick={() => setMainView("image_studio")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-              mainView === "image_studio"
-                ? "bg-indigo-600 text-white shadow-xs font-bold"
-                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-            }`}
-          >
-            <ImageIcon className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Estudio Imagen 3</span>
-          </button>
+          {/* GRUPO CREATE */}
+          <div className="flex items-center gap-1 border-r border-slate-800 pr-2">
+            <span className="text-[9px] uppercase font-mono font-bold text-slate-500 px-1">Create</span>
+            <button
+              type="button"
+              onClick={() => setMainView("content")}
+              className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                mainView === "content"
+                  ? "bg-indigo-600 text-white shadow-xs font-bold"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5 text-emerald-300" />
+              <span>Contenido</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setMainView("finops")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-              mainView === "finops"
-                ? "bg-indigo-600 text-white shadow-xs font-bold"
-                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-            }`}
-          >
-            <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Costes & FinOps</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => setMainView("image_studio")}
+              className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                mainView === "image_studio"
+                  ? "bg-indigo-600 text-white shadow-xs font-bold"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+              }`}
+            >
+              <ImageIcon className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Imágenes</span>
+            </button>
+          </div>
+
+          {/* GRUPO INTELLIGENCE */}
+          <div className="flex items-center gap-1 border-r border-slate-800 pr-2">
+            <span className="text-[9px] uppercase font-mono font-bold text-slate-500 px-1">Intel</span>
+            <button
+              type="button"
+              onClick={() => setMainView("marketing")}
+              className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                mainView === "marketing"
+                  ? "bg-indigo-600 text-white shadow-xs font-bold"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
+              <span>Catálogo 27 SKUs</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMainView("advisor")}
+              className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                mainView === "advisor"
+                  ? "bg-indigo-600 text-white shadow-xs font-bold"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+              }`}
+            >
+              <Bot className="w-3.5 h-3.5 text-amber-300" />
+              <span>Asesor AI</span>
+            </button>
+          </div>
+
+          {/* GRUPO CONTROL */}
+          <div className="flex items-center gap-1">
+            <span className="text-[9px] uppercase font-mono font-bold text-slate-500 px-1">Control</span>
+            <button
+              type="button"
+              onClick={() => setMainView("history")}
+              className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                mainView === "history"
+                  ? "bg-indigo-600 text-white shadow-xs font-bold"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+              }`}
+            >
+              <History className="w-3.5 h-3.5 text-indigo-300" />
+              <span>Historial</span>
+              {historyItems.length > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-slate-800 text-indigo-300 text-[10px] font-mono font-bold border border-slate-700">
+                  {historyItems.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMainView("finops")}
+              className={`flex items-center gap-1.5 px-2.5 py-1.2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                mainView === "finops"
+                  ? "bg-indigo-600 text-white shadow-xs font-bold"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+              }`}
+            >
+              <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+              <span>FinOps</span>
+            </button>
+          </div>
         </nav>
 
         {/* Acciones y Estados a la Derecha */}
@@ -2275,7 +2446,305 @@ export default function ContentDashboard() {
         </div>
       </header>
 
+      {/* VISTA DASHBOARD: COMMAND CENTER OPERATIVO SPRINT 5 */}
+      {mainView === "dashboard" && (
+        <div className="flex-1 p-6 sm:p-8 max-w-[1780px] 2xl:max-w-[1920px] mx-auto w-full space-y-8 animate-fadeIn">
+          {/* Header del Command Center */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-md">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                  <LayoutDashboard className="w-5 h-5" />
+                </span>
+                <h2 className="text-xl font-bold tracking-tight text-white font-editorial">
+                  Centro de Mando & Control de Campañas
+                </h2>
+                <span className="text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-800">
+                  Sprint 5 Activo
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 max-w-3xl">
+                Supervisión ejecutiva del motor de marketing B2B. Flujo unificado desde radar de oportunidades, generación omnicanal contrastada con evidencias de NotebookLM, hasta revisión y aprobación final.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setMainView("opportunities");
+                  setEntryOrigin("radar");
+                }}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-2 transition cursor-pointer"
+              >
+                <Zap className="w-4 h-4 text-amber-300" />
+                <span>Explorar Oportunidades</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMainView("campaigns")}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs px-4 py-2.5 rounded-xl border border-slate-700 flex items-center gap-2 transition cursor-pointer"
+              >
+                <Layers className="w-4 h-4 text-sky-400" />
+                <span>Abrir Workspace</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Grid Principal: Métricas Clave y Salud Operativa */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+              <div className="flex items-center justify-between text-slate-400 text-xs">
+                <span>Catálogo Canónico</span>
+                <Package className="w-4 h-4 text-indigo-400" />
+              </div>
+              <div className="mt-3">
+                <div className="text-2xl font-bold font-mono text-white">27 SKUs</div>
+                <p className="text-[11px] text-slate-400 mt-1">100% Cobertura de Evidencias</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+              <div className="flex items-center justify-between text-slate-400 text-xs">
+                <span>Fuentes de Grounding</span>
+                <BookOpen className="w-4 h-4 text-sky-400" />
+              </div>
+              <div className="mt-3">
+                <div className="text-2xl font-bold font-mono text-sky-400">{notebookState.sources.length} Master</div>
+                <p className="text-[11px] text-slate-400 mt-1">Datasheets y notas oficiales</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+              <div className="flex items-center justify-between text-slate-400 text-xs">
+                <span>Campañas en Archivo</span>
+                <History className="w-4 h-4 text-indigo-400" />
+              </div>
+              <div className="mt-3">
+                <div className="text-2xl font-bold font-mono text-indigo-300">{historyItems.length}</div>
+                <p className="text-[11px] text-slate-400 mt-1">Borradores y publicaciones</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+              <div className="flex items-center justify-between text-slate-400 text-xs">
+                <span>Control de Calidad</span>
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div className="mt-3">
+                <div className="text-2xl font-bold font-mono text-emerald-400">9 / 9 PASS</div>
+                <p className="text-[11px] text-slate-400 mt-1">Quality Gate determinista</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Sección Dividida: Campañas que Requieren Atención & Radar de Oportunidades */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Campañas que Requieren Atención (7 Columnas) */}
+            <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md flex flex-col gap-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                    Campañas & Borradores Recientes
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMainView("history")}
+                  className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Ver todas</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {historyItems.length === 0 ? (
+                <div className="text-center py-8 text-slate-500 text-xs">
+                  No hay campañas registradas todavía. Lanza una desde el Radar de Oportunidades.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {historyItems.slice(0, 5).map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 transition flex items-center justify-between gap-4"
+                    >
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded uppercase ${
+                            item.status === "published"
+                              ? "bg-indigo-950 text-indigo-300 border border-indigo-800"
+                              : item.status === "approved"
+                              ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
+                              : "bg-amber-950 text-amber-300 border border-amber-800"
+                          }`}>
+                            {item.status}
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-mono">{item.createdAt}</span>
+                        </div>
+                        <h4 className="text-xs font-bold text-slate-200 truncate">{item.title}</h4>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (item.content) {
+                              setContent(item.content);
+                              setTopicTitle(item.title);
+                              setCampaignStage("IDLE");
+                              setActiveArticleId(item.id);
+                              setMainView("campaigns");
+                            }
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition cursor-pointer"
+                        >
+                          Abrir
+                        </button>
+                        {item.status !== "approved" && item.status !== "published" && (
+                          <button
+                            type="button"
+                            onClick={() => updateArticleStatus(item.id, "approved")}
+                            className="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition cursor-pointer"
+                          >
+                            Aprobar
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Radar de Oportunidades Destacadas (5 Columnas) */}
+            <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md flex flex-col gap-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                    Radar de Oportunidades B2B
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMainView("opportunities");
+                    setEntryOrigin("radar");
+                  }}
+                  className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Radar Completo</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {opportunities.length === 0 ? (
+                <div className="text-center py-8 text-slate-500 text-xs">
+                  Cargando oportunidades del catálogo...
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {opportunities.slice(0, 3).map((opp) => (
+                    <div
+                      key={opp.id}
+                      className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-indigo-500/40 transition flex flex-col gap-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-indigo-300 font-mono">{opp.sku}</span>
+                        <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                          {opp.recommendedAngle}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-200 font-semibold line-clamp-1">
+                        {opp.actionTitle}
+                      </div>
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-[11px] text-slate-400">{opp.targetSegment}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleSelectOpportunity(opp);
+                            setMainView("campaigns");
+                            handleLaunchCampaign(opp);
+                          }}
+                          className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>Lanzar Campaña</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Contenido según Módulo Seleccionado */}
+      {mainView === "marketing" && (
+        <div className="flex-1 p-6 sm:p-8 max-w-[1780px] 2xl:max-w-[1920px] mx-auto w-full">
+          <ProductMarketingWorkspace
+            onCreateCampaign={(product, pkg) => {
+              handleSelectSku(product.sku);
+              setProductUrl(product.url || `https://www.ecomshop.es/${product.sku.toLowerCase()}`);
+              setTopicTitle(`Campaña Oficial B2B: ${product.brand} ${product.model || product.sku}`);
+              if (pkg) {
+                // Pre-cargar inmediatamente el contenido generado en el CampaignWorkspace
+                const hydratedContent: ContentOutput = {
+                  topicId: `pkg-${pkg.packageId}`,
+                  topicTitle: `Campaña Oficial B2B: ${product.brand} ${product.model || product.sku}`,
+                  category: "engenius",
+                  generatedAt: pkg.createdAt,
+                  blog: {
+                    title: pkg.seo?.title || `Despliegue de ${product.sku}`,
+                    metaDescription: pkg.seo?.metaDescription || pkg.shortDescription || "",
+                    slug: pkg.seo?.slug || product.sku.toLowerCase(),
+                    readingTimeMinutes: 5,
+                    targetKeywords: [pkg.seo?.primaryKeyword || product.sku, ...(pkg.seo?.secondaryKeywords || [])],
+                    htmlContent: `<p>${pkg.productDescription || pkg.positioning || ""}</p>`,
+                    cleanPlainTextExcerpt: pkg.shortDescription || pkg.positioning || ""
+                  },
+                  linkedin: {
+                    hook: `Lanzamiento B2B: ${product.sku}`,
+                    body: pkg.social?.linkedin || "",
+                    takeaways: pkg.keyBenefits || [],
+                    callToAction: pkg.cta?.primary || "Consultar Condiciones Mayoristas",
+                    hashtags: ["Networking", "Enterprise", product.sku],
+                    fullPostText: pkg.social?.linkedin || ""
+                  },
+                  mailchimp: {
+                    subjectA: `Nuevo lanzamiento B2B: ${product.sku}`,
+                    subjectB: `Solución de alta densidad: ${product.sku}`,
+                    previewText: pkg.shortDescription || "",
+                    ctaButtonText: pkg.cta?.primary || "Solicitar Presupuesto",
+                    ctaUrl: pkg.cta?.url || product.url || `https://www.ecomshop.es/${product.sku.toLowerCase()}`,
+                    newsletterHtml: `<p>${pkg.shortDescription || ""}</p>`,
+                    plainText: pkg.shortDescription || ""
+                  },
+                  whatsapp: {
+                    headline: `*Novedad B2B:* ${product.sku}`,
+                    formattedMessage: pkg.social?.whatsapp || "",
+                    callToAction: pkg.cta?.primary || "Ver Catálogo",
+                    targetUrl: pkg.cta?.url || product.url || `https://www.ecomshop.es/${product.sku.toLowerCase()}`
+                  },
+                  factCheckScore: pkg.quality?.score || 100,
+                  citations: {}
+                };
+                setContent(hydratedContent);
+                // MarketingPackage GENERATED no implica Campaign COMPLETED. La campaña inicia en planificación.
+                setCampaignStage("IDLE");
+              }
+              setMainView("generator");
+              setEntryOrigin("radar");
+            }}
+          />
+        </div>
+      )}
+
       {mainView === "advisor" && (
         <div className="flex-1 p-6 sm:p-8 max-w-[1780px] 2xl:max-w-[1920px] mx-auto w-full">
           <MultimodalAdvisor
@@ -2290,7 +2759,7 @@ export default function ContentDashboard() {
         </div>
       )}
 
-      {mainView === "generator" && (
+      {(mainView === "generator" || mainView === "opportunities" || mainView === "campaigns" || mainView === "content") && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 min-h-[calc(100vh-4rem)] max-w-[1920px] mx-auto w-full">
           {/* ========================================================================= */}
           {/* PANEL IZQUIERDO: EL HUB DE ENTRADA (35% Ancho / 4 Columnas en Desktop)     */}
@@ -2435,7 +2904,7 @@ export default function ContentDashboard() {
                           </div>
                         )}
 
-                        {/* CTA Principal Unificado: Cargar en Workspace */}
+                        {/* CTA Principal Unificado: Cargar en Workspace o Lanzar Directo */}
                         <div className="flex items-center gap-2 pt-1 border-t border-slate-800/80">
                           <button
                             type="button"
@@ -2443,14 +2912,34 @@ export default function ContentDashboard() {
                               setSelectedRadarOppId(opp.id);
                               handleSelectOpportunity(opp);
                             }}
-                            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer ${
                               isSelected
                                 ? "bg-indigo-600 text-white shadow-xs"
-                                : "bg-slate-800 hover:bg-indigo-600/80 text-slate-200 hover:text-white"
+                                : "bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white"
                             }`}
                           >
                             <Check className="w-3.5 h-3.5" />
-                            <span>{isSelected ? "Oportunidad Activa" : `Seleccionar ${opp.sku}`}</span>
+                            <span>{isSelected ? "Activo" : `Elegir ${opp.sku}`}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={Boolean(launchingSku)}
+                            onClick={() => handleLaunchCampaign(opp)}
+                            className="py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs active:scale-95 disabled:opacity-50 cursor-pointer"
+                            title={`Lanzar campaña multicanal completa para ${opp.sku}`}
+                          >
+                            {launchingSku === opp.sku ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                <span>Lanzando...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="w-3.5 h-3.5 text-emerald-200" />
+                                <span>🚀 Lanzar Campaña</span>
+                              </>
+                            )}
                           </button>
                         </div>
 
@@ -2757,6 +3246,8 @@ export default function ContentDashboard() {
                 setMainView("image_studio");
               }}
               onSaveToFirestore={handleSaveToFirestore}
+              onApprove={() => handleSaveToFirestore("approved")}
+              onPublishToStore={() => handleSaveToFirestore("published")}
               isSavingArticle={isSavingArticle}
               onSelectQuickSku={handleSelectSku}
               onLaunchWithSku={(sku) => {

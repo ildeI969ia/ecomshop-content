@@ -12,6 +12,17 @@ export const ProductLifecycleStatusSchema = z.enum([
 ]);
 export type ProductLifecycleStatus = z.infer<typeof ProductLifecycleStatusSchema>;
 
+export const ProductMarketingStatusSchema = z.enum([
+  "NOT_READY",
+  "READY",
+  "RUNNING",
+  "GENERATED",
+  "READY_WITH_WARNINGS",
+  "BLOCKED",
+  "FAILED"
+]);
+export type ProductMarketingStatus = z.infer<typeof ProductMarketingStatusSchema>;
+
 export const EvidenceConfidenceSchema = z.enum([
   "VERIFIED",
   "SUPPORTED",
@@ -120,26 +131,49 @@ export const MarketingRunSchema = z.object({
 export type MarketingRun = z.infer<typeof MarketingRunSchema>;
 
 // ==========================================
-// 3. QUALITY GATE MODEL
+// 3. QUALITY GATE MODEL (SPRINT 6)
 // ==========================================
 
-export const QualityCheckStatusSchema = z.enum(["PASS", "WARN", "FAIL"]);
+export const QualityCheckStatusSchema = z.enum(["PASS", "WARN", "FAIL", "BLOCKED"]);
 export type QualityCheckStatus = z.infer<typeof QualityCheckStatusSchema>;
 
+export const QualityGateNameSchema = z.enum([
+  "PRODUCT_IDENTITY",
+  "TECHNICAL_ACCURACY",
+  "EVIDENCE_COVERAGE",
+  "CANONICAL_URL",
+  "PACKAGE_COMPLETENESS",
+  "MARKETING_INTELLIGENCE",
+  "POSITIONING",
+  "SEARCH_INTENT",
+  "SEO",
+  "COMMERCIAL_VALUE",
+  "CHANNEL_FIT",
+  "INTERNAL_LINKING",
+  "BRAND_COMPLIANCE",
+  "DUPLICATE_CONTENT",
+  "CREATIVE_COMPLETENESS",
+  // Aliases legacy para retrocompatibilidad con Sprint 5/6
+  "IDENTITY_CHECK",
+  "SOURCE_CHECK",
+  "CLAIM_CHECK",
+  "BRAND_CHECK",
+  "SEO_CHECK",
+  "CONTENT_COMPLETENESS",
+  "DUPLICATE_CHECK",
+  "CTA_CHECK",
+  "STRUCTURE_CHECK"
+]);
+export type QualityGateName = z.infer<typeof QualityGateNameSchema>;
+
 export const QualityCheckItemSchema = z.object({
-  name: z.enum([
-    "IDENTITY_CHECK",
-    "SOURCE_CHECK",
-    "CLAIM_CHECK",
-    "BRAND_CHECK",
-    "SEO_CHECK",
-    "CONTENT_COMPLETENESS",
-    "DUPLICATE_CHECK",
-    "CTA_CHECK",
-    "STRUCTURE_CHECK"
-  ]),
+  name: QualityGateNameSchema,
   status: QualityCheckStatusSchema,
+  severity: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]).default("MEDIUM"),
+  score: z.number().min(0).max(100).optional(),
   details: z.string(),
+  reasons: z.array(z.string()).default([]).optional(),
+  evidenceIds: z.array(z.string()).default([]).optional(),
   critical: z.boolean().default(false)
 });
 export type QualityCheckItem = z.infer<typeof QualityCheckItemSchema>;
@@ -148,6 +182,7 @@ export const QualityReportSchema = z.object({
   overallStatus: QualityCheckStatusSchema,
   score: z.number().min(0).max(100),
   passed: z.boolean(),
+  completenessPercentage: z.number().min(0).max(100).default(100),
   checks: z.array(QualityCheckItemSchema),
   evaluatedAt: z.string(),
   blockReason: z.string().optional()
@@ -155,8 +190,27 @@ export const QualityReportSchema = z.object({
 export type QualityReport = z.infer<typeof QualityReportSchema>;
 
 // ==========================================
-// 4. CANONICAL MARKETING PACKAGE
+// 4. CANONICAL MARKETING PACKAGE 2.0
 // ==========================================
+
+export const CreativeBriefSchema = z.object({
+  objective: z.string().default("Campaña de producto técnico B2B"),
+  audience: z.string().default("Directores IT e instaladores"),
+  message: z.string().default("Hardware homologado con garantía oficial"),
+  visualConcept: z.string(),
+  productFocus: z.string().default("Networking profesional"),
+  mandatoryElements: z.array(z.string()).default([]),
+  forbiddenElements: z.array(z.string()).default([]),
+  formatRecommendations: z.array(z.string()).default([]),
+  imagePrompt: z.string().optional(),
+  altText: z.string().optional(),
+  headline: z.string().optional(),
+  supportingHeadline: z.string().optional(),
+  environment: z.string().optional(),
+  keyVisualElements: z.array(z.string()).default([]),
+  bannerHeadlines: z.array(z.string()).default([])
+});
+export type CreativeBrief = z.infer<typeof CreativeBriefSchema>;
 
 export const MarketingSeoSchema = z.object({
   title: z.string(),
@@ -177,8 +231,10 @@ export const MarketingPackageSchema = z.object({
   product: z.object({
     sku: z.string(),
     brand: z.string(),
+    model: z.string().optional(),
     name: z.string(),
     deviceType: z.string(),
+    category: z.string().optional(),
     priceEur: z.number(),
     wholesalePriceEur: z.number().optional(),
     url: z.string()
@@ -197,11 +253,7 @@ export const MarketingPackageSchema = z.object({
     twitter: z.string(),
     whatsapp: z.string()
   }),
-  creative: z.object({
-    visualConcept: z.string(),
-    keyVisualElements: z.array(z.string()),
-    bannerHeadlines: z.array(z.string())
-  }),
+  creative: CreativeBriefSchema,
   cta: z.object({
     primary: z.string(),
     secondary: z.string(),
@@ -213,8 +265,59 @@ export const MarketingPackageSchema = z.object({
     url: z.string().optional(),
     type: z.string()
   })),
+  marketingIntelligence: z.record(z.string(), z.any()).optional(),
+  structuredData: z.record(z.string(), z.any()).optional(),
+  faq: z.array(z.object({ question: z.string(), answer: z.string() })).optional(),
+  version: z.string().default("2.0.0").optional(),
+  productCopy: z.record(z.string(), z.any()).optional(),
+  socialCopy: z.record(z.string(), z.any()).optional(),
+  creativeBrief: CreativeBriefSchema.optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
   quality: QualityReportSchema,
   contentVersion: z.number().default(1),
   createdAt: z.string()
 });
 export type MarketingPackage = z.infer<typeof MarketingPackageSchema>;
+
+// ==========================================
+// 5. MARKETING BATCH MODEL
+// ==========================================
+
+export const MarketingBatchStatusSchema = z.enum([
+  "PENDING",
+  "PROCESSING",
+  "COMPLETED",
+  "PARTIALLY_FAILED",
+  "FAILED"
+]);
+export type MarketingBatchStatus = z.infer<typeof MarketingBatchStatusSchema>;
+
+export const MarketingBatchItemSchema = z.object({
+  sku: z.string(),
+  status: z.enum(["PENDING", "PROCESSING", "COMPLETED", "FAILED", "BLOCKED"]),
+  runId: z.string().optional(),
+  packageId: z.string().optional(),
+  error: z.string().optional(),
+  qualityScore: z.number().optional(),
+  startedAt: z.string().optional(),
+  completedAt: z.string().optional()
+});
+export type MarketingBatchItem = z.infer<typeof MarketingBatchItemSchema>;
+
+export const MarketingBatchSchema = z.object({
+  batchId: z.string(),
+  workspaceId: z.string().default("default-ecomspain"),
+  organizationId: z.string().default("org-ecomspain"),
+  status: MarketingBatchStatusSchema,
+  items: z.record(z.string(), MarketingBatchItemSchema),
+  totalItems: z.number(),
+  completedItems: z.number(),
+  failedItems: z.number(),
+  blockedItems: z.number(),
+  requestedBy: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  finishedAt: z.string().optional(),
+  provider: z.string().default("google-antigravity")
+});
+export type MarketingBatch = z.infer<typeof MarketingBatchSchema>;

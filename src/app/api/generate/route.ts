@@ -117,6 +117,13 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         if (mailAudit && content.mailchimp) content.mailchimp.newsletterHtml = mailAudit.sanitizedContent;
         if (linkedinAudit && content.linkedin) content.linkedin.fullPostText = linkedinAudit.sanitizedContent;
         if (waAudit && content.whatsapp) content.whatsapp.formattedMessage = waAudit.sanitizedContent;
+
+        // Calcular factCheckScore real promediando las auditorías de canales ejecutadas
+        const audits = [blogAudit, mailAudit, linkedinAudit, waAudit].filter(Boolean);
+        if (audits.length > 0) {
+          const avgScore = Math.round(audits.reduce((acc, a) => acc + (a?.factCheckScore || 90), 0) / audits.length);
+          content.factCheckScore = avgScore;
+        }
       } catch (auditErr) {
         console.warn("[API Generate] Advertencia en auditoría de EvidenceEngine (non-fatal):", auditErr);
       }
@@ -215,6 +222,10 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         userId: user.uid,
         action: "gemini_generation",
         model: "gemini-2.5-flash",
+        provider: "vertex-ai",
+        operation: "content_generation",
+        sku: intelligenceCard?.product?.sku,
+        costStatus: "ESTIMATED",
         tokensInput: 1850,
         tokensOutput: 3200,
         cachedTokens: 0,
@@ -243,8 +254,17 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         },
         source: "UI"
       });
-    } catch (persistErr) {
-      console.warn("[API Generate] Error persistiendo en Firestore (non-fatal):", persistErr);
+    } catch (persistErr: any) {
+      console.error("[API Generate] Fallo en persistencia Firestore:", persistErr);
+      return NextResponse.json(
+        {
+          error: "PERSISTENCE_FAILED",
+          message: "El contenido fue generado pero falló la persistencia atómica en Firestore",
+          details: persistErr?.message || String(persistErr),
+          contentPreview: { id: contentId, title: content.topicTitle }
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({

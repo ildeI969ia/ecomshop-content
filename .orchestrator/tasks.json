@@ -1,0 +1,142 @@
+[
+  {
+    "id": "F6-A",
+    "title": "Security & Authentication Audit",
+    "agent": "security-agent",
+    "status": "READY",
+    "mode": "READ_ONLY",
+    "dependencies": [],
+    "filesAllowed": [
+      "src/middleware.ts",
+      "src/server/security/**",
+      "src/lib/auth/**",
+      "src/app/api/auth/**"
+    ],
+    "filesForbidden": [
+      "*"
+    ],
+    "risk": "LOW_READ_ONLY"
+  },
+  {
+    "id": "F6-B",
+    "title": "Cloud Run & Infrastructure Configuration Audit",
+    "agent": "infra-agent",
+    "status": "READY",
+    "mode": "READ_ONLY",
+    "dependencies": [],
+    "filesAllowed": [
+      "Dockerfile",
+      "cloudbuild.yaml",
+      "next.config.ts",
+      "scripts/deploy.ps1"
+    ],
+    "filesForbidden": [
+      "*"
+    ],
+    "risk": "LOW_READ_ONLY"
+  },
+  {
+    "id": "F6-C",
+    "title": "IAM & Secret Manager Posture Audit",
+    "agent": "security-agent",
+    "status": "READY",
+    "mode": "READ_ONLY",
+    "dependencies": [],
+    "filesAllowed": [
+      "cloudbuild.yaml",
+      "PHASE_04A_SECURITY_MODEL.md",
+      "PHASE_04B_SECURITY_VERIFICATION.md",
+      "PHASE_06A_PERSISTENCE_HARDENING.md"
+    ],
+    "filesForbidden": [
+      "*"
+    ],
+    "risk": "LOW_READ_ONLY"
+  },
+  {
+    "id": "F6-D",
+    "title": "Firestore & Multi-Tenant Workspace Isolation Audit",
+    "agent": "backend-agent",
+    "status": "READY",
+    "mode": "READ_ONLY",
+    "dependencies": [],
+    "filesAllowed": [
+      "firestore.rules",
+      "firestore.indexes.json",
+      "src/server/repositories/**",
+      "src/server/domain/**"
+    ],
+    "filesForbidden": [
+      "*"
+    ],
+    "risk": "LOW_READ_ONLY"
+  },
+  {
+    "id": "F6-E",
+    "title": "Google Cloud Storage Security & Access Audit",
+    "agent": "security-agent",
+    "status": "READY",
+    "mode": "READ_ONLY",
+    "dependencies": [],
+    "filesAllowed": [
+      "src/server/services/storage-provider.ts",
+      "src/server/services/persistence-diagnostics.ts",
+      "src/app/api/assets/**"
+    ],
+    "filesForbidden": [
+      "*"
+    ],
+    "risk": "LOW_READ_ONLY"
+  },
+  {
+    "id": "F6-F",
+    "title": "Silent Failures & Error Handling Audit",
+    "agent": "backend-agent",
+    "status": "READY",
+    "mode": "READ_ONLY",
+    "dependencies": [],
+    "filesAllowed": [
+      "src/app/api/**",
+      "src/server/services/**"
+    ],
+    "filesForbidden": [
+      "*"
+    ],
+    "risk": "LOW_READ_ONLY"
+  },
+  {
+    "id": "F6-G",
+    "title": "CI/CD & Quality Gates Audit",
+    "agent": "qa-agent",
+    "status": "READY",
+    "mode": "READ_ONLY",
+    "dependencies": [],
+    "filesAllowed": [
+      "package.json",
+      "cloudbuild.yaml",
+      "scripts/**"
+    ],
+    "filesForbidden": [
+      "*"
+    ],
+    "risk": "LOW_READ_ONLY"
+  },
+  {
+    "id": "F6-H",
+    "title": "Architecture & Dependency Coupling Audit",
+    "agent": "analyst-agent",
+    "status": "READY",
+    "mode": "READ_ONLY",
+    "dependencies": [],
+    "filesAllowed": [
+      "package.json",
+      "src/lib/**",
+      "src/server/**",
+      "src/components/**"
+    ],
+    "filesForbidden": [
+      "*"
+    ],
+    "risk": "LOW_READ_ONLY"
+  }
+]

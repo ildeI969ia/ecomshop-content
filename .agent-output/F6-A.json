@@ -1,0 +1,39 @@
+{
+  "taskId": "F6-A",
+  "status": "COMPLETED",
+  "title": "Security & Authentication Audit",
+  "mode": "READ_ONLY",
+  "summary": "Se identificaron 3 vulnerabilidades críticas: fallbacks de contraseñas por defecto en código, bypass de middleware para paths con punto y ausencia de expiración/revocación en sesiones sin estado.",
+  "filesInspected": [
+    "src/middleware.ts",
+    "src/lib/auth/session.ts",
+    "src/app/api/auth/login/route.ts",
+    "src/server/security/auth.ts",
+    "src/server/security/rbac.ts"
+  ],
+  "findings": [
+    {
+      "severity": "CRITICAL",
+      "code": "AUTH_HARDCODED_SECRET_FALLBACK",
+      "location": "src/lib/auth/session.ts:9",
+      "detail": "DEFAULT_SECRET = 'ecomspain-default-secret-change-in-prod-2026'. En producción se utiliza este secreto si no se inyecta SESSION_SECRET."
+    },
+    {
+      "severity": "CRITICAL",
+      "code": "AUTH_HARDCODED_PASSWORDS",
+      "location": "src/app/api/auth/login/route.ts:36-37",
+      "detail": "Fallbacks hardcodeados en texto plano: 'EcomSpain2026!' y 'AdminEcom2026!' si no se definen CORPORATE_ACCESS_PASSWORD / ADMIN_ACCESS_PASSWORD."
+    },
+    {
+      "severity": "HIGH",
+      "code": "MIDDLEWARE_PATH_TRAVERSAL_BYPASS",
+      "location": "src/middleware.ts:11",
+      "detail": "pathname.includes('.') excluye la verificación de autenticación. Cualquier atacante agregando un punto a una ruta /api/.. puede evadir el middleware si el backend lo resuelve."
+    }
+  ],
+  "recommendations": [
+    "F6-SEC-001: Integrar Secret Manager en Cloud Run y exigir SESSION_SECRET y contraseñas obligatorias al arranque.",
+    "F6-SEC-002: Eliminar definitivamente todos los fallbacks de secretos hardcodeados en código.",
+    "F6-SEC-003: Corregir middleware.ts para verificar extensiones estáticas estrictas en lugar de includes('.')."
+  ]
+}

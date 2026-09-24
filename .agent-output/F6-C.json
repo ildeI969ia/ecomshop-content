@@ -1,0 +1,29 @@
+{
+  "taskId": "F6-C",
+  "status": "COMPLETED",
+  "title": "IAM & Secret Manager Posture Audit",
+  "mode": "READ_ONLY",
+  "summary": "El Service Account de Cloud Run (314549039420-compute@developer.gserviceaccount.com) tiene permisos amplios de compute y storage.objectAdmin en el bucket. No hay secretos declarados en Secret Manager para la app.",
+  "filesInspected": [
+    "cloudbuild.yaml",
+    "PHASE_04A_SECURITY_MODEL.md",
+    "PHASE_06A_PERSISTENCE_HARDENING.md"
+  ],
+  "findings": [
+    {
+      "severity": "CRITICAL",
+      "code": "MISSING_SECRET_MANAGER_RESOURCES",
+      "location": "GCP Secret Manager",
+      "detail": "No existen los secretos SESSION_SECRET, CORPORATE_ACCESS_PASSWORD ni ADMIN_ACCESS_PASSWORD en Secret Manager en el proyecto ecomshop-marketing-prod."
+    },
+    {
+      "severity": "MEDIUM",
+      "code": "DEFAULT_COMPUTE_SERVICE_ACCOUNT",
+      "location": "Cloud Run Deployment",
+      "detail": "Cloud Run utiliza el Service Account por defecto de Compute Engine en lugar de un Service Account dedicado con mínimo privilegio."
+    }
+  ],
+  "recommendations": [
+    "F6-IAM-001: Crear secretos en Secret Manager y otorgar roles/secretmanager.secretAccessor al service account de Cloud Run previa aprobación humana."
+  ]
+}

@@ -24,7 +24,8 @@
     "test:orchestrator": "tsx scripts/test-orchestrator-execution.ts",
     "test:antigravity": "tsx scripts/test-antigravity-provider.ts",
     "test:marketing-matrix": "tsx scripts/test-marketing-matrix.ts",
-    "test:marketing-real-e2e": "tsx scripts/test-marketing-real-e2e.ts"
+    "test:marketing-real-e2e": "tsx scripts/test-marketing-real-e2e.ts",
+    "test:marketing-ui-flow": "tsx scripts/test-marketing-ui-flow.ts"
   },
   "dependencies": {
     "@google-cloud/firestore": "^9.1.0",

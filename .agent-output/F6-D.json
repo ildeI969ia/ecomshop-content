@@ -1,0 +1,29 @@
+{
+  "taskId": "F6-D",
+  "status": "COMPLETED",
+  "title": "Firestore & Multi-Tenant Workspace Isolation Audit",
+  "mode": "READ_ONLY",
+  "summary": "Firestore rules protegen el acceso cliente mediante @ecomspain.com y roles en users/{userId}. Sin embargo, todas las consultas del backend usan Firebase Admin SDK (bypasea reglas) y dependen de que los repositorios apliquen estrictamente where('workspaceId', '==', workspaceId).",
+  "filesInspected": [
+    "firestore.rules",
+    "firestore.indexes.json",
+    "src/server/repositories/index.ts"
+  ],
+  "findings": [
+    {
+      "severity": "HIGH",
+      "code": "MULTI_TENANT_FALLBACK_LEAK",
+      "location": "src/app/api/assets/route.ts:32-34",
+      "detail": "if (list.length === 0) { list = await repo.listRecent(100); } Este fallback lee sin workspaceId si el workspace actual está vacío, filtrando datos de otros tenants."
+    },
+    {
+      "severity": "MEDIUM",
+      "code": "FIRESTORE_RULES_UNUSED_BY_ADMIN",
+      "location": "firestore.rules",
+      "detail": "Las reglas en firestore.rules solo aplican al acceso web directo. El backend utiliza Admin SDK con privilegios completos."
+    }
+  ],
+  "recommendations": [
+    "F6-FS-001: Eliminar el fallback que lee assets sin workspaceId en src/app/api/assets/route.ts."
+  ]
+}

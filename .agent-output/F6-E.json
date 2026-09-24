@@ -1,0 +1,29 @@
+{
+  "taskId": "F6-E",
+  "status": "COMPLETED",
+  "title": "Google Cloud Storage Security & Access Audit",
+  "mode": "READ_ONLY",
+  "summary": "El bucket gs://ecomshop-marketing-assets tiene allUsers:objectViewer habilitado para permitir servir imágenes públicas directamente por CDN/URL estática. Aunque los paths son pseudoaleatorios, cualquiera puede enumerar o leer objetos si conoce el path.",
+  "filesInspected": [
+    "src/server/services/storage-provider.ts",
+    "src/app/api/assets/route.ts",
+    "PHASE_06A_PERSISTENCE_HARDENING.md"
+  ],
+  "findings": [
+    {
+      "severity": "MEDIUM",
+      "code": "GCS_BUCKET_PUBLIC_READ",
+      "location": "gs://ecomshop-marketing-assets",
+      "detail": "allUsers tiene permisos de roles/storage.objectViewer a nivel bucket para mantener compatibilidad con <img> tags directos."
+    },
+    {
+      "severity": "LOW",
+      "code": "MISSING_DOWNLOAD_TOKENS",
+      "location": "src/server/services/storage-provider.ts",
+      "detail": "Las URLs son de tipo storage.googleapis.com/<bucket>/<path> en lugar de URLs firmadas temporales o tokens de descarga restringidos."
+    }
+  ],
+  "recommendations": [
+    "F6-GCS-001: Evaluar migración a signed URLs temporales o proxy autenticado para restringir lectura pública si los assets contienen datos corporativos confidenciales."
+  ]
+}

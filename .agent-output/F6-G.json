@@ -1,0 +1,29 @@
+{
+  "taskId": "F6-G",
+  "status": "COMPLETED",
+  "title": "CI/CD & Quality Gates Audit",
+  "mode": "READ_ONLY",
+  "summary": "El pipeline de despliegue scripts/deploy.ps1 ejecuta typecheck localmente antes de enviar a Cloud Build. Sin embargo, no ejecuta la suite de tests (test:persistence, test:storage) de forma obligatoria en el pre-deploy.",
+  "filesInspected": [
+    "scripts/deploy.ps1",
+    "package.json",
+    "cloudbuild.yaml"
+  ],
+  "findings": [
+    {
+      "severity": "MEDIUM",
+      "code": "DEPLOY_SCRIPT_SKIPS_TESTS",
+      "location": "scripts/deploy.ps1",
+      "detail": "El script de deploy ejecuta 'npm run typecheck' pero no corre 'npm run test:storage' ni 'npm run test:persistence' antes del push o gcloud builds submit."
+    },
+    {
+      "severity": "LOW",
+      "code": "MISSING_GITHUB_ACTIONS_WORKFLOW",
+      "location": ".github/workflows",
+      "detail": "No hay un pipeline de pull request automático en GitHub Actions que impida merges si los tests fallan."
+    }
+  ],
+  "recommendations": [
+    "F6-CI-001: Agregar ejecución de test:persistence y test:storage al script deploy.ps1 como compuerta bloqueante antes del despliegue a Cloud Run."
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "taskId": "F6-B",
+  "status": "COMPLETED",
+  "title": "Cloud Run & Infrastructure Configuration Audit",
+  "mode": "READ_ONLY",
+  "summary": "Cloud Run opera en europe-west1 con 1Gi RAM y max 5 instancias. Sin embargo, cloudbuild.yaml usa --update-env-vars sin enlazar secretos de Secret Manager, e inyecta únicamente variables de entorno de infraestructura general.",
+  "filesInspected": [
+    "cloudbuild.yaml",
+    "Dockerfile",
+    "next.config.ts"
+  ],
+  "findings": [
+    {
+      "severity": "HIGH",
+      "code": "CLOUDRUN_SECRETS_NOT_BOUND",
+      "location": "cloudbuild.yaml:31",
+      "detail": "cloudbuild.yaml pasa variables fijas (GOOGLE_CLOUD_PROJECT, GCS_BUCKET_NAME) pero omite --set-secrets o --update-secrets."
+    },
+    {
+      "severity": "MEDIUM",
+      "code": "DOCKER_STAGE_CACHE",
+      "location": "Dockerfile",
+      "detail": "La imagen multi-stage node:20-alpine copia node_modules en standalone pero no minimiza flags de ejecución insegura ni implementa distroless."
+    }
+  ],
+  "recommendations": [
+    "F6-INFRA-001: Configurar en cloudbuild.yaml el mapeo de secretos vía Secret Manager (--set-secrets)."
+  ]
+}

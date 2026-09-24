@@ -1,0 +1,1046 @@
+﻿[
+    {
+        "name":  "projects/ecomshop-marketing-prod/databases/(default)/documents/assets/asset-1789814742160-algba",
+        "fields":  {
+                       "filename":  {
+                                        "stringValue":  "AI: Front view of an EnGenius ECS2530FP Managed PoE+ Switch, 24x"
+                                    },
+                       "type":  {
+                                    "stringValue":  "image"
+                                },
+                       "mimeType":  {
+                                        "stringValue":  "image/png"
+                                    },
+                       "publicUrl":  {
+                                         "stringValue":  ""
+                                     },
+                       "workspaceId":  {
+                                           "stringValue":  "default-ecomspain"
+                                       },
+                       "id":  {
+                                  "stringValue":  "asset-1789814742160-algba"
+                              },
+                       "updatedBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "updatedAt":  {
+                                         "stringValue":  "2026-09-19T10:45:42.164Z"
+                                     },
+                       "createdAt":  {
+                                         "stringValue":  "2026-09-19T10:45:42.164Z"
+                                     },
+                       "aiGenerated":  {
+                                           "booleanValue":  true
+                                       },
+                       "createdBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "sizeBytes":  {
+                                         "integerValue":  "1713982"
+                                     },
+                       "storagePath":  {
+                                           "stringValue":  "generated/asset-1789814742160-algba"
+                                       },
+                       "aiProvenance":  {
+                                            "mapValue":  {
+                                                             "fields":  {
+                                                                            "cachedTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "requestId":  {
+                                                                                              "stringValue":  "asset-1789814742160-algba"
+                                                                                          },
+                                                                            "provider":  {
+                                                                                             "stringValue":  "google-vertex-genai"
+                                                                                         },
+                                                                            "generatedAt":  {
+                                                                                                "stringValue":  "2026-09-19T10:45:42.164Z"
+                                                                                            },
+                                                                            "outputTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "latencyMs":  {
+                                                                                              "integerValue":  "0"
+                                                                                          },
+                                                                            "sourceIdsUsed":  {
+                                                                                                  "arrayValue":  {
+
+                                                                                                                 }
+                                                                                              },
+                                                                            "inputTokens":  {
+                                                                                                "integerValue":  "0"
+                                                                                            },
+                                                                            "model":  {
+                                                                                          "stringValue":  "gemini_multimodal"
+                                                                                      },
+                                                                            "estimatedCostEur":  {
+                                                                                                     "doubleValue":  0.03
+                                                                                                 }
+                                                                        }
+                                                         }
+                                        },
+                       "ownerId":  {
+                                       "stringValue":  "user-646972656374"
+                                   }
+                   },
+        "createTime":  "2026-09-19T10:45:42.215795Z",
+        "updateTime":  "2026-09-19T10:45:42.215795Z"
+    },
+    {
+        "name":  "projects/ecomshop-marketing-prod/databases/(default)/documents/assets/asset-1789814883439-9gsh3",
+        "fields":  {
+                       "createdBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "aiGenerated":  {
+                                           "booleanValue":  true
+                                       },
+                       "id":  {
+                                  "stringValue":  "asset-1789814883439-9gsh3"
+                              },
+                       "createdAt":  {
+                                         "stringValue":  "2026-09-19T10:48:03.443Z"
+                                     },
+                       "publicUrl":  {
+                                         "stringValue":  ""
+                                     },
+                       "storagePath":  {
+                                           "stringValue":  "generated/asset-1789814883439-9gsh3"
+                                       },
+                       "mimeType":  {
+                                        "stringValue":  "image/png"
+                                    },
+                       "filename":  {
+                                        "stringValue":  "AI: Sharp industrial close-up of an EnGenius ECS2530FP Managed P"
+                                    },
+                       "sizeBytes":  {
+                                         "integerValue":  "1825922"
+                                     },
+                       "workspaceId":  {
+                                           "stringValue":  "default-ecomspain"
+                                       },
+                       "updatedBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "aiProvenance":  {
+                                            "mapValue":  {
+                                                             "fields":  {
+                                                                            "model":  {
+                                                                                          "stringValue":  "gemini_multimodal"
+                                                                                      },
+                                                                            "sourceIdsUsed":  {
+                                                                                                  "arrayValue":  {
+
+                                                                                                                 }
+                                                                                              },
+                                                                            "requestId":  {
+                                                                                              "stringValue":  "asset-1789814883439-9gsh3"
+                                                                                          },
+                                                                            "generatedAt":  {
+                                                                                                "stringValue":  "2026-09-19T10:48:03.443Z"
+                                                                                            },
+                                                                            "inputTokens":  {
+                                                                                                "integerValue":  "0"
+                                                                                            },
+                                                                            "estimatedCostEur":  {
+                                                                                                     "doubleValue":  0.03
+                                                                                                 },
+                                                                            "cachedTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "latencyMs":  {
+                                                                                              "integerValue":  "0"
+                                                                                          },
+                                                                            "outputTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "provider":  {
+                                                                                             "stringValue":  "google-vertex-genai"
+                                                                                         }
+                                                                        }
+                                                         }
+                                        },
+                       "type":  {
+                                    "stringValue":  "image"
+                                },
+                       "ownerId":  {
+                                       "stringValue":  "user-646972656374"
+                                   },
+                       "updatedAt":  {
+                                         "stringValue":  "2026-09-19T10:48:03.443Z"
+                                     }
+                   },
+        "createTime":  "2026-09-19T10:48:03.500368Z",
+        "updateTime":  "2026-09-19T10:48:03.500368Z"
+    },
+    {
+        "name":  "projects/ecomshop-marketing-prod/databases/(default)/documents/assets/asset-1789992584052-xa1v7",
+        "fields":  {
+                       "createdAt":  {
+                                         "stringValue":  "2026-09-21T12:09:44.056Z"
+                                     },
+                       "filename":  {
+                                        "stringValue":  "AI: A hyper-realistic 3D technical illustration of an enterprise"
+                                    },
+                       "workspaceId":  {
+                                           "stringValue":  "default-ecomspain"
+                                       },
+                       "updatedAt":  {
+                                         "stringValue":  "2026-09-21T12:09:44.056Z"
+                                     },
+                       "storagePath":  {
+                                           "stringValue":  "generated/asset-1789992584052-xa1v7"
+                                       },
+                       "updatedBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "aiGenerated":  {
+                                           "booleanValue":  true
+                                       },
+                       "aiProvenance":  {
+                                            "mapValue":  {
+                                                             "fields":  {
+                                                                            "sourceIdsUsed":  {
+                                                                                                  "arrayValue":  {
+
+                                                                                                                 }
+                                                                                              },
+                                                                            "model":  {
+                                                                                          "stringValue":  "gemini_multimodal"
+                                                                                      },
+                                                                            "requestId":  {
+                                                                                              "stringValue":  "asset-1789992584052-xa1v7"
+                                                                                          },
+                                                                            "generatedAt":  {
+                                                                                                "stringValue":  "2026-09-21T12:09:44.056Z"
+                                                                                            },
+                                                                            "estimatedCostEur":  {
+                                                                                                     "doubleValue":  0.03
+                                                                                                 },
+                                                                            "latencyMs":  {
+                                                                                              "integerValue":  "0"
+                                                                                          },
+                                                                            "inputTokens":  {
+                                                                                                "integerValue":  "0"
+                                                                                            },
+                                                                            "outputTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "cachedTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "provider":  {
+                                                                                             "stringValue":  "google-vertex-genai"
+                                                                                         }
+                                                                        }
+                                                         }
+                                        },
+                       "mimeType":  {
+                                        "stringValue":  "image/png"
+                                    },
+                       "createdBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "publicUrl":  {
+                                         "stringValue":  ""
+                                     },
+                       "id":  {
+                                  "stringValue":  "asset-1789992584052-xa1v7"
+                              },
+                       "type":  {
+                                    "stringValue":  "image"
+                                },
+                       "ownerId":  {
+                                       "stringValue":  "user-646972656374"
+                                   },
+                       "sizeBytes":  {
+                                         "integerValue":  "1450446"
+                                     }
+                   },
+        "createTime":  "2026-09-21T12:09:44.207088Z",
+        "updateTime":  "2026-09-21T12:09:44.207088Z"
+    },
+    {
+        "name":  "projects/ecomshop-marketing-prod/databases/(default)/documents/assets/asset-1789993025187-tphv7",
+        "fields":  {
+                       "ownerId":  {
+                                       "stringValue":  "user-646972656374"
+                                   },
+                       "filename":  {
+                                        "stringValue":  "AI: Wide architectural 45-degree isometric view of a vast logist"
+                                    },
+                       "id":  {
+                                  "stringValue":  "asset-1789993025187-tphv7"
+                              },
+                       "type":  {
+                                    "stringValue":  "image"
+                                },
+                       "storagePath":  {
+                                           "stringValue":  "generated/asset-1789993025187-tphv7"
+                                       },
+                       "sizeBytes":  {
+                                         "integerValue":  "1811286"
+                                     },
+                       "aiGenerated":  {
+                                           "booleanValue":  true
+                                       },
+                       "createdBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "createdAt":  {
+                                         "stringValue":  "2026-09-21T12:17:05.225Z"
+                                     },
+                       "updatedAt":  {
+                                         "stringValue":  "2026-09-21T12:17:05.225Z"
+                                     },
+                       "mimeType":  {
+                                        "stringValue":  "image/png"
+                                    },
+                       "workspaceId":  {
+                                           "stringValue":  "default-ecomspain"
+                                       },
+                       "publicUrl":  {
+                                         "stringValue":  ""
+                                     },
+                       "aiProvenance":  {
+                                            "mapValue":  {
+                                                             "fields":  {
+                                                                            "provider":  {
+                                                                                             "stringValue":  "google-vertex-genai"
+                                                                                         },
+                                                                            "generatedAt":  {
+                                                                                                "stringValue":  "2026-09-21T12:17:05.225Z"
+                                                                                            },
+                                                                            "outputTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "sourceIdsUsed":  {
+                                                                                                  "arrayValue":  {
+
+                                                                                                                 }
+                                                                                              },
+                                                                            "inputTokens":  {
+                                                                                                "integerValue":  "0"
+                                                                                            },
+                                                                            "latencyMs":  {
+                                                                                              "integerValue":  "0"
+                                                                                          },
+                                                                            "requestId":  {
+                                                                                              "stringValue":  "asset-1789993025187-tphv7"
+                                                                                          },
+                                                                            "model":  {
+                                                                                          "stringValue":  "gemini_multimodal"
+                                                                                      },
+                                                                            "cachedTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "estimatedCostEur":  {
+                                                                                                     "doubleValue":  0.03
+                                                                                                 }
+                                                                        }
+                                                         }
+                                        },
+                       "updatedBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     }
+                   },
+        "createTime":  "2026-09-21T12:17:05.288294Z",
+        "updateTime":  "2026-09-21T12:17:05.288294Z"
+    },
+    {
+        "name":  "projects/ecomshop-marketing-prod/databases/(default)/documents/assets/asset-1789993141964-iu6m0",
+        "fields":  {
+                       "aiGenerated":  {
+                                           "booleanValue":  true
+                                       },
+                       "updatedBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "publicUrl":  {
+                                         "stringValue":  ""
+                                     },
+                       "filename":  {
+                                        "stringValue":  "AI: Extreme macro cutaway of a single fiber optic cable, reveali"
+                                    },
+                       "sizeBytes":  {
+                                         "integerValue":  "1320270"
+                                     },
+                       "aiProvenance":  {
+                                            "mapValue":  {
+                                                             "fields":  {
+                                                                            "generatedAt":  {
+                                                                                                "stringValue":  "2026-09-21T12:19:01.967Z"
+                                                                                            },
+                                                                            "cachedTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "provider":  {
+                                                                                             "stringValue":  "google-vertex-genai"
+                                                                                         },
+                                                                            "latencyMs":  {
+                                                                                              "integerValue":  "0"
+                                                                                          },
+                                                                            "outputTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "estimatedCostEur":  {
+                                                                                                     "doubleValue":  0.03
+                                                                                                 },
+                                                                            "requestId":  {
+                                                                                              "stringValue":  "asset-1789993141964-iu6m0"
+                                                                                          },
+                                                                            "inputTokens":  {
+                                                                                                "integerValue":  "0"
+                                                                                            },
+                                                                            "sourceIdsUsed":  {
+                                                                                                  "arrayValue":  {
+
+                                                                                                                 }
+                                                                                              },
+                                                                            "model":  {
+                                                                                          "stringValue":  "imagen3"
+                                                                                      }
+                                                                        }
+                                                         }
+                                        },
+                       "createdAt":  {
+                                         "stringValue":  "2026-09-21T12:19:01.967Z"
+                                     },
+                       "ownerId":  {
+                                       "stringValue":  "user-646972656374"
+                                   },
+                       "createdBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "storagePath":  {
+                                           "stringValue":  "generated/asset-1789993141964-iu6m0"
+                                       },
+                       "mimeType":  {
+                                        "stringValue":  "image/png"
+                                    },
+                       "updatedAt":  {
+                                         "stringValue":  "2026-09-21T12:19:01.967Z"
+                                     },
+                       "id":  {
+                                  "stringValue":  "asset-1789993141964-iu6m0"
+                              },
+                       "workspaceId":  {
+                                           "stringValue":  "default-ecomspain"
+                                       },
+                       "type":  {
+                                    "stringValue":  "image"
+                                }
+                   },
+        "createTime":  "2026-09-21T12:19:02.032305Z",
+        "updateTime":  "2026-09-21T12:19:02.032305Z"
+    },
+    {
+        "name":  "projects/ecomshop-marketing-prod/databases/(default)/documents/assets/asset-1789993201270-jkuzj",
+        "fields":  {
+                       "updatedAt":  {
+                                         "stringValue":  "2026-09-21T12:20:01.273Z"
+                                     },
+                       "updatedBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "workspaceId":  {
+                                           "stringValue":  "default-ecomspain"
+                                       },
+                       "publicUrl":  {
+                                         "stringValue":  ""
+                                     },
+                       "type":  {
+                                    "stringValue":  "image"
+                                },
+                       "mimeType":  {
+                                        "stringValue":  "image/png"
+                                    },
+                       "createdAt":  {
+                                         "stringValue":  "2026-09-21T12:20:01.273Z"
+                                     },
+                       "storagePath":  {
+                                           "stringValue":  "generated/asset-1789993201270-jkuzj"
+                                       },
+                       "ownerId":  {
+                                       "stringValue":  "user-646972656374"
+                                   },
+                       "createdBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "aiProvenance":  {
+                                            "mapValue":  {
+                                                             "fields":  {
+                                                                            "generatedAt":  {
+                                                                                                "stringValue":  "2026-09-21T12:20:01.273Z"
+                                                                                            },
+                                                                            "model":  {
+                                                                                          "stringValue":  "imagen3"
+                                                                                      },
+                                                                            "latencyMs":  {
+                                                                                              "integerValue":  "0"
+                                                                                          },
+                                                                            "inputTokens":  {
+                                                                                                "integerValue":  "0"
+                                                                                            },
+                                                                            "provider":  {
+                                                                                             "stringValue":  "google-vertex-genai"
+                                                                                         },
+                                                                            "outputTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "requestId":  {
+                                                                                              "stringValue":  "asset-1789993201270-jkuzj"
+                                                                                          },
+                                                                            "sourceIdsUsed":  {
+                                                                                                  "arrayValue":  {
+
+                                                                                                                 }
+                                                                                              },
+                                                                            "cachedTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "estimatedCostEur":  {
+                                                                                                     "doubleValue":  0.03
+                                                                                                 }
+                                                                        }
+                                                         }
+                                        },
+                       "id":  {
+                                  "stringValue":  "asset-1789993201270-jkuzj"
+                              },
+                       "filename":  {
+                                        "stringValue":  "AI: Professional IP security camera unit, wall-mount cylindrical"
+                                    },
+                       "aiGenerated":  {
+                                           "booleanValue":  true
+                                       },
+                       "sizeBytes":  {
+                                         "integerValue":  "1196994"
+                                     }
+                   },
+        "createTime":  "2026-09-21T12:20:01.341644Z",
+        "updateTime":  "2026-09-21T12:20:01.341644Z"
+    },
+    {
+        "name":  "projects/ecomshop-marketing-prod/databases/(default)/documents/assets/asset-1789993257653-v8tww",
+        "fields":  {
+                       "mimeType":  {
+                                        "stringValue":  "image/png"
+                                    },
+                       "type":  {
+                                    "stringValue":  "image"
+                                },
+                       "updatedBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "sizeBytes":  {
+                                         "integerValue":  "1376978"
+                                     },
+                       "publicUrl":  {
+                                         "stringValue":  ""
+                                     },
+                       "aiGenerated":  {
+                                           "booleanValue":  true
+                                       },
+                       "createdBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "ownerId":  {
+                                       "stringValue":  "user-646972656374"
+                                   },
+                       "storagePath":  {
+                                           "stringValue":  "generated/asset-1789993257653-v8tww"
+                                       },
+                       "updatedAt":  {
+                                         "stringValue":  "2026-09-21T12:20:57.656Z"
+                                     },
+                       "id":  {
+                                  "stringValue":  "asset-1789993257653-v8tww"
+                              },
+                       "filename":  {
+                                        "stringValue":  "AI: \"Clean modern B2B software dashboard interface mockup, dark "
+                                    },
+                       "createdAt":  {
+                                         "stringValue":  "2026-09-21T12:20:57.656Z"
+                                     },
+                       "aiProvenance":  {
+                                            "mapValue":  {
+                                                             "fields":  {
+                                                                            "inputTokens":  {
+                                                                                                "integerValue":  "0"
+                                                                                            },
+                                                                            "requestId":  {
+                                                                                              "stringValue":  "asset-1789993257653-v8tww"
+                                                                                          },
+                                                                            "outputTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "sourceIdsUsed":  {
+                                                                                                  "arrayValue":  {
+
+                                                                                                                 }
+                                                                                              },
+                                                                            "model":  {
+                                                                                          "stringValue":  "imagen3"
+                                                                                      },
+                                                                            "generatedAt":  {
+                                                                                                "stringValue":  "2026-09-21T12:20:57.656Z"
+                                                                                            },
+                                                                            "cachedTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "latencyMs":  {
+                                                                                              "integerValue":  "0"
+                                                                                          },
+                                                                            "provider":  {
+                                                                                             "stringValue":  "google-vertex-genai"
+                                                                                         },
+                                                                            "estimatedCostEur":  {
+                                                                                                     "doubleValue":  0.03
+                                                                                                 }
+                                                                        }
+                                                         }
+                                        },
+                       "workspaceId":  {
+                                           "stringValue":  "default-ecomspain"
+                                       }
+                   },
+        "createTime":  "2026-09-21T12:20:57.699423Z",
+        "updateTime":  "2026-09-21T12:20:57.699423Z"
+    },
+    {
+        "name":  "projects/ecomshop-marketing-prod/databases/(default)/documents/assets/asset-1789993333239-2vcut",
+        "fields":  {
+                       "updatedBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "sizeBytes":  {
+                                         "integerValue":  "1127090"
+                                     },
+                       "filename":  {
+                                        "stringValue":  "AI: A clean grid reference board of eight isolated minimal techn"
+                                    },
+                       "id":  {
+                                  "stringValue":  "asset-1789993333239-2vcut"
+                              },
+                       "createdAt":  {
+                                         "stringValue":  "2026-09-21T12:22:13.241Z"
+                                     },
+                       "aiProvenance":  {
+                                            "mapValue":  {
+                                                             "fields":  {
+                                                                            "inputTokens":  {
+                                                                                                "integerValue":  "0"
+                                                                                            },
+                                                                            "latencyMs":  {
+                                                                                              "integerValue":  "0"
+                                                                                          },
+                                                                            "provider":  {
+                                                                                             "stringValue":  "google-vertex-genai"
+                                                                                         },
+                                                                            "outputTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "requestId":  {
+                                                                                              "stringValue":  "asset-1789993333239-2vcut"
+                                                                                          },
+                                                                            "model":  {
+                                                                                          "stringValue":  "imagen3"
+                                                                                      },
+                                                                            "generatedAt":  {
+                                                                                                "stringValue":  "2026-09-21T12:22:13.241Z"
+                                                                                            },
+                                                                            "cachedTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "estimatedCostEur":  {
+                                                                                                     "doubleValue":  0.03
+                                                                                                 },
+                                                                            "sourceIdsUsed":  {
+                                                                                                  "arrayValue":  {
+
+                                                                                                                 }
+                                                                                              }
+                                                                        }
+                                                         }
+                                        },
+                       "publicUrl":  {
+                                         "stringValue":  ""
+                                     },
+                       "createdBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "updatedAt":  {
+                                         "stringValue":  "2026-09-21T12:22:13.241Z"
+                                     },
+                       "aiGenerated":  {
+                                           "booleanValue":  true
+                                       },
+                       "workspaceId":  {
+                                           "stringValue":  "default-ecomspain"
+                                       },
+                       "type":  {
+                                    "stringValue":  "image"
+                                },
+                       "ownerId":  {
+                                       "stringValue":  "user-646972656374"
+                                   },
+                       "mimeType":  {
+                                        "stringValue":  "image/png"
+                                    },
+                       "storagePath":  {
+                                           "stringValue":  "generated/asset-1789993333239-2vcut"
+                                       }
+                   },
+        "createTime":  "2026-09-21T12:22:13.295640Z",
+        "updateTime":  "2026-09-21T12:22:13.295640Z"
+    },
+    {
+        "name":  "projects/ecomshop-marketing-prod/databases/(default)/documents/assets/asset-1790070417070-qtd0r",
+        "fields":  {
+                       "createdAt":  {
+                                         "stringValue":  "2026-09-22T09:46:57.074Z"
+                                     },
+                       "publicUrl":  {
+                                         "stringValue":  ""
+                                     },
+                       "aiGenerated":  {
+                                           "booleanValue":  true
+                                       },
+                       "storagePath":  {
+                                           "stringValue":  "generated/asset-1790070417070-qtd0r"
+                                       },
+                       "createdBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "ownerId":  {
+                                       "stringValue":  "user-646972656374"
+                                   },
+                       "type":  {
+                                    "stringValue":  "image"
+                                },
+                       "mimeType":  {
+                                        "stringValue":  "image/png"
+                                    },
+                       "filename":  {
+                                        "stringValue":  "AI: A wide-angle, hyper-realistic 8K cinematic photograph of a m"
+                                    },
+                       "aiProvenance":  {
+                                            "mapValue":  {
+                                                             "fields":  {
+                                                                            "provider":  {
+                                                                                             "stringValue":  "google-vertex-genai"
+                                                                                         },
+                                                                            "cachedTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "estimatedCostEur":  {
+                                                                                                     "doubleValue":  0.03
+                                                                                                 },
+                                                                            "latencyMs":  {
+                                                                                              "integerValue":  "0"
+                                                                                          },
+                                                                            "sourceIdsUsed":  {
+                                                                                                  "arrayValue":  {
+
+                                                                                                                 }
+                                                                                              },
+                                                                            "outputTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "inputTokens":  {
+                                                                                                "integerValue":  "0"
+                                                                                            },
+                                                                            "model":  {
+                                                                                          "stringValue":  "gemini_multimodal"
+                                                                                      },
+                                                                            "generatedAt":  {
+                                                                                                "stringValue":  "2026-09-22T09:46:57.074Z"
+                                                                                            },
+                                                                            "requestId":  {
+                                                                                              "stringValue":  "asset-1790070417070-qtd0r"
+                                                                                          }
+                                                                        }
+                                                         }
+                                        },
+                       "updatedAt":  {
+                                         "stringValue":  "2026-09-22T09:46:57.074Z"
+                                     },
+                       "updatedBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "sizeBytes":  {
+                                         "integerValue":  "2219390"
+                                     },
+                       "id":  {
+                                  "stringValue":  "asset-1790070417070-qtd0r"
+                              },
+                       "workspaceId":  {
+                                           "stringValue":  "default-ecomspain"
+                                       }
+                   },
+        "createTime":  "2026-09-22T09:46:57.194206Z",
+        "updateTime":  "2026-09-22T09:46:57.194206Z"
+    },
+    {
+        "name":  "projects/ecomshop-marketing-prod/databases/(default)/documents/assets/asset-1790074586925-izgfy",
+        "fields":  {
+                       "createdAt":  {
+                                         "stringValue":  "2026-09-22T10:56:26.928Z"
+                                     },
+                       "storagePath":  {
+                                           "stringValue":  "generated/asset-1790074586925-izgfy"
+                                       },
+                       "id":  {
+                                  "stringValue":  "asset-1790074586925-izgfy"
+                              },
+                       "workspaceId":  {
+                                           "stringValue":  "default-ecomspain"
+                                       },
+                       "updatedAt":  {
+                                         "stringValue":  "2026-09-22T10:56:26.928Z"
+                                     },
+                       "ownerId":  {
+                                       "stringValue":  "user-646972656374"
+                                   },
+                       "createdBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "aiGenerated":  {
+                                           "booleanValue":  true
+                                       },
+                       "type":  {
+                                    "stringValue":  "image"
+                                },
+                       "filename":  {
+                                        "stringValue":  "AI: Clean modern corporate server room, 42U rack cabinet filled "
+                                    },
+                       "publicUrl":  {
+                                         "stringValue":  ""
+                                     },
+                       "sizeBytes":  {
+                                         "integerValue":  "1890366"
+                                     },
+                       "updatedBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "mimeType":  {
+                                        "stringValue":  "image/png"
+                                    },
+                       "aiProvenance":  {
+                                            "mapValue":  {
+                                                             "fields":  {
+                                                                            "outputTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "provider":  {
+                                                                                             "stringValue":  "google-vertex-genai"
+                                                                                         },
+                                                                            "latencyMs":  {
+                                                                                              "integerValue":  "0"
+                                                                                          },
+                                                                            "sourceIdsUsed":  {
+                                                                                                  "arrayValue":  {
+
+                                                                                                                 }
+                                                                                              },
+                                                                            "inputTokens":  {
+                                                                                                "integerValue":  "0"
+                                                                                            },
+                                                                            "requestId":  {
+                                                                                              "stringValue":  "asset-1790074586925-izgfy"
+                                                                                          },
+                                                                            "model":  {
+                                                                                          "stringValue":  "imagen3"
+                                                                                      },
+                                                                            "estimatedCostEur":  {
+                                                                                                     "doubleValue":  0.03
+                                                                                                 },
+                                                                            "cachedTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "generatedAt":  {
+                                                                                                "stringValue":  "2026-09-22T10:56:26.928Z"
+                                                                                            }
+                                                                        }
+                                                         }
+                                        }
+                   },
+        "createTime":  "2026-09-22T10:56:27.055694Z",
+        "updateTime":  "2026-09-22T10:56:27.055694Z"
+    },
+    {
+        "name":  "projects/ecomshop-marketing-prod/databases/(default)/documents/assets/asset-1790074797833-6cbdl",
+        "fields":  {
+                       "updatedAt":  {
+                                         "stringValue":  "2026-09-22T10:59:57.836Z"
+                                     },
+                       "id":  {
+                                  "stringValue":  "asset-1790074797833-6cbdl"
+                              },
+                       "updatedBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "workspaceId":  {
+                                           "stringValue":  "default-ecomspain"
+                                       },
+                       "sizeBytes":  {
+                                         "integerValue":  "1526330"
+                                     },
+                       "storagePath":  {
+                                           "stringValue":  "generated/asset-1790074797833-6cbdl"
+                                       },
+                       "publicUrl":  {
+                                         "stringValue":  ""
+                                     },
+                       "createdAt":  {
+                                         "stringValue":  "2026-09-22T10:59:57.836Z"
+                                     },
+                       "ownerId":  {
+                                       "stringValue":  "user-646972656374"
+                                   },
+                       "type":  {
+                                    "stringValue":  "image"
+                                },
+                       "aiGenerated":  {
+                                           "booleanValue":  true
+                                       },
+                       "filename":  {
+                                        "stringValue":  "AI: A hyper-detailed, cinematic 8K photorealistic close-up shot "
+                                    },
+                       "mimeType":  {
+                                        "stringValue":  "image/png"
+                                    },
+                       "createdBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "aiProvenance":  {
+                                            "mapValue":  {
+                                                             "fields":  {
+                                                                            "model":  {
+                                                                                          "stringValue":  "gemini_multimodal"
+                                                                                      },
+                                                                            "requestId":  {
+                                                                                              "stringValue":  "asset-1790074797833-6cbdl"
+                                                                                          },
+                                                                            "provider":  {
+                                                                                             "stringValue":  "google-vertex-genai"
+                                                                                         },
+                                                                            "estimatedCostEur":  {
+                                                                                                     "doubleValue":  0.03
+                                                                                                 },
+                                                                            "outputTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "sourceIdsUsed":  {
+                                                                                                  "arrayValue":  {
+
+                                                                                                                 }
+                                                                                              },
+                                                                            "inputTokens":  {
+                                                                                                "integerValue":  "0"
+                                                                                            },
+                                                                            "latencyMs":  {
+                                                                                              "integerValue":  "0"
+                                                                                          },
+                                                                            "generatedAt":  {
+                                                                                                "stringValue":  "2026-09-22T10:59:57.836Z"
+                                                                                            },
+                                                                            "cachedTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             }
+                                                                        }
+                                                         }
+                                        }
+                   },
+        "createTime":  "2026-09-22T10:59:57.908279Z",
+        "updateTime":  "2026-09-22T10:59:57.908279Z"
+    },
+    {
+        "name":  "projects/ecomshop-marketing-prod/databases/(default)/documents/assets/asset-1790075065929-g87f7",
+        "fields":  {
+                       "aiGenerated":  {
+                                           "booleanValue":  true
+                                       },
+                       "id":  {
+                                  "stringValue":  "asset-1790075065929-g87f7"
+                              },
+                       "ownerId":  {
+                                       "stringValue":  "user-646972656374"
+                                   },
+                       "sizeBytes":  {
+                                         "integerValue":  "2239590"
+                                     },
+                       "mimeType":  {
+                                        "stringValue":  "image/png"
+                                    },
+                       "createdBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "createdAt":  {
+                                         "stringValue":  "2026-09-22T11:04:25.934Z"
+                                     },
+                       "updatedAt":  {
+                                         "stringValue":  "2026-09-22T11:04:25.934Z"
+                                     },
+                       "filename":  {
+                                        "stringValue":  "AI: A hyper-realistic, wide-angle panoramic photograph of a mode"
+                                    },
+                       "storagePath":  {
+                                           "stringValue":  "generated/asset-1790075065929-g87f7"
+                                       },
+                       "workspaceId":  {
+                                           "stringValue":  "default-ecomspain"
+                                       },
+                       "type":  {
+                                    "stringValue":  "image"
+                                },
+                       "updatedBy":  {
+                                         "stringValue":  "user-646972656374"
+                                     },
+                       "publicUrl":  {
+                                         "stringValue":  ""
+                                     },
+                       "aiProvenance":  {
+                                            "mapValue":  {
+                                                             "fields":  {
+                                                                            "provider":  {
+                                                                                             "stringValue":  "google-vertex-genai"
+                                                                                         },
+                                                                            "latencyMs":  {
+                                                                                              "integerValue":  "0"
+                                                                                          },
+                                                                            "inputTokens":  {
+                                                                                                "integerValue":  "0"
+                                                                                            },
+                                                                            "cachedTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             },
+                                                                            "model":  {
+                                                                                          "stringValue":  "gemini_multimodal"
+                                                                                      },
+                                                                            "sourceIdsUsed":  {
+                                                                                                  "arrayValue":  {
+
+                                                                                                                 }
+                                                                                              },
+                                                                            "generatedAt":  {
+                                                                                                "stringValue":  "2026-09-22T11:04:25.934Z"
+                                                                                            },
+                                                                            "requestId":  {
+                                                                                              "stringValue":  "asset-1790075065929-g87f7"
+                                                                                          },
+                                                                            "estimatedCostEur":  {
+                                                                                                     "doubleValue":  0.03
+                                                                                                 },
+                                                                            "outputTokens":  {
+                                                                                                 "integerValue":  "0"
+                                                                                             }
+                                                                        }
+                                                         }
+                                        }
+                   },
+        "createTime":  "2026-09-22T11:04:26.058659Z",
+        "updateTime":  "2026-09-22T11:04:26.058659Z"
+    }
+]

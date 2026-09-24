@@ -5,9 +5,11 @@ import { findCatalogProduct } from "../catalog";
 
 export interface EvidenceAuditResult {
   sanitizedContent: string;
-  factCheckScore: number; // 0 - 100
+  factCheckScore: number | null; // 0 - 100 or null if unavailable
   unverifiedClaims: string[];
   passedQualityGate: boolean;
+  status: "PASS" | "WARN" | "BLOCKED";
+  reason?: string;
   officialCitation?: {
     sourceId: string;
     title: string;
@@ -97,19 +99,23 @@ ${draft}
     const cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(cleaned);
 
-    const factCheckScore = typeof parsed.factCheckScore === "number" ? parsed.factCheckScore : 90;
+    const factCheckScore = typeof parsed.factCheckScore === "number" ? parsed.factCheckScore : null;
     const sanitizedContent = parsed.sanitizedContent || draft;
     const unverifiedClaims = Array.isArray(parsed.unverifiedClaims) ? parsed.unverifiedClaims : [];
+
+    const passed = factCheckScore !== null && factCheckScore >= 75;
 
     return {
       sanitizedContent,
       factCheckScore,
       unverifiedClaims,
-      passedQualityGate: factCheckScore >= 75,
+      passedQualityGate: passed,
+      status: passed ? "PASS" : "BLOCKED",
+      reason: passed ? undefined : "FACT_CHECK_SCORE_INSUFFICIENT",
       officialCitation
     };
   } catch (err) {
-    console.warn("[EvidenceEngine] Fallo en auditoría automática de Gemini, aplicando reglas deterministas:", err);
+    console.warn("[EvidenceEngine] Fallo en auditoría automática de Gemini, aplicando reglas deterministas fail-safe:", err);
     return {
       ...deterministicAuditFallback(draft, card),
       officialCitation
@@ -151,15 +157,17 @@ function deterministicAuditFallback(draft: string, card: ProductIntelligenceCard
     unverified.push("Sustitución de controlador local obsoleto por la plataforma oficial EnGenius Cloud.");
   }
 
-  // Regla 5: Asegurar mención correcta de la marca y SKU
-  if (!sanitized.includes(card.product.model)) {
-    unverified.push("Alineación de modelo de equipo con SKU oficial.");
-  }
+  // Si hubo correcciones técnicas necesarias, no se puede marcar 100 ni PASS ciego
+  const hasCorrections = unverified.length > 0;
+  const score = hasCorrections ? Math.max(50, 85 - unverified.length * 10) : 95;
+  const passed = score >= 75 && !unverified.some(u => u.includes("falsa") || u.includes("Alucinación"));
 
   return {
     sanitizedContent: sanitized,
-    factCheckScore: unverified.length === 0 ? 100 : Math.max(70, 95 - unverified.length * 10),
+    factCheckScore: score,
     unverifiedClaims: unverified,
-    passedQualityGate: true
+    passedQualityGate: passed,
+    status: passed ? "PASS" : "BLOCKED",
+    reason: passed ? undefined : "UNVERIFIED_CLAIMS_IN_CONTENT"
   };
 }

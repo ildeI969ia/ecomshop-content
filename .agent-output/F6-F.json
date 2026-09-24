@@ -1,0 +1,29 @@
+{
+  "taskId": "F6-F",
+  "status": "COMPLETED",
+  "title": "Silent Failures & Error Handling Audit",
+  "mode": "READ_ONLY",
+  "summary": "Se identificaron varios bloques try/catch que capturan errores y devuelven 200 OK con estados degradados en lugar de propagar códigos HTTP semánticos o alertar al monitoring.",
+  "filesInspected": [
+    "src/app/api/images/generate/route.ts",
+    "src/app/api/catalog/resolve/route.ts",
+    "src/server/services/persistence-diagnostics.ts"
+  ],
+  "findings": [
+    {
+      "severity": "HIGH",
+      "code": "IMAGE_GEN_ERROR_SWALLOWING",
+      "location": "src/app/api/images/generate/route.ts:140-160",
+      "detail": "Si la persistencia en Firestore o Storage falla durante la generación de imágenes, el error se captura y a menudo se intenta un fallback silencioso a data URL o mensaje genérico sin alertar al pipeline."
+    },
+    {
+      "severity": "MEDIUM",
+      "code": "CATALOG_RESOLVE_SILENT_EMPTY",
+      "location": "src/app/api/catalog/resolve/route.ts",
+      "detail": "Cuando Cheerio no puede parsear la ficha, retorna confidence LOW pero no registra métrica estructurada de fallo de scrapping."
+    }
+  ],
+  "recommendations": [
+    "F6-ERR-001: Estandarizar respuestas de error con { error: { code, message, retryable } } y nunca silenciar excepciones de persistencia en disco o BD."
+  ]
+}

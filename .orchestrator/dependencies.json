@@ -1,0 +1,40 @@
+{
+  "graphType": "DAG",
+  "phase": "F6",
+  "dependencies": {
+    "F6-A": [],
+    "F6-B": [],
+    "F6-C": [],
+    "F6-D": [],
+    "F6-E": [],
+    "F6-F": [],
+    "F6-G": [],
+    "F6-H": [],
+    "F6-ARCH-DECISION": [
+      "F6-A",
+      "F6-B",
+      "F6-C",
+      "F6-D",
+      "F6-E",
+      "F6-F",
+      "F6-G",
+      "F6-H"
+    ],
+    "F6-SEC-001": ["F6-ARCH-DECISION"],
+    "F6-SEC-002": ["F6-ARCH-DECISION", "F6-SEC-001"],
+    "F6-FS-001": ["F6-ARCH-DECISION"],
+    "F6-GCS-001": ["F6-ARCH-DECISION"],
+    "F6-ERR-001": ["F6-ARCH-DECISION"],
+    "F6-CI-001": ["F6-ARCH-DECISION"],
+    "F6-INTEGRATION": [
+      "F6-SEC-001",
+      "F6-SEC-002",
+      "F6-FS-001",
+      "F6-GCS-001",
+      "F6-ERR-001",
+      "F6-CI-001"
+    ],
+    "F6-QA-GATE": ["F6-INTEGRATION"],
+    "F6-DEPLOY-HUMAN-GATE": ["F6-QA-GATE"]
+  }
+}

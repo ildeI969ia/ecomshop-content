@@ -25,6 +25,12 @@ export class CampaignRepository {
     return snapshot.docs.map((d: QueryDocumentSnapshot) => d.data() as Campaign);
   }
 
+  async findByOpportunityId(opportunityId: string): Promise<Campaign | null> {
+    const snapshot = await this.collection().where("opportunityId", "==", opportunityId).limit(1).get();
+    if (snapshot.empty) return null;
+    return snapshot.docs[0].data() as Campaign;
+  }
+
   async create(campaign: Campaign): Promise<void> {
     await this.collection().doc(campaign.id).set(campaign);
   }
@@ -290,3 +296,5 @@ export class ProductIntelligenceRepository {
     await this.collection().doc(record.id).set(record);
   }
 }
+
+export { MarketingRunRepository } from "./marketing-repository";

@@ -55,13 +55,26 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
       }
     }
 
+    // Determinar siguiente contentVersion para el SKU
+    let nextContentVersion = 1;
+    try {
+      const pastPackages = await repository.listPackagesBySku(sku);
+      if (pastPackages.length > 0) {
+        const maxVer = Math.max(...pastPackages.map((p) => p.contentVersion || 1));
+        nextContentVersion = maxVer + 1;
+      }
+    } catch {
+      // Si la persistencia remota no responde, continuar con versión 1
+    }
+
     // Ejecutar pipeline con aislamiento estricto de tenant
     const { run, marketingPackage } = await engine.executePipeline(sku, {
       workspacePath: process.env.TEMP || "C:\\temp",
       requestedBy: user.email,
       workspaceId: user.workspaceId || "default-ecomspain",
       organizationId: "org-ecomspain",
-      provider
+      provider,
+      contentVersion: nextContentVersion
     });
 
     // Persistir si está disponible

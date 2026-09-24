@@ -1,0 +1,30 @@
+{
+  "taskId": "F6-H",
+  "status": "COMPLETED",
+  "title": "Architecture & Dependency Coupling Audit",
+  "mode": "READ_ONLY",
+  "summary": "Fuerte acoplamiento entre src/app/page.tsx (3700+ líneas) y múltiples servicios de backend/IA. src/app/page.tsx contiene lógica de orquestación directa, modals e invocación de APIs en un único archivo.",
+  "filesInspected": [
+    "src/app/page.tsx",
+    "src/lib/catalog.ts",
+    "src/lib/knowledge.ts",
+    "src/server/repositories/index.ts"
+  ],
+  "findings": [
+    {
+      "severity": "HIGH",
+      "code": "MONOLITHIC_PAGE_COMPONENT",
+      "location": "src/app/page.tsx",
+      "detail": "page.tsx excede las 3700 líneas y mezcla estados de sesión, finops, prompts, studio de imágenes y renderizado de campañas en un solo archivo."
+    },
+    {
+      "severity": "MEDIUM",
+      "code": "CATALOG_DUPLICATION",
+      "location": "src/lib/data/ecomshop-catalog.ts vs src/lib/knowledge.ts",
+      "detail": "STAR_PRODUCTS en knowledge.ts mantiene una lista que duplica parcialmente información de ECOMSHOP_FULL_CATALOG en ecomshop-catalog.ts."
+    }
+  ],
+  "recommendations": [
+    "F6-ARCH-001: Consolidar la fuente única de verdad del catálogo hacia ecomshop-catalog.ts y desacoplar modales de page.tsx hacia componentes especializados."
+  ]
+}

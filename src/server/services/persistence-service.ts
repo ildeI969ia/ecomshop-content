@@ -214,6 +214,7 @@ export class PersistenceService {
           imageCount: rec.imageCount || 0,
           latencyMs: 0,
           estimatedCostEur: rec.estimatedCostEur || 0,
+          costStatus: "ESTIMATED",
           currency: "EUR"
         };
         await this.finopsRepo.record(finopsItem);
