@@ -10,7 +10,7 @@ import fsSync from "node:fs";
 
 import { LeaseManager } from "../src/server/orchestrator/lease-manager.ts";
 import { ApprovalStore } from "../src/server/orchestrator/approval-store.ts";
-import { sanitizeEnvironmentForAgent, SAFE_ENV_ALLOWLIST } from "../src/server/orchestrator/security.ts";
+import { sanitizeEnvironmentForAgent } from "../src/server/orchestrator/security.ts";
 import { MockAgentProvider } from "../src/server/orchestrator/agent-provider.ts";
 import { ValidationGate } from "../src/server/orchestrator/validation-gate.ts";
 import { WorktreeManager, WorktreeInstance } from "../src/server/orchestrator/worktree-manager.ts";
@@ -73,7 +73,6 @@ describe("Multi-Agent Orchestrator — Execution Plane Tests (A a O)", () => {
       PATH: "C:\\Windows\\system32",
       NODE_ENV: "production",
       SESSION_SECRET: "secret-super-confidential",
-      CORPORATE_ACCESS_PASSWORD: "secret-password",
       GOOGLE_APPLICATION_CREDENTIALS: "c:\\keys\\sa.json"
     };
 
@@ -84,7 +83,6 @@ describe("Multi-Agent Orchestrator — Execution Plane Tests (A a O)", () => {
     assert.equal(clean.NODE_ENV, "production");
     assert.equal(clean.ORCHESTRATOR_RUN_ID, "run-test");
     assert.equal(clean.SESSION_SECRET, undefined);
-    assert.equal(clean.CORPORATE_ACCESS_PASSWORD, undefined);
     assert.equal(clean.GOOGLE_APPLICATION_CREDENTIALS, undefined);
   });
 
@@ -275,7 +273,7 @@ describe("Multi-Agent Orchestrator — Execution Plane Tests (A a O)", () => {
     try {
       // Simular que existiera un .env.local residual
       const envPath = path.join(tempTestDir, ".env.local");
-      fsSync.writeFileSync(envPath, "SESSION_SECRET=insecure-leak\nCORPORATE_ACCESS_PASSWORD=leak");
+      fsSync.writeFileSync(envPath, "SESSION_SECRET=insecure-leak");
 
       // La regla crítica de seguridad de WorktreeManager debe eliminar activamente cualquier .env.local
       if (fsSync.existsSync(envPath)) {

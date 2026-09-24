@@ -37,13 +37,17 @@ interface VersionHistoryRecord {
 interface ProductMarketingWorkspaceProps {
   onCreateCampaign?: (product: CatalogProduct, pkg?: MarketingPackage | null) => void;
   initialTab?: "pipeline" | "package" | "evidence" | "quality" | "history" | "batch";
+  currentUserRole?: string;
 }
 
-export function ProductMarketingWorkspace({ onCreateCampaign, initialTab }: ProductMarketingWorkspaceProps = {}) {
+export function ProductMarketingWorkspace({ onCreateCampaign, initialTab, currentUserRole = "editor" }: ProductMarketingWorkspaceProps = {}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSku, setSelectedSku] = useState<string>("ECW536");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [activeTab, setActiveTab] = useState<"pipeline" | "package" | "evidence" | "quality" | "history" | "batch">(initialTab || "pipeline");
+  const [showBatchModal, setShowBatchModal] = useState(false);
+
+  const isAdmin = currentUserRole.toLowerCase() === "admin";
 
   // Pipeline execution state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -219,13 +223,10 @@ export function ProductMarketingWorkspace({ onCreateCampaign, initialTab }: Prod
     }
   };
 
-  // Generar los 27 SKUs Canónicos en un único lote operacional
-  const handleGenerateAll27 = async () => {
+  // Confirmar y lanzar los 27 SKUs Canónicos
+  const executeBatchAll27 = async () => {
+    setShowBatchModal(false);
     const all27Skus = ECOMSHOP_FULL_CATALOG.map((p) => p.sku);
-    const confirmed = window.confirm(
-      `¿Confirmar lanzamiento de GENERATE ALL 27?\n\nSe procesarán ${all27Skus.length} productos de forma independiente con aislamiento, idempotencia y tolerancia a fallos.`
-    );
-    if (!confirmed) return;
 
     setBatchSelectedSkus(all27Skus);
     setIsBatchRunning(true);
@@ -299,15 +300,18 @@ export function ProductMarketingWorkspace({ onCreateCampaign, initialTab }: Prod
 
         {/* Acciones principales */}
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={handleGenerateAll27}
-            disabled={isBatchRunning}
-            className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-violet-600/30 transition active:scale-95 disabled:opacity-50 cursor-pointer"
-          >
-            <Layers className={`w-4 h-4 ${isBatchRunning ? "animate-spin" : ""}`} />
-            <span>{isBatchRunning ? "Procesando 27 SKUs..." : "GENERATE ALL 27"}</span>
-          </button>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setShowBatchModal(true)}
+              disabled={isBatchRunning}
+              className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-violet-600/30 transition active:scale-95 disabled:opacity-50 cursor-pointer"
+              title="Lanzar orquestación completa para los 27 productos del catálogo (Solo Administradores)"
+            >
+              <Layers className={`w-4 h-4 ${isBatchRunning ? "animate-spin" : ""}`} />
+              <span>{isBatchRunning ? "Procesando 27 SKUs..." : "GENERATE ALL 27"}</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -971,6 +975,61 @@ export function ProductMarketingWorkspace({ onCreateCampaign, initialTab }: Prod
           )}
         </div>
       </div>
+
+      {/* MODAL DE CONFIRMACIÓN DE GENERATE ALL 27 (SOLO ADMIN) */}
+      {showBatchModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-violet-900/60 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-violet-950 border border-violet-800 flex items-center justify-center text-violet-400 shrink-0">
+                <Layers className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-white">Lanzar Orquestación Canónica (27 SKUs)</h4>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Procesamiento masivo en lote para todo el catálogo comercial EcomShop.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2 text-xs">
+              <div className="flex justify-between text-slate-300">
+                <span>Productos a procesar:</span>
+                <span className="font-mono font-bold text-white">27 SKUs</span>
+              </div>
+              <div className="flex justify-between text-slate-300">
+                <span>Estimación de coste de IA:</span>
+                <span className="font-mono font-bold text-emerald-400">~0,10 € total</span>
+              </div>
+              <div className="flex justify-between text-slate-300">
+                <span>Comprobaciones por SKU:</span>
+                <span className="font-mono text-indigo-300">9 Quality Gates</span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-violet-950/30 border border-violet-900/40 rounded-xl text-[11px] text-violet-300 leading-relaxed">
+              Cada SKU se procesará de forma independiente con aislamiento, idempotencia y tolerancia a fallos.
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowBatchModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={executeBatchAll27}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-violet-600 text-white hover:bg-violet-500 transition shadow-lg shadow-violet-600/30"
+              >
+                Sí, procesar los 27 SKUs (~0,10 €)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -33,6 +33,7 @@
     "@google/genai": "^2.22.0",
     "@swc/helpers": "^0.5.23",
     "cheerio": "^1.2.0",
+    "firebase": "^12.19.0",
     "firebase-admin": "^14.4.0",
     "framer-motion": "^13.2.0",
     "isomorphic-dompurify": "^3.19.0",

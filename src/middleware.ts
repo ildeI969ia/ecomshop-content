@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifySessionToken } from "@/lib/auth/session";
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -17,46 +16,31 @@ export async function middleware(req: NextRequest) {
   }
 
   const sessionCookie = req.cookies.get("__session")?.value;
-  const authHeader = req.headers.get("authorization");
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : sessionCookie;
-
-  let session = null;
-  if (token) {
-    try {
-      session = await verifySessionToken(token);
-    } catch (tokenErr) {
-      console.warn("[middleware] Error verificando sesión:", tokenErr);
-      session = null;
-    }
-  }
 
   // 2. Proteger endpoints de API
   if (pathname.startsWith("/api/")) {
-    // Permitir /api/auth/me responder { authenticated: false } si no hay sesión
+    // Permitir /api/auth/me responder si no hay sesión (la ruta me valida internamente)
     if (pathname === "/api/auth/me") {
       return NextResponse.next();
     }
 
-    if (!session) {
+    if (!sessionCookie) {
       return NextResponse.json(
         {
-          error: "Acceso denegado. Se requiere autenticación corporativa con contraseña.",
+          error: "Acceso denegado. Se requiere autenticación corporativa con Google Workspace.",
           code: "UNAUTHENTICATED"
         },
         { status: 401 }
       );
     }
-  }
-
-  const response = NextResponse.next();
-  if (session) {
-    response.headers.set("x-user-email", session.email);
-    response.headers.set("x-user-role", session.role);
   } else {
-    response.headers.set("x-authenticated", "false");
+    // 3. Rutas de páginas web protegidas: si no existe cookie __session, redirigir a login /
+    if (!sessionCookie && pathname !== "/") {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
   }
 
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {

@@ -1,26 +1,45 @@
 /**
- * Script de Inicialización de Seguridad RBAC (Fase 1)
+ * Script de Inicialización de Seguridad RBAC (Fase 1b)
  *
  * Asigna de forma limpia, determinista y documentada el rol 'ADMIN' a un UID inicial
  * en la colección de Firestore `user_roles/{uid}`.
  *
+ * Instrucciones de Uso:
+ * 1. Tras realizar el primer inicio de sesión con Google Workspace (@ecomspain.com) en la aplicación,
+ *    obtén el UID de Firebase Authentication asignado al usuario.
+ * 2. Ejecuta este script pasando el UID y el email como parámetros o mediante variables de entorno:
+ *
+ * Uso por argumentos CLI:
+ *   npx tsx scripts/seed-admin.ts <UID> <EMAIL>
+ *   Ejemplo: npx tsx scripts/seed-admin.ts 8x9kL2mN4pQ6rS8tU0vW usuario@ecomspain.com
+ *
+ * Uso por variables de entorno:
+ *   INITIAL_ADMIN_UID="8x9kL2mN4pQ6rS8tU0vW" INITIAL_ADMIN_EMAIL="usuario@ecomspain.com" npx tsx scripts/seed-admin.ts
+ *
  * Directivas de Seguridad:
  * - Los roles se leen y persisten exclusivamente en Firestore `user_roles/{uid}`.
  * - Prohibida la inferencia de rol por cadenas de email o contraseñas hardcodeadas.
- *
- * Uso:
- *   npx tsx scripts/seed-admin.ts <UID_INICIAL> [EMAIL_OPCIONAL]
- *
- * Ejemplo:
- *   npx tsx scripts/seed-admin.ts initial-admin-uid carlos@ecomspain.com
  */
 
 import { getAdminFirestore } from "../src/server/config/firebase.ts";
 import { UserRole } from "../src/server/domain/types.ts";
 
 async function seedAdminRole() {
-  const targetUid = process.argv[2] || process.env.INITIAL_ADMIN_UID || "initial-admin-uid";
-  const targetEmail = process.argv[3] || process.env.INITIAL_ADMIN_EMAIL || "admin@ecomspain.com";
+  const targetUid = process.argv[2] || process.env.INITIAL_ADMIN_UID;
+  const targetEmail = process.argv[3] || process.env.INITIAL_ADMIN_EMAIL;
+
+  if (!targetUid || !targetEmail) {
+    console.error("❌ Error: Debe proporcionar el UID y EMAIL del usuario admin.");
+    console.error("");
+    console.error("Uso:");
+    console.error("  npx tsx scripts/seed-admin.ts <UID> <EMAIL>");
+    console.error("O mediante variables de entorno:");
+    console.error("  INITIAL_ADMIN_UID=<UID> INITIAL_ADMIN_EMAIL=<EMAIL> npx tsx scripts/seed-admin.ts");
+    console.error("");
+    console.error("💡 Nota: Obtén el UID de Firebase Authentication tras el primer login con Google Workspace (@ecomspain.com).");
+    process.exit(1);
+  }
+
   const assignedRole: UserRole = "ADMIN";
 
   console.log("==================================================");
@@ -44,7 +63,7 @@ async function seedAdminRole() {
 
   await db.collection("user_roles").doc(targetUid).set(userRoleData, { merge: true });
 
-  // Opcional: También asegurar registro en la colección `users` para metadata de perfil
+  // Registro en la colección `users` para metadata de perfil
   await db.collection("users").doc(targetUid).set(
     {
       id: targetUid,

@@ -91,6 +91,7 @@ import {
 } from "@/lib/image-db";
 import { ImageStudioView } from "@/components/image-studio-view";
 import { ProductMarketingWorkspace } from "@/components/marketing/ProductMarketingWorkspace";
+import { formatMadridDate, formatEur } from "@/lib/formatters";
 
 export default function ContentDashboard() {
   const [selectedPresetId, setSelectedPresetId] = useState(PRESET_TOPICS[0].id);
@@ -2092,92 +2093,52 @@ export default function ContentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-900 selection:text-indigo-200">
-      {/* LEVEL 1: STATUS BAR (Discreto, fino, estado de infraestructura Cloud e IA) */}
-      <div className="bg-slate-950 text-slate-400 text-[11px] px-6 py-1.5 flex items-center justify-between border-b border-slate-800/80 font-mono select-none">
-        <div className="flex items-center gap-2.5 sm:gap-3.5 tracking-tight flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-slate-300 font-semibold">Google Cloud Run</span>
-          </div>
-          <span className="text-slate-700">•</span>
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span className="text-slate-300">Firebase Firestore</span>
-          </div>
-          <span className="text-slate-700 hidden sm:inline">•</span>
-          <div className="hidden sm:flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
-            <span className="text-slate-300">Vertex AI & Gemini 2.5</span>
-          </div>
-          <span className="text-slate-700 hidden md:inline">•</span>
-          <span className="hidden md:inline text-slate-500 font-sans text-[10px]">
-            Madrid, ES &bull; Enterprise B2B Engine
-          </span>
-        </div>
-
-        <div className="flex items-center gap-4 text-slate-400 text-[10px] font-sans">
-          <a
-            href={ECOM_BRAND.blogUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-slate-200 flex items-center gap-1 transition"
-          >
-            <Globe className="w-3 h-3 text-sky-400" />
-            <span className="hidden sm:inline">Blog Durable</span>
-            <ExternalLink className="w-2.5 h-2.5 text-slate-500" />
-          </a>
-          <a
-            href={ECOM_BRAND.storeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-slate-200 flex items-center gap-1 transition"
-          >
-            <BookOpen className="w-3 h-3 text-emerald-400" />
-            <span className="hidden sm:inline">EcomShop.es</span>
-            <ExternalLink className="w-2.5 h-2.5 text-slate-500" />
-          </a>
-        </div>
-      </div>
-
-      {/* LEVEL 2: PRODUCT NAVIGATION & WORKSPACE CONTROLS */}
-      <header className="border-b border-slate-800/80 bg-slate-900/95 backdrop-blur-md sticky top-0 z-30 px-6 py-3 flex items-center justify-between shadow-md">
-        {/* Brand & Suite Identity */}
-        <div className="flex items-center gap-3.5">
-          <div className="bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 p-2 rounded-xl shadow-xs">
-            <Layers className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-editorial text-lg sm:text-xl font-bold tracking-tight text-white">
-                ECOMSHOP EDITORIAL
-              </h1>
-              <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-slate-800 text-indigo-300 border border-slate-700 font-mono">
-                SUITE B2B
-              </span>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row font-sans selection:bg-indigo-900 selection:text-indigo-200">
+      {/* SIDEBAR NAVEGACIÓN DUAL (ESTUDIO & SISTEMA) */}
+      <aside className="w-full md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0 min-h-screen">
+        <div>
+          {/* Header del Sidebar & Identity */}
+          <div className="p-4 border-b border-slate-800 flex items-center gap-3">
+            <div className="bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 p-2 rounded-xl shadow-xs shrink-0">
+              <Layers className="w-5 h-5" />
             </div>
-            <p className="text-[11px] text-slate-400 font-medium">
-              Curaduría Semanal • Redacción Multicanal • Grounding Oficial
-            </p>
+            <div className="min-w-0 flex-1">
+              <h1 className="font-editorial text-sm font-bold text-white tracking-tight truncate">
+                DESK EDITORIAL
+              </h1>
+              <p className="text-[10px] text-slate-400 font-mono">EcomShop Content OS</p>
+            </div>
           </div>
-        </div>
 
-        {/* Módulos de Navegación del Panel Agrupados (COMMAND, CREATE, INTELLIGENCE, CONTROL) */}
-        <nav className="hidden xl:flex items-center gap-2 bg-slate-950/90 p-1.5 rounded-2xl border border-slate-800/80 shadow-2xl backdrop-blur-md">
-          {/* GRUPO COMMAND */}
-          <div className="flex items-center gap-1 border-r border-slate-800/90 pr-2">
-            <span className="text-[9px] uppercase font-mono font-bold text-slate-400 px-1 tracking-wider">Command</span>
+          {/* Bloque 1: ESTUDIO */}
+          <div className="p-3 space-y-1">
+            <div className="px-3 py-1 text-[10px] uppercase font-mono font-bold text-slate-500 tracking-wider">
+              Estudio
+            </div>
             <button
               type="button"
               onClick={() => setMainView("dashboard")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
                 mainView === "dashboard"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold scale-[1.02]"
-                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/60"
               }`}
             >
-              <LayoutDashboard className="w-3.5 h-3.5 text-indigo-300" />
-              <span>Dashboard</span>
+              <LayoutDashboard className="w-4 h-4 text-indigo-300" />
+              <span>Panel Principal</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMainView("content")}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
+                mainView === "content"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/60"
+              }`}
+            >
+              <FileText className="w-4 h-4 text-emerald-300" />
+              <span>Contenidos</span>
             </button>
 
             <button
@@ -2186,175 +2147,178 @@ export default function ContentDashboard() {
                 setMainView("opportunities");
                 setEntryOrigin("radar");
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
                 mainView === "opportunities"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold scale-[1.02]"
-                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/60"
               }`}
             >
-              <Zap className="w-3.5 h-3.5 text-amber-300" />
+              <Zap className="w-4 h-4 text-amber-300" />
               <span>Oportunidades</span>
             </button>
 
             <button
               type="button"
-              onClick={() => setMainView("campaigns")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
-                mainView === "campaigns" || mainView === "generator"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold scale-[1.02]"
-                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5 text-sky-300" />
-              <span>Campañas</span>
-            </button>
-          </div>
-
-          {/* GRUPO CREATE */}
-          <div className="flex items-center gap-1 border-r border-slate-800/90 pr-2">
-            <span className="text-[9px] uppercase font-mono font-bold text-slate-400 px-1 tracking-wider">Create</span>
-            <button
-              type="button"
-              onClick={() => setMainView("content")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
-                mainView === "content"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold scale-[1.02]"
-                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Contenido</span>
-            </button>
-
-            <button
-              type="button"
               onClick={() => setMainView("image_studio")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
                 mainView === "image_studio"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold scale-[1.02]"
-                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/60"
               }`}
             >
-              <ImageIcon className="w-3.5 h-3.5 text-indigo-400" />
+              <ImageIcon className="w-4 h-4 text-indigo-400" />
               <span>Imágenes</span>
             </button>
-          </div>
 
-          {/* GRUPO INTELLIGENCE */}
-          <div className="flex items-center gap-1 border-r border-slate-800/90 pr-2">
-            <span className="text-[9px] uppercase font-mono font-bold text-slate-400 px-1 tracking-wider">Intel</span>
             <button
               type="button"
               onClick={() => setMainView("marketing")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
                 mainView === "marketing"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold scale-[1.02]"
-                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/60"
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
-              <span>Catálogo 27 SKUs</span>
+              <Sparkles className="w-4 h-4 text-indigo-300" />
+              <span>Catálogo (27 SKUs)</span>
             </button>
 
             <button
               type="button"
               onClick={() => setMainView("advisor")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
                 mainView === "advisor"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold scale-[1.02]"
-                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/60"
               }`}
             >
-              <Bot className="w-3.5 h-3.5 text-amber-300" />
-              <span>Asesor AI</span>
+              <Bot className="w-4 h-4 text-amber-300" />
+              <span>Asesor IA</span>
             </button>
-          </div>
 
-          {/* GRUPO CONTROL */}
-          <div className="flex items-center gap-1">
-            <span className="text-[9px] uppercase font-mono font-bold text-slate-400 px-1 tracking-wider">Control</span>
             <button
               type="button"
               onClick={() => setMainView("history")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
                 mainView === "history"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold scale-[1.02]"
-                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/60"
               }`}
             >
-              <History className="w-3.5 h-3.5 text-indigo-300" />
-              <span>Historial</span>
-              {historyItems.length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-slate-800 text-indigo-300 text-[10px] font-mono font-bold border border-slate-700">
-                  {historyItems.length}
-                </span>
-              )}
+              <History className="w-4 h-4 text-indigo-300" />
+              <div className="flex items-center justify-between flex-1">
+                <span>Historial</span>
+                {historyItems.length > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full bg-slate-800 text-indigo-300 text-[10px] font-mono font-bold border border-slate-700">
+                    {historyItems.length}
+                  </span>
+                )}
+              </div>
+            </button>
+          </div>
+
+          {/* Bloque 2: SISTEMA */}
+          <div className="p-3 pt-2 border-t border-slate-800/80 space-y-1">
+            <div className="px-3 py-1 text-[10px] uppercase font-mono font-bold text-slate-500 tracking-wider">
+              Sistema
+            </div>
+            <button
+              type="button"
+              onClick={() => setMainView("finops")}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
+                mainView === "finops"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/60"
+              }`}
+            >
+              <DollarSign className="w-4 h-4 text-emerald-400" />
+              <span>FinOps</span>
             </button>
 
             <button
               type="button"
-              onClick={() => setMainView("finops")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
-                mainView === "finops"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold scale-[1.02]"
-                  : "text-slate-300 hover:text-white hover:bg-slate-800/70"
+              onClick={() => setMainView("campaigns")}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
+                mainView === "campaigns" || mainView === "generator"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/60"
               }`}
             >
-              <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
-              <span>FinOps</span>
+              <Layers className="w-4 h-4 text-sky-300" />
+              <span>Pipeline Orquestación</span>
             </button>
           </div>
-        </nav>
+        </div>
 
-        {/* Acciones y Estados a la Derecha */}
-        <div className="flex items-center gap-2.5 text-xs">
-          {/* NotebookLM Status Badge */}
-          <button
-            type="button"
-            onClick={() => setShowNotebookModal(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border font-medium transition shadow-xs bg-slate-950/80 border-slate-800 text-slate-300 hover:border-indigo-500/40 hover:text-indigo-200 cursor-pointer"
-            title="NotebookLM EcomShop Knowledge Base"
-          >
-            <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="font-semibold text-xs">
-              NotebookLM: <span className="text-indigo-300 font-mono font-bold">{notebookState.sources.length}</span>
-            </span>
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          </button>
-
-          {/* Corporate Session Badge */}
+        {/* Footer del Sidebar: Unified User Widget */}
+        <div className="p-3 border-t border-slate-800 bg-slate-950/60">
           {currentUser ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-slate-950/80 border-slate-800 text-slate-300">
-              <Shield className="w-3.5 h-3.5 text-emerald-400" />
-              <div className="flex items-center gap-1.5">
-                <span className="font-medium text-xs truncate max-w-[120px] sm:max-w-[160px] text-slate-200">
-                  {currentUser.email}
-                </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 font-mono font-bold border border-emerald-800/50 uppercase">
-                  {currentUser.role}
-                </span>
+            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900 border border-slate-800">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-300 font-bold text-xs shrink-0">
+                  {currentUser.email.substring(0, 2).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-white truncate">{currentUser.email}</p>
+                  <span className="text-[9px] font-mono font-bold uppercase text-emerald-400">
+                    {currentUser.role}
+                  </span>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={handleLogout}
-                title="Cerrar Sesión Corporativa"
-                className="ml-1 p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-rose-400 transition cursor-pointer"
+                title="Cerrar sesión corporativa"
+                className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-rose-400 transition"
               >
-                <LogOut className="w-3 h-3" />
+                <LogOut className="w-4 h-4" />
               </button>
             </div>
           ) : (
             <button
               type="button"
               onClick={() => setShowSignInModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20 font-semibold text-xs shadow-xs transition cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition"
             >
-              <Shield className="w-3.5 h-3.5 text-amber-400" />
-              <span>Acceso Corporativo</span>
+              <Shield className="w-4 h-4" />
+              <span>Iniciar Sesión</span>
             </button>
           )}
         </div>
-      </header>
+      </aside>
+
+      {/* ÁREA DE CONTENIDO PRINCIPAL */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top bar de estado discreto */}
+        <header className="border-b border-slate-800 bg-slate-900/90 px-6 py-2 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-3 text-slate-400 font-mono text-[11px]">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-slate-200 font-semibold">Google Cloud Run</span>
+            </div>
+            <span>•</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span className="text-slate-300">Firestore</span>
+            </div>
+            <span>•</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-sky-400" />
+              <span className="text-slate-300">Gemini 2.5 & Imagen 3</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowNotebookModal(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 hover:text-indigo-200 text-xs transition"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+              <span>NotebookLM ({notebookState.sources.length})</span>
+            </button>
+          </div>
+        </header>
 
       {/* VISTA DASHBOARD: COMMAND CENTER OPERATIVO SPRINT 5 */}
       {mainView === "dashboard" && (
@@ -2512,7 +2476,7 @@ export default function ContentDashboard() {
                         >
                           Abrir
                         </button>
-                        {item.status !== "approved" && item.status !== "published" && (
+                        {item.status !== "approved" && item.status !== "published" && ["admin", "content_manager", "editor"].includes(currentUser.role.toLowerCase()) && (
                           <button
                             type="button"
                             onClick={() => updateArticleStatus(item.id, "approved")}
@@ -2598,6 +2562,7 @@ export default function ContentDashboard() {
       {mainView === "marketing" && (
         <div className="flex-1 p-6 sm:p-8 max-w-[1780px] 2xl:max-w-[1920px] mx-auto w-full">
           <ProductMarketingWorkspace
+            currentUserRole={currentUser?.role}
             onCreateCampaign={(product, pkg) => {
               handleSelectSku(product.sku);
               setProductUrl(product.url || `https://www.ecomshop.es/${product.sku.toLowerCase()}`);
@@ -3206,16 +3171,18 @@ export default function ContentDashboard() {
                   <span>Seleccionar todos</span>
                 </label>
               )}
-              <button
-                type="button"
-                onClick={() => loadDatabaseContents()}
-                disabled={loadingDatabaseContents}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-950 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition shadow-xs cursor-pointer"
-                title="Recargar artículos desde Firestore"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingDatabaseContents ? "animate-spin text-indigo-400" : "text-slate-400"}`} />
-                <span>{loadingDatabaseContents ? "Sincronizando..." : "Sincronizar BBDD"}</span>
-              </button>
+              {currentUser.role.toLowerCase() === "admin" && (
+                <button
+                  type="button"
+                  onClick={() => loadDatabaseContents()}
+                  disabled={loadingDatabaseContents}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-950 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition shadow-xs cursor-pointer"
+                  title="Recargar artículos desde Firestore (Solo Administradores)"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingDatabaseContents ? "animate-spin text-indigo-400" : "text-slate-400"}`} />
+                  <span>{loadingDatabaseContents ? "Sincronizando..." : "Sincronizar BBDD"}</span>
+                </button>
+              )}
               <div className="relative">
                 <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-500" />
                 <input
@@ -3323,7 +3290,7 @@ export default function ContentDashboard() {
                             )}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-slate-400 mt-1 flex-wrap">
-                            <span className="font-mono text-[11px] text-slate-400">{itemDate}</span>
+                            <span className="font-mono text-[11px] text-slate-400">{formatMadridDate(itemDate)}</span>
                             <span>&bull;</span>
                             <span className="font-mono text-[11px] text-sky-400">/{itemSlug}</span>
                           </div>
@@ -3449,6 +3416,7 @@ export default function ContentDashboard() {
           isRegeneratingTemplates={isRegeneratingTemplates}
           onRegenerateAllTemplates={handleRegenerateAllTemplates}
           onRestoreDefaultTemplates={handleRestoreDefaultTemplates}
+          currentUserRole={currentUser?.role}
           onUseRealProductPhoto={handleUseRealProductPhoto}
         />
       )}
@@ -3571,7 +3539,7 @@ export default function ContentDashboard() {
                   Desglose Real por Servicio Google Cloud MTD
                 </h3>
                 <div className="flex items-center gap-2">
-                  {cloudCosts.billingAccountId && (
+                  {cloudCosts.billingAccountId && currentUser?.role.toLowerCase() === "admin" && (
                     <span className="text-[10px] text-slate-400 font-mono">
                       Billing: {cloudCosts.billingAccountId}
                     </span>
@@ -4128,6 +4096,7 @@ export default function ContentDashboard() {
         citationId={activeCitationId}
         citationData={activeCitationData}
       />
+      </div>
     </div>
   );
 }

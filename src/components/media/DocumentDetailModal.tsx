@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { ContentOutput } from "@/lib/schema";
 import { SafeHtml } from "@/components/SafeHtml";
+import { formatMadridDate } from "@/lib/formatters";
 
 export interface StoredDocument {
   id: string;
@@ -193,7 +194,7 @@ ${bodyMd}
               </span>
               <span className="text-xs text-slate-400 flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                {document.createdAt}
+                {formatMadridDate(document.createdAt)}
               </span>
               <span className="text-xs text-slate-400 flex items-center gap-1">
                 <FileText className="w-3.5 h-3.5 text-slate-500" />
