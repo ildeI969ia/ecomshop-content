@@ -138,8 +138,25 @@ function generateFallbackVariation(current?: TemplatesRequestBody["currentTempla
   };
 }
 
-export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
+import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
+
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest, user) => {
   try {
+    const budgetCheck = await checkAiBudget(user.uid, user.role, 0.001);
+    if (!budgetCheck.allowed) {
+      return NextResponse.json(
+        {
+          code: "AI_BUDGET_EXCEEDED",
+          error: "Has superado el límite de presupuesto de IA asignado para este mes.",
+          limitEur: budgetCheck.limitEur,
+          spentEur: budgetCheck.currentSpentEur,
+          pct: budgetCheck.pct,
+          resetsAt: "Inicio del próximo mes (Hora de Madrid)"
+        },
+        { status: 429 }
+      );
+    }
+
     let body: TemplatesRequestBody = {};
     try {
       body = await req.json();
@@ -192,6 +209,13 @@ Respond ONLY with a valid JSON array of 4 objects with keys "id", "title", "prom
             }));
 
             if (validatedTemplates.length >= 2) {
+              const tokensIn = res.usageMetadata?.promptTokenCount ?? 400;
+              const tokensOut = res.usageMetadata?.candidatesTokenCount ?? 400;
+              try {
+                await recordAiUsage(user.uid, "image_templates", tokensIn, tokensOut, 0);
+              } catch (usageErr) {
+                console.error("[templates] Warning: Falló el registro de uso de IA:", usageErr);
+              }
               return NextResponse.json({
                 success: true,
                 templates: validatedTemplates,
@@ -258,6 +282,14 @@ Respond ONLY with a valid JSON object with keys "id", "title", "prompt", "aspect
                 prompt: typeof parsed.prompt === "string" && parsed.prompt.trim() ? parsed.prompt.trim() : generateFallbackVariation(currentTemplate).prompt,
                 aspectRatio: normalizeAspectRatio(parsed.aspectRatio || currentTemplate.aspectRatio),
               };
+
+              const tokensIn = res.usageMetadata?.promptTokenCount ?? 300;
+              const tokensOut = res.usageMetadata?.candidatesTokenCount ?? 200;
+              try {
+                await recordAiUsage(user.uid, "image_templates", tokensIn, tokensOut, 0);
+              } catch (usageErr) {
+                console.error("[templates] Warning: Falló el registro de uso de IA:", usageErr);
+              }
 
               return NextResponse.json({
                 success: true,

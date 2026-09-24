@@ -11,6 +11,11 @@ export interface WrittenSectionResult {
   level: "H2" | "H3";
   htmlContent: string;
   wordCount: number;
+  usageMetadata?: {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+    totalTokenCount?: number;
+  };
 }
 
 export interface FullArticleResult {
@@ -105,12 +110,19 @@ RESPONDE ÚNICAMENTE CON EL FRAGMENTO HTML LIMPIO DE LA SECCIÓN (comenzando con
 
     if (rawHtml.length > 50) {
       const wordCount = rawHtml.replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
+      const usageMetadata = response.usageMetadata ? {
+        promptTokenCount: response.usageMetadata.promptTokenCount,
+        candidatesTokenCount: response.usageMetadata.candidatesTokenCount,
+        totalTokenCount: response.usageMetadata.totalTokenCount
+      } : undefined;
+
       return {
         sectionId: section.id,
         title: section.title,
         level: section.level,
         htmlContent: rawHtml,
-        wordCount
+        wordCount,
+        usageMetadata
       };
     }
   } catch (err) {

@@ -270,8 +270,14 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         },
         source: "UI"
       });
-      // Registrar consumo real de IA en ai_usage
-      await recordAiUsage(user.uid, "gemini_generation", 1850, 3200, 0);
+      // Registrar consumo real de IA en ai_usage con fail-safe (try/catch) y usageMetadata real
+      const tokensIn = content.usageMetadata?.promptTokenCount ?? 1850;
+      const tokensOut = content.usageMetadata?.candidatesTokenCount ?? 3200;
+      try {
+        await recordAiUsage(user.uid, "gemini_generation", tokensIn, tokensOut, 0);
+      } catch (usageErr) {
+        console.error("[API Generate] Warning: Falló el registro de uso de IA (recordAiUsage):", usageErr);
+      }
     } catch (persistErr: any) {
       console.error("[API Generate] Fallo en persistencia Firestore:", persistErr);
       return NextResponse.json(

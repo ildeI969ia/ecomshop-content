@@ -85,7 +85,14 @@ export const ContentOutputSchema = z.object({
   })).optional(),
 
   // Fact-Check Score de Fidelidad Técnica (0-100)
-  factCheckScore: z.number().optional()
+  factCheckScore: z.number().optional(),
+
+  // Metadatos reales de consumo de tokens Gemini
+  usageMetadata: z.object({
+    promptTokenCount: z.number().optional(),
+    candidatesTokenCount: z.number().optional(),
+    totalTokenCount: z.number().optional()
+  }).optional()
 });
 
 export type ContentOutput = z.infer<typeof ContentOutputSchema>;

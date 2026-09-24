@@ -15,8 +15,25 @@ interface InterviewQuestion {
   options: QuestionOption[];
 }
 
-export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
+import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
+
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest, user) => {
   try {
+    const budgetCheck = await checkAiBudget(user.uid, user.role, 0.001);
+    if (!budgetCheck.allowed) {
+      return NextResponse.json(
+        {
+          code: "AI_BUDGET_EXCEEDED",
+          error: "Has superado el límite de presupuesto de IA asignado para este mes.",
+          limitEur: budgetCheck.limitEur,
+          spentEur: budgetCheck.currentSpentEur,
+          pct: budgetCheck.pct,
+          resetsAt: "Inicio del próximo mes (Hora de Madrid)"
+        },
+        { status: 429 }
+      );
+    }
+
     const { mode, userIdea, answers, baseImage } = await req.json();
 
     const baseImageData = await resolveBaseImageToData(baseImage);
@@ -64,6 +81,13 @@ Devuelve ÚNICAMENTE un JSON válido con este formato:
         const rawText = res.text?.trim();
         if (rawText) {
           const parsed = JSON.parse(rawText);
+          const tokensIn = res.usageMetadata?.promptTokenCount ?? 300;
+          const tokensOut = res.usageMetadata?.candidatesTokenCount ?? 300;
+          try {
+            await recordAiUsage(user.uid, "image_interview", tokensIn, tokensOut, 0);
+          } catch (usageErr) {
+            console.error("[images/interview] Warning: Falló el registro de uso de IA:", usageErr);
+          }
           return NextResponse.json({ success: true, questions: parsed.questions });
         }
       } catch (err: any) {
@@ -143,6 +167,13 @@ Devuelve ÚNICAMENTE un JSON:
         const rawText = res.text?.trim();
         if (rawText) {
           const parsed = JSON.parse(rawText);
+          const tokensIn = res.usageMetadata?.promptTokenCount ?? 350;
+          const tokensOut = res.usageMetadata?.candidatesTokenCount ?? 250;
+          try {
+            await recordAiUsage(user.uid, "image_interview", tokensIn, tokensOut, 0);
+          } catch (usageErr) {
+            console.error("[images/interview] Warning: Falló el registro de uso de IA:", usageErr);
+          }
           return NextResponse.json({ success: true, data: parsed });
         }
       } catch (err: any) {

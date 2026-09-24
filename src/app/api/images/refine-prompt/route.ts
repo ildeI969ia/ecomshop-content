@@ -11,8 +11,25 @@ export interface PromptRefinementResponse {
   suggestedAspectRatio: "16:9" | "1:1" | "4:3";
 }
 
-export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
+import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
+
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest, user) => {
   try {
+    const budgetCheck = await checkAiBudget(user.uid, user.role, 0.001);
+    if (!budgetCheck.allowed) {
+      return NextResponse.json(
+        {
+          code: "AI_BUDGET_EXCEEDED",
+          error: "Has superado el límite de presupuesto de IA asignado para este mes.",
+          limitEur: budgetCheck.limitEur,
+          spentEur: budgetCheck.currentSpentEur,
+          pct: budgetCheck.pct,
+          resetsAt: "Inicio del próximo mes (Hora de Madrid)"
+        },
+        { status: 429 }
+      );
+    }
+
     const { prompt, baseImage, aspectRatio } = await req.json();
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
@@ -86,6 +103,13 @@ Respond ONLY with valid JSON in this exact structure:
         try {
           const parsed = JSON.parse(text);
           if (parsed.improvedPrompt && typeof parsed.improvedPrompt === "string") {
+            const tokensIn = response.usageMetadata?.promptTokenCount ?? 400;
+            const tokensOut = response.usageMetadata?.candidatesTokenCount ?? 300;
+            try {
+              await recordAiUsage(user.uid, "image_refine_prompt", tokensIn, tokensOut, 0);
+            } catch (usageErr) {
+              console.error("[refine-prompt] Warning: Falló el registro de uso de IA:", usageErr);
+            }
             return NextResponse.json({
               originalIdea: trimmedPrompt,
               improvedPrompt: parsed.improvedPrompt.trim(),
