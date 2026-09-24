@@ -25,16 +25,13 @@ Tus directrices estratégicas inquebrantables son:
 export async function generateStrategicAngles(
   topicTitle: string,
   category: string,
-  apiKey?: string
+  _apiKey?: string
 ): Promise<StrategicAngle[]> {
   const { getGenAIClient, getActiveGeminiModel } = await import("./genai-client");
-  const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT));
-  const key = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
-  if (key || isVertex) {
-    try {
-      const ai = getGenAIClient(apiKey);
-      const activeModel = getActiveGeminiModel(apiKey);
+  try {
+    const ai = getGenAIClient();
+    const activeModel = getActiveGeminiModel();
 
       const prompt = `
 Tema: "${topicTitle}"
@@ -93,7 +90,6 @@ Responde ÚNICAMENTE en JSON con esta estructura:
     } catch (err) {
       console.warn("Fallo en generación de ángulos con Gemini API, usando biblioteca estratégica:", err);
     }
-  }
 
   // Ángulos estratégicos de respaldo
   return [

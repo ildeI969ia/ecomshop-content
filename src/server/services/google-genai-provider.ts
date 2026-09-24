@@ -4,15 +4,9 @@ import { PRICING } from "@/lib/finops";
 import { getGenAIClient, getActiveGeminiModel } from "@/lib/genai-client";
 
 export class GoogleGenAIProvider implements AIProvider {
-  private apiKey?: string;
-
-  constructor(apiKey?: string) {
-    this.apiKey = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  }
-
   async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
-    const ai = getGenAIClient(this.apiKey);
-    const model = options?.model || getActiveGeminiModel(this.apiKey);
+    const ai = getGenAIClient();
+    const model = options?.model || getActiveGeminiModel();
     const startTime = Date.now();
 
     const response = await ai.models.generateContent({
@@ -54,8 +48,7 @@ export class GoogleGenAIProvider implements AIProvider {
   }
 
   async generateImage(prompt: string, aspectRatio = "16:9"): Promise<ImageGenerationResult> {
-    const { GoogleGenAI } = await import("@google/genai");
-    const ai = new GoogleGenAI({ apiKey: this.apiKey });
+    const ai = getGenAIClient();
     const startTime = Date.now();
 
     const response = await ai.models.generateImages({
@@ -92,8 +85,8 @@ export class GoogleGenAIProvider implements AIProvider {
   }
 
   async analyzeMultimodal(options: MultimodalInputOptions): Promise<TextGenerationResult> {
-    const ai = getGenAIClient(this.apiKey);
-    const model = getActiveGeminiModel(this.apiKey);
+    const ai = getGenAIClient();
+    const model = getActiveGeminiModel();
     const startTime = Date.now();
 
     const parts: any[] = [];
