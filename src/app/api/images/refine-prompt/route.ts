@@ -11,8 +11,31 @@ export interface PromptRefinementResponse {
   suggestedAspectRatio: "16:9" | "1:1" | "4:3";
 }
 
-export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
+import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
+
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest, user) => {
   try {
+    // Presupuesto FinOps (estimación ~0.0038€ por cualificación de prompt de imagen)
+    const budgetCheck = await checkAiBudget(user.uid, user.role, 0.0038);
+    if (!budgetCheck.allowed) {
+      return NextResponse.json(
+        {
+          code: "AI_BUDGET_EXCEEDED",
+          error: "Has superado el límite de presupuesto de IA asignado para este mes.",
+          limitEur: budgetCheck.limitEur,
+          spentEur: budgetCheck.currentSpentEur,
+          pct: budgetCheck.pct,
+          resetsAt: "Inicio del próximo mes (Hora de Madrid)"
+        },
+        { status: 429 }
+      );
+    }
+
+    try {
+      await recordAiUsage(user.uid, "imagen_image", 200, 300, 1);
+    } catch (usageErr) {
+      console.error("[API images/refine-prompt] Error al registrar ai_usage (Fail-Safe activado):", usageErr);
+    }
     const { prompt, baseImage, aspectRatio } = await req.json();
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {

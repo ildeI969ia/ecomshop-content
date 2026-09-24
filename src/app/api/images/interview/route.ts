@@ -15,8 +15,31 @@ interface InterviewQuestion {
   options: QuestionOption[];
 }
 
-export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest) => {
+import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
+
+export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest, user) => {
   try {
+    // Presupuesto FinOps (estimación ~0.0038€ por generación/interrogatorio de imagen)
+    const budgetCheck = await checkAiBudget(user.uid, user.role, 0.0038);
+    if (!budgetCheck.allowed) {
+      return NextResponse.json(
+        {
+          code: "AI_BUDGET_EXCEEDED",
+          error: "Has superado el límite de presupuesto de IA asignado para este mes.",
+          limitEur: budgetCheck.limitEur,
+          spentEur: budgetCheck.currentSpentEur,
+          pct: budgetCheck.pct,
+          resetsAt: "Inicio del próximo mes (Hora de Madrid)"
+        },
+        { status: 429 }
+      );
+    }
+
+    try {
+      await recordAiUsage(user.uid, "imagen_image", 200, 300, 1);
+    } catch (usageErr) {
+      console.error("[API images/interview] Error al registrar ai_usage (Fail-Safe activado):", usageErr);
+    }
     const { mode, userIdea, answers, baseImage } = await req.json();
 
     const baseImageData = await resolveBaseImageToData(baseImage);

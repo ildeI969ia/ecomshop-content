@@ -68,7 +68,13 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
       }
 
       const written = await writeArticleSection(section, outline, previousSectionsSummary || "");
-      await recordAiUsage(user.uid, "gemini_generation", 600, 800, 0);
+      const tokensIn = written.usageMetadata?.promptTokenCount || 600;
+      const tokensOut = written.usageMetadata?.candidatesTokenCount || 800;
+      try {
+        await recordAiUsage(user.uid, "gemini_generation", tokensIn, tokensOut, 0);
+      } catch (usageErr) {
+        console.error("[POST /api/editorial/section-write] Error al registrar ai_usage (Fail-Safe activado):", usageErr);
+      }
       const budgetState = await checkAiBudget(user.uid, user.role, 0);
       return NextResponse.json({
         section: written,
@@ -90,7 +96,11 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
         `junia-${Date.now()}`,
         category
       );
-      await recordAiUsage(user.uid, "gemini_generation", 1200, 2000, 0);
+      try {
+        await recordAiUsage(user.uid, "gemini_generation", 1200, 2000, 0);
+      } catch (usageErr) {
+        console.error("[POST /api/editorial/section-write] Error al registrar ai_usage (Fail-Safe activado):", usageErr);
+      }
       const budgetState = await checkAiBudget(user.uid, user.role, 0);
 
       return NextResponse.json({
@@ -106,7 +116,13 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
       `junia-${Date.now()}`,
       category
     );
-    await recordAiUsage(user.uid, "gemini_generation", 2500, 4000, 0);
+    const sumTokensIn = fullArticle.sections.reduce((acc, s) => acc + (s.usageMetadata?.promptTokenCount || 600), 0);
+    const sumTokensOut = fullArticle.sections.reduce((acc, s) => acc + (s.usageMetadata?.candidatesTokenCount || 800), 0);
+    try {
+      await recordAiUsage(user.uid, "gemini_generation", sumTokensIn || 2500, sumTokensOut || 4000, 0);
+    } catch (usageErr) {
+      console.error("[POST /api/editorial/section-write] Error al registrar ai_usage (Fail-Safe activado):", usageErr);
+    }
     const budgetState = await checkAiBudget(user.uid, user.role, 0);
 
     return NextResponse.json({

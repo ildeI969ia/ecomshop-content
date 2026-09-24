@@ -11,6 +11,10 @@ export interface WrittenSectionResult {
   level: "H2" | "H3";
   htmlContent: string;
   wordCount: number;
+  usageMetadata?: {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+  };
 }
 
 export interface FullArticleResult {
@@ -110,8 +114,12 @@ RESPONDE ÚNICAMENTE CON EL FRAGMENTO HTML LIMPIO DE LA SECCIÓN (comenzando con
         title: section.title,
         level: section.level,
         htmlContent: rawHtml,
-        wordCount
-      };
+        wordCount,
+        usageMetadata: (response as any).usageMetadata ? {
+          promptTokenCount: (response as any).usageMetadata.promptTokenCount,
+          candidatesTokenCount: (response as any).usageMetadata.candidatesTokenCount
+        } : undefined
+      } as WrittenSectionResult;
     }
   } catch (err) {
     console.warn(`[DeepSectionWriter] Error/Timeout redactando sección ${section.id} con IA, aplicando fallback determinista:`, err);
