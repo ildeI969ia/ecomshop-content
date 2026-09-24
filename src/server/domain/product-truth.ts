@@ -110,7 +110,7 @@ export class ProductTruthService {
   public static resolveContract(sku: string): ProductTruthContract {
     const product: CatalogProduct | undefined = findCatalogProduct(sku);
     if (!product) {
-      throw new Error(`PRODUCT_NOT_IN_CANONICAL_CATALOG: El SKU '${sku}' no existe en el catálogo oficial de 27 SKUs.`);
+      throw new Error(`PRODUCT_NOT_IN_CANONICAL_CATALOG: El SKU '${sku}' no existe en el catálogo oficial de EcomShop.`);
     }
 
     const now = new Date().toISOString();

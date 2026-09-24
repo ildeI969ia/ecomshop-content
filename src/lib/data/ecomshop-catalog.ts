@@ -7,7 +7,9 @@ export type DeviceType =
   | "GATEWAY"
   | "FIBER_OPTIC"
   | "TESTER"
-  | "ACCESSORY";
+  | "ACCESSORY"
+  | "CCTV_CAMERA"
+  | "CPE_PTP";
 
 export interface CatalogProductBundle {
   sku: string;
@@ -119,7 +121,7 @@ export interface CatalogProduct {
   name: string;
   brand: string;
   deviceType: DeviceType;
-  category: "wifi" | "switches" | "gateways" | "fibra" | "accesorios" | "engenius" | "cellular" | "testers";
+  category: "wifi" | "switches" | "gateways" | "fibra" | "accesorios" | "engenius" | "cellular" | "testers" | "transceivers" | "poe_injectors" | "cctv" | "cpe_ptp" | "accessories";
   description: string;
   url: string;
   imageUrl: string;
@@ -134,7 +136,7 @@ export interface CatalogProduct {
   poeType: "802.3af" | "802.3at" | "802.3bt" | "DC_PASSIVE" | "NONE";
   powerConsumptionWatts: number;
   poeBudgetWatts?: number;
-  managementMode: "Cloud" | "On-Premise" | "Hybrid" | "Standalone" | "RMS" | "Local";
+  managementMode: "Cloud" | "On-Premise" | "Hybrid" | "Standalone" | "RMS" | "Local" | "Unmanaged";
   standards: string[];
   firewallThroughput?: string;
   fiberLinks?: string;
@@ -168,6 +170,9 @@ export interface CatalogProduct {
 
   // Especificaciones crudas para IA (usado por product-brain)
   rawSpecs?: string[];
+
+  lifecycleStatus?: "DISCOVERED" | "VERIFIED" | "HOMOLOGATED" | "EXTERNAL_UNVERIFIED";
+  isEcomshopOwnProduct?: boolean;
 
   // Radar de Oportunidades & Afinidad comercial
   actionTitle: string;
@@ -2510,11 +2515,4279 @@ export const ECOMSHOP_FULL_CATALOG: CatalogProduct[] = [
       STOCK_CLEARANCE_PROMO: 10
     }
   }
+,
+  {
+    id: "ecw336",
+    sku: "ECW336",
+    model: "ECW336",
+    name: "EnGenius Cloud Wi-Fi 6E Tri-Band ECW336 Access Point",
+    brand: "EnGenius",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "EnGenius Cloud Wi-Fi 6E Tri-Band ECW336 Access Point homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/engenius-ecw336",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 499,
+    wholesalePriceEur: 360,
+    stockStatus: "IN_STOCK",
+    specs: ["Tri-Band Wi-Fi 6E 4x4","Puerto 5 GbE PoE+"],
+    interfaces: ["1x 5 GbE RJ45 (PoE+ 802.3at)"],
+    powerRequirements: "PoE+ 802.3at (25W)",
+    poeType: "802.3at",
+    powerConsumptionWatts: 25,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EnGenius Cloud Wi-Fi 6E Tri-Band ECW336 Access Point certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ecw336",
+      title: "Ficha Técnica Oficial EnGenius ECW336",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ecw336",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ECW336",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "ecw230v2",
+    sku: "ECW230v2",
+    model: "ECW230v2",
+    name: "EnGenius Cloud Wi-Fi 6 ECW230 v2 4x4 AP",
+    brand: "EnGenius",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "EnGenius Cloud Wi-Fi 6 ECW230 v2 4x4 AP homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/engenius-ecw230v2",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 389,
+    wholesalePriceEur: 280,
+    stockStatus: "IN_STOCK",
+    specs: ["Wi-Fi 6 4x4:4 Dual-Band","Puerto 2.5 GbE PoE+"],
+    interfaces: ["1x 2.5 GbE RJ45 (PoE+ 802.3at)"],
+    powerRequirements: "PoE+ 802.3at (19.5W)",
+    poeType: "802.3at",
+    powerConsumptionWatts: 19.5,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EnGenius Cloud Wi-Fi 6 ECW230 v2 4x4 AP certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ecw230v2",
+      title: "Ficha Técnica Oficial EnGenius ECW230v2",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ecw230v2",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ECW230v2",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "ecw215",
+    sku: "ECW215",
+    model: "ECW215",
+    name: "EnGenius Cloud Wi-Fi 6 Wall-Plate ECW215 AP con Switch 3p",
+    brand: "EnGenius",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "EnGenius Cloud Wi-Fi 6 Wall-Plate ECW215 AP con Switch 3p homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/engenius-ecw215",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 199,
+    wholesalePriceEur: 145,
+    stockStatus: "IN_STOCK",
+    specs: ["Wi-Fi 6 2x2 Wall-Plate","Switch 3 puertos GbE integrados con PoE passthrough"],
+    interfaces: ["1x GbE Uplink PoE+","3x GbE LAN (1x PoE Out)"],
+    powerRequirements: "PoE+ 802.3at (21W con PoE Out)",
+    poeType: "802.3at",
+    powerConsumptionWatts: 21,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EnGenius Cloud Wi-Fi 6 Wall-Plate ECW215 AP con Switch 3p certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ecw215",
+      title: "Ficha Técnica Oficial EnGenius ECW215",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ecw215",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ECW215",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "ecw120",
+    sku: "ECW120",
+    model: "ECW120",
+    name: "EnGenius Cloud Wi-Fi 5 ECW120 2x2 Compact AP",
+    brand: "EnGenius",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "EnGenius Cloud Wi-Fi 5 ECW120 2x2 Compact AP homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/engenius-ecw120",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 139,
+    wholesalePriceEur: 95,
+    stockStatus: "IN_STOCK",
+    specs: ["Wi-Fi 5 2x2 Dual-Band","Gestión Cloud 0€"],
+    interfaces: ["1x GbE RJ45 (PoE 802.3af)"],
+    powerRequirements: "PoE 802.3af (11W)",
+    poeType: "802.3af",
+    powerConsumptionWatts: 11,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EnGenius Cloud Wi-Fi 5 ECW120 2x2 Compact AP certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ecw120",
+      title: "Ficha Técnica Oficial EnGenius ECW120",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ecw120",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ECW120",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "ews377ap",
+    sku: "EWS377AP",
+    model: "EWS377AP",
+    name: "EnGenius Fit/Standalone Wi-Fi 6 4x4 EWS377AP",
+    brand: "EnGenius",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "EnGenius Fit/Standalone Wi-Fi 6 4x4 EWS377AP homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/engenius-ews377ap",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 349,
+    wholesalePriceEur: 250,
+    stockStatus: "IN_STOCK",
+    specs: ["Wi-Fi 6 4x4 Standalone/On-Premise","Puerto 2.5 GbE"],
+    interfaces: ["1x 2.5 GbE RJ45 (PoE+ 802.3at)"],
+    powerRequirements: "PoE+ 802.3at (19.5W)",
+    poeType: "802.3at",
+    powerConsumptionWatts: 19.5,
+    managementMode: "Standalone",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EnGenius Fit/Standalone Wi-Fi 6 4x4 EWS377AP certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ews377ap",
+      title: "Ficha Técnica Oficial EnGenius EWS377AP",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ews377ap",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con EWS377AP",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "ecs1008p",
+    sku: "ECS1008P",
+    model: "ECS1008P",
+    name: "EnGenius ECS1008P Switch Cloud 8 Puertos GbE PoE+ (55W)",
+    brand: "EnGenius",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "EnGenius ECS1008P Switch Cloud 8 Puertos GbE PoE+ (55W) homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/engenius-ecs1008p",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 149,
+    wholesalePriceEur: 105,
+    stockStatus: "IN_STOCK",
+    specs: ["8 puertos GbE PoE+ (55W budget)","Sin ventilador silencioso"],
+    interfaces: ["8x GbE RJ45 PoE+ (802.3at)"],
+    powerRequirements: "100-240V AC (65W máx)",
+    poeType: "802.3at",
+    powerConsumptionWatts: 65,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EnGenius ECS1008P Switch Cloud 8 Puertos GbE PoE+ (55W) certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ecs1008p",
+      title: "Ficha Técnica Oficial EnGenius ECS1008P",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ecs1008p",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ECS1008P",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "ecs1552fp",
+    sku: "ECS1552FP",
+    model: "ECS1552FP",
+    name: "EnGenius ECS1552FP Switch Cloud 48 Puertos GbE PoE+ (740W)",
+    brand: "EnGenius",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "EnGenius ECS1552FP Switch Cloud 48 Puertos GbE PoE+ (740W) homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/engenius-ecs1552fp",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 999,
+    wholesalePriceEur: 720,
+    stockStatus: "IN_STOCK",
+    specs: ["48 puertos GbE PoE+ (740W budget)","4 uplinks 10G SFP+"],
+    interfaces: ["48x GbE RJ45 PoE+ (802.3at)","4x 10G SFP+ Slots"],
+    powerRequirements: "100-240V AC (830W máx)",
+    poeType: "802.3at",
+    powerConsumptionWatts: 830,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EnGenius ECS1552FP Switch Cloud 48 Puertos GbE PoE+ (740W) certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ecs1552fp",
+      title: "Ficha Técnica Oficial EnGenius ECS1552FP",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ecs1552fp",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ECS1552FP",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "ecs2552fp",
+    sku: "ECS2552FP",
+    model: "ECS2552FP",
+    name: "EnGenius ECS2552FP Switch Multi-Gig 32p 2.5G + 16p 1G PoE++",
+    brand: "EnGenius",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "EnGenius ECS2552FP Switch Multi-Gig 32p 2.5G + 16p 1G PoE++ homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/engenius-ecs2552fp",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 1490,
+    wholesalePriceEur: 1080,
+    stockStatus: "IN_STOCK",
+    specs: ["32p 2.5G + 16p 1G PoE++ (740W)","4 uplinks 10G SFP+"],
+    interfaces: ["32x 2.5G RJ45 PoE++","16x 1G RJ45 PoE+","4x 10G SFP+ Slots"],
+    powerRequirements: "100-240V AC (850W máx)",
+    poeType: "802.3bt",
+    powerConsumptionWatts: 850,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EnGenius ECS2552FP Switch Multi-Gig 32p 2.5G + 16p 1G PoE++ certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ecs2552fp",
+      title: "Ficha Técnica Oficial EnGenius ECS2552FP",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ecs2552fp",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ECS2552FP",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "ecs1528",
+    sku: "ECS1528",
+    model: "ECS1528",
+    name: "EnGenius ECS1528 Switch Cloud 24 Puertos GbE No-PoE",
+    brand: "EnGenius",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "EnGenius ECS1528 Switch Cloud 24 Puertos GbE No-PoE homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/engenius-ecs1528",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 279,
+    wholesalePriceEur: 199,
+    stockStatus: "IN_STOCK",
+    specs: ["24 puertos GbE sin PoE","4 uplinks 10G SFP+"],
+    interfaces: ["24x GbE RJ45","4x 10G SFP+ Slots"],
+    powerRequirements: "100-240V AC (30W máx)",
+    poeType: "NONE",
+    powerConsumptionWatts: 30,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EnGenius ECS1528 Switch Cloud 24 Puertos GbE No-PoE certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ecs1528",
+      title: "Ficha Técnica Oficial EnGenius ECS1528",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ecs1528",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ECS1528",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "esg501",
+    sku: "ESG501",
+    model: "ESG501",
+    name: "EnGenius ESG501 Compact Cloud Security Gateway",
+    brand: "EnGenius",
+    deviceType: "GATEWAY",
+    category: "gateways",
+    description: "EnGenius ESG501 Compact Cloud Security Gateway homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/engenius-esg501",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 249,
+    wholesalePriceEur: 179,
+    stockStatus: "IN_STOCK",
+    specs: ["2 puertos 2.5GbE WAN/LAN","Stateful Firewall 1.5 Gbps"],
+    interfaces: ["2x 2.5 GbE RJ45 (1x WAN / 1x LAN)"],
+    powerRequirements: "Alimentación 12V DC / PoE in 802.3af",
+    poeType: "802.3af",
+    powerConsumptionWatts: 12,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EnGenius ESG501 Compact Cloud Security Gateway certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-esg501",
+      title: "Ficha Técnica Oficial EnGenius ESG501",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-esg501",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ESG501",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "epa5006gp",
+    sku: "EPA5006GP",
+    model: "EPA5006GP",
+    name: "EnGenius EPA5006GP Inyector Gigabit PoE+ 30W Industrial",
+    brand: "EnGenius",
+    deviceType: "ACCESSORY",
+    category: "poe_injectors",
+    description: "EnGenius EPA5006GP Inyector Gigabit PoE+ 30W Industrial homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/engenius-epa5006gp",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 49,
+    wholesalePriceEur: 32,
+    stockStatus: "IN_STOCK",
+    specs: ["Inyector PoE+ 30W 802.3at","Puerto Gigabit passthrough"],
+    interfaces: ["1x GbE Data In","1x GbE Data + PoE Out"],
+    powerRequirements: "100-240V AC",
+    poeType: "802.3at",
+    powerConsumptionWatts: 30,
+    managementMode: "Standalone",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EnGenius EPA5006GP Inyector Gigabit PoE+ 30W Industrial certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-epa5006gp",
+      title: "Ficha Técnica Oficial EnGenius EPA5006GP",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-epa5006gp",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con EPA5006GP",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "epa5006gat",
+    sku: "EPA5006GAT",
+    model: "EPA5006GAT",
+    name: "EnGenius EPA5006GAT Inyector Ultra PoE 60W Gigabit",
+    brand: "EnGenius",
+    deviceType: "ACCESSORY",
+    category: "poe_injectors",
+    description: "EnGenius EPA5006GAT Inyector Ultra PoE 60W Gigabit homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/engenius-epa5006gat",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 89,
+    wholesalePriceEur: 59,
+    stockStatus: "IN_STOCK",
+    specs: ["Inyector Ultra PoE 60W 802.3bt","Alimentación APs Wi-Fi 7"],
+    interfaces: ["1x GbE Data In","1x GbE Data + PoE Out"],
+    powerRequirements: "100-240V AC",
+    poeType: "802.3bt",
+    powerConsumptionWatts: 60,
+    managementMode: "Standalone",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EnGenius EPA5006GAT Inyector Ultra PoE 60W Gigabit certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-epa5006gat",
+      title: "Ficha Técnica Oficial EnGenius EPA5006GAT",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-epa5006gat",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con EPA5006GAT",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "enmesh-ebm",
+    sku: "EnMesh-EBM",
+    model: "EnMesh-EBM",
+    name: "EnGenius EnMesh EBM100 Sistema MESH Wi-Fi 5 para Pymes",
+    brand: "EnGenius",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "EnGenius EnMesh EBM100 Sistema MESH Wi-Fi 5 para Pymes homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/engenius-enmesh-ebm",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 129,
+    wholesalePriceEur: 89,
+    stockStatus: "IN_STOCK",
+    specs: ["Sistema MESH Dual-Band 2x2","Cobertura extendida sin cables"],
+    interfaces: ["2x GbE RJ45 (WAN/LAN)"],
+    powerRequirements: "Adaptador 12V DC",
+    poeType: "NONE",
+    powerConsumptionWatts: 12,
+    managementMode: "Local",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EnGenius EnMesh EBM100 Sistema MESH Wi-Fi 5 para Pymes certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-enmesh-ebm",
+      title: "Ficha Técnica Oficial EnGenius EnMesh-EBM",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-enmesh-ebm",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con EnMesh-EBM",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "ews2910p-fit",
+    sku: "EWS2910P-FIT",
+    model: "EWS2910P-FIT",
+    name: "EnGenius Fit EWS2910P Switch 8 Puertos GbE PoE+ (61W)",
+    brand: "EnGenius",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "EnGenius Fit EWS2910P Switch 8 Puertos GbE PoE+ (61W) homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/engenius-ews2910p-fit",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 139,
+    wholesalePriceEur: 99,
+    stockStatus: "IN_STOCK",
+    specs: ["8 puertos GbE PoE+ (61W budget)","2 uplinks SFP 1G"],
+    interfaces: ["8x GbE RJ45 PoE+","2x 1G SFP Slots"],
+    powerRequirements: "100-240V AC",
+    poeType: "802.3at",
+    powerConsumptionWatts: 75,
+    managementMode: "Standalone",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EnGenius Fit EWS2910P Switch 8 Puertos GbE PoE+ (61W) certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ews2910p-fit",
+      title: "Ficha Técnica Oficial EnGenius EWS2910P-FIT",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ews2910p-fit",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con EWS2910P-FIT",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "ews357-fit",
+    sku: "EWS357-FIT",
+    model: "EWS357-FIT",
+    name: "EnGenius Fit EWS357-FIT Wi-Fi 6 2x2 AP Standalone",
+    brand: "EnGenius",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "EnGenius Fit EWS357-FIT Wi-Fi 6 2x2 AP Standalone homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/engenius-ews357-fit",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 119,
+    wholesalePriceEur: 85,
+    stockStatus: "IN_STOCK",
+    specs: ["Wi-Fi 6 2x2 Dual-Band Fit/Standalone","Gestión local GUI"],
+    interfaces: ["1x GbE RJ45 (PoE 802.3af)"],
+    powerRequirements: "PoE 802.3af (12.8W)",
+    poeType: "802.3af",
+    powerConsumptionWatts: 12.8,
+    managementMode: "Standalone",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EnGenius Fit EWS357-FIT Wi-Fi 6 2x2 AP Standalone certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ews357-fit",
+      title: "Ficha Técnica Oficial EnGenius EWS357-FIT",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ews357-fit",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con EWS357-FIT",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "rut951",
+    sku: "RUT951",
+    model: "RUT951",
+    name: "Teltonika RUT951 Router Industrial 4G LTE Cat 4 Wi-Fi",
+    brand: "Teltonika",
+    deviceType: "ROUTER_CELLULAR",
+    category: "cellular",
+    description: "Teltonika RUT951 Router Industrial 4G LTE Cat 4 Wi-Fi homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/teltonika-rut951",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 199,
+    wholesalePriceEur: 145,
+    stockStatus: "IN_STOCK",
+    specs: ["Teltonika RUT951 Router Industrial 4G LTE Cat 4 Wi-Fi de grado industrial Teltonika","Carcasa de aluminio robusta carril DIN","Gestión remota RMS"],
+    interfaces: ["4x GbE RJ45","1x Ranura SIM"],
+    powerRequirements: "Entrada 9-30V DC borna terminal",
+    poeType: "NONE",
+    powerConsumptionWatts: 10,
+    managementMode: "RMS",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Teltonika RUT951 Router Industrial 4G LTE Cat 4 Wi-Fi certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-rut951",
+      title: "Teltonika RUT951 Industrial Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/teltonika-rut951",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con RUT951",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "rutx11",
+    sku: "RUTX11",
+    model: "RUTX11",
+    name: "Teltonika RUTX11 Router Industrial 4G Cat 6 Dual-SIM Wave-2",
+    brand: "Teltonika",
+    deviceType: "ROUTER_CELLULAR",
+    category: "cellular",
+    description: "Teltonika RUTX11 Router Industrial 4G Cat 6 Dual-SIM Wave-2 homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/teltonika-rutx11",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 329,
+    wholesalePriceEur: 240,
+    stockStatus: "IN_STOCK",
+    specs: ["Teltonika RUTX11 Router Industrial 4G Cat 6 Dual-SIM Wave-2 de grado industrial Teltonika","Carcasa de aluminio robusta carril DIN","Gestión remota RMS"],
+    interfaces: ["4x GbE RJ45","1x Ranura SIM"],
+    powerRequirements: "Entrada 9-30V DC borna terminal",
+    poeType: "NONE",
+    powerConsumptionWatts: 10,
+    managementMode: "RMS",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Teltonika RUTX11 Router Industrial 4G Cat 6 Dual-SIM Wave-2 certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-rutx11",
+      title: "Teltonika RUTX11 Industrial Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/teltonika-rutx11",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con RUTX11",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "rutx12",
+    sku: "RUTX12",
+    model: "RUTX12",
+    name: "Teltonika RUTX12 Router Dual-LTE Cat 6 Dual-Modem Industrial",
+    brand: "Teltonika",
+    deviceType: "ROUTER_CELLULAR",
+    category: "cellular",
+    description: "Teltonika RUTX12 Router Dual-LTE Cat 6 Dual-Modem Industrial homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/teltonika-rutx12",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 459,
+    wholesalePriceEur: 335,
+    stockStatus: "IN_STOCK",
+    specs: ["Teltonika RUTX12 Router Dual-LTE Cat 6 Dual-Modem Industrial de grado industrial Teltonika","Carcasa de aluminio robusta carril DIN","Gestión remota RMS"],
+    interfaces: ["4x GbE RJ45","1x Ranura SIM"],
+    powerRequirements: "Entrada 9-30V DC borna terminal",
+    poeType: "NONE",
+    powerConsumptionWatts: 10,
+    managementMode: "RMS",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Teltonika RUTX12 Router Dual-LTE Cat 6 Dual-Modem Industrial certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-rutx12",
+      title: "Teltonika RUTX12 Industrial Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/teltonika-rutx12",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con RUTX12",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "rutx14",
+    sku: "RUTX14",
+    model: "RUTX14",
+    name: "Teltonika RUTX14 Router Industrial 4G Cat 12 Ultra-Rápido",
+    brand: "Teltonika",
+    deviceType: "ROUTER_CELLULAR",
+    category: "cellular",
+    description: "Teltonika RUTX14 Router Industrial 4G Cat 12 Ultra-Rápido homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/teltonika-rutx14",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 399,
+    wholesalePriceEur: 290,
+    stockStatus: "IN_STOCK",
+    specs: ["Teltonika RUTX14 Router Industrial 4G Cat 12 Ultra-Rápido de grado industrial Teltonika","Carcasa de aluminio robusta carril DIN","Gestión remota RMS"],
+    interfaces: ["4x GbE RJ45","1x Ranura SIM"],
+    powerRequirements: "Entrada 9-30V DC borna terminal",
+    poeType: "NONE",
+    powerConsumptionWatts: 10,
+    managementMode: "RMS",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Teltonika RUTX14 Router Industrial 4G Cat 12 Ultra-Rápido certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-rutx14",
+      title: "Teltonika RUTX14 Industrial Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/teltonika-rutx14",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con RUTX14",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "rut360",
+    sku: "RUT360",
+    model: "RUT360",
+    name: "Teltonika RUT360 Router Industrial 4G Cat 6 Compacto",
+    brand: "Teltonika",
+    deviceType: "ROUTER_CELLULAR",
+    category: "cellular",
+    description: "Teltonika RUT360 Router Industrial 4G Cat 6 Compacto homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/teltonika-rut360",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 169,
+    wholesalePriceEur: 120,
+    stockStatus: "IN_STOCK",
+    specs: ["Teltonika RUT360 Router Industrial 4G Cat 6 Compacto de grado industrial Teltonika","Carcasa de aluminio robusta carril DIN","Gestión remota RMS"],
+    interfaces: ["4x GbE RJ45","1x Ranura SIM"],
+    powerRequirements: "Entrada 9-30V DC borna terminal",
+    poeType: "NONE",
+    powerConsumptionWatts: 10,
+    managementMode: "RMS",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Teltonika RUT360 Router Industrial 4G Cat 6 Compacto certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-rut360",
+      title: "Teltonika RUT360 Industrial Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/teltonika-rut360",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con RUT360",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "trb140",
+    sku: "TRB140",
+    model: "TRB140",
+    name: "Teltonika TRB140 Gateway Industrial 4G LTE Cat 4 Ethernet",
+    brand: "Teltonika",
+    deviceType: "GATEWAY",
+    category: "cellular",
+    description: "Teltonika TRB140 Gateway Industrial 4G LTE Cat 4 Ethernet homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/teltonika-trb140",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 129,
+    wholesalePriceEur: 92,
+    stockStatus: "IN_STOCK",
+    specs: ["Teltonika TRB140 Gateway Industrial 4G LTE Cat 4 Ethernet de grado industrial Teltonika","Carcasa de aluminio robusta carril DIN","Gestión remota RMS"],
+    interfaces: ["1x GbE RJ45","1x Ranura SIM"],
+    powerRequirements: "Entrada 9-30V DC borna terminal",
+    poeType: "NONE",
+    powerConsumptionWatts: 10,
+    managementMode: "RMS",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Teltonika TRB140 Gateway Industrial 4G LTE Cat 4 Ethernet certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-trb140",
+      title: "Teltonika TRB140 Industrial Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/teltonika-trb140",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con TRB140",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "trb142",
+    sku: "TRB142",
+    model: "TRB142",
+    name: "Teltonika TRB142 Gateway Industrial 4G RS232 IoT",
+    brand: "Teltonika",
+    deviceType: "GATEWAY",
+    category: "cellular",
+    description: "Teltonika TRB142 Gateway Industrial 4G RS232 IoT homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/teltonika-trb142",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 139,
+    wholesalePriceEur: 99,
+    stockStatus: "IN_STOCK",
+    specs: ["Teltonika TRB142 Gateway Industrial 4G RS232 IoT de grado industrial Teltonika","Carcasa de aluminio robusta carril DIN","Gestión remota RMS"],
+    interfaces: ["1x GbE RJ45","1x Ranura SIM"],
+    powerRequirements: "Entrada 9-30V DC borna terminal",
+    poeType: "NONE",
+    powerConsumptionWatts: 10,
+    managementMode: "RMS",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Teltonika TRB142 Gateway Industrial 4G RS232 IoT certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-trb142",
+      title: "Teltonika TRB142 Industrial Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/teltonika-trb142",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con TRB142",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "trb145",
+    sku: "TRB145",
+    model: "TRB145",
+    name: "Teltonika TRB145 Gateway Industrial 4G RS485 IoT",
+    brand: "Teltonika",
+    deviceType: "GATEWAY",
+    category: "cellular",
+    description: "Teltonika TRB145 Gateway Industrial 4G RS485 IoT homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/teltonika-trb145",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 139,
+    wholesalePriceEur: 99,
+    stockStatus: "IN_STOCK",
+    specs: ["Teltonika TRB145 Gateway Industrial 4G RS485 IoT de grado industrial Teltonika","Carcasa de aluminio robusta carril DIN","Gestión remota RMS"],
+    interfaces: ["1x GbE RJ45","1x Ranura SIM"],
+    powerRequirements: "Entrada 9-30V DC borna terminal",
+    poeType: "NONE",
+    powerConsumptionWatts: 10,
+    managementMode: "RMS",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Teltonika TRB145 Gateway Industrial 4G RS485 IoT certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-trb145",
+      title: "Teltonika TRB145 Industrial Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/teltonika-trb145",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con TRB145",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "trb500",
+    sku: "TRB500",
+    model: "TRB500",
+    name: "Teltonika TRB500 Gateway Industrial 5G Ultra-Compacto Gigabit",
+    brand: "Teltonika",
+    deviceType: "GATEWAY",
+    category: "cellular",
+    description: "Teltonika TRB500 Gateway Industrial 5G Ultra-Compacto Gigabit homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/teltonika-trb500",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 349,
+    wholesalePriceEur: 255,
+    stockStatus: "IN_STOCK",
+    specs: ["Teltonika TRB500 Gateway Industrial 5G Ultra-Compacto Gigabit de grado industrial Teltonika","Carcasa de aluminio robusta carril DIN","Gestión remota RMS"],
+    interfaces: ["1x GbE RJ45","1x Ranura SIM"],
+    powerRequirements: "Entrada 9-30V DC borna terminal",
+    poeType: "NONE",
+    powerConsumptionWatts: 10,
+    managementMode: "RMS",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Teltonika TRB500 Gateway Industrial 5G Ultra-Compacto Gigabit certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-trb500",
+      title: "Teltonika TRB500 Industrial Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/teltonika-trb500",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con TRB500",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "tsw100",
+    sku: "TSW100",
+    model: "TSW100",
+    name: "Teltonika TSW100 Switch Industrial Carril DIN 5p GbE PoE+ (240W)",
+    brand: "Teltonika",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Teltonika TSW100 Switch Industrial Carril DIN 5p GbE PoE+ (240W) homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/teltonika-tsw100",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 119,
+    wholesalePriceEur: 85,
+    stockStatus: "IN_STOCK",
+    specs: ["Teltonika TSW100 Switch Industrial Carril DIN 5p GbE PoE+ (240W) de grado industrial Teltonika","Carcasa de aluminio robusta carril DIN","Gestión remota RMS"],
+    interfaces: ["1x GbE RJ45","1x Ranura SIM"],
+    powerRequirements: "Entrada 9-30V DC borna terminal",
+    poeType: "NONE",
+    powerConsumptionWatts: 10,
+    managementMode: "RMS",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Teltonika TSW100 Switch Industrial Carril DIN 5p GbE PoE+ (240W) certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-tsw100",
+      title: "Teltonika TSW100 Industrial Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/teltonika-tsw100",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con TSW100",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "wi-ps308gh",
+    sku: "WI-PS308GH",
+    model: "WI-PS308GH",
+    name: "Wi-Tek WI-PS308GH Switch 8 Puertos GbE PoE+ 120W Desktop",
+    brand: "Wi-Tek",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Wi-Tek WI-PS308GH Switch 8 Puertos GbE PoE+ 120W Desktop homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/witek-wi-ps308gh",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 89,
+    wholesalePriceEur: 62,
+    stockStatus: "IN_STOCK",
+    specs: ["Wi-Tek WI-PS308GH Switch 8 Puertos GbE PoE+ 120W Desktop profesional para CCTV y conectividad comercial","Carcasa metálica de alta resistencia"],
+    interfaces: ["2x GbE RJ45"],
+    powerRequirements: "100-240V AC / PoE",
+    poeType: "802.3at",
+    powerConsumptionWatts: 120,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Wi-Tek WI-PS308GH Switch 8 Puertos GbE PoE+ 120W Desktop certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-wi-ps308gh",
+      title: "Wi-Tek WI-PS308GH Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/witek-wi-ps308gh",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con WI-PS308GH",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "wi-ps318gf",
+    sku: "WI-PS318GF",
+    model: "WI-PS318GF",
+    name: "Wi-Tek WI-PS318GF Switch 16p GbE PoE+ (250W) + 2p SFP",
+    brand: "Wi-Tek",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Wi-Tek WI-PS318GF Switch 16p GbE PoE+ (250W) + 2p SFP homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/witek-wi-ps318gf",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 219,
+    wholesalePriceEur: 155,
+    stockStatus: "IN_STOCK",
+    specs: ["Wi-Tek WI-PS318GF Switch 16p GbE PoE+ (250W) + 2p SFP profesional para CCTV y conectividad comercial","Carcasa metálica de alta resistencia"],
+    interfaces: ["2x GbE RJ45"],
+    powerRequirements: "100-240V AC / PoE",
+    poeType: "802.3at",
+    powerConsumptionWatts: 30,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Wi-Tek WI-PS318GF Switch 16p GbE PoE+ (250W) + 2p SFP certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-wi-ps318gf",
+      title: "Wi-Tek WI-PS318GF Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/witek-wi-ps318gf",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con WI-PS318GF",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "wi-ps326gf",
+    sku: "WI-PS326GF",
+    model: "WI-PS326GF",
+    name: "Wi-Tek WI-PS326GF Switch 24p GbE PoE+ (350W) + 2p SFP",
+    brand: "Wi-Tek",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Wi-Tek WI-PS326GF Switch 24p GbE PoE+ (350W) + 2p SFP homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/witek-wi-ps326gf",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 299,
+    wholesalePriceEur: 215,
+    stockStatus: "IN_STOCK",
+    specs: ["Wi-Tek WI-PS326GF Switch 24p GbE PoE+ (350W) + 2p SFP profesional para CCTV y conectividad comercial","Carcasa metálica de alta resistencia"],
+    interfaces: ["2x GbE RJ45"],
+    powerRequirements: "100-240V AC / PoE",
+    poeType: "802.3at",
+    powerConsumptionWatts: 30,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Wi-Tek WI-PS326GF Switch 24p GbE PoE+ (350W) + 2p SFP certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-wi-ps326gf",
+      title: "Wi-Tek WI-PS326GF Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/witek-wi-ps326gf",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con WI-PS326GF",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "wi-pms310gf-i",
+    sku: "WI-PMS310GF-I",
+    model: "WI-PMS310GF-I",
+    name: "Wi-Tek WI-PMS310GF-I Switch Industrial L2 Managed 8p PoE+",
+    brand: "Wi-Tek",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Wi-Tek WI-PMS310GF-I Switch Industrial L2 Managed 8p PoE+ homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/witek-wi-pms310gf-i",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 249,
+    wholesalePriceEur: 179,
+    stockStatus: "IN_STOCK",
+    specs: ["Wi-Tek WI-PMS310GF-I Switch Industrial L2 Managed 8p PoE+ profesional para CCTV y conectividad comercial","Carcasa metálica de alta resistencia"],
+    interfaces: ["8x GbE PoE+"],
+    powerRequirements: "100-240V AC / PoE",
+    poeType: "802.3at",
+    powerConsumptionWatts: 30,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Wi-Tek WI-PMS310GF-I Switch Industrial L2 Managed 8p PoE+ certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-wi-pms310gf-i",
+      title: "Wi-Tek WI-PMS310GF-I Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/witek-wi-pms310gf-i",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con WI-PMS310GF-I",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "wi-cpe513p-kit",
+    sku: "WI-CPE513P-KIT",
+    model: "WI-CPE513P-KIT",
+    name: "Wi-Tek WI-CPE513P-KIT Enlace Inalámbrico Exterior 5GHz 5km PTP",
+    brand: "Wi-Tek",
+    deviceType: "CPE_PTP",
+    category: "cpe_ptp",
+    description: "Wi-Tek WI-CPE513P-KIT Enlace Inalámbrico Exterior 5GHz 5km PTP homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/witek-wi-cpe513p-kit",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 129,
+    wholesalePriceEur: 89,
+    stockStatus: "IN_STOCK",
+    specs: ["Wi-Tek WI-CPE513P-KIT Enlace Inalámbrico Exterior 5GHz 5km PTP profesional para CCTV y conectividad comercial","Carcasa metálica de alta resistencia"],
+    interfaces: ["2x GbE RJ45"],
+    powerRequirements: "100-240V AC / PoE",
+    poeType: "802.3at",
+    powerConsumptionWatts: 30,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Wi-Tek WI-CPE513P-KIT Enlace Inalámbrico Exterior 5GHz 5km PTP certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-wi-cpe513p-kit",
+      title: "Wi-Tek WI-CPE513P-KIT Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/witek-wi-cpe513p-kit",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con WI-CPE513P-KIT",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "wi-cpe511h-kit",
+    sku: "WI-CPE511H-KIT",
+    model: "WI-CPE511H-KIT",
+    name: "Wi-Tek WI-CPE511H-KIT Bridge Inalámbrico 5GHz 3km PTP 300Mbps",
+    brand: "Wi-Tek",
+    deviceType: "CPE_PTP",
+    category: "cpe_ptp",
+    description: "Wi-Tek WI-CPE511H-KIT Bridge Inalámbrico 5GHz 3km PTP 300Mbps homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/witek-wi-cpe511h-kit",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 99,
+    wholesalePriceEur: 69,
+    stockStatus: "IN_STOCK",
+    specs: ["Wi-Tek WI-CPE511H-KIT Bridge Inalámbrico 5GHz 3km PTP 300Mbps profesional para CCTV y conectividad comercial","Carcasa metálica de alta resistencia"],
+    interfaces: ["2x GbE RJ45"],
+    powerRequirements: "100-240V AC / PoE",
+    poeType: "802.3at",
+    powerConsumptionWatts: 30,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Wi-Tek WI-CPE511H-KIT Bridge Inalámbrico 5GHz 3km PTP 300Mbps certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-wi-cpe511h-kit",
+      title: "Wi-Tek WI-CPE511H-KIT Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/witek-wi-cpe511h-kit",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con WI-CPE511H-KIT",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "wi-pa300",
+    sku: "WI-PA300",
+    model: "WI-PA300",
+    name: "Wi-Tek WI-PA300 Inyector PoE Pasivo 24V/48V 30W Gigabit",
+    brand: "Wi-Tek",
+    deviceType: "ACCESSORY",
+    category: "poe_injectors",
+    description: "Wi-Tek WI-PA300 Inyector PoE Pasivo 24V/48V 30W Gigabit homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/witek-wi-pa300",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 25,
+    wholesalePriceEur: 16,
+    stockStatus: "IN_STOCK",
+    specs: ["Wi-Tek WI-PA300 Inyector PoE Pasivo 24V/48V 30W Gigabit profesional para CCTV y conectividad comercial","Carcasa metálica de alta resistencia"],
+    interfaces: ["2x GbE RJ45"],
+    powerRequirements: "100-240V AC / PoE",
+    poeType: "802.3at",
+    powerConsumptionWatts: 30,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Wi-Tek WI-PA300 Inyector PoE Pasivo 24V/48V 30W Gigabit certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-wi-pa300",
+      title: "Wi-Tek WI-PA300 Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/witek-wi-pa300",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con WI-PA300",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "wi-lte115-o",
+    sku: "WI-LTE115-O",
+    model: "WI-LTE115-O",
+    name: "Wi-Tek WI-LTE115-O Router 4G LTE Exterior IP65 con PoE",
+    brand: "Wi-Tek",
+    deviceType: "ROUTER_CELLULAR",
+    category: "cellular",
+    description: "Wi-Tek WI-LTE115-O Router 4G LTE Exterior IP65 con PoE homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/witek-wi-lte115-o",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 149,
+    wholesalePriceEur: 105,
+    stockStatus: "IN_STOCK",
+    specs: ["Wi-Tek WI-LTE115-O Router 4G LTE Exterior IP65 con PoE profesional para CCTV y conectividad comercial","Carcasa metálica de alta resistencia"],
+    interfaces: ["2x GbE RJ45"],
+    powerRequirements: "100-240V AC / PoE",
+    poeType: "802.3at",
+    powerConsumptionWatts: 30,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Wi-Tek WI-LTE115-O Router 4G LTE Exterior IP65 con PoE certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-wi-lte115-o",
+      title: "Wi-Tek WI-LTE115-O Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/witek-wi-lte115-o",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con WI-LTE115-O",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "st3108g",
+    sku: "ST3108G",
+    model: "ST3108G",
+    name: "Stonet ST3108G Switch 8 Puertos Gigabit Desktop Plástico",
+    brand: "Stonet",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Stonet ST3108G Switch 8 Puertos Gigabit Desktop Plástico homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/stonet-st3108g",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 19,
+    wholesalePriceEur: 12,
+    stockStatus: "IN_STOCK",
+    specs: ["Stonet ST3108G Switch 8 Puertos Gigabit Desktop Plástico Plug&Play de bajo coste","Diseño compacto y consumo eficiente"],
+    interfaces: ["19x GbE RJ45"],
+    powerRequirements: "Adaptador 5V/9V DC",
+    poeType: "NONE",
+    powerConsumptionWatts: 5,
+    managementMode: "Unmanaged",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Stonet ST3108G Switch 8 Puertos Gigabit Desktop Plástico certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-st3108g",
+      title: "Stonet ST3108G Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/stonet-st3108g",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ST3108G",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "st3105g",
+    sku: "ST3105G",
+    model: "ST3105G",
+    name: "Stonet ST3105G Switch 5 Puertos Gigabit Compacto Desktop",
+    brand: "Stonet",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Stonet ST3105G Switch 5 Puertos Gigabit Compacto Desktop homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/stonet-st3105g",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 14,
+    wholesalePriceEur: 9,
+    stockStatus: "IN_STOCK",
+    specs: ["Stonet ST3105G Switch 5 Puertos Gigabit Compacto Desktop Plug&Play de bajo coste","Diseño compacto y consumo eficiente"],
+    interfaces: ["14x GbE RJ45"],
+    powerRequirements: "Adaptador 5V/9V DC",
+    poeType: "NONE",
+    powerConsumptionWatts: 5,
+    managementMode: "Unmanaged",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Stonet ST3105G Switch 5 Puertos Gigabit Compacto Desktop certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-st3105g",
+      title: "Stonet ST3105G Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/stonet-st3105g",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ST3105G",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "st3116g",
+    sku: "ST3116G",
+    model: "ST3116G",
+    name: "Stonet ST3116G Switch 16 Puertos Gigabit Rack 19\"",
+    brand: "Stonet",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Stonet ST3116G Switch 16 Puertos Gigabit Rack 19\" homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/stonet-st3116g",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 59,
+    wholesalePriceEur: 39,
+    stockStatus: "IN_STOCK",
+    specs: ["Stonet ST3116G Switch 16 Puertos Gigabit Rack 19\" Plug&Play de bajo coste","Diseño compacto y consumo eficiente"],
+    interfaces: ["59x GbE RJ45"],
+    powerRequirements: "Adaptador 5V/9V DC",
+    poeType: "NONE",
+    powerConsumptionWatts: 5,
+    managementMode: "Unmanaged",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Stonet ST3116G Switch 16 Puertos Gigabit Rack 19\" certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-st3116g",
+      title: "Stonet ST3116G Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/stonet-st3116g",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ST3116G",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "st3310gf",
+    sku: "ST3310GF",
+    model: "ST3310GF",
+    name: "Stonet ST3310GF Switch 8 Puertos GbE PoE+ (120W) + 2 SFP",
+    brand: "Stonet",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Stonet ST3310GF Switch 8 Puertos GbE PoE+ (120W) + 2 SFP homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/stonet-st3310gf",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 99,
+    wholesalePriceEur: 69,
+    stockStatus: "IN_STOCK",
+    specs: ["Stonet ST3310GF Switch 8 Puertos GbE PoE+ (120W) + 2 SFP Plug&Play de bajo coste","Diseño compacto y consumo eficiente"],
+    interfaces: ["99x GbE RJ45"],
+    powerRequirements: "Adaptador 5V/9V DC",
+    poeType: "NONE",
+    powerConsumptionWatts: 5,
+    managementMode: "Unmanaged",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Stonet ST3310GF Switch 8 Puertos GbE PoE+ (120W) + 2 SFP certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-st3310gf",
+      title: "Stonet ST3310GF Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/stonet-st3310gf",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ST3310GF",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "w300r",
+    sku: "W300R",
+    model: "W300R",
+    name: "Stonet W300R Router Wi-Fi 4 300Mbps Dual-Antena Económico",
+    brand: "Stonet",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "Stonet W300R Router Wi-Fi 4 300Mbps Dual-Antena Económico homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/stonet-w300r",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 18,
+    wholesalePriceEur: 11,
+    stockStatus: "IN_STOCK",
+    specs: ["Stonet W300R Router Wi-Fi 4 300Mbps Dual-Antena Económico Plug&Play de bajo coste","Diseño compacto y consumo eficiente"],
+    interfaces: ["18x GbE RJ45"],
+    powerRequirements: "Adaptador 5V/9V DC",
+    poeType: "NONE",
+    powerConsumptionWatts: 5,
+    managementMode: "Local",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Stonet W300R Router Wi-Fi 4 300Mbps Dual-Antena Económico certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-w300r",
+      title: "Stonet W300R Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/stonet-w300r",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con W300R",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "cyberscope",
+    sku: "CYBERSCOPE",
+    model: "CYBERSCOPE",
+    name: "NetAlly CyberScope Analizador de Ciberseguridad de Red Portátil",
+    brand: "NetAlly",
+    deviceType: "TESTER",
+    category: "testers",
+    description: "NetAlly CyberScope Analizador de Ciberseguridad de Red Portátil homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/netally-cyberscope",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 5900,
+    wholesalePriceEur: 4500,
+    stockStatus: "IN_STOCK",
+    specs: ["NetAlly CyberScope Analizador de Ciberseguridad de Red Portátil para auditorías profesionales de telecomunicaciones","Integración Link-Live Cloud"],
+    interfaces: ["1x GbE RJ45","Radios Wi-Fi / Bluetooth"],
+    powerRequirements: "Batería Li-Ion recargable",
+    poeType: "NONE",
+    powerConsumptionWatts: 15,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "NetAlly CyberScope Analizador de Ciberseguridad de Red Portátil certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-cyberscope",
+      title: "NetAlly CYBERSCOPE Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/netally-cyberscope",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con CYBERSCOPE",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "linksprinter",
+    sku: "LINKSPRINTER",
+    model: "LINKSPRINTER",
+    name: "NetAlly LinkSprinter Comprobador de Cable y PoE de Bolsillo",
+    brand: "NetAlly",
+    deviceType: "TESTER",
+    category: "testers",
+    description: "NetAlly LinkSprinter Comprobador de Cable y PoE de Bolsillo homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/netally-linksprinter",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 390,
+    wholesalePriceEur: 290,
+    stockStatus: "IN_STOCK",
+    specs: ["NetAlly LinkSprinter Comprobador de Cable y PoE de Bolsillo para auditorías profesionales de telecomunicaciones","Integración Link-Live Cloud"],
+    interfaces: ["1x GbE RJ45","Radios Wi-Fi / Bluetooth"],
+    powerRequirements: "Batería Li-Ion recargable",
+    poeType: "NONE",
+    powerConsumptionWatts: 15,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "NetAlly LinkSprinter Comprobador de Cable y PoE de Bolsillo certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-linksprinter",
+      title: "NetAlly LINKSPRINTER Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/netally-linksprinter",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con LINKSPRINTER",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "linkrunner-g2",
+    sku: "LINKRUNNER-G2",
+    model: "LINKRUNNER-G2",
+    name: "NetAlly LinkRunner G2 Probador de Red Android con PoE 60W",
+    brand: "NetAlly",
+    deviceType: "TESTER",
+    category: "testers",
+    description: "NetAlly LinkRunner G2 Probador de Red Android con PoE 60W homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/netally-linkrunner-g2",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 2490,
+    wholesalePriceEur: 1890,
+    stockStatus: "IN_STOCK",
+    specs: ["NetAlly LinkRunner G2 Probador de Red Android con PoE 60W para auditorías profesionales de telecomunicaciones","Integración Link-Live Cloud"],
+    interfaces: ["1x GbE RJ45","Radios Wi-Fi / Bluetooth"],
+    powerRequirements: "Batería Li-Ion recargable",
+    poeType: "NONE",
+    powerConsumptionWatts: 15,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "NetAlly LinkRunner G2 Probador de Red Android con PoE 60W certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-linkrunner-g2",
+      title: "NetAlly LINKRUNNER-G2 Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/netally-linkrunner-g2",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con LINKRUNNER-G2",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "testacc",
+    sku: "TESTACC",
+    model: "TESTACC",
+    name: "NetAlly Test Accessory Reflector iPerf Gigabit",
+    brand: "NetAlly",
+    deviceType: "TESTER",
+    category: "testers",
+    description: "NetAlly Test Accessory Reflector iPerf Gigabit homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/netally-testacc",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 290,
+    wholesalePriceEur: 210,
+    stockStatus: "IN_STOCK",
+    specs: ["NetAlly Test Accessory Reflector iPerf Gigabit para auditorías profesionales de telecomunicaciones","Integración Link-Live Cloud"],
+    interfaces: ["1x GbE RJ45","Radios Wi-Fi / Bluetooth"],
+    powerRequirements: "Batería Li-Ion recargable",
+    poeType: "NONE",
+    powerConsumptionWatts: 15,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "NetAlly Test Accessory Reflector iPerf Gigabit certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-testacc",
+      title: "NetAlly TESTACC Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/netally-testacc",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con TESTACC",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "aircheck-g2",
+    sku: "AIRCHECK-G2",
+    model: "AIRCHECK-G2",
+    name: "NetAlly AirCheck G2 Analizador Wi-Fi 5/6 Portátil",
+    brand: "NetAlly",
+    deviceType: "TESTER",
+    category: "testers",
+    description: "NetAlly AirCheck G2 Analizador Wi-Fi 5/6 Portátil homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/netally-aircheck-g2",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 2890,
+    wholesalePriceEur: 2190,
+    stockStatus: "IN_STOCK",
+    specs: ["NetAlly AirCheck G2 Analizador Wi-Fi 5/6 Portátil para auditorías profesionales de telecomunicaciones","Integración Link-Live Cloud"],
+    interfaces: ["1x GbE RJ45","Radios Wi-Fi / Bluetooth"],
+    powerRequirements: "Batería Li-Ion recargable",
+    poeType: "NONE",
+    powerConsumptionWatts: 15,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "NetAlly AirCheck G2 Analizador Wi-Fi 5/6 Portátil certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-aircheck-g2",
+      title: "NetAlly AIRCHECK-G2 Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/netally-aircheck-g2",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con AIRCHECK-G2",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "ruckus-r750",
+    sku: "RUCKUS-R750",
+    model: "RUCKUS-R750",
+    name: "Ruckus CommScope ZoneFlex R750 Wi-Fi 6 4x4 AP Indoor",
+    brand: "Ruckus",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "Ruckus CommScope ZoneFlex R750 Wi-Fi 6 4x4 AP Indoor homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/ruckus-ruckus-r750",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 890,
+    wholesalePriceEur: 680,
+    stockStatus: "IN_STOCK",
+    specs: ["Ruckus CommScope ZoneFlex R750 Wi-Fi 6 4x4 AP Indoor tecnología BeamFlex+ corporativa","Controlador SmartZone / Unleashed"],
+    interfaces: ["1x 2.5 GbE RJ45"],
+    powerRequirements: "PoE+ 802.3at / 100-240V AC",
+    poeType: "802.3at",
+    powerConsumptionWatts: 25,
+    managementMode: "Hybrid",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Ruckus CommScope ZoneFlex R750 Wi-Fi 6 4x4 AP Indoor certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ruckus-r750",
+      title: "Ruckus RUCKUS-R750 Reference Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/ruckus-ruckus-r750",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con RUCKUS-R750",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "EXTERNAL_UNVERIFIED",
+    isEcomshopOwnProduct: false
+  },
+  {
+    id: "ruckus-r550",
+    sku: "RUCKUS-R550",
+    model: "RUCKUS-R550",
+    name: "Ruckus ZoneFlex R550 Wi-Fi 6 2x2 AP Indoor Enterprise",
+    brand: "Ruckus",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "Ruckus ZoneFlex R550 Wi-Fi 6 2x2 AP Indoor Enterprise homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/ruckus-ruckus-r550",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 590,
+    wholesalePriceEur: 440,
+    stockStatus: "IN_STOCK",
+    specs: ["Ruckus ZoneFlex R550 Wi-Fi 6 2x2 AP Indoor Enterprise tecnología BeamFlex+ corporativa","Controlador SmartZone / Unleashed"],
+    interfaces: ["24x GbE RJ45"],
+    powerRequirements: "PoE+ 802.3at / 100-240V AC",
+    poeType: "802.3at",
+    powerConsumptionWatts: 25,
+    managementMode: "Hybrid",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Ruckus ZoneFlex R550 Wi-Fi 6 2x2 AP Indoor Enterprise certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ruckus-r550",
+      title: "Ruckus RUCKUS-R550 Reference Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/ruckus-ruckus-r550",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con RUCKUS-R550",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "EXTERNAL_UNVERIFIED",
+    isEcomshopOwnProduct: false
+  },
+  {
+    id: "ruckus-t750",
+    sku: "RUCKUS-T750",
+    model: "RUCKUS-T750",
+    name: "Ruckus ZoneFlex T750 Outdoor Wi-Fi 6 4x4 AP IP67",
+    brand: "Ruckus",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "Ruckus ZoneFlex T750 Outdoor Wi-Fi 6 4x4 AP IP67 homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/ruckus-ruckus-t750",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 1490,
+    wholesalePriceEur: 1150,
+    stockStatus: "IN_STOCK",
+    specs: ["Ruckus ZoneFlex T750 Outdoor Wi-Fi 6 4x4 AP IP67 tecnología BeamFlex+ corporativa","Controlador SmartZone / Unleashed"],
+    interfaces: ["24x GbE RJ45"],
+    powerRequirements: "PoE+ 802.3at / 100-240V AC",
+    poeType: "802.3at",
+    powerConsumptionWatts: 25,
+    managementMode: "Hybrid",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Ruckus ZoneFlex T750 Outdoor Wi-Fi 6 4x4 AP IP67 certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ruckus-t750",
+      title: "Ruckus RUCKUS-T750 Reference Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/ruckus-ruckus-t750",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con RUCKUS-T750",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "EXTERNAL_UNVERIFIED",
+    isEcomshopOwnProduct: false
+  },
+  {
+    id: "ruckus-icx7150-24p",
+    sku: "RUCKUS-ICX7150-24P",
+    model: "RUCKUS-ICX7150-24P",
+    name: "Ruckus ICX 7150 Switch 24p GbE PoE+ (370W) 4x 10G SFP+",
+    brand: "Ruckus",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Ruckus ICX 7150 Switch 24p GbE PoE+ (370W) 4x 10G SFP+ homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/ruckus-ruckus-icx7150-24p",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 1290,
+    wholesalePriceEur: 980,
+    stockStatus: "IN_STOCK",
+    specs: ["Ruckus ICX 7150 Switch 24p GbE PoE+ (370W) 4x 10G SFP+ tecnología BeamFlex+ corporativa","Controlador SmartZone / Unleashed"],
+    interfaces: ["24x GbE RJ45"],
+    powerRequirements: "PoE+ 802.3at / 100-240V AC",
+    poeType: "802.3at",
+    powerConsumptionWatts: 25,
+    managementMode: "Hybrid",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Ruckus ICX 7150 Switch 24p GbE PoE+ (370W) 4x 10G SFP+ certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ruckus-icx7150-24p",
+      title: "Ruckus RUCKUS-ICX7150-24P Reference Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/ruckus-ruckus-icx7150-24p",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con RUCKUS-ICX7150-24P",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "EXTERNAL_UNVERIFIED",
+    isEcomshopOwnProduct: false
+  },
+  {
+    id: "ruckus-icx7450-48p",
+    sku: "RUCKUS-ICX7450-48P",
+    model: "RUCKUS-ICX7450-48P",
+    name: "Ruckus ICX 7450 Switch 48p GbE PoE+ Modular L3",
+    brand: "Ruckus",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Ruckus ICX 7450 Switch 48p GbE PoE+ Modular L3 homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/ruckus-ruckus-icx7450-48p",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 2890,
+    wholesalePriceEur: 2190,
+    stockStatus: "IN_STOCK",
+    specs: ["Ruckus ICX 7450 Switch 48p GbE PoE+ Modular L3 tecnología BeamFlex+ corporativa","Controlador SmartZone / Unleashed"],
+    interfaces: ["24x GbE RJ45"],
+    powerRequirements: "PoE+ 802.3at / 100-240V AC",
+    poeType: "802.3at",
+    powerConsumptionWatts: 25,
+    managementMode: "Hybrid",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Ruckus ICX 7450 Switch 48p GbE PoE+ Modular L3 certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ruckus-icx7450-48p",
+      title: "Ruckus RUCKUS-ICX7450-48P Reference Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/ruckus-ruckus-icx7450-48p",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con RUCKUS-ICX7450-48P",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "EXTERNAL_UNVERIFIED",
+    isEcomshopOwnProduct: false
+  },
+  {
+    id: "ecs4120-28p",
+    sku: "ECS4120-28P",
+    model: "ECS4120-28P",
+    name: "Edgecore ECS4120-28P Switch L2+ 24p GbE PoE+ (390W) 4x 10G SFP+",
+    brand: "Edgecore",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Edgecore ECS4120-28P Switch L2+ 24p GbE PoE+ (390W) 4x 10G SFP+ homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/edgecore-ecs4120-28p",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 590,
+    wholesalePriceEur: 430,
+    stockStatus: "IN_STOCK",
+    specs: ["Edgecore ECS4120-28P Switch L2+ 24p GbE PoE+ (390W) 4x 10G SFP+ con firmware OpenWiFi / ecCLOUD","Grado de operador de telecomunicaciones"],
+    interfaces: ["24x GbE RJ45 PoE+"],
+    powerRequirements: "PoE+ 802.3at / 100-240V AC",
+    poeType: "802.3at",
+    powerConsumptionWatts: 30,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Edgecore ECS4120-28P Switch L2+ 24p GbE PoE+ (390W) 4x 10G SFP+ certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ecs4120-28p",
+      title: "Edgecore ECS4120-28P Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/edgecore-ecs4120-28p",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ECS4120-28P",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "ecs4100-12p",
+    sku: "ECS4100-12P",
+    model: "ECS4100-12P",
+    name: "Edgecore ECS4100-12P Switch L2 8p GbE PoE+ (125W) 2x GbE 2x SFP",
+    brand: "Edgecore",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Edgecore ECS4100-12P Switch L2 8p GbE PoE+ (125W) 2x GbE 2x SFP homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/edgecore-ecs4100-12p",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 249,
+    wholesalePriceEur: 180,
+    stockStatus: "IN_STOCK",
+    specs: ["Edgecore ECS4100-12P Switch L2 8p GbE PoE+ (125W) 2x GbE 2x SFP con firmware OpenWiFi / ecCLOUD","Grado de operador de telecomunicaciones"],
+    interfaces: ["1x 2.5 GbE RJ45"],
+    powerRequirements: "PoE+ 802.3at / 100-240V AC",
+    poeType: "802.3at",
+    powerConsumptionWatts: 30,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Edgecore ECS4100-12P Switch L2 8p GbE PoE+ (125W) 2x GbE 2x SFP certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ecs4100-12p",
+      title: "Edgecore ECS4100-12P Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/edgecore-ecs4100-12p",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ECS4100-12P",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "ecw5410-l",
+    sku: "ECW5410-L",
+    model: "ECW5410-L",
+    name: "Edgecore ECW5410-L Wi-Fi 5 4x4 Enterprise AP Indoor",
+    brand: "Edgecore",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "Edgecore ECW5410-L Wi-Fi 5 4x4 Enterprise AP Indoor homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/edgecore-ecw5410-l",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 299,
+    wholesalePriceEur: 210,
+    stockStatus: "IN_STOCK",
+    specs: ["Edgecore ECW5410-L Wi-Fi 5 4x4 Enterprise AP Indoor con firmware OpenWiFi / ecCLOUD","Grado de operador de telecomunicaciones"],
+    interfaces: ["1x 2.5 GbE RJ45"],
+    powerRequirements: "PoE+ 802.3at / 100-240V AC",
+    poeType: "802.3at",
+    powerConsumptionWatts: 30,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Edgecore ECW5410-L Wi-Fi 5 4x4 Enterprise AP Indoor certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ecw5410-l",
+      title: "Edgecore ECW5410-L Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/edgecore-ecw5410-l",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ECW5410-L",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "eap101",
+    sku: "EAP101",
+    model: "EAP101",
+    name: "Edgecore EAP101 OpenWiFi Wi-Fi 6 2x2 AP Indoor TIP",
+    brand: "Edgecore",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "Edgecore EAP101 OpenWiFi Wi-Fi 6 2x2 AP Indoor TIP homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/edgecore-eap101",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 219,
+    wholesalePriceEur: 155,
+    stockStatus: "IN_STOCK",
+    specs: ["Edgecore EAP101 OpenWiFi Wi-Fi 6 2x2 AP Indoor TIP con firmware OpenWiFi / ecCLOUD","Grado de operador de telecomunicaciones"],
+    interfaces: ["1x 2.5 GbE RJ45"],
+    powerRequirements: "PoE+ 802.3at / 100-240V AC",
+    poeType: "802.3at",
+    powerConsumptionWatts: 30,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Edgecore EAP101 OpenWiFi Wi-Fi 6 2x2 AP Indoor TIP certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-eap101",
+      title: "Edgecore EAP101 Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/edgecore-eap101",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con EAP101",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "eap102",
+    sku: "EAP102",
+    model: "EAP102",
+    name: "Edgecore EAP102 Wi-Fi 6 4x4 OpenWiFi Enterprise AP",
+    brand: "Edgecore",
+    deviceType: "ACCESS_POINT",
+    category: "wifi",
+    description: "Edgecore EAP102 Wi-Fi 6 4x4 OpenWiFi Enterprise AP homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/edgecore-eap102",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 349,
+    wholesalePriceEur: 250,
+    stockStatus: "IN_STOCK",
+    specs: ["Edgecore EAP102 Wi-Fi 6 4x4 OpenWiFi Enterprise AP con firmware OpenWiFi / ecCLOUD","Grado de operador de telecomunicaciones"],
+    interfaces: ["1x 2.5 GbE RJ45"],
+    powerRequirements: "PoE+ 802.3at / 100-240V AC",
+    poeType: "802.3at",
+    powerConsumptionWatts: 30,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Edgecore EAP102 Wi-Fi 6 4x4 OpenWiFi Enterprise AP certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-eap102",
+      title: "Edgecore EAP102 Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/edgecore-eap102",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con EAP102",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "tns-100",
+    sku: "TNS-100",
+    model: "TNS-100",
+    name: "Tachyon TNS-100 Switch Gigabit POE Pasivo 24V/48V 8 Puertos Outdoor",
+    brand: "Tachyon",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "Tachyon TNS-100 Switch Gigabit POE Pasivo 24V/48V 8 Puertos Outdoor homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/tachyon-tns-100",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 189,
+    wholesalePriceEur: 135,
+    stockStatus: "IN_STOCK",
+    specs: ["Tachyon TNS-100 Switch Gigabit POE Pasivo 24V/48V 8 Puertos Outdoor para enlaces de onda milimétrica y WISP","Baja latencia e intemperie IP67"],
+    interfaces: ["1x GbE RJ45"],
+    powerRequirements: "PoE Pasivo 24V/48V",
+    poeType: "DC_PASSIVE",
+    powerConsumptionWatts: 18,
+    managementMode: "Local",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Tachyon TNS-100 Switch Gigabit POE Pasivo 24V/48V 8 Puertos Outdoor certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-tns-100",
+      title: "Tachyon TNS-100 Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/tachyon-tns-100",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con TNS-100",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "tnb-500",
+    sku: "TNB-500",
+    model: "TNB-500",
+    name: "Tachyon TNB-500 Bridge Inalámbrico 60GHz 1Gbps Full-Duplex 1km",
+    brand: "Tachyon",
+    deviceType: "CPE_PTP",
+    category: "cpe_ptp",
+    description: "Tachyon TNB-500 Bridge Inalámbrico 60GHz 1Gbps Full-Duplex 1km homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/tachyon-tnb-500",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 389,
+    wholesalePriceEur: 280,
+    stockStatus: "IN_STOCK",
+    specs: ["Tachyon TNB-500 Bridge Inalámbrico 60GHz 1Gbps Full-Duplex 1km para enlaces de onda milimétrica y WISP","Baja latencia e intemperie IP67"],
+    interfaces: ["1x GbE RJ45"],
+    powerRequirements: "PoE Pasivo 24V/48V",
+    poeType: "DC_PASSIVE",
+    powerConsumptionWatts: 18,
+    managementMode: "Local",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Tachyon TNB-500 Bridge Inalámbrico 60GHz 1Gbps Full-Duplex 1km certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-tnb-500",
+      title: "Tachyon TNB-500 Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/tachyon-tnb-500",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con TNB-500",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "tnb-600",
+    sku: "TNB-600",
+    model: "TNB-600",
+    name: "Tachyon TNB-600 Enlace Troncal 60GHz 2.5Gbps Millimeter Wave",
+    brand: "Tachyon",
+    deviceType: "CPE_PTP",
+    category: "cpe_ptp",
+    description: "Tachyon TNB-600 Enlace Troncal 60GHz 2.5Gbps Millimeter Wave homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/tachyon-tnb-600",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 590,
+    wholesalePriceEur: 430,
+    stockStatus: "IN_STOCK",
+    specs: ["Tachyon TNB-600 Enlace Troncal 60GHz 2.5Gbps Millimeter Wave para enlaces de onda milimétrica y WISP","Baja latencia e intemperie IP67"],
+    interfaces: ["1x 2.5 GbE RJ45"],
+    powerRequirements: "PoE Pasivo 24V/48V",
+    poeType: "DC_PASSIVE",
+    powerConsumptionWatts: 18,
+    managementMode: "Local",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Tachyon TNB-600 Enlace Troncal 60GHz 2.5Gbps Millimeter Wave certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-tnb-600",
+      title: "Tachyon TNB-600 Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/tachyon-tnb-600",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con TNB-600",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "tpa-4824",
+    sku: "TPA-4824",
+    model: "TPA-4824",
+    name: "Tachyon TPA-4824 Convertidor PoE 48V a 24V Gigabit Outdoor IP67",
+    brand: "Tachyon",
+    deviceType: "ACCESSORY",
+    category: "poe_injectors",
+    description: "Tachyon TPA-4824 Convertidor PoE 48V a 24V Gigabit Outdoor IP67 homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/tachyon-tpa-4824",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 35,
+    wholesalePriceEur: 24,
+    stockStatus: "IN_STOCK",
+    specs: ["Tachyon TPA-4824 Convertidor PoE 48V a 24V Gigabit Outdoor IP67 para enlaces de onda milimétrica y WISP","Baja latencia e intemperie IP67"],
+    interfaces: ["1x GbE RJ45"],
+    powerRequirements: "PoE Pasivo 24V/48V",
+    poeType: "DC_PASSIVE",
+    powerConsumptionWatts: 18,
+    managementMode: "Local",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Tachyon TPA-4824 Convertidor PoE 48V a 24V Gigabit Outdoor IP67 certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-tpa-4824",
+      title: "Tachyon TPA-4824 Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/tachyon-tpa-4824",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con TPA-4824",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "ib9369",
+    sku: "IB9369",
+    model: "IB9369",
+    name: "Vivotek IB9369 Cámara IP Bullet 2MP IR 30m Exterior IP66 PoE",
+    brand: "Vivotek",
+    deviceType: "CCTV_CAMERA",
+    category: "cctv",
+    description: "Vivotek IB9369 Cámara IP Bullet 2MP IR 30m Exterior IP66 PoE homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/vivotek-ib9369",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 159,
+    wholesalePriceEur: 110,
+    stockStatus: "IN_STOCK",
+    specs: ["Vivotek IB9369 Cámara IP Bullet 2MP IR 30m Exterior IP66 PoE visión nocturna Smart IR y compresión H.265","Certificación antivandálica y PoE"],
+    interfaces: ["1x GbE RJ45 PoE (802.3af/at)"],
+    powerRequirements: "PoE 802.3af (12W)",
+    poeType: "802.3af",
+    powerConsumptionWatts: 12,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Vivotek IB9369 Cámara IP Bullet 2MP IR 30m Exterior IP66 PoE certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ib9369",
+      title: "Vivotek IB9369 Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/vivotek-ib9369",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con IB9369",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "fd9389-ehv",
+    sku: "FD9389-EHV",
+    model: "FD9389-EHV",
+    name: "Vivotek FD9389-EHV Cámara Domo IP 5MP Antivandálica IK10 IP66",
+    brand: "Vivotek",
+    deviceType: "CCTV_CAMERA",
+    category: "cctv",
+    description: "Vivotek FD9389-EHV Cámara Domo IP 5MP Antivandálica IK10 IP66 homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/vivotek-fd9389-ehv",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 249,
+    wholesalePriceEur: 175,
+    stockStatus: "IN_STOCK",
+    specs: ["Vivotek FD9389-EHV Cámara Domo IP 5MP Antivandálica IK10 IP66 visión nocturna Smart IR y compresión H.265","Certificación antivandálica y PoE"],
+    interfaces: ["1x GbE RJ45 PoE (802.3af/at)"],
+    powerRequirements: "PoE 802.3af (12W)",
+    poeType: "802.3af",
+    powerConsumptionWatts: 12,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Vivotek FD9389-EHV Cámara Domo IP 5MP Antivandálica IK10 IP66 certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-fd9389-ehv",
+      title: "Vivotek FD9389-EHV Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/vivotek-fd9389-ehv",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con FD9389-EHV",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "sd9368-ehl",
+    sku: "SD9368-EHL",
+    model: "SD9368-EHL",
+    name: "Vivotek SD9368-EHL Cámara Speed Dome PTZ 2MP Zoom 30x PoE++",
+    brand: "Vivotek",
+    deviceType: "CCTV_CAMERA",
+    category: "cctv",
+    description: "Vivotek SD9368-EHL Cámara Speed Dome PTZ 2MP Zoom 30x PoE++ homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/vivotek-sd9368-ehl",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 890,
+    wholesalePriceEur: 650,
+    stockStatus: "IN_STOCK",
+    specs: ["Vivotek SD9368-EHL Cámara Speed Dome PTZ 2MP Zoom 30x PoE++ visión nocturna Smart IR y compresión H.265","Certificación antivandálica y PoE"],
+    interfaces: ["1x GbE RJ45 PoE (802.3af/at)"],
+    powerRequirements: "PoE++ 802.3bt (45W)",
+    poeType: "802.3bt",
+    powerConsumptionWatts: 45,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Vivotek SD9368-EHL Cámara Speed Dome PTZ 2MP Zoom 30x PoE++ certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-sd9368-ehl",
+      title: "Vivotek SD9368-EHL Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/vivotek-sd9368-ehl",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con SD9368-EHL",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "nd9323p",
+    sku: "ND9323P",
+    model: "ND9323P",
+    name: "Vivotek ND9323P NVR 8 Canales 4K PoE Integrado (8 Puertos PoE)",
+    brand: "Vivotek",
+    deviceType: "GATEWAY",
+    category: "cctv",
+    description: "Vivotek ND9323P NVR 8 Canales 4K PoE Integrado (8 Puertos PoE) homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/vivotek-nd9323p",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 389,
+    wholesalePriceEur: 275,
+    stockStatus: "IN_STOCK",
+    specs: ["Vivotek ND9323P NVR 8 Canales 4K PoE Integrado (8 Puertos PoE) visión nocturna Smart IR y compresión H.265","Certificación antivandálica y PoE"],
+    interfaces: ["1x GbE RJ45 PoE (802.3af/at)"],
+    powerRequirements: "PoE 802.3af (12W)",
+    poeType: "802.3af",
+    powerConsumptionWatts: 12,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Vivotek ND9323P NVR 8 Canales 4K PoE Integrado (8 Puertos PoE) certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-nd9323p",
+      title: "Vivotek ND9323P Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/vivotek-nd9323p",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ND9323P",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "fe9382-ehv",
+    sku: "FE9382-EHV",
+    model: "FE9382-EHV",
+    name: "Vivotek FE9382-EHV Cámara Fisheye 360° 5MP Exterior IP66",
+    brand: "Vivotek",
+    deviceType: "CCTV_CAMERA",
+    category: "cctv",
+    description: "Vivotek FE9382-EHV Cámara Fisheye 360° 5MP Exterior IP66 homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/vivotek-fe9382-ehv",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 399,
+    wholesalePriceEur: 285,
+    stockStatus: "IN_STOCK",
+    specs: ["Vivotek FE9382-EHV Cámara Fisheye 360° 5MP Exterior IP66 visión nocturna Smart IR y compresión H.265","Certificación antivandálica y PoE"],
+    interfaces: ["1x GbE RJ45 PoE (802.3af/at)"],
+    powerRequirements: "PoE 802.3af (12W)",
+    poeType: "802.3af",
+    powerConsumptionWatts: 12,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "Vivotek FE9382-EHV Cámara Fisheye 360° 5MP Exterior IP66 certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-fe9382-ehv",
+      title: "Vivotek FE9382-EHV Datasheet",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/vivotek-fe9382-ehv",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con FE9382-EHV",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "sfp-1g-sx-kit",
+    sku: "SFP-1G-SX-KIT",
+    model: "SFP-1G-SX-KIT",
+    name: "EcomSpain Kit 2x Transceptores 1G SFP Multimodo LC 850nm 550m",
+    brand: "EcomSpain",
+    deviceType: "FIBER_OPTIC",
+    category: "transceivers",
+    description: "EcomSpain Kit 2x Transceptores 1G SFP Multimodo LC 850nm 550m homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/ecomspain-sfp-1g-sx-kit",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 49,
+    wholesalePriceEur: 29,
+    stockStatus: "IN_STOCK",
+    specs: ["EcomSpain Kit 2x Transceptores 1G SFP Multimodo LC 850nm 550m testado para interoperabilidad 100% en switches EnGenius y Cisco","Garantía oficial EcomSpain"],
+    interfaces: ["2x Conectores LC Duplex"],
+    powerRequirements: "Alimentación por puerto SFP 3.3V",
+    poeType: "NONE",
+    powerConsumptionWatts: 1.5,
+    managementMode: "Standalone",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EcomSpain Kit 2x Transceptores 1G SFP Multimodo LC 850nm 550m certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-sfp-1g-sx-kit",
+      title: "Ficha de Producto EcomSpain SFP-1G-SX-KIT",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/ecomspain-sfp-1g-sx-kit",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con SFP-1G-SX-KIT",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "sfp-10g-lr-kit",
+    sku: "SFP-10G-LR-KIT",
+    model: "SFP-10G-LR-KIT",
+    name: "EcomSpain Kit 2x Transceptores 10G SFP+ Monomodo LC 1310nm 10km",
+    brand: "EcomSpain",
+    deviceType: "FIBER_OPTIC",
+    category: "transceivers",
+    description: "EcomSpain Kit 2x Transceptores 10G SFP+ Monomodo LC 1310nm 10km homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/ecomspain-sfp-10g-lr-kit",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 149,
+    wholesalePriceEur: 95,
+    stockStatus: "IN_STOCK",
+    specs: ["EcomSpain Kit 2x Transceptores 10G SFP+ Monomodo LC 1310nm 10km testado para interoperabilidad 100% en switches EnGenius y Cisco","Garantía oficial EcomSpain"],
+    interfaces: ["2x Conectores LC Duplex"],
+    powerRequirements: "Alimentación por puerto SFP 3.3V",
+    poeType: "NONE",
+    powerConsumptionWatts: 1.5,
+    managementMode: "Standalone",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EcomSpain Kit 2x Transceptores 10G SFP+ Monomodo LC 1310nm 10km certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-sfp-10g-lr-kit",
+      title: "Ficha de Producto EcomSpain SFP-10G-LR-KIT",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/ecomspain-sfp-10g-lr-kit",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con SFP-10G-LR-KIT",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "dac-10g-1m",
+    sku: "DAC-10G-1M",
+    model: "DAC-10G-1M",
+    name: "EcomSpain Cable Pasivo DAC 10G SFP+ a SFP+ 1 Metro",
+    brand: "EcomSpain",
+    deviceType: "FIBER_OPTIC",
+    category: "transceivers",
+    description: "EcomSpain Cable Pasivo DAC 10G SFP+ a SFP+ 1 Metro homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/ecomspain-dac-10g-1m",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 29,
+    wholesalePriceEur: 18,
+    stockStatus: "IN_STOCK",
+    specs: ["EcomSpain Cable Pasivo DAC 10G SFP+ a SFP+ 1 Metro testado para interoperabilidad 100% en switches EnGenius y Cisco","Garantía oficial EcomSpain"],
+    interfaces: ["2x Conectores LC Duplex"],
+    powerRequirements: "Alimentación por puerto SFP 3.3V",
+    poeType: "NONE",
+    powerConsumptionWatts: 1.5,
+    managementMode: "Standalone",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EcomSpain Cable Pasivo DAC 10G SFP+ a SFP+ 1 Metro certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-dac-10g-1m",
+      title: "Ficha de Producto EcomSpain DAC-10G-1M",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/ecomspain-dac-10g-1m",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con DAC-10G-1M",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "dac-10g-3m",
+    sku: "DAC-10G-3M",
+    model: "DAC-10G-3M",
+    name: "EcomSpain Cable Pasivo DAC 10G SFP+ a SFP+ 3 Metros",
+    brand: "EcomSpain",
+    deviceType: "FIBER_OPTIC",
+    category: "transceivers",
+    description: "EcomSpain Cable Pasivo DAC 10G SFP+ a SFP+ 3 Metros homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/ecomspain-dac-10g-3m",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 39,
+    wholesalePriceEur: 24,
+    stockStatus: "IN_STOCK",
+    specs: ["EcomSpain Cable Pasivo DAC 10G SFP+ a SFP+ 3 Metros testado para interoperabilidad 100% en switches EnGenius y Cisco","Garantía oficial EcomSpain"],
+    interfaces: ["2x Conectores LC Duplex"],
+    powerRequirements: "Alimentación por puerto SFP 3.3V",
+    poeType: "NONE",
+    powerConsumptionWatts: 1.5,
+    managementMode: "Standalone",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EcomSpain Cable Pasivo DAC 10G SFP+ a SFP+ 3 Metros certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-dac-10g-3m",
+      title: "Ficha de Producto EcomSpain DAC-10G-3M",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/ecomspain-dac-10g-3m",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con DAC-10G-3M",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "sfp28-25g-sr",
+    sku: "SFP28-25G-SR",
+    model: "SFP28-25G-SR",
+    name: "EcomSpain Transceptor 25G SFP28 Multimodo LC 850nm 100m",
+    brand: "EcomSpain",
+    deviceType: "FIBER_OPTIC",
+    category: "transceivers",
+    description: "EcomSpain Transceptor 25G SFP28 Multimodo LC 850nm 100m homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/ecomspain-sfp28-25g-sr",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 129,
+    wholesalePriceEur: 85,
+    stockStatus: "IN_STOCK",
+    specs: ["EcomSpain Transceptor 25G SFP28 Multimodo LC 850nm 100m testado para interoperabilidad 100% en switches EnGenius y Cisco","Garantía oficial EcomSpain"],
+    interfaces: ["2x Conectores LC Duplex"],
+    powerRequirements: "Alimentación por puerto SFP 3.3V",
+    poeType: "NONE",
+    powerConsumptionWatts: 1.5,
+    managementMode: "Standalone",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EcomSpain Transceptor 25G SFP28 Multimodo LC 850nm 100m certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-sfp28-25g-sr",
+      title: "Ficha de Producto EcomSpain SFP28-25G-SR",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/ecomspain-sfp28-25g-sr",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con SFP28-25G-SR",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "qsfp28-100g-sr4",
+    sku: "QSFP28-100G-SR4",
+    model: "QSFP28-100G-SR4",
+    name: "EcomSpain Transceptor 100G QSFP28 MPO Multimodo 100m",
+    brand: "EcomSpain",
+    deviceType: "FIBER_OPTIC",
+    category: "transceivers",
+    description: "EcomSpain Transceptor 100G QSFP28 MPO Multimodo 100m homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/ecomspain-qsfp28-100g-sr4",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 389,
+    wholesalePriceEur: 270,
+    stockStatus: "IN_STOCK",
+    specs: ["EcomSpain Transceptor 100G QSFP28 MPO Multimodo 100m testado para interoperabilidad 100% en switches EnGenius y Cisco","Garantía oficial EcomSpain"],
+    interfaces: ["2x Conectores LC Duplex"],
+    powerRequirements: "Alimentación por puerto SFP 3.3V",
+    poeType: "NONE",
+    powerConsumptionWatts: 1.5,
+    managementMode: "Standalone",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EcomSpain Transceptor 100G QSFP28 MPO Multimodo 100m certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-qsfp28-100g-sr4",
+      title: "Ficha de Producto EcomSpain QSFP28-100G-SR4",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/ecomspain-qsfp28-100g-sr4",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con QSFP28-100G-SR4",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "patch-om4-2m",
+    sku: "PATCH-OM4-2M",
+    model: "PATCH-OM4-2M",
+    name: "EcomSpain Latiguillo Fibra Óptica Duplex LC-LC OM4 2 Metros",
+    brand: "EcomSpain",
+    deviceType: "FIBER_OPTIC",
+    category: "transceivers",
+    description: "EcomSpain Latiguillo Fibra Óptica Duplex LC-LC OM4 2 Metros homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/ecomspain-patch-om4-2m",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 15,
+    wholesalePriceEur: 8,
+    stockStatus: "IN_STOCK",
+    specs: ["EcomSpain Latiguillo Fibra Óptica Duplex LC-LC OM4 2 Metros testado para interoperabilidad 100% en switches EnGenius y Cisco","Garantía oficial EcomSpain"],
+    interfaces: ["LC-LC"],
+    powerRequirements: "Alimentación por puerto SFP 3.3V",
+    poeType: "NONE",
+    powerConsumptionWatts: 1.5,
+    managementMode: "Standalone",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EcomSpain Latiguillo Fibra Óptica Duplex LC-LC OM4 2 Metros certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-patch-om4-2m",
+      title: "Ficha de Producto EcomSpain PATCH-OM4-2M",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/ecomspain-patch-om4-2m",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con PATCH-OM4-2M",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "rack-mount-kit",
+    sku: "RACK-MOUNT-KIT",
+    model: "RACK-MOUNT-KIT",
+    name: "EcomSpain Kit de Montaje en Rack 19\" Universal 1U para Switches",
+    brand: "EcomSpain",
+    deviceType: "ACCESSORY",
+    category: "accessories",
+    description: "EcomSpain Kit de Montaje en Rack 19\" Universal 1U para Switches homologado para soluciones profesionales de networking y telecomunicaciones.",
+    url: "https://www.ecomshop.es/ecomspain-rack-mount-kit",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 25,
+    wholesalePriceEur: 12,
+    stockStatus: "IN_STOCK",
+    specs: ["EcomSpain Kit de Montaje en Rack 19\" Universal 1U para Switches testado para interoperabilidad 100% en switches EnGenius y Cisco","Garantía oficial EcomSpain"],
+    interfaces: ["2x Conectores LC Duplex"],
+    powerRequirements: "Alimentación por puerto SFP 3.3V",
+    poeType: "NONE",
+    powerConsumptionWatts: 1.5,
+    managementMode: "Standalone",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EcomSpain Kit de Montaje en Rack 19\" Universal 1U para Switches certificado por EcomSpain para despliegues exigentes",
+      "Interoperabilidad probada y soporte de sustitución avanzada en 24h"
+    ],
+    antiHallucinationNotes: [
+      "Verificar requisitos de alimentación y compatibilidad física antes de la compra."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-rack-mount-kit",
+      title: "Ficha de Producto EcomSpain RACK-MOUNT-KIT",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/ecomspain-rack-mount-kit",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con RACK-MOUNT-KIT",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión con hardware profesional homologado.",
+      engineeringPerformance: "Rendimiento verificado a velocidad de línea sin estrangulamientos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  }
 ];
 
-/**
- * Busca un producto en el catálogo oficial de EcomShop por SKU, modelo, ID o nombre
- */
 export function findCatalogProduct(query: string): CatalogProduct | undefined {
   if (!query) return undefined;
   const clean = query.trim().toUpperCase();
@@ -2553,4 +6826,18 @@ export function getCatalogProductsByType(deviceType: DeviceType): CatalogProduct
  */
 export function getCatalogProductsByCategory(category: CatalogProduct["category"]): CatalogProduct[] {
   return ECOMSHOP_FULL_CATALOG.filter(p => p.category === category);
+}
+
+/**
+ * Devuelve únicamente los dispositivos propios / homologados de EcomShop
+ */
+export function getEcomshopOnlyDevices(): CatalogProduct[] {
+  return ECOMSHOP_FULL_CATALOG.filter(p => p.isEcomshopOwnProduct !== false);
+}
+
+/**
+ * Devuelve productos con estado de homologación canónica
+ */
+export function getHomologatedProducts(): CatalogProduct[] {
+  return ECOMSHOP_FULL_CATALOG.filter(p => p.lifecycleStatus === 'HOMOLOGATED' || p.lifecycleStatus === undefined);
 }

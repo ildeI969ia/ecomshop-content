@@ -5,7 +5,9 @@ export type DeviceType =
   | "GATEWAY"
   | "FIBER_OPTIC"
   | "TESTER"
-  | "ACCESSORY";
+  | "ACCESSORY"
+  | "CCTV_CAMERA"
+  | "CPE_PTP";
 
 export interface ProductEvidenceClaim {
   claim: string;
