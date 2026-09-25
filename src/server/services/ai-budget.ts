@@ -49,7 +49,8 @@ function getMadridYearMonth(date = new Date()): string {
 }
 
 /**
- * Acumula el uso de IA en Firestore: ai_usage/{uid}/months/{AAAA-MM} (hora de Madrid).
+ * Acumula el uso de IA en Firestore: ai_usage/{uid}/months/{AAAA-MM} (hora de Madrid)
+ * y actualiza en ai_usage_summary/{AAAA-MM} el acumulador mensual global.
  * Actualización transaccional con FieldValue.increment para totalEur y requests.
  */
 export async function recordAiUsage(
@@ -57,11 +58,14 @@ export async function recordAiUsage(
   action: string,
   tokensIn: number,
   tokensOut: number,
-  imageCount = 0
+  imageCount = 0,
+  userInfo?: { email?: string; displayName?: string },
+  modelName = "gemini-2.5-flash"
 ): Promise<void> {
   const db = getAdminFirestore();
   const yearMonth = getMadridYearMonth();
   const docRef = db.collection("ai_usage").doc(uid).collection("months").doc(yearMonth);
+  const globalSummaryRef = db.collection("ai_usage_summary").doc(yearMonth);
 
   const estimatedCostEur = calculateUsageCost({
     action: action as any,
@@ -70,7 +74,12 @@ export async function recordAiUsage(
     imageCount,
   });
 
+  const email = userInfo?.email || `${uid}@ecomspain.com`;
+  const displayName = userInfo?.displayName || userInfo?.email?.split("@")[0] || uid;
+  const sanitizedModelKey = modelName.replace(/[^a-zA-Z0-9_-]/g, "_");
+
   await db.runTransaction(async (transaction) => {
+    // 1. Actualización por usuario
     const doc = await transaction.get(docRef);
     if (!doc.exists) {
       transaction.set(docRef, {
@@ -88,6 +97,47 @@ export async function recordAiUsage(
         tokensIn: FieldValue.increment(tokensIn),
         tokensOut: FieldValue.increment(tokensOut),
         imageCount: FieldValue.increment(imageCount),
+        lastUpdated: new Date().toISOString(),
+      });
+    }
+
+    // 2. Actualización global mensual en ai_usage_summary/{YYYY-MM}
+    const globalDoc = await transaction.get(globalSummaryRef);
+    if (!globalDoc.exists) {
+      transaction.set(globalSummaryRef, {
+        month: yearMonth,
+        totalCostEur: estimatedCostEur,
+        totalInputTokens: tokensIn,
+        totalOutputTokens: tokensOut,
+        totalImageGenerations: imageCount,
+        byUser: {
+          [uid]: {
+            email,
+            displayName,
+            costEur: estimatedCostEur,
+            operationsCount: 1,
+          },
+        },
+        byModel: {
+          [sanitizedModelKey]: {
+            costEur: estimatedCostEur,
+            calls: 1,
+          },
+        },
+        lastUpdated: new Date().toISOString(),
+      });
+    } else {
+      transaction.update(globalSummaryRef, {
+        totalCostEur: FieldValue.increment(estimatedCostEur),
+        totalInputTokens: FieldValue.increment(tokensIn),
+        totalOutputTokens: FieldValue.increment(tokensOut),
+        totalImageGenerations: FieldValue.increment(imageCount),
+        [`byUser.${uid}.email`]: email,
+        [`byUser.${uid}.displayName`]: displayName,
+        [`byUser.${uid}.costEur`]: FieldValue.increment(estimatedCostEur),
+        [`byUser.${uid}.operationsCount`]: FieldValue.increment(1),
+        [`byModel.${sanitizedModelKey}.costEur`]: FieldValue.increment(estimatedCostEur),
+        [`byModel.${sanitizedModelKey}.calls`]: FieldValue.increment(1),
         lastUpdated: new Date().toISOString(),
       });
     }

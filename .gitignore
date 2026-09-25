@@ -44,3 +44,9 @@ next-env.d.ts
 
 # worktrees
 .worktrees/
+
+# backups & json dumps
+/backups/
+backups/
+*.backup.json
+
