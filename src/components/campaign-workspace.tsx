@@ -27,7 +27,8 @@ import {
   AlertCircle,
   FileCheck,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw
 } from "lucide-react";
 import { ContentOutput } from "@/lib/schema";
 import { ProductOpportunityRecord } from "@/lib/services/opportunity-radar";
