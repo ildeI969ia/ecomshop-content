@@ -433,7 +433,8 @@ export default function ContentDashboard() {
         body: JSON.stringify({
           sku: opp.sku,
           productName: opp.model || opp.sku,
-          topicTitle: opp.actionTitle || `Oportunidad B2B: ${opp.brand || "EcomShop"} ${opp.model || opp.sku}`,
+          topicTitle: selectedEditorialAngle?.title || (freeTopicTitle || opp.actionTitle || `Oportunidad B2B: ${opp.brand || "EcomShop"} ${opp.model || opp.sku}`),
+          angleSelected: selectedEditorialAngle || freeTopicTitle,
           category: opp.category || "Networking",
           targetAudience: opp.targetSegment || "Instalador B2B",
           productUrl: opp.url || "https://ecomshop.es",
@@ -1248,10 +1249,12 @@ export default function ContentDashboard() {
   // Configuración Gemini API & Agente Estratégico
   const [strategicAngles, setStrategicAngles] = useState<StrategicAngle[]>([]);
   const [selectedAngleId, setSelectedAngleId] = useState<string | null>(null);
+  const [selectedEditorialAngle, setSelectedEditorialAngle] = useState<any | null>(null);
+  const [freeTopicTitle, setFreeTopicTitle] = useState<string>("");
   const [loadingAngles, setLoadingAngles] = useState(false);
 
   const [activeBackendLabel, setActiveBackendLabel] = useState<string>("Google GenAI Servidor");
-  const [connectedModel, setConnectedModel] = useState<string>("gemini-2.5-flash");
+  const [connectedModel, setConnectedModel] = useState<string>("gemini-2.0-flash");
 
   const handleGenerateStrategicAngles = async () => {
     if (!topicTitle) return;
@@ -2966,6 +2969,10 @@ export default function ContentDashboard() {
               }}
               selectedSku={selectedSku}
               isLoadingIntelligence={isLoadingIntelligence}
+              selectedAngle={selectedEditorialAngle}
+              onSelectAngle={(angle) => setSelectedEditorialAngle(angle)}
+              freeTopicTitle={freeTopicTitle}
+              onFreeTopicChange={setFreeTopicTitle}
             />
           </main>
         </div>

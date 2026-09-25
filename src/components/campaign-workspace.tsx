@@ -49,6 +49,8 @@ import { injectInternalLinks } from "@/lib/services/internal-linking-engine";
 import { formatForWhatsApp, formatForLinkedIn, formatForCleanBlogHtml } from "@/lib/copy-formatters";
 import { SafeHtml } from "@/components/SafeHtml";
 import { Button, Badge, Card, CardHeader, CardTitle, CardDescription } from "@/components/ui";
+import { EditorialAnglesSelector } from "./editorial-angles-selector";
+import { EditorialAngle } from "@/app/api/editorial/suggest-angles/route";
 
 export type WorkspaceTab = "geo" | "blog" | "mailchimp" | "whatsapp" | "linkedin" | "ecomshop" | "intel" | "quality";
 
@@ -72,6 +74,10 @@ interface CampaignWorkspaceProps {
   selectedSku?: string;
   isLoadingIntelligence?: boolean;
   initialTab?: WorkspaceTab;
+  selectedAngle?: EditorialAngle | null;
+  onSelectAngle?: (angle: EditorialAngle | null, isFreeTopic?: boolean) => void;
+  freeTopicTitle?: string;
+  onFreeTopicChange?: (title: string) => void;
 }
 
 export function getProductFamily(deviceType: string): ProductFamily {
@@ -111,7 +117,11 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   onLaunchWithSku,
   selectedSku = "ECW510",
   isLoadingIntelligence = false,
-  initialTab
+  initialTab,
+  selectedAngle,
+  onSelectAngle,
+  freeTopicTitle,
+  onFreeTopicChange
 }) => {
   const [content, setContent] = useState<ContentOutput | null>(initialContent);
 
@@ -601,6 +611,17 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             </div>
           ) : intelligenceCard ? (
             <div className="space-y-4">
+              <EditorialAnglesSelector
+                sku={selectedSku || intelligenceCard.product.sku}
+                brand={intelligenceCard.product.brand}
+                model={intelligenceCard.product.model}
+                category={intelligenceCard.product.category}
+                specs={intelligenceCard.technicalSpecs.standards}
+                selectedAngle={selectedAngle || null}
+                onSelectAngle={onSelectAngle || (() => {})}
+                freeTopicTitle={freeTopicTitle}
+                onFreeTopicChange={onFreeTopicChange}
+              />
               <ProductIntelligenceView card={intelligenceCard} />
               <EvidenceAuditDrawer
                 score={95}

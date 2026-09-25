@@ -58,6 +58,8 @@ interface CampaignStepperProps {
   activeAngle?: string;
   selectedAudience?: TargetAudienceType;
   onSelectAudience?: (audience: TargetAudienceType) => void;
+  selectedAngle?: any;
+  onSelectAngle?: (angle: any, isFreeTopic?: boolean) => void;
 }
 
 interface StepDef {
