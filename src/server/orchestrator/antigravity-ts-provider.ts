@@ -47,7 +47,7 @@ export class AntigravityTsProvider implements IAgentProvider {
     return new GoogleGenAI({
       vertexai: true,
       project: process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || "ecomshop-marketing-prod",
-      location: process.env.GOOGLE_CLOUD_LOCATION || process.env.VERTEX_LOCATION || "europe-west1"
+      location: process.env.GOOGLE_CLOUD_LOCATION || process.env.VERTEX_LOCATION || "us-central1"
     });
   }
 
@@ -57,8 +57,6 @@ export class AntigravityTsProvider implements IAgentProvider {
     const systemInstruction = `Eres un agente de marketing técnico de EcomShop. Tu rol es ${manifest.agentRole}. Produce respuestas estructuradas sin inventar especificaciones no verificadas.`;
 
     const client = this.getClient();
-    let primaryModel = this.model || process.env.GEMINI_MODEL || "gemini-2.0-flash";
-    let fallbackModel = "gemini-1.5-flash";
 
     const generateWithModel = async (modelName: string) => {
       const timeoutSec = Math.round(this.timeoutMs / 1000);
@@ -80,16 +78,28 @@ export class AntigravityTsProvider implements IAgentProvider {
     };
 
     try {
+      const candidateModels = [
+        this.model || process.env.GEMINI_MODEL || "gemini-2.0-flash",
+        "gemini-1.5-flash-002",
+        "gemini-1.5-flash-001",
+        "gemini-2.0-flash-001"
+      ].filter(Boolean);
+
       let response: any;
-      try {
-        response = await generateWithModel(primaryModel);
-      } catch (primaryErr: any) {
-        if (primaryModel !== fallbackModel) {
-          console.warn(`[AntigravityTsProvider] Modelo principal ${primaryModel} falló. Intentando fallback a ${fallbackModel}:`, primaryErr?.message || primaryErr);
-          response = await generateWithModel(fallbackModel);
-        } else {
-          throw primaryErr;
+      let lastError: any;
+
+      for (const modelName of candidateModels) {
+        try {
+          response = await generateWithModel(modelName);
+          if (response?.text) break;
+        } catch (err: any) {
+          console.warn(`[AntigravityTsProvider] Modelo ${modelName} falló en Vertex AI (${err?.message || err}). Probando siguiente...`);
+          lastError = err;
         }
+      }
+
+      if (!response?.text) {
+        throw lastError || new Error("EMPTY_AI_RESPONSE: Ningún modelo de IA pudo responder.");
       }
 
       const responseText = response.text || "";
