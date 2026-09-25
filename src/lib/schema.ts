@@ -67,6 +67,24 @@ export const ContentOutputSchema = z.object({
     fullPostText: z.string()
   }),
 
+  // Prensa / Blog GEO (Prensa, Tabla Comparativa, JSON-LD)
+  geo: z.object({
+    title: z.string(),
+    metaDescription: z.string(),
+    htmlContent: z.string(),
+    comparativeTableHtml: z.string().optional(),
+    jsonLd: z.string().optional(),
+    markdownContent: z.string().optional()
+  }).optional(),
+
+  // Ficha ecomshop.es (Argumentario CMS sin estilos inline sucios)
+  ecomshop: z.object({
+    title: z.string(),
+    argumentario: z.string(),
+    features: z.array(z.string()),
+    cmsHtml: z.string()
+  }).optional(),
+
   // Veto y Ajustes del EvidenceEngine (Fase 10 - NotebookLM)
   evidenceEngineAdjustments: z.array(z.object({
     original: z.string(),
