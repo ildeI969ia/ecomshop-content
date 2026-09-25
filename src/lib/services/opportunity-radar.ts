@@ -398,8 +398,37 @@ export class OpportunityRadarService {
       });
     }
 
-    // Ordenar por totalScore descendente
-    scoredOpportunities.sort((a, b) => b.scores.totalScore - a.scores.totalScore);
+    // Ordenar por totalScore descendente con rotación si shuffleSeed > 0 o empates en totalScore
+    scoredOpportunities.sort((a, b) => {
+      const diff = b.scores.totalScore - a.scores.totalScore;
+      if (Math.abs(diff) > 0.001) {
+        return diff;
+      }
+      // En caso de empate en totalScore o si shuffleSeed > 0, rotar determinísticamente entre los 43 productos
+      if (shuffleSeed > 0) {
+        const hashA = (a.sku.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) * shuffleSeed) % 100;
+        const hashB = (b.sku.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) * shuffleSeed) % 100;
+        return hashB - hashA;
+      }
+      return a.sku.localeCompare(b.sku);
+    });
+
+    if (shuffleSeed > 0 && scoredOpportunities.length > limitCount) {
+      // Rotar entre los productos con puntuación afín (rango cercano al máximo) para mostrar diversidad
+      const maxScore = scoredOpportunities[0]?.scores.totalScore || 100;
+      const topCandidates = scoredOpportunities.filter(o => maxScore - o.scores.totalScore <= 10);
+      if (topCandidates.length > limitCount) {
+        topCandidates.sort((a, b) => {
+          const seedA = (a.sku.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) * shuffleSeed) % 100;
+          const seedB = (b.sku.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) * shuffleSeed) % 100;
+          return seedB - seedA;
+        });
+
+        const rest = scoredOpportunities.filter(o => !topCandidates.some(t => t.sku === o.sku));
+        scoredOpportunities.length = 0;
+        scoredOpportunities.push(...topCandidates, ...rest);
+      }
+    }
 
     const topOpportunities = scoredOpportunities.slice(0, limitCount);
     const availablePool = scoredOpportunities.slice(limitCount);

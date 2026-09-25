@@ -6,6 +6,7 @@ import {
   Sparkles,
   Megaphone,
   PackageSearch,
+  Image as ImageIcon,
   CircleDollarSign,
   Settings,
   ChevronsLeft,
@@ -19,7 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/use-auth";
 
-export type NavSection = "resumen" | "radar" | "workspace" | "enhancer" | "finops" | "settings";
+export type NavSection = "resumen" | "radar" | "workspace" | "enhancer" | "images" | "finops" | "settings";
 
 interface SidebarProps {
   activeSection: NavSection;
@@ -37,6 +38,7 @@ export function Sidebar({ activeSection, onSelectSection, mobileOpen, onCloseMob
     { id: "radar", label: "Radar B2B", icon: Sparkles, badge: "NUEVO" },
     { id: "workspace", label: "Campañas", icon: Megaphone },
     { id: "enhancer", label: "Catálogo", icon: PackageSearch },
+    { id: "images", label: "Imágenes", icon: ImageIcon },
     { id: "finops", label: "FinOps Global", icon: CircleDollarSign },
   ];
 

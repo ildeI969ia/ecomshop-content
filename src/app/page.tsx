@@ -301,7 +301,8 @@ export default function ContentDashboard() {
   const handleRegenerateRadar = async () => {
     setIsRegeneratingRadar(true);
     const randomSeed = Math.floor(Math.random() * 100) + 1;
-    await loadOpportunities(editorialControls, excludedSkus, undefined, randomSeed, selectedBusinessGoal);
+    const currentSkus = opportunities.map(o => o.sku);
+    await loadOpportunities(editorialControls, currentSkus, undefined, randomSeed, selectedBusinessGoal);
     setIsRegeneratingRadar(false);
   };
 
@@ -2104,6 +2105,7 @@ export default function ContentDashboard() {
           mainView === "dashboard" ? "resumen" :
           mainView === "opportunities" ? "radar" :
           mainView === "marketing" ? "enhancer" :
+          mainView === "image_studio" ? "images" :
           mainView === "finops" ? "finops" : "workspace"
         }
         onSelectSection={(section) => {
@@ -2111,6 +2113,7 @@ export default function ContentDashboard() {
           else if (section === "radar") { setMainView("opportunities"); setEntryOrigin("radar"); }
           else if (section === "workspace") setMainView("generator");
           else if (section === "enhancer") setMainView("marketing");
+          else if (section === "images") setMainView("image_studio");
           else if (section === "finops") setMainView("finops");
         }}
         mobileOpen={mobileMenuOpen}
