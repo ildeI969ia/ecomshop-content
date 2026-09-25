@@ -27,10 +27,16 @@ To learn more about Next.js, take a look at the following resources:
 - [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Herramientas Manuales de Administración
 
-## Deploy on Vercel
+En el directorio `scripts/admin/` se encuentran scripts auxiliares para la gestión manual de usuarios (excluidos del build de producción via `.dockerignore`):
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Asignar rol a usuario**:
+  ```bash
+  node scripts/admin/set-admin-role.mjs usuario@ecomspain.com [ADMIN|EDITOR|VIEWER]
+  ```
+- **Verificar correo de usuario**:
+  ```bash
+  node scripts/admin/verify.mjs usuario@ecomspain.com
+  ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
