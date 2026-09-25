@@ -96,6 +96,8 @@ GENERA ÚNICAMENTE UN JSON CON ESTA ESTRUCTURA EXACTA:
       topicTitle: article.title,
       category,
       generatedAt: new Date().toISOString(),
+      source: "ai",
+      status: "DRAFT",
       blog: {
         title: article.title,
         metaDescription: article.metaDescription,
@@ -148,6 +150,9 @@ GENERA ÚNICAMENTE UN JSON CON ESTA ESTRUCTURA EXACTA:
     topicTitle: article.title,
     category,
     generatedAt: new Date().toISOString(),
+    source: "fallback",
+    status: "NEEDS_REVIEW",
+    fallbackNotice: "La IA no ha respondido, vuelve a intentarlo. Se ha generado contenido con plantilla de respaldo sin cifras inventadas. Requiere revisión previa a su aprobación.",
     blog: {
       title: article.title,
       metaDescription: article.metaDescription,
@@ -203,7 +208,7 @@ function generateFallbackLinkedIn(article: FullArticleResult) {
     takeaways: [
       "Evitar cuellos de botella 1GbE migrando a conmutación Multi-Gigabit.",
       "Cálculo estricto de PoE Budget y gestión térmica en racks.",
-      "Ahorro de hasta el 42% en TCO eliminando cuotas de suscripción en cloud."
+      "Ahorro significativo en TCO eliminando cuotas de suscripción en cloud."
     ],
     callToAction: "Comparte tus experiencias de instalación en los comentarios.",
     hashtags: ["#Networking", "#Telecomunicaciones", "#WiFi7", "#EcomShop", "#B2B"],

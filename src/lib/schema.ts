@@ -87,6 +87,11 @@ export const ContentOutputSchema = z.object({
   // Fact-Check Score de Fidelidad Técnica (0-100)
   factCheckScore: z.number().optional(),
 
+  // Trazabilidad de origen y revisión (Fase 6b)
+  source: z.enum(["ai", "fallback"]).optional(),
+  status: z.enum(["DRAFT", "NEEDS_REVIEW", "APPROVED", "PUBLISHED"]).optional(),
+  fallbackNotice: z.string().optional(),
+
   // Metadatos reales de consumo de tokens Gemini
   usageMetadata: z.object({
     promptTokenCount: z.number().optional(),

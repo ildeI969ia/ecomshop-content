@@ -90,7 +90,11 @@ export class GroundedWriterService {
             });
 
             if (validated.success) {
-              return validated.data;
+              return {
+                ...validated.data,
+                source: "ai",
+                status: "DRAFT"
+              };
             }
           } catch (modelErr) {
             console.warn(`[GroundedWriter] Fallo con ${modelToTry}, probando siguiente:`, modelErr);
@@ -208,6 +212,9 @@ Genera los 4 canales completos (Blog con HTML Durable, Mailchimp B2B, WhatsApp B
       topicTitle: req.topicTitle || `${intel.model}: Despliegue de Alta Conectividad B2B`,
       category: req.category || intel.card.product.category,
       generatedAt: new Date().toISOString(),
+      source: "fallback",
+      status: "NEEDS_REVIEW",
+      fallbackNotice: "La IA no ha respondido, vuelve a intentarlo. Se ha generado contenido con plantilla de respaldo sin cifras inventadas. Requiere revisión previa a su aprobación.",
       blog: {
         title: req.topicTitle || `Ingeniería de Redes: Cómo desplegar el ${intel.model} sin cuellos de botella`,
         metaDescription: `Análisis técnico del ${intel.model} con conmutación Multi-Gigabit [${primarySourceId}], presupuesto PoE+ y gestión en la nube con 0€ en suscripciones [${tcoSourceId}].`,

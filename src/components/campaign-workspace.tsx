@@ -26,7 +26,8 @@ import {
   Zap,
   AlertCircle,
   FileCheck,
-  CheckCircle2
+  CheckCircle2,
+  AlertTriangle
 } from "lucide-react";
 import { ContentOutput } from "@/lib/schema";
 import { ProductOpportunityRecord } from "@/lib/services/opportunity-radar";
@@ -544,14 +545,28 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             )}
           </div>
 
+          {(content?.source === "fallback" || content?.status === "NEEDS_REVIEW") && (
+            <div className="w-full bg-amber-500/10 border border-amber-500/30 rounded-xl p-3.5 my-2 flex items-center justify-between gap-3 text-amber-200 text-xs font-medium">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>
+                  {content?.fallbackNotice || "⚠️ La IA no ha respondido, vuelve a intentarlo. Se ha generado una plantilla de respaldo marcando el contenido como NEEDS_REVIEW (Aprobación desactivada)."}
+                </span>
+              </div>
+              <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[10px] uppercase font-bold shrink-0">
+                MODO RESPALDO
+              </span>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 shrink-0 flex-wrap">
             <Badge
-              variant={content?.factCheckScore !== null && (content?.factCheckScore ?? 100) < 70 ? "danger" : "success"}
+              variant={content?.source === "fallback" || content?.status === "NEEDS_REVIEW" ? "warning" : (content?.factCheckScore !== null && (content?.factCheckScore ?? 100) < 70 ? "danger" : "success")}
               size="sm"
               className="font-mono font-bold"
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              {typeof content?.factCheckScore === "number" ? `Fidelidad: ${content.factCheckScore}/100` : "Product Truth: VERIFIED"}
+              {content?.source === "fallback" ? "RESPALDO: REVISIÓN OBLIGATORIA" : (typeof content?.factCheckScore === "number" ? `Fidelidad: ${content.factCheckScore}/100` : "Product Truth: VERIFIED")}
             </Badge>
 
             {onApprove && (
@@ -560,11 +575,11 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 variant="primary"
                 size="sm"
                 className="bg-emerald-600 hover:bg-emerald-500 border-emerald-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isSavingArticle || (content?.factCheckScore !== null && (content?.factCheckScore ?? 100) < 70)}
+                disabled={isSavingArticle || content?.source === "fallback" || content?.status === "NEEDS_REVIEW" || (content?.factCheckScore !== null && (content?.factCheckScore ?? 100) < 70)}
                 isLoading={isSavingArticle}
                 onClick={onApprove}
                 leftIcon={!isSavingArticle ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" /> : undefined}
-                title={(content?.factCheckScore !== null && (content?.factCheckScore ?? 100) < 70) ? "Bloqueado: La campaña no supera los criterios de Product Truth" : "Aprobar campaña para publicación"}
+                title={(content?.source === "fallback" || content?.status === "NEEDS_REVIEW") ? "Aprobación bloqueada: La IA no ha respondido. Requiere revisión manual." : ((content?.factCheckScore !== null && (content?.factCheckScore ?? 100) < 70) ? "Bloqueado: La campaña no supera los criterios de Product Truth" : "Aprobar campaña para publicación")}
               >
                 Aprobar Campaña
               </Button>
@@ -576,11 +591,11 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 variant="primary"
                 size="sm"
                 className="bg-indigo-600 hover:bg-indigo-500 border-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isSavingArticle || (content?.factCheckScore !== null && (content?.factCheckScore ?? 100) < 70)}
+                disabled={isSavingArticle || content?.source === "fallback" || content?.status === "NEEDS_REVIEW" || (content?.factCheckScore !== null && (content?.factCheckScore ?? 100) < 70)}
                 isLoading={isSavingArticle}
                 onClick={onPublishToStore}
                 leftIcon={!isSavingArticle ? <Sparkles className="w-3.5 h-3.5 text-indigo-200" /> : undefined}
-                title={(content?.factCheckScore !== null && (content?.factCheckScore ?? 100) < 70) ? "Bloqueado: Requiere aprobación previa de Product Truth" : "Publicar campaña"}
+                title={(content?.source === "fallback" || content?.status === "NEEDS_REVIEW") ? "Publicación bloqueada: Contenido en modo respaldo." : ((content?.factCheckScore !== null && (content?.factCheckScore ?? 100) < 70) ? "Bloqueado: Requiere aprobación previa de Product Truth" : "Publicar campaña")}
               >
                 Publicar Campaña
               </Button>

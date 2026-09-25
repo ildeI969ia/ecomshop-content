@@ -314,6 +314,8 @@ JSON Schema requerido:
           totalTokenCount: response.usageMetadata.totalTokenCount
         };
       }
+      parsed.source = "ai";
+      parsed.status = "DRAFT";
       return parsed as ContentOutput;
     }
   } catch (parseError) {
@@ -471,7 +473,7 @@ ${ctaDestination}?utm_source=whatsapp&utm_medium=broadcast
 
   // LinkedIn: Debate de Arquitectura B2B para CIOs/TIC (Fase 10)
   const objectionAnchor = req.narrativeAnchor?.commercialObjection || "¿Realmente compensa seguir pagando renovaciones anuales de licencias cloud por cada dispositivo de red?";
-  const counterAnchor = req.narrativeAnchor?.counterArgument || "Con EnGenius Cloud en EcomShop el hardware es tuyo de por vida: 0€ en cuotas y hasta un 42% de ahorro en TCO a 3 años frente a modelos cautivos.";
+  const counterAnchor = req.narrativeAnchor?.counterArgument || "Con EnGenius Cloud en EcomShop el hardware es tuyo de por vida: 0€ en cuotas y ahorro significativo en TCO frente a modelos cautivos.";
   
   let linkedinPost = `
 ${objectionAnchor}
@@ -500,6 +502,9 @@ ${ctaDestination}
     topicTitle: effectiveTitle,
     category: req.category,
     generatedAt: now,
+    source: "fallback",
+    status: "NEEDS_REVIEW",
+    fallbackNotice: "La IA no ha respondido, vuelve a intentarlo. Se ha generado contenido con plantilla de respaldo sin cifras inventadas. Requiere revisión previa a su aprobación.",
     evidenceEngineAdjustments: [],
     blog: {
       title: effectiveTitle,
@@ -513,7 +518,7 @@ ${ctaDestination}
         targetProfiles: [
           { profile: "Instaladores", keyTakeaway: "Despliegue rápido con escaneo QR Cloud y sin visitas postventa por caídas de red." },
           { profile: "Directores TIC", keyTakeaway: "Cero costes en licencias anuales de gestión y estabilidad con WiFi 7 y enlaces 10G." },
-          { profile: "Jefes de Compras", keyTakeaway: "Ahorro directo de hasta un 40% en TCO a 3 años y stock garantizado en 24/48h." },
+          { profile: "Jefes de Compras", keyTakeaway: "Ahorro directo en TCO a largo plazo y stock garantizado en 24/48h." },
           { profile: "Distribuidores", keyTakeaway: "Condiciones de tarifa mayorista B2B, alta rotación de catálogo y soporte preventa directo." }
         ],
         photoPlacements: [
