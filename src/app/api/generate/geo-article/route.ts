@@ -40,7 +40,7 @@ DEBES GENERAR UN ARTÍCULO COMPLETO CON:
 4. "jsonLd": Schema org de datos estructurados JSON-LD tipo "Product" o "TechArticle" (en formato cadena de texto JSON limpia).
 5. "markdownContent": El artículo completo convertido a formato Markdown con la tabla y metadatos.
 
-Devuelve un JSON strictly estructurado:
+Devuelve un JSON estrictamente estructurado:
 {
   "title": "...",
   "metaDescription": "...",
