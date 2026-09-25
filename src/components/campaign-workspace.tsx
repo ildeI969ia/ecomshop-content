@@ -39,6 +39,7 @@ import { CampaignStepper, GenerationStage } from "./campaign-stepper";
 import { SourceDrawer, CitationDetail } from "./source-drawer";
 import { ECOMSHOP_CATALOG, getCatalogDevice, getAllCatalogDevices, getEcomshopOnlyDevices, getDevicesGroupedByType } from "@/lib/catalog";
 import { injectInternalLinks } from "@/lib/services/internal-linking-engine";
+import { formatForWhatsApp, formatForLinkedIn, formatForCleanBlogHtml } from "@/lib/copy-formatters";
 import { SafeHtml } from "@/components/SafeHtml";
 import { Button, Badge, Card, CardHeader, CardTitle, CardDescription } from "@/components/ui";
 
@@ -973,10 +974,10 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                       type="button"
                       variant="secondary"
                       size="sm"
-                      onClick={() => copyToClipboard(content.blog.htmlContent, "blog-html")}
+                      onClick={() => copyToClipboard(formatForCleanBlogHtml(content.blog.htmlContent), "blog-html")}
                       leftIcon={copiedKey === "blog-html" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-sky-400" />}
                     >
-                      {copiedKey === "blog-html" ? "¡HTML Copiado!" : "Copiar HTML Durable"}
+                      {copiedKey === "blog-html" ? "¡HTML Limpio Copiado!" : "Copiar HTML Limpio"}
                     </Button>
                   </div>
                 </Card>
@@ -1204,10 +1205,10 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                       variant="primary"
                       size="xs"
                       className="bg-emerald-700 hover:bg-emerald-600 border-emerald-600"
-                      onClick={() => copyToClipboard(content.whatsapp.formattedMessage, "wa-msg")}
+                      onClick={() => copyToClipboard(formatForWhatsApp(content.whatsapp.formattedMessage, { utmSource: "whatsapp", utmMedium: "broadcast", utmCampaign: content.blog?.slug }), "wa-msg")}
                       leftIcon={copiedKey === "wa-msg" ? <Check className="w-3.5 h-3.5 text-emerald-200" /> : <Copy className="w-3.5 h-3.5" />}
                     >
-                      {copiedKey === "wa-msg" ? "¡Copiado!" : "Copiar Mensaje"}
+                      {copiedKey === "wa-msg" ? "¡Nativo Copiado!" : "Copiar WhatsApp Nativo"}
                     </Button>
                   </div>
                 </div>
@@ -1270,10 +1271,10 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                       type="button"
                       variant="primary"
                       size="xs"
-                      onClick={() => copyToClipboard(content.linkedin.fullPostText, "li-post")}
+                      onClick={() => copyToClipboard(formatForLinkedIn(content.linkedin.fullPostText, { utmSource: "linkedin", utmMedium: "social", utmCampaign: content.blog?.slug }), "li-post")}
                       leftIcon={copiedKey === "li-post" ? <Check className="w-3.5 h-3.5 text-sky-200" /> : <Copy className="w-3.5 h-3.5" />}
                     >
-                      {copiedKey === "li-post" ? "¡Copiado!" : "Copiar Post"}
+                      {copiedKey === "li-post" ? "¡Optimizado Copiado!" : "Copiar Post LinkedIn"}
                     </Button>
                   </div>
                 </div>
