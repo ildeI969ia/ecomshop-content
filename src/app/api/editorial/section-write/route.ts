@@ -68,12 +68,12 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
       }
 
       const written = await writeArticleSection(section, outline, previousSectionsSummary || "");
-      const tokensIn = written.usageMetadata?.promptTokenCount || 600;
-      const tokensOut = written.usageMetadata?.candidatesTokenCount || 800;
+      const tokensIn = written.usageMetadata?.promptTokenCount ?? 600;
+      const tokensOut = written.usageMetadata?.candidatesTokenCount ?? 800;
       try {
         await recordAiUsage(user.uid, "gemini_generation", tokensIn, tokensOut, 0);
       } catch (usageErr) {
-        console.error("[POST /api/editorial/section-write] Error al registrar ai_usage (Fail-Safe activado):", usageErr);
+        console.error("[section-write] Warning: Falló el registro de uso de IA (recordAiUsage):", usageErr);
       }
       const budgetState = await checkAiBudget(user.uid, user.role, 0);
       return NextResponse.json({
@@ -96,10 +96,12 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
         `junia-${Date.now()}`,
         category
       );
+      const tokensIn = contentOutput.usageMetadata?.promptTokenCount ?? 1200;
+      const tokensOut = contentOutput.usageMetadata?.candidatesTokenCount ?? 2000;
       try {
-        await recordAiUsage(user.uid, "gemini_generation", 1200, 2000, 0);
+        await recordAiUsage(user.uid, "gemini_generation", tokensIn, tokensOut, 0);
       } catch (usageErr) {
-        console.error("[POST /api/editorial/section-write] Error al registrar ai_usage (Fail-Safe activado):", usageErr);
+        console.error("[section-write] Warning: Falló el registro de uso de IA (recordAiUsage):", usageErr);
       }
       const budgetState = await checkAiBudget(user.uid, user.role, 0);
 
@@ -116,12 +118,12 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
       `junia-${Date.now()}`,
       category
     );
-    const sumTokensIn = fullArticle.sections.reduce((acc, s) => acc + (s.usageMetadata?.promptTokenCount || 600), 0);
-    const sumTokensOut = fullArticle.sections.reduce((acc, s) => acc + (s.usageMetadata?.candidatesTokenCount || 800), 0);
+    const tokensIn = contentOutput.usageMetadata?.promptTokenCount ?? 2500;
+    const tokensOut = contentOutput.usageMetadata?.candidatesTokenCount ?? 4000;
     try {
-      await recordAiUsage(user.uid, "gemini_generation", sumTokensIn || 2500, sumTokensOut || 4000, 0);
+      await recordAiUsage(user.uid, "gemini_generation", tokensIn, tokensOut, 0);
     } catch (usageErr) {
-      console.error("[POST /api/editorial/section-write] Error al registrar ai_usage (Fail-Safe activado):", usageErr);
+      console.error("[section-write] Warning: Falló el registro de uso de IA (recordAiUsage):", usageErr);
     }
     const budgetState = await checkAiBudget(user.uid, user.role, 0);
 

@@ -142,8 +142,7 @@ import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
 
 export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest, user) => {
   try {
-    // Presupuesto FinOps (estimación ~0.0038€ por generación de plantilla de imagen)
-    const budgetCheck = await checkAiBudget(user.uid, user.role, 0.0038);
+    const budgetCheck = await checkAiBudget(user.uid, user.role, 0.001);
     if (!budgetCheck.allowed) {
       return NextResponse.json(
         {
@@ -158,11 +157,6 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
       );
     }
 
-    try {
-      await recordAiUsage(user.uid, "imagen_image", 200, 300, 1);
-    } catch (usageErr) {
-      console.error("[API images/templates] Error al registrar ai_usage (Fail-Safe activado):", usageErr);
-    }
     let body: TemplatesRequestBody = {};
     try {
       body = await req.json();
@@ -215,6 +209,13 @@ Respond ONLY with a valid JSON array of 4 objects with keys "id", "title", "prom
             }));
 
             if (validatedTemplates.length >= 2) {
+              const tokensIn = res.usageMetadata?.promptTokenCount ?? 400;
+              const tokensOut = res.usageMetadata?.candidatesTokenCount ?? 400;
+              try {
+                await recordAiUsage(user.uid, "image_templates", tokensIn, tokensOut, 0);
+              } catch (usageErr) {
+                console.error("[templates] Warning: Falló el registro de uso de IA:", usageErr);
+              }
               return NextResponse.json({
                 success: true,
                 templates: validatedTemplates,
@@ -281,6 +282,14 @@ Respond ONLY with a valid JSON object with keys "id", "title", "prompt", "aspect
                 prompt: typeof parsed.prompt === "string" && parsed.prompt.trim() ? parsed.prompt.trim() : generateFallbackVariation(currentTemplate).prompt,
                 aspectRatio: normalizeAspectRatio(parsed.aspectRatio || currentTemplate.aspectRatio),
               };
+
+              const tokensIn = res.usageMetadata?.promptTokenCount ?? 300;
+              const tokensOut = res.usageMetadata?.candidatesTokenCount ?? 200;
+              try {
+                await recordAiUsage(user.uid, "image_templates", tokensIn, tokensOut, 0);
+              } catch (usageErr) {
+                console.error("[templates] Warning: Falló el registro de uso de IA:", usageErr);
+              }
 
               return NextResponse.json({
                 success: true,

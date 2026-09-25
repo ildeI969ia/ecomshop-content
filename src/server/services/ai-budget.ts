@@ -115,12 +115,23 @@ export async function checkAiBudget(
     console.warn("[checkAiBudget] Error leyendo ai_budget_config/default, usando valores por defecto:", err);
   }
 
-  // 2. Determinar límite aplicable (userOverrides > roleLimits > defaultMonthlyLimit)
+  // 2. Determinar límite aplicable (userOverrides > monthlyLimitEurByRole / roleLimitsEur > defaultMonthlyLimit)
+  const normalizedRole = (role || "").toLowerCase();
   let limitEur = config.defaultMonthlyLimitEur;
+
+  // Buscar límites por rol admitiendo tanto roleLimitsEur como monthlyLimitEurByRole
+  const roleLimits = (config as any).monthlyLimitEurByRole || config.roleLimitsEur || {};
+  const normalizedRoleLimits: Record<string, number> = {};
+  for (const [k, v] of Object.entries(roleLimits)) {
+    if (typeof v === "number") {
+      normalizedRoleLimits[k.toLowerCase()] = v;
+    }
+  }
+
   if (config.userOverrides && typeof config.userOverrides[uid] === "number") {
     limitEur = config.userOverrides[uid];
-  } else if (config.roleLimitsEur && typeof config.roleLimitsEur[role] === "number") {
-    limitEur = config.roleLimitsEur[role];
+  } else if (typeof normalizedRoleLimits[normalizedRole] === "number") {
+    limitEur = normalizedRoleLimits[normalizedRole];
   }
 
   // 3. Leer consumo actual del mes (Madrid)
@@ -139,7 +150,7 @@ export async function checkAiBudget(
   const pct = limitEur > 0 ? (projectedSpentEur / limitEur) * 100 : 0;
 
   // 4. Evaluar según modo de cumplimiento
-  if (role === "admin" && config.enforcementMode === "admin_bypass") {
+  if (normalizedRole === "admin" && config.enforcementMode === "admin_bypass") {
     return {
       allowed: true,
       currentSpentEur,

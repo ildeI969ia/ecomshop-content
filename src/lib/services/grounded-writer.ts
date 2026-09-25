@@ -77,8 +77,15 @@ export class GroundedWriterService {
             rawText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
 
             const parsed = JSON.parse(rawText);
+            const usageMetadata = (res as any).usageMetadata ? {
+              promptTokenCount: (res as any).usageMetadata.promptTokenCount,
+              candidatesTokenCount: (res as any).usageMetadata.candidatesTokenCount,
+              totalTokenCount: (res as any).usageMetadata.totalTokenCount
+            } : undefined;
+
             const validated = ContentOutputSchema.safeParse({
               ...parsed,
+              usageMetadata,
               citations: { ...citations, ...(parsed.citations || {}) }
             });
 
