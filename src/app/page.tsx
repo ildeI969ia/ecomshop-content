@@ -893,6 +893,7 @@ export default function ContentDashboard() {
 
   const [activeTab, setActiveTab] = useState<"blog" | "mailchimp" | "whatsapp" | "linkedin">("blog");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Monitor FinOps de Costes
   const [usageRecords, setUsageRecords] = useState<UsageRecord[]>([]);
@@ -2092,8 +2093,6 @@ export default function ContentDashboard() {
       />
     );
   }
-
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background text-foreground relative flex">
