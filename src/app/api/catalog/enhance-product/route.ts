@@ -5,9 +5,9 @@ import { enhanceProductSheet, exportEnhancedSheetToHtml, exportEnhancedSheetToCs
 
 export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest, user) => {
   try {
-    // Timeout máximo de 20s como requiere el mandato
+    // Timeout ampliado a 90s para estabilización de generación de IA
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("Timeout de 20s excedido en la generación de ficha")), 20000);
+      setTimeout(() => reject(new Error("Timeout de 90s excedido en la generación de ficha")), 90000);
     });
 
     const processPromise = (async () => {
@@ -52,7 +52,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
     const isTimeout = error?.message?.includes("Timeout");
     return NextResponse.json(
       {
-        error: isTimeout ? "La solicitud tardó más de 20s en procesarse" : "La IA no ha respondido, vuelve a intentarlo",
+        error: isTimeout ? "La solicitud tardó más de 90s en procesarse" : "La IA no ha respondido, vuelve a intentarlo",
         details: error?.message || String(error)
       },
       { status: isTimeout ? 504 : 500 }
