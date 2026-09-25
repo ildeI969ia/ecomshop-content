@@ -270,8 +270,15 @@ Genera los 4 canales completos (Blog con HTML Durable, Mailchimp B2B, WhatsApp B
         fullPostText: `¿Por qué seguir renovando suscripciones anuales cuando puedes desplegar ${intel.model} con 0€ en cuotas de por vida? [${tcoSourceId}]\n\nEn despliegues de networking empresarial, la combinación de puertos ${intel.card.technicalSpecs.ports[0]} [${primarySourceId}] y conmutación Multi-Gigabit [${switchSourceId}] es indispensable para evitar cuellos de botella.\n\nClaves de ingeniería:\n• Interfaces ${intel.card.technicalSpecs.ports[0]} [${primarySourceId}]\n• Topología recomendada: ${intel.mandatoryElectronics.recommendedSwitchName} [${switchSourceId}]\n• Cero cuotas de software recurrentes [${tcoSourceId}]\n• Sustitución avanzada en 24h por EcomSpain [${warrantySourceId}]\n\nConsultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h.`
       },
       citations,
+      claims: intel.evidenceLedger.map((e) => ({
+        text: `${e.claim} (${e.sourceType})`,
+        sourceId: e.source
+      })),
       // Fact-Check Score calculado rigurosamente en base a las fuentes oficiales de evidencia resueltas
       factCheckScore: Math.min(100, Math.max(80, 80 + Object.keys(citations).length * 4))
     };
+    const { validateContentGrounding } = require("@/lib/services/claim-validator");
+    out.groundingValidation = validateContentGrounding(out);
+    return out;
   }
 }

@@ -276,6 +276,12 @@ JSON Schema requerido:
     "hashtags": ["#WiFi", "#Networking", "#EnGenius"],
     "fullPostText": "Texto completo del post para copiar y pegar"
   },
+  "claims": [
+    {
+      "text": "Afirmación o cifra técnica (ej: enlaces 10G SFP+, MLO, PoE++ 802.3bt)",
+      "sourceId": "src-1"
+    }
+  ],
   "evidenceEngineAdjustments": [
     {
       "original": "Directiva o concepto que requirió corrección",
@@ -316,6 +322,8 @@ JSON Schema requerido:
       }
       parsed.source = "ai";
       parsed.status = "DRAFT";
+      const { validateContentGrounding } = await import("@/lib/services/claim-validator");
+      parsed.groundingValidation = validateContentGrounding(parsed);
       return parsed as ContentOutput;
     }
   } catch (parseError) {
@@ -505,7 +513,11 @@ ${ctaDestination}
     source: "fallback",
     status: "NEEDS_REVIEW",
     fallbackNotice: "La IA no ha respondido, vuelve a intentarlo. Se ha generado contenido con plantilla de respaldo sin cifras inventadas. Requiere revisión previa a su aprobación.",
-    evidenceEngineAdjustments: [],
+    claims: [
+      { text: "Conmutación Multi-Gigabit y troncales 10G SFP+", sourceId: "src-8" },
+      { text: "Presupuesto PoE 802.3bt y latencia inferior a 3 ms", sourceId: "src-1" },
+      { text: "Garantía de sustitución en 24h", sourceId: "src-18" }
+    ],
     blog: {
       title: effectiveTitle,
       metaDescription: `Guía técnica para instaladores, directores TIC y jefes de compras sobre ${effectiveTitle}. Buenas prácticas y catálogo oficial en EcomShop.`,

@@ -84,6 +84,26 @@ export const ContentOutputSchema = z.object({
     url: z.string().optional()
   })).optional(),
 
+  // Afirmaciones Técnicas y Citas de Fuentes (Fase 6c - Grounding Obligatorio)
+  claims: z.array(z.object({
+    text: z.string(),
+    sourceId: z.string()
+  })).optional(),
+
+  groundingValidation: z.object({
+    isValid: z.boolean(),
+    claims: z.array(z.object({
+      text: z.string(),
+      sourceId: z.string(),
+      verified: z.boolean()
+    })),
+    ungroundedClaims: z.array(z.object({
+      text: z.string(),
+      number: z.string(),
+      reason: z.string()
+    }))
+  }).optional(),
+
   // Fact-Check Score de Fidelidad Técnica (0-100)
   factCheckScore: z.number().optional(),
 

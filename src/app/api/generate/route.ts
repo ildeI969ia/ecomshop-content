@@ -153,6 +153,10 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       content.mailchimp.newsletterHtml = sanitizeHtml(content.mailchimp.newsletterHtml);
     }
 
+    // 4.5. Grounding Validation de Cifras Técnicas (Fase 6c)
+    const { validateContentGrounding } = await import("@/lib/services/claim-validator");
+    content.groundingValidation = validateContentGrounding(content);
+
     // 5. Persistencia en Firestore (Contents, Variants, ProductIntelligence, FinOps, Audit)
     let contentId = `content-${content.topicId}-${Date.now().toString(36)}`;
     try {
