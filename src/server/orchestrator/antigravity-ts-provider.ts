@@ -18,8 +18,8 @@ export class AntigravityTsProvider implements IAgentProvider {
   private apiKey?: string;
 
   constructor(options: AntigravityTsProviderOptions = {}) {
-    this.timeoutMs = options.timeoutMs ?? 20000; // 20 segundos máximo por especificación
-    this.model = options.model ?? "gemini-2.5-flash";
+    this.timeoutMs = options.timeoutMs ?? 90000; // 90 segundos por defecto para estabilización de IA
+    this.model = options.model || process.env.GEMINI_MODEL || "gemini-2.5-flash";
     this.apiKey = options.apiKey;
   }
 
@@ -59,10 +59,11 @@ export class AntigravityTsProvider implements IAgentProvider {
     try {
       const client = this.getClient();
       const activeModel = this.model || "gemini-2.5-flash";
+      const timeoutSec = Math.round(this.timeoutMs / 1000);
 
-      // Implementación de timeout de 20s
+      // Implementación de timeout configurable (90s por defecto)
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error("TIMEOUT_EXCEEDED: La generación de la IA excedió el límite de 20s")), this.timeoutMs);
+        setTimeout(() => reject(new Error(`TIMEOUT_EXCEEDED: La generación de la IA excedió el límite de ${timeoutSec}s`)), this.timeoutMs);
       });
 
       const generationPromise = client.models.generateContent({
