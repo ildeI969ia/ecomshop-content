@@ -22,11 +22,12 @@ export type ImagenLocation = (typeof IMAGEN_SUPPORTED_LOCATIONS)[number];
 
 const isProduction = process.env.NODE_ENV === "production";
 const hasGcpProject = Boolean(process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT);
+const hasApiKey = Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY);
 const shouldUseVertex =
   process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" ||
   process.env.USE_VERTEX_AI === "true" ||
-  (isProduction && hasGcpProject) ||
-  (!process.env.GEMINI_API_KEY && hasGcpProject);
+  (isProduction && hasGcpProject && !hasApiKey) ||
+  (!hasApiKey && hasGcpProject);
 
 /** Singleton para texto/chat — puede usar europe-west1 sin problema */
 export const aiClient = new GoogleGenAI(
@@ -37,7 +38,7 @@ export const aiClient = new GoogleGenAI(
         location: process.env.GOOGLE_CLOUD_LOCATION || process.env.VERTEX_LOCATION || "europe-west1",
       }
     : {
-        apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "",
+        apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY || "",
       }
 );
 

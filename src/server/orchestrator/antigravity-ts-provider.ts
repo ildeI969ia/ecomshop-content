@@ -1,6 +1,6 @@
+import { GoogleGenAI } from "@google/genai";
 import { AgentExecutionManifest, AgentExecutionResult } from "./types";
 import { IAgentProvider } from "./agent-provider";
-import { getGenAIClient, getActiveGeminiModel } from "@/lib/genai-client";
 
 export interface AntigravityTsProviderOptions {
   timeoutMs?: number;
@@ -10,8 +10,7 @@ export interface AntigravityTsProviderOptions {
 
 /**
  * Proveedor 100% nativo en TypeScript para la ejecución de agentes usando Gemini 2.5 Flash
- * vía el SDK oficial `@google/genai` (o Vertex AI).
- * Sustituye la dependencia de Python, scripts de terceros y runtime externo.
+ * vía el SDK oficial `@google/genai` con soporte dual (API Key / Vertex AI ADC).
  */
 export class AntigravityTsProvider implements IAgentProvider {
   private timeoutMs: number;
@@ -24,21 +23,49 @@ export class AntigravityTsProvider implements IAgentProvider {
     this.apiKey = options.apiKey;
   }
 
+  private getClient(): GoogleGenAI {
+    const apiKey = (
+      this.apiKey ||
+      process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_GENAI_API_KEY ||
+      process.env.GOOGLE_API_KEY
+    )?.trim();
+
+    if (apiKey) {
+      return new GoogleGenAI({
+        vertexai: false,
+        apiKey,
+        httpOptions: {
+          headers: {
+            "x-goog-api-key": apiKey
+          }
+        }
+      });
+    }
+
+    // Fallback a Vertex AI nativo (Application Default Credentials en Cloud Run)
+    return new GoogleGenAI({
+      vertexai: true,
+      project: process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || "ecomshop-marketing-prod",
+      location: process.env.GOOGLE_CLOUD_LOCATION || process.env.VERTEX_LOCATION || "europe-west1"
+    });
+  }
+
   public async execute(manifest: AgentExecutionManifest): Promise<AgentExecutionResult> {
     const { taskId, prompt } = manifest;
 
     const systemInstruction = `Eres un agente de marketing técnico de EcomShop. Tu rol es ${manifest.agentRole}. Produce respuestas estructuradas sin inventar especificaciones no verificadas.`;
 
     try {
-      const ai = getGenAIClient(this.apiKey);
-      const activeModel = this.model || getActiveGeminiModel(this.apiKey);
+      const client = this.getClient();
+      const activeModel = this.model || "gemini-2.5-flash";
 
       // Implementación de timeout de 20s
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error("TIMEOUT_EXCEEDED: La generación de la IA excedió el límite de 20s")), this.timeoutMs);
       });
 
-      const generationPromise = ai.models.generateContent({
+      const generationPromise = client.models.generateContent({
         model: activeModel,
         contents: prompt,
         config: {
@@ -61,8 +88,18 @@ export class AntigravityTsProvider implements IAgentProvider {
         summary: `Agente TypeScript completó exitosamente la tarea ${taskId}`
       };
     } catch (err: any) {
-      const errorMessage = err?.message || String(err);
-      console.error(`[AntigravityTsProvider Error] Tarea ${taskId} falló:`, err);
+      let errorMessage = err?.message || String(err);
+
+      if (
+        errorMessage.includes("403") ||
+        errorMessage.includes("PERMISSION_DENIED") ||
+        errorMessage.includes("unregistered callers") ||
+        errorMessage.includes("API key not valid")
+      ) {
+        errorMessage = "API Key de Gemini no configurada en las variables de entorno de Cloud Run";
+      }
+
+      console.error(`[AntigravityTsProvider Error] Tarea ${taskId} falló:`, errorMessage);
 
       return {
         taskId,
