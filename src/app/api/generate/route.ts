@@ -19,8 +19,13 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     const parsed = GenerateRequestSchema.safeParse(json);
 
     if (!parsed.success) {
+      console.error("[VALIDATION_ERROR]", JSON.stringify(parsed.error.format(), null, 2));
       return NextResponse.json(
-        { error: "Datos de entrada inválidos", details: parsed.error.format() },
+        {
+          error: "Datos de entrada inválidos",
+          details: parsed.error.format(),
+          issues: parsed.error.issues
+        },
         { status: 400 }
       );
     }
@@ -106,7 +111,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     let content = await generateB2BContent({
       ...inputData,
       sku: catalogDevice?.sku || inputData.sku,
-      productUrl: productUrl || catalogDevice?.productUrl,
+      productUrl: productUrl || catalogDevice?.productUrl || "https://ecomshop.es",
       topicTitle: effectiveTitle,
       category: effectiveCategory
     });

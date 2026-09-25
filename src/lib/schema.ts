@@ -157,39 +157,41 @@ export type ContentOutput = z.infer<typeof ContentOutputSchema>;
 import { EditorialControlsSchema } from "./types/editorial-controls";
 
 export const GenerateRequestSchema = z.object({
-  sku: z.string().optional(),
-  topicTitle: z.string().min(3).optional(),
-  category: z.enum(["wifi", "switches", "fibra", "engenius", "general"]).default("general"),
-  customNotes: z.string().optional(),
-  targetAudience: z.string().optional(),
-  productUrl: z.string().optional(),
-  customAngle: z.enum(["ROI", "PERFORMANCE", "OPERATIONS", "GENERAL"]).optional(),
+  sku: z.string().optional().default(""),
+  productName: z.string().optional().default(""),
+  bundleSku: z.string().optional().default(""),
+  topicTitle: z.string().optional().default("Solución de Conectividad B2B"),
+  category: z.string().optional().default("general"),
+  customNotes: z.string().optional().default(""),
+  targetAudience: z.string().optional().default("Instalador B2B"),
+  productUrl: z.string().optional().default("https://ecomshop.es"),
+  customAngle: z.string().optional().default("ROI"),
   
   // Asistente Mailchimp B2B
-  promotedProductIds: z.array(z.string()).optional(),
-  customEquipmentName: z.string().optional(),
-  customEquipmentUrl: z.string().optional(),
-  ctaObjective: z.string().optional(),
-  ctaButtonText: z.string().optional(),
-  ctaUrl: z.string().optional(),
-  syncWhatsApp: z.boolean().optional(),
-  syncLinkedIn: z.boolean().optional(),
+  promotedProductIds: z.array(z.string()).optional().default([]),
+  customEquipmentName: z.string().optional().default(""),
+  customEquipmentUrl: z.string().optional().default(""),
+  ctaObjective: z.string().optional().default(""),
+  ctaButtonText: z.string().optional().default(""),
+  ctaUrl: z.string().optional().default(""),
+  syncWhatsApp: z.boolean().optional().default(true),
+  syncLinkedIn: z.boolean().optional().default(true),
 
-  // Controles Editoriales Personalizables (Fase 08.6)
+  // Controles Editoriales Personalizables
   editorialControls: EditorialControlsSchema.optional(),
 
-  // Hilo Conductor Narrativo y Objetivo Comercial (Fase 10)
-  businessGoal: z.string().optional(),
+  // Hilo Conductor Narrativo y Objetivo Comercial
+  businessGoal: z.string().optional().default("ALL_OPPORTUNITIES"),
   narrativeAnchor: z.object({
-    pitch30s: z.string(),
-    commercialObjection: z.string(),
-    counterArgument: z.string(),
-    targetSegment: z.string()
+    pitch30s: z.string().optional().default(""),
+    commercialObjection: z.string().optional().default(""),
+    counterArgument: z.string().optional().default(""),
+    targetSegment: z.string().optional().default("Instalador B2B")
   }).optional(),
 
   // Fuentes Seleccionadas del NotebookLM
-  selectedSourceIds: z.array(z.string()).optional()
-}).strict();
+  selectedSourceIds: z.array(z.string()).optional().default([])
+}).passthrough();
 
 export type GenerateRequest = z.infer<typeof GenerateRequestSchema>;
 
