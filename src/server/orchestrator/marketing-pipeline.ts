@@ -183,20 +183,13 @@ Responde ÚNICAMENTE con un JSON válido con la siguiente estructura exacta:
       throw new Error(`AGENT_EXECUTION_FAILED: ${agentResult.stderr || agentResult.summary}`);
     }
 
-    // Parsear respuesta estructurada del agente
-    let parsedAgentOutput: any;
-    try {
-      // Extraer bloque JSON si el modelo lo encapsuló en markdown ```json
-      let rawText = agentResult.stdout.trim();
-      if (rawText.includes("```json")) {
-        rawText = rawText.split("```json")[1].split("```")[0].trim();
-      } else if (rawText.includes("```")) {
-        rawText = rawText.split("```")[1].split("```")[0].trim();
-      }
-      parsedAgentOutput = JSON.parse(rawText);
-    } catch (parseErr) {
-      throw new Error(`AGENT_INVALID_JSON_OUTPUT: No se pudo parsear el JSON generado por el agente: ${parseErr}`);
+    // Parsear respuesta estructurada del agente con saneamiento seguro
+    const { safeParseJson } = require("@/lib/utils/json-cleaner");
+    const parseRes = safeParseJson(agentResult.stdout);
+    if (!parseRes.success) {
+      throw new Error(`AGENT_INVALID_JSON_OUTPUT: ${parseRes.error}`);
     }
+    const parsedAgentOutput = parseRes.data;
 
     // 15. Realizar comprobación estricta de QUALITY GATE
     const qualityReport = this.evaluateQualityGate(product, evidence, parsedAgentOutput);

@@ -33,6 +33,15 @@ export class ValidationGate {
       errors.push(`La ejecución del agente excedió el tiempo límite (timeout)`);
     }
 
+    // 1b. Sanear y validar parseo JSON si se espera salida JSON sin romper el bucle
+    if (result.stdout && (result.stdout.includes("{") || result.stdout.includes("["))) {
+      const { safeParseJson } = require("@/lib/utils/json-cleaner");
+      const jsonRes = safeParseJson(result.stdout);
+      if (!jsonRes.success) {
+        warnings.push(`Salida del agente contiene JSON no válido pero el proceso finalizó: ${jsonRes.error}`);
+      }
+    }
+
     // 2. Si el worktree no existe físicamente, abortar con error
     if (!fsSync.existsSync(worktreePath)) {
       errors.push(`El directorio de worktree no existe: ${worktreePath}`);

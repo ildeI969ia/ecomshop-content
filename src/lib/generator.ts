@@ -344,6 +344,7 @@ function generateDeterministicFallback(
   const slug = effectiveTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
   const selectedStarProducts = STAR_PRODUCTS.filter(p => (req.promotedProductIds || []).includes(p.id));
+  const currentSku = req.sku || catalogDevice?.sku || intel?.product?.sku || "ECW536";
   const customProdText = catalogDevice ? `${catalogDevice.brand} ${catalogDevice.sku}` : (intel?.product ? `${intel.product.brand} ${intel.product.model}` : req.customEquipmentName?.trim());
   
   const featuredProductNames = [
@@ -404,6 +405,48 @@ function generateDeterministicFallback(
   <p>Toda la flota se gestiona centralizadamente desde la plataforma <strong>EnGenius Cloud</strong> (o modo Standalone/MESH), permitiendo monitoreo en tiempo real, alertas de topología y aprovisionamiento instantáneo mediante código QR sin cuotas ocultas.</p>
 
   <p>En <strong>EcomShop / EcomSpain</strong> disponemos de stock permanente con entrega en 24h y un departamento de ingeniería preventa que te asesora gratuitamente en el dimensionamiento de tu lista de materiales (BOM).</p>
+
+  <!-- FAQ SCHEMA STRUCTURED DATA JSON-LD OBLIGATORIO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "¿Qué ventajas ofrece el equipamiento ${currentSku} frente a alternativas tradicionales?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Ofrece un rendimiento optimizado de conectividad B2B con gestión centralizada sin cuotas obligatorias de licencias de software y soporte preventa especializado."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "¿Cuál es el tiempo de entrega e integración en obra de este dispositivo?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "EcomShop dispone de stock directo nacional con entrega en 24/48h e integración ágil mediante código QR en plataforma Cloud."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "¿Se requiere comprar licencias adicionales para la gestión en la nube?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No, las plataformas EnGenius Cloud permiten la gestión y monitorización remota perpetua a 0€ en costes recurrentes de software."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <section class="internal-links-container" style="margin:24px 0;padding:16px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
+    <p style="margin:0 0 8px 0;font-weight:bold;color:#0f172a;font-size:14px;">Enlaces Relacionados del Catálogo EcomShop:</p>
+    <ul style="margin:0;padding-left:20px;font-size:13px;">
+      <li><a href="/catalogo/${currentSku}" style="color:#0284c7;font-weight:600;">Ver Ficha Técnica Oficial del ${currentSku} en EcomShop</a></li>
+      <li><a href="/catalogo/${catalogDevice?.recommendedBundle || 'ECS2512FP'}" style="color:#0284c7;font-weight:600;">Ver Equipamiento Recomendado Sinergizado (${catalogDevice?.recommendedBundle || 'ECS2512FP'})</a></li>
+    </ul>
+  </section>
 
   <!-- BLOQUE RECOMENDADO CTA 2 (FINAL) -->
   <div class="cta-placement-box" style="background:#f8fafc;border:1px solid #e2e8f0;border-left:5px solid #10b981;border-radius:8px;padding:20px;margin:28px 0;">
