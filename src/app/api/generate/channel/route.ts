@@ -49,7 +49,6 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
       );
     }
 
-    // Preparar catálogo de accesorios / productos sugeridos para venta cruzada
     const availableAccessories = ECOMSHOP_CATALOG.filter(d => d.sku !== device.sku).slice(0, 5).map(d => ({
       sku: d.sku,
       name: d.name,
@@ -148,11 +147,15 @@ Responde ÚNICAMENTE con un JSON con la estructura:
 
     const provider = new AntigravityTsProvider({ timeoutMs: 55000 });
     const result = await provider.execute({
+      runId: `run-channel-${Date.now().toString(36)}`,
       taskId: `channel-${channel}-${device.sku}-${Date.now().toString(36)}`,
       agentRole: `Especialista en Generación de Contenido por Canal (${channel}) para EcomShop`,
-      prompt,
+      workspacePath: process.cwd(),
+      baseCommit: "HEAD",
+      environment: "PRODUCTION",
       filesAllowed: [],
-      workingDirectory: process.cwd()
+      filesForbidden: [],
+      prompt
     });
 
     if (result.exitCode !== 0 || !result.stdout) {

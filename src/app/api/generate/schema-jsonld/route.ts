@@ -75,11 +75,15 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura:
 
     const provider = new AntigravityTsProvider({ timeoutMs: 55000 });
     const result = await provider.execute({
+      runId: `run-schema-${Date.now().toString(36)}`,
       taskId: `schema-jsonld-${device.sku}-${Date.now().toString(36)}`,
       agentRole: "Especialista en Datos Estructurados JSON-LD y SEO Técnico para EcomShop",
-      prompt,
+      workspacePath: process.cwd(),
+      baseCommit: "HEAD",
+      environment: "PRODUCTION",
       filesAllowed: [],
-      workingDirectory: process.cwd()
+      filesForbidden: [],
+      prompt
     });
 
     if (result.exitCode !== 0 || !result.stdout) {
