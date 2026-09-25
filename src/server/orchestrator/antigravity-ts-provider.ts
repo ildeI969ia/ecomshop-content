@@ -19,7 +19,7 @@ export class AntigravityTsProvider implements IAgentProvider {
 
   constructor(options: AntigravityTsProviderOptions = {}) {
     this.timeoutMs = options.timeoutMs ?? 90000; // 90 segundos por defecto para estabilización de IA
-    this.model = options.model || process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    this.model = options.model || process.env.GEMINI_MODEL || "gemini-2.0-flash";
     this.apiKey = options.apiKey;
   }
 
@@ -56,18 +56,18 @@ export class AntigravityTsProvider implements IAgentProvider {
 
     const systemInstruction = `Eres un agente de marketing técnico de EcomShop. Tu rol es ${manifest.agentRole}. Produce respuestas estructuradas sin inventar especificaciones no verificadas.`;
 
-    try {
-      const client = this.getClient();
-      const activeModel = this.model || "gemini-2.5-flash";
-      const timeoutSec = Math.round(this.timeoutMs / 1000);
+    const client = this.getClient();
+    let primaryModel = this.model || process.env.GEMINI_MODEL || "gemini-2.0-flash";
+    let fallbackModel = "gemini-1.5-flash";
 
-      // Implementación de timeout configurable (90s por defecto)
+    const generateWithModel = async (modelName: string) => {
+      const timeoutSec = Math.round(this.timeoutMs / 1000);
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error(`TIMEOUT_EXCEEDED: La generación de la IA excedió el límite de ${timeoutSec}s`)), this.timeoutMs);
       });
 
       const generationPromise = client.models.generateContent({
-        model: activeModel,
+        model: modelName,
         contents: prompt,
         config: {
           systemInstruction,
@@ -76,8 +76,26 @@ export class AntigravityTsProvider implements IAgentProvider {
         }
       });
 
-      const response = await Promise.race([generationPromise, timeoutPromise]) as any;
+      return await Promise.race([generationPromise, timeoutPromise]) as any;
+    };
+
+    try {
+      let response: any;
+      try {
+        response = await generateWithModel(primaryModel);
+      } catch (primaryErr: any) {
+        if (primaryModel !== fallbackModel) {
+          console.warn(`[AntigravityTsProvider] Modelo principal ${primaryModel} falló. Intentando fallback a ${fallbackModel}:`, primaryErr?.message || primaryErr);
+          response = await generateWithModel(fallbackModel);
+        } else {
+          throw primaryErr;
+        }
+      }
+
       const responseText = response.text || "";
+      if (!responseText) {
+        throw new Error("EMPTY_AI_RESPONSE: El modelo de IA devolvió una respuesta vacía");
+      }
 
       return {
         taskId,
@@ -100,7 +118,7 @@ export class AntigravityTsProvider implements IAgentProvider {
         errorMessage = "API Key de Gemini no configurada en las variables de entorno de Cloud Run";
       }
 
-      console.error(`[AntigravityTsProvider Error] Tarea ${taskId} falló:`, errorMessage);
+      console.error(`[AntigravityTsProvider Error] Tarea ${taskId} falló sin contingencia genérica:`, errorMessage);
 
       return {
         taskId,

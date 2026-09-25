@@ -262,13 +262,13 @@ export const ImageStudioView: React.FC<ImageStudioViewProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      onChangePrompt("Telecom engineer testing 10G SFP+ fiber optic transceiver uplink in structured networking cabinet, high precision optical tools, realistic enterprise environment");
-                      onChangeAspectRatio("16:9");
+                      onChangePrompt("EnGenius IP67 weather-resistant outdoor wireless access point mounted on industrial pole in harsh outdoor environment with water droplets, ruggedized casing, heavy duty telecommunications hardware, photorealistic 8k");
+                      onChangeAspectRatio("1:1");
                     }}
-                    title="Generar escena de técnico trabajando con enlaces de fibra óptica SFP+"
+                    title="Generar AP de exterior en entorno resistente IP67"
                     className="text-[11px] font-semibold bg-slate-950 hover:bg-indigo-950/70 border border-slate-800 hover:border-indigo-500/50 text-slate-200 hover:text-indigo-200 px-2.5 py-1 rounded-lg transition"
                   >
-                    👷 Fibra Óptica
+                    🌲 Outdoor IP67
                   </button>
                 </div>
 
