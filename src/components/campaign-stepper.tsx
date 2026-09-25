@@ -20,12 +20,44 @@ export type GenerationStage =
   | "COMPLETED" 
   | "ERROR";
 
+export type TargetAudienceType = "INSTALADOR_B2B" | "EMPRESA_PYME" | "CLIENTE_B2C";
+
+export interface AudienceOption {
+  id: TargetAudienceType;
+  label: string;
+  badge: string;
+  contextDesc: string;
+}
+
+export const AUDIENCE_OPTIONS: AudienceOption[] = [
+  {
+    id: "INSTALADOR_B2B",
+    label: "Instalador B2B",
+    badge: "PoE++, Wi-Fi 7, Garantía",
+    contextDesc: "PoE++, Wi-Fi 7, certificaciones, ancho de banda, garantía profesional"
+  },
+  {
+    id: "EMPRESA_PYME",
+    label: "Empresa / Pyme",
+    badge: "Continuidad, ROI, Soporte",
+    contextDesc: "Continuidad de negocio, seguridad, soporte y ROI"
+  },
+  {
+    id: "CLIENTE_B2C",
+    label: "Cliente Final B2C",
+    badge: "Sencillez, Ahorro, Facilidad",
+    contextDesc: "Sencillez, velocidad real, ahorro y fácil configuración"
+  }
+];
+
 interface CampaignStepperProps {
   currentStage: GenerationStage;
   errorMessage?: string | null;
   onRetry?: () => void;
   activeSku?: string;
   activeAngle?: string;
+  selectedAudience?: TargetAudienceType;
+  onSelectAudience?: (audience: TargetAudienceType) => void;
 }
 
 interface StepDef {
@@ -73,7 +105,9 @@ export const CampaignStepper: React.FC<CampaignStepperProps> = ({
   errorMessage,
   onRetry,
   activeSku,
-  activeAngle
+  activeAngle,
+  selectedAudience,
+  onSelectAudience
 }) => {
   const [isRetrying, setIsRetrying] = React.useState(false);
 
@@ -143,7 +177,7 @@ export const CampaignStepper: React.FC<CampaignStepperProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         {STEPS.map((step, idx) => {
           const Icon = step.icon;
           const isCompleted = currentStage === "COMPLETED" || (currentStage !== "ERROR" && currentIdx > idx);
@@ -189,6 +223,37 @@ export const CampaignStepper: React.FC<CampaignStepperProps> = ({
                   {step.sublabel}
                 </p>
               </div>
+
+              {step.key === "NOTEBOOK_GROUNDING" && (
+                <div className="mt-3 pt-2.5 border-t border-slate-800/80 space-y-1.5">
+                  <span className="text-[10px] font-semibold tracking-wider text-sky-400 uppercase block">
+                    Audiencia Target:
+                  </span>
+                  <div className="flex flex-col gap-1">
+                    {AUDIENCE_OPTIONS.map((aud) => {
+                      const isSelected = (selectedAudience || "INSTALADOR_B2B") === aud.id;
+                      return (
+                        <button
+                          key={aud.id}
+                          type="button"
+                          onClick={() => onSelectAudience?.(aud.id)}
+                          className={`text-left text-[10px] px-2 py-1 rounded transition border cursor-pointer ${
+                            isSelected
+                              ? "bg-sky-900/70 border-sky-400 text-sky-100 font-bold"
+                              : "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                          }`}
+                          title={aud.contextDesc}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span>{aud.label}</span>
+                            {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
