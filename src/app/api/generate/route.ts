@@ -314,7 +314,18 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       }
     });
   } catch (error: any) {
-    console.error("Error generating content:", error);
+    const errorDetails = {
+      message: error?.message || String(error),
+      name: error?.name,
+      status: error?.status,
+      code: error?.code,
+      hasGeminiApiKey: Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY),
+      hasGcpProject: Boolean(process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT),
+      useVertexAi: process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || process.env.USE_VERTEX_AI === "true",
+      stack: error?.stack
+    };
+    console.error("[API Generate ERROR DETALLADO VERTEX/GEMINI]:", JSON.stringify(errorDetails, null, 2));
+
     return NextResponse.json(
       { error: "La IA no ha respondido, vuelve a intentarlo", details: error?.message || String(error) },
       { status: 500 }
