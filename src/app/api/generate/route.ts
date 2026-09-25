@@ -306,7 +306,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
   } catch (error: any) {
     console.error("Error generating content:", error);
     return NextResponse.json(
-      { error: "Error interno al procesar el contenido", details: error?.message || String(error) },
+      { error: "La IA no ha respondido, vuelve a intentarlo", details: error?.message || String(error) },
       { status: 500 }
     );
   }
