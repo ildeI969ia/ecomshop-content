@@ -551,15 +551,15 @@ export class NotebookIntelligenceService {
         ];
       } else {
         // Fallback dinámico usando catalogItem si está disponible o datos del SKU
-        modelName = catalogItem?.name || `Equipo ${catalogItem?.brand || ""} ${cleanSku}`.trim();
-        standards = catalogItem?.standards || ["Estándares IEEE B2B", "Certificación CE"];
-        ports = catalogItem?.interfaces || ["Puertos Ethernet Gigabit/Multi-Gigabit"];
-        powerReq = catalogItem?.powerRequirements || "Alimentación según especificaciones de catálogo";
-        wirelessStandards = catalogItem?.polymorphicSpecs?.accessPoint?.wirelessStandards || [catalogItem?.specs?.[0] || "Wi-Fi corporativo"];
+        modelName = catalogItem?.name || catalogItem?.model || cleanSku;
+        standards = catalogItem?.standards || catalogItem?.specs || ["Estándares B2B Homologados", "Certificación CE"];
+        ports = catalogItem?.interfaces || ["Interfaces Ethernet Gigabit / Multi-Gigabit"];
+        powerReq = catalogItem?.powerRequirements || "Alimentación según especificaciones técnicas de fábrica";
+        wirelessStandards = catalogItem?.polymorphicSpecs?.accessPoint?.wirelessStandards || [catalogItem?.specs?.[0] || "Conectividad Inalámbrica B2B"];
         frequencyBands = catalogItem?.polymorphicSpecs?.accessPoint?.frequencyBands || ["2.4 GHz", "5 GHz"];
-        mimo = catalogItem?.polymorphicSpecs?.accessPoint?.mimo || "2x2:2 MIMO";
-        switchSku = catalogItem?.recommendedBundle?.sku || "ECS2512FP";
-        switchName = catalogItem?.recommendedBundle?.name || "Switch Cloud de Interconexión";
+        mimo = catalogItem?.polymorphicSpecs?.accessPoint?.mimo || "2x2 MIMO";
+        switchSku = catalogItem?.recommendedBundle?.sku || (catalogItem?.brand === "EnGenius" ? "ECS2512FP" : "ACC-BUNDLE");
+        switchName = catalogItem?.recommendedBundle?.name || (catalogItem?.brand === "EnGenius" ? "Switch Cloud de Interconexión" : "Accesorio / Conmutación Recomendada");
         switchReason = catalogItem?.recommendedBundle?.rationale || "Alimentación y conmutación recomendada.";
         naturalSector = "ENTERPRISE_OFFICE";
         naturalAudience = catalogItem?.targetSegment || "Integradores IT y Telecomunicaciones";
@@ -573,50 +573,60 @@ export class NotebookIntelligenceService {
         ];
       }
 
-      keyClaims = [
-        {
-          claim: "Gestión centralizada multi-tenant desde navegador y app móvil con 0€ en licencias anuales.",
-          sourceId: "src-4",
-          sourceTitle: "Arquitectura EnGenius Cloud Enterprise Sin Cuotas Anuales",
+      if (catalogItem) {
+        keyClaims = (catalogItem.keyAdvantages || []).map((adv, idx) => ({
+          claim: adv,
+          sourceId: catalogItem.notebookSource?.sourceId || `src-cat-${idx}`,
+          sourceTitle: catalogItem.notebookSource?.title || `Datasheet ${catalogItem.brand} ${catalogItem.model}`,
           verified: true
-        },
-        {
-          claim: `Puerto de enlace ultrarrápido (${ports[0]}) preparado para enlaces Multi-Gigabit sin estrangulamiento.`,
-          sourceId: isEcw510 ? "src-0" : isEcw536 ? "src-1" : "src-2",
-          sourceTitle: isEcw510 ? "Datasheet ECW510" : "Especificación Técnica EnGenius",
-          verified: true
-        },
-        {
-          claim: "Aprovisionamiento ultrarrápido por escaneo de código QR en menos de 2 minutos por dispositivo.",
-          sourceId: "src-5",
-          sourceTitle: "App Móvil EnGenius Cloud To-Go",
-          verified: true
-        },
-        {
-          claim: "Sustitución avanzada en 24 horas y soporte técnico preventa directo desde España por EcomSpain.",
-          sourceId: "src-18",
-          sourceTitle: "Garantía Oficial EcomSpain 24h",
-          verified: true
+        }));
+        if (keyClaims.length === 0) {
+          keyClaims = [
+            {
+              claim: `${catalogItem.brand} ${catalogItem.name}: ${catalogItem.description}`,
+              sourceId: "src-cat",
+              sourceTitle: `Ficha Técnica ${catalogItem.brand}`,
+              verified: true
+            }
+          ];
         }
-      ];
+        objections = [
+          {
+            objection: `¿Qué soporte y garantía tiene ${catalogItem.brand} ${catalogItem.model}?`,
+            counterArgument: `Cuenta con la homologación oficial de EcomSpain, soporte de ingeniería preventa y reemplazo en 24h.`,
+            sourceId: "src-18"
+          }
+        ];
+      } else {
+        keyClaims = [
+          {
+            claim: "Gestión centralizada y hardware homologado B2B.",
+            sourceId: "src-4",
+            sourceTitle: "Especificación Técnica EcomShop",
+            verified: true
+          },
+          {
+            claim: `Puerto de enlace (${ports[0] || "Ethernet"}) preparado para tráfico B2B sin estrangulamiento.`,
+            sourceId: "src-0",
+            sourceTitle: "Especificación Técnica",
+            verified: true
+          },
+          {
+            claim: "Sustitución avanzada en 24 horas y soporte técnico preventa directo desde España por EcomSpain.",
+            sourceId: "src-18",
+            sourceTitle: "Garantía Oficial EcomSpain 24h",
+            verified: true
+          }
+        ];
 
-      objections = [
-        {
-          objection: "¿Realmente no hay ningún coste de licencia recurrente oculto tras el primer año?",
-          counterArgument: "Totalmente garantizado por contrato y pliego. EnGenius Cloud es 100% libre de cuotas para gestión, monitorización y firmware ilimitado.",
-          sourceId: "src-4"
-        },
-        {
-          objection: "¿Es compatible con el cableado existente de categoría 5e/6 en obra?",
-          counterArgument: "Sí, la tecnología Multi-Gigabit negocia automáticamente sobre cableado Cat5e/6 existente, duplicando el caudal sin necesidad de recablear.",
-          sourceId: isEcw510 ? "src-0" : "src-8"
-        },
-        {
-          objection: "¿Qué ocurre si un equipo sufre una avería crítica en mitad de la producción?",
-          counterArgument: "EcomSpain gestiona RMA con sustitución avanzada en 24h laborables directamente desde el almacén central de Madrid.",
-          sourceId: "src-18"
-        }
-      ];
+        objections = [
+          {
+            objection: "¿Qué ocurre si un equipo sufre una avería en producción?",
+            counterArgument: "EcomSpain gestiona RMA con sustitución avanzada en 24h laborables directamente desde el almacén central de Madrid.",
+            sourceId: "src-18"
+          }
+        ];
+      }
 
     // =========================================================================
     // 4. ACCESORIOS & CONECTIVIDAD (POE30Gv2 / SFP-10G-SR-KIT)
@@ -687,9 +697,11 @@ export class NotebookIntelligenceService {
       ];
     }
 
+    const cardBrand = catalogItem?.brand || (cleanSku.includes("ECW") || cleanSku.includes("ECS") || cleanSku.includes("ESG") ? "EnGenius" : "EcomSpain");
+
     const card: ProductIntelligenceCard = {
       product: {
-        brand: "EnGenius",
+        brand: cardBrand,
         model: modelName,
         sku: cleanSku,
         category,
@@ -757,7 +769,7 @@ export class NotebookIntelligenceService {
     return {
       sku: cleanSku,
       model: modelName,
-      brand: "EnGenius",
+      brand: cardBrand,
       naturalSector,
       naturalAudience,
       recommendedAngle,

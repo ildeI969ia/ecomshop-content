@@ -54,8 +54,8 @@ export class GroundedWriterService {
         const prompt = this.buildPrompt(req, activeSources);
         const systemInstruction = this.buildSystemInstruction(activeSources);
 
-        const candidateModels = [activeModel, "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
-          .filter((m, i, arr) => arr.indexOf(m) === i);
+        const candidateModels = [activeModel, process.env.GEMINI_MODEL || "gemini-2.0-flash", "gemini-1.5-flash"]
+          .filter((m, i, arr) => Boolean(m) && arr.indexOf(m) === i);
 
         for (const modelToTry of candidateModels) {
           try {
@@ -83,8 +83,25 @@ export class GroundedWriterService {
               totalTokenCount: (res as any).usageMetadata.totalTokenCount
             } : undefined;
 
+            const comparativeTableHtml = generateDynamicComparativeTableHtml(intel);
+            const geoObj = {
+              title: parsed.geo?.title || parsed.blog?.title || `${intel.brand} ${intel.model}: Despliegue B2B`,
+              metaDescription: parsed.geo?.metaDescription || parsed.blog?.metaDescription || `Análisis técnico de ${intel.brand} ${intel.model}.`,
+              htmlContent: parsed.geo?.htmlContent || parsed.blog?.htmlContent || "",
+              comparativeTableHtml: parsed.geo?.comparativeTableHtml || comparativeTableHtml,
+              jsonLd: parsed.geo?.jsonLd || JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "Product",
+                "name": `${intel.brand} ${intel.model}`,
+                "sku": intel.sku,
+                "brand": { "@type": "Brand", "name": intel.brand }
+              }, null, 2),
+              markdownContent: parsed.geo?.markdownContent || `# ${intel.brand} ${intel.model}\n\n${comparativeTableHtml}`
+            };
+
             const validated = ContentOutputSchema.safeParse({
               ...parsed,
+              geo: geoObj,
               usageMetadata,
               citations: { ...citations, ...(parsed.citations || {}) }
             });
@@ -269,6 +286,20 @@ Genera los 4 canales completos (Blog con HTML Durable, Mailchimp B2B, WhatsApp B
         hashtags: ["#NetworkingB2B", "#WiFi7", "#EnGenius", "#EcomShop", "#Telecomunicaciones"],
         fullPostText: `¿Por qué seguir renovando suscripciones anuales cuando puedes desplegar ${intel.model} con 0€ en cuotas de por vida? [${tcoSourceId}]\n\nEn despliegues de networking empresarial, la combinación de puertos ${intel.card.technicalSpecs.ports[0]} [${primarySourceId}] y conmutación Multi-Gigabit [${switchSourceId}] es indispensable para evitar cuellos de botella.\n\nClaves de ingeniería:\n• Interfaces ${intel.card.technicalSpecs.ports[0]} [${primarySourceId}]\n• Topología recomendada: ${intel.mandatoryElectronics.recommendedSwitchName} [${switchSourceId}]\n• Cero cuotas de software recurrentes [${tcoSourceId}]\n• Sustitución avanzada en 24h por EcomSpain [${warrantySourceId}]\n\nConsultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h.`
       },
+      geo: {
+        title: req.topicTitle || `${intel.model}: Despliegue y Solución B2B`,
+        metaDescription: `Análisis técnico de ${intel.model} con conmutación y despliegue B2B.`,
+        htmlContent: blogHtml,
+        comparativeTableHtml: generateDynamicComparativeTableHtml(intel),
+        jsonLd: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Product",
+          "name": `${intel.brand} ${intel.model}`,
+          "sku": intel.sku,
+          "brand": { "@type": "Brand", "name": intel.brand }
+        }, null, 2),
+        markdownContent: `# ${intel.brand} ${intel.model}\n\n${generateDynamicComparativeTableHtml(intel)}`
+      },
       citations,
       claims: (intel.keyClaims && intel.keyClaims.length > 0)
         ? intel.keyClaims.map((kc) => ({
@@ -279,7 +310,6 @@ Genera los 4 canales completos (Blog con HTML Durable, Mailchimp B2B, WhatsApp B
             text: `${e.claim} (${e.sourceType})`,
             sourceId: e.source
           })),
-      // Fact-Check Score calculado rigurosamente en base a las fuentes oficiales de evidencia resueltas
       factCheckScore: Math.min(100, Math.max(80, 80 + Object.keys(citations).length * 4))
     };
     const { validateContentGrounding } = require("@/lib/services/claim-validator");
@@ -289,4 +319,169 @@ Genera los 4 canales completos (Blog con HTML Durable, Mailchimp B2B, WhatsApp B
     };
     return validatedOutput;
   }
+}
+
+export function generateDynamicComparativeTableHtml(intel: StructuredProductIntelligence): string {
+  const brand = intel.brand || intel.card.product.brand || "EcomShop";
+  const model = intel.model || intel.card.product.model || intel.sku;
+  const category = (intel.card.product.category || "").toLowerCase();
+  const deviceType = intel.card.technicalSpecs.deviceType;
+
+  const isCellular = deviceType === "ROUTER_CELLULAR" || category.includes("cellular") || intel.sku.toUpperCase().includes("RUT") || intel.sku.toUpperCase().includes("TRB");
+  const isAp = deviceType === "ACCESS_POINT" || category.includes("wifi");
+  const isSwitch = deviceType === "SWITCH" || category.includes("switch");
+
+  if (isCellular) {
+    return `
+<table class="w-full border-collapse my-6 text-sm">
+  <thead>
+    <tr class="bg-slate-900 text-white">
+      <th class="p-3 text-left border border-slate-700">Característica Técnica</th>
+      <th class="p-3 text-left border border-slate-700 font-bold text-emerald-400">${brand} ${model}</th>
+      <th class="p-3 text-left border border-slate-700">Cradlepoint / InHand Industrial</th>
+      <th class="p-3 text-left border border-slate-700">Router Celular Comercial Estándar</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="bg-white">
+      <td class="p-3 border border-slate-200 font-semibold">Tecnología M2M / Celular</td>
+      <td class="p-3 border border-slate-200 font-bold text-slate-900">${intel.card.technicalSpecs.standards[0] || "4G LTE Cat4/Cat6 Industrial"}</td>
+      <td class="p-3 border border-slate-200 text-slate-600">4G LTE Cat4 / Cat11</td>
+      <td class="p-3 border border-slate-200 text-slate-600">4G Cat4 Básico</td>
+    </tr>
+    <tr class="bg-slate-50">
+      <td class="p-3 border border-slate-200 font-semibold">Tolerancia a Fallos Dual SIM / Failover</td>
+      <td class="p-3 border border-slate-200 font-bold text-emerald-700">Doble SIM con Auto-Failover y Conmutación en ms</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Doble SIM con licencias avanzadas</td>
+      <td class="p-3 border border-slate-200 text-slate-600">SIM Única (Sin redundancia)</td>
+    </tr>
+    <tr class="bg-white">
+      <td class="p-3 border border-slate-200 font-semibold">Sistema Operativo & Protocolos SCADA</td>
+      <td class="p-3 border border-slate-200 font-bold text-slate-900">RutOS (Linux industrial, Modbus, MQTT, DNP3, OPC UA)</td>
+      <td class="p-3 border border-slate-200 text-slate-600">SO Propietario bajo subscripción NetCloud</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Firmware limitado sin SCADA</td>
+    </tr>
+    <tr class="bg-slate-50">
+      <td class="p-3 border border-slate-200 font-semibold">Rango Térmico & Chasis Industrial</td>
+      <td class="p-3 border border-slate-200 font-bold text-slate-900">-40ºC a +75ºC, Chasis Aluminio DIN-Rail</td>
+      <td class="p-3 border border-slate-200 text-slate-600">-30ºC a +70ºC, Chasis metálico</td>
+      <td class="p-3 border border-slate-200 text-slate-600">0ºC a +40ºC, Plástico residencial</td>
+    </tr>
+    <tr class="bg-white">
+      <td class="p-3 border border-slate-200 font-semibold">Costes de Gestión / Licencias Cloud</td>
+      <td class="p-3 border border-slate-200 font-bold text-emerald-700">0€ Cuotas obligatorias / RMS opcional</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Suscripción anual obligatoria por equipo</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Sin plataforma de gestión centralizada</td>
+    </tr>
+  </tbody>
+</table>`.trim();
+  }
+
+  if (isAp) {
+    return `
+<table class="w-full border-collapse my-6 text-sm">
+  <thead>
+    <tr class="bg-slate-900 text-white">
+      <th class="p-3 text-left border border-slate-700">Especificación de Conectividad</th>
+      <th class="p-3 text-left border border-slate-700 font-bold text-emerald-400">${brand} ${model}</th>
+      <th class="p-3 text-left border border-slate-700">Cisco Meraki MR Series</th>
+      <th class="p-3 text-left border border-slate-700">Ubiquiti UniFi Pro</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="bg-white">
+      <td class="p-3 border border-slate-200 font-semibold">Estándar Wi-Fi & Antenas Adaptativas</td>
+      <td class="p-3 border border-slate-200 font-bold text-slate-900">${intel.card.technicalSpecs.standards.slice(0, 2).join(" / ") || "Wi-Fi 7 / 6 Enterprise"}</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Wi-Fi 6 / 6E Enterprise</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Wi-Fi 6 / 6E Estándar</td>
+    </tr>
+    <tr class="bg-slate-50">
+      <td class="p-3 border border-slate-200 font-semibold">Puerto de Enlace Ethernet / PoE</td>
+      <td class="p-3 border border-slate-200 font-bold text-slate-900">${intel.card.technicalSpecs.ports[0] || "2.5GbE PoE+"} (${intel.card.technicalSpecs.powerRequirements})</td>
+      <td class="p-3 border border-slate-200 text-slate-600">1GbE / 2.5GbE PoE+</td>
+      <td class="p-3 border border-slate-200 text-slate-600">1GbE PoE+</td>
+    </tr>
+    <tr class="bg-white">
+      <td class="p-3 border border-slate-200 font-semibold">Concurrencia & Mitigación RF</td>
+      <td class="p-3 border border-slate-200 font-bold text-emerald-700">Alta densidad con Roaming 802.11k/v/r y Zero-Latency MLO</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Alta densidad con optimización RF cloud</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Densidad media en entornos pyme</td>
+    </tr>
+    <tr class="bg-slate-50">
+      <td class="p-3 border border-slate-200 font-semibold">Modelo de Licencias Cloud (TCO 3 Años)</td>
+      <td class="p-3 border border-slate-200 font-bold text-emerald-700">0€ Cuotas de por vida (Gestión Cloud Perpetua)</td>
+      <td class="p-3 border border-slate-200 text-rose-700 font-semibold">Licencia anual obligatoria (Bloqueo si impago)</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Controlador local o cloud autofinanciado</td>
+    </tr>
+  </tbody>
+</table>`.trim();
+  }
+
+  if (isSwitch) {
+    return `
+<table class="w-full border-collapse my-6 text-sm">
+  <thead>
+    <tr class="bg-slate-900 text-white">
+      <th class="p-3 text-left border border-slate-700">Capacidad de Conmutación</th>
+      <th class="p-3 text-left border border-slate-700 font-bold text-emerald-400">${brand} ${model}</th>
+      <th class="p-3 text-left border border-slate-700">Switch Gestionable Enterprise Tradicional</th>
+      <th class="p-3 text-left border border-slate-700">Switch No Gestionado Unmanaged</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="bg-white">
+      <td class="p-3 border border-slate-200 font-semibold">Densidad de Puertos & Uplinks</td>
+      <td class="p-3 border border-slate-200 font-bold text-slate-900">${intel.card.technicalSpecs.ports.join(" + ")}</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Puertos 1GbE + Uplinks 1G/10G</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Puertos 1GbE sin Uplinks 10G</td>
+    </tr>
+    <tr class="bg-slate-50">
+      <td class="p-3 border border-slate-200 font-semibold">Presupuesto PoE Total & Potencia/Puerto</td>
+      <td class="p-3 border border-slate-200 font-bold text-slate-900">${intel.card.technicalSpecs.poeBudget || intel.card.technicalSpecs.powerRequirements}</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Presupuesto PoE 180W-370W (802.3at)</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Presupuesto PoE básico 65W-120W</td>
+    </tr>
+    <tr class="bg-white">
+      <td class="p-3 border border-slate-200 font-semibold">Funciones Avanzadas (PoE Watchdog / Extend 250m)</td>
+      <td class="p-3 border border-slate-200 font-bold text-emerald-700">Auto-recovery PoE, VLANs 802.1Q, Modo Extend CCTV</td>
+      <td class="p-3 border border-slate-200 text-slate-600">VLANs L2+ sin autorrecuperación PoE autónoma</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Sin gestión ni soporte VLAN</td>
+    </tr>
+    <tr class="bg-slate-50">
+      <td class="p-3 border border-slate-200 font-semibold">Gestión Centralizada & Licenciamiento</td>
+      <td class="p-3 border border-slate-200 font-bold text-emerald-700">Gestión unificada con 0€ en cuotas de software</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Licencia de gestión anual por switch</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Sin interfaz de gestión ni cloud</td>
+    </tr>
+  </tbody>
+</table>`.trim();
+  }
+
+  return `
+<table class="w-full border-collapse my-6 text-sm">
+  <thead>
+    <tr class="bg-slate-900 text-white">
+      <th class="p-3 text-left border border-slate-700">Parámetro Técnico</th>
+      <th class="p-3 text-left border border-slate-700 font-bold text-emerald-400">${brand} ${model}</th>
+      <th class="p-3 text-left border border-slate-700">Alternativa Comercial Genérica</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="bg-white">
+      <td class="p-3 border border-slate-200 font-semibold">Estándares & Homologación B2B</td>
+      <td class="p-3 border border-slate-200 font-bold text-slate-900">${intel.card.technicalSpecs.standards.slice(0, 3).join(", ") || "Estándar B2B Certificado"}</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Estándar comercial básico</td>
+    </tr>
+    <tr class="bg-slate-50">
+      <td class="p-3 border border-slate-200 font-semibold">Interfaces & Rendimiento</td>
+      <td class="p-3 border border-slate-200 font-bold text-slate-900">${intel.card.technicalSpecs.ports.join(", ") || "Interfaces verificadas"}</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Sin certificación de laboratorio previa</td>
+    </tr>
+    <tr class="bg-white">
+      <td class="p-3 border border-slate-200 font-semibold">Garantía & Soporte Técnico</td>
+      <td class="p-3 border border-slate-200 font-bold text-emerald-700">Sustitución avanzada 24h EcomSpain con soporte preventa directo de ingeniería</td>
+      <td class="p-3 border border-slate-200 text-slate-600">Garantía estándar sin stock inmediato nacional</td>
+    </tr>
+  </tbody>
+</table>`.trim();
 }
