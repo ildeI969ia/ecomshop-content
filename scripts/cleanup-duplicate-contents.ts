@@ -1,9 +1,11 @@
-import { getAdminFirestore } from "../src/server/config/firebase.ts";
-import { ContentItem } from "../src/server/domain/types.ts";
+import fs from "node:fs";
+import path from "node:path";
+import { getAdminFirestore } from "../src/server/config/firebase";
+import { ContentItem } from "../src/server/domain/types";
 
 async function cleanupDuplicateContents() {
   console.log("==================================================");
-  console.log("🔍 INICIANDO AUDITORÍA Y LIMPIEZA DE DUPLICADOS");
+  console.log("🔍 INICIANDO AUDITORÍA Y LIMPIEZA DE DUPLICADOS (FASE 6G)");
   console.log("==================================================");
 
   const db = getAdminFirestore();
@@ -20,10 +22,39 @@ async function cleanupDuplicateContents() {
     data: doc.data() as ContentItem
   }));
 
+  // 1. Guardar COPIA DE SEGURIDAD de todos los documentos antes de la limpieza
+  const backupDir = path.join(process.cwd(), "backups");
+  if (!fs.existsSync(backupDir)) {
+    fs.mkdirSync(backupDir, { recursive: true });
+  }
+  const backupPath = path.join(backupDir, `contents-backup-${Date.now()}.json`);
+  fs.writeFileSync(backupPath, JSON.stringify(items, null, 2), "utf8");
+  console.log(`💾 Copia de seguridad guardada en: ${backupPath}`);
+
   // Agrupar por clave canónica (slug o título normalizado)
   const groups = new Map<string, Array<{ id: string; data: ContentItem }>>();
 
   for (const item of items) {
+    // 2. Corregir fechas guardadas con año 2001
+    const nowIso = new Date().toISOString();
+    let dateCorrupted = false;
+
+    if (item.data.createdAt && item.data.createdAt.startsWith("2001")) {
+      item.data.createdAt = nowIso;
+      dateCorrupted = true;
+    }
+    if (item.data.updatedAt && item.data.updatedAt.startsWith("2001")) {
+      item.data.updatedAt = nowIso;
+      dateCorrupted = true;
+    }
+    if (dateCorrupted) {
+      await db.collection("contents").doc(item.id).update({
+        createdAt: item.data.createdAt,
+        updatedAt: item.data.updatedAt
+      });
+      console.log(`🔧 Corregida fecha anómala 2001 en documento ${item.id}`);
+    }
+
     const slug = item.data.slug || item.data.canonicalBody?.slug || "";
     const cleanTitle = (item.data.title || "").trim().toLowerCase();
     const groupKey = slug ? `slug:${slug}` : `title:${cleanTitle}`;
@@ -51,26 +82,17 @@ async function cleanupDuplicateContents() {
 
   for (const [key, group] of groups.entries()) {
     if (group.length === 1) {
-      // Documento único, verificar si tiene prefijo anómalo content-content-
-      const item = group[0];
-      if (/^content-content-/.test(item.id)) {
-        console.log(`⚠️ Documento único con prefijo anómalo: ${item.id} (${item.data.title})`);
-      }
       retainedCount++;
       continue;
     }
 
     console.log(`\n🔴 Duplicado detectado para [${key}] (${group.length} copias):`);
 
-    // Ordenar grupo: mayor jerarquía de estado primero, luego los que no tienen 'content-content-', luego fecha más reciente
+    // Ordenar grupo: mayor jerarquía de estado primero, luego la fecha más reciente
     group.sort((a, b) => {
       const scoreA = statusPriority[a.data.status] || 0;
       const scoreB = statusPriority[b.data.status] || 0;
       if (scoreA !== scoreB) return scoreB - scoreA;
-
-      const isBadA = /^content-content-/.test(a.id) ? 1 : 0;
-      const isBadB = /^content-content-/.test(b.id) ? 1 : 0;
-      if (isBadA !== isBadB) return isBadA - isBadB;
 
       const dateA = new Date(a.data.createdAt || 0).getTime();
       const dateB = new Date(b.data.createdAt || 0).getTime();
@@ -90,15 +112,14 @@ async function cleanupDuplicateContents() {
 
   console.log("\n==================================================");
   console.log(`Total a eliminar: ${toDelete.length} documentos duplicados.`);
-  console.log(`Total a conservar: ${retainedCount} documentos canónicos.`);
+  console.log(`Total a conservar: ${retainedCount} documentos canónicos (1 por slug).`);
 
   if (toDelete.length === 0) {
-    console.log("✅ No se detectaron duplicados en Firestore.");
+    console.log("✅ No se detectaron duplicados en Firestore. 1 documento por slug comprobado.");
     return;
   }
 
-  console.log("\n🗑️ Ejecutando eliminación en Firestore...");
-  // Eliminar en lotes de 500 (límite de Firestore batches)
+  console.log("\n🗑️ Ejecutando eliminación de duplicados en Firestore...");
   const batchSize = 400;
   for (let i = 0; i < toDelete.length; i += batchSize) {
     const chunk = toDelete.slice(i, i + batchSize);
@@ -110,7 +131,7 @@ async function cleanupDuplicateContents() {
     console.log(`  - Eliminados ${chunk.length} documentos...`);
   }
 
-  console.log("\n🎉 LIMPIEZA COMPLETADA CON ÉXITO.");
+  console.log("\n🎉 LIMPIEZA Y AUDITORÍA DE FECHAS 2001 COMPLETADA CON ÉXITO.");
   console.log("==================================================");
 }
 

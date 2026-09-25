@@ -81,8 +81,65 @@ export class ContentRepository {
     }
   }
 
+  async findBySlug(slug: string, workspaceId?: string): Promise<ContentItem | null> {
+    try {
+      let query: any = this.collection().where("slug", "==", slug);
+      if (workspaceId) {
+        query = query.where("workspaceId", "==", workspaceId);
+      }
+      const snapshot = await query.limit(1).get();
+      if (!snapshot.empty) {
+        return snapshot.docs[0].data() as ContentItem;
+      }
+      return null;
+    } catch (err) {
+      console.warn("[ContentRepository] findBySlug error:", err);
+      return null;
+    }
+  }
+
+  async upsertBySlug(content: ContentItem): Promise<ContentItem> {
+    const existing = await this.findBySlug(content.slug, content.workspaceId);
+    let nowIso = new Date().toISOString();
+
+    // Corregir fechas corruptas con año 2001 si aplican
+    if (content.createdAt && content.createdAt.startsWith("2001")) {
+      content.createdAt = nowIso;
+    }
+
+    if (existing) {
+      const updatedVersions = [
+        ...(existing.versions || []),
+        {
+          version: (existing.currentVersion || 1) + 1,
+          body: content.canonicalBody || (content as any),
+          changeSummary: "Actualización automática por slug (Fase 6g - No duplicación)",
+          editedByUserId: content.updatedBy || content.createdBy,
+          isAIGenerated: true,
+          timestamp: nowIso
+        }
+      ];
+
+      const mergedItem: ContentItem = {
+        ...existing,
+        ...content,
+        id: existing.id, // Mantener ID único existente para evitar duplicados
+        currentVersion: (existing.currentVersion || 1) + 1,
+        versions: updatedVersions,
+        updatedAt: nowIso,
+        updatedBy: content.updatedBy || existing.updatedBy
+      };
+
+      await this.collection().doc(existing.id).set(mergedItem, { merge: true });
+      return mergedItem;
+    } else {
+      await this.collection().doc(content.id).set(content);
+      return content;
+    }
+  }
+
   async save(content: ContentItem): Promise<void> {
-    await this.collection().doc(content.id).set(content);
+    await this.upsertBySlug(content);
   }
 
   async update(id: string, updates: Partial<ContentItem>): Promise<void> {
