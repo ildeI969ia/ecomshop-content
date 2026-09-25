@@ -52,14 +52,25 @@ export const OpportunityRadarWidget: React.FC<OpportunityRadarWidgetProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className={`bg-slate-900 border border-slate-800 rounded-xl animate-pulse ${compact ? "p-4 space-y-3" : "p-5 mb-6"}`}>
+      <div className={`bg-card/70 border border-border rounded-xl backdrop-blur-xl ${compact ? "p-4 space-y-3" : "p-5 mb-6"}`}>
         <div className="flex items-center space-x-3 mb-3">
-          <div className="w-5 h-5 bg-slate-800 rounded-full" />
-          <div className="h-4 bg-slate-800 rounded w-40" />
+          <div className="skeleton h-5 w-5 rounded-full" />
+          <div className="skeleton h-4 w-44" />
         </div>
         <div className={compact ? "flex flex-col gap-3" : "grid grid-cols-1 md:grid-cols-3 gap-4"}>
           {[1, 2, 3].map((i) => (
-            <div key={i} className={`${compact ? "h-24" : "h-32"} bg-slate-800/60 rounded-lg`} />
+            <div key={i} className={`rounded-xl border border-border/60 bg-card/40 p-4 space-y-3 ${compact ? "h-28" : "h-36"}`}>
+              <div className="flex justify-between items-center">
+                <div className="skeleton h-5 w-24" />
+                <div className="skeleton h-4 w-12" />
+              </div>
+              <div className="skeleton h-4 w-4/5" />
+              <div className="skeleton h-3 w-3/5" />
+              <div className="flex gap-1.5 pt-1">
+                <div className="skeleton h-4 w-12 rounded-full" />
+                <div className="skeleton h-4 w-14 rounded-full" />
+              </div>
+            </div>
           ))}
         </div>
       </div>

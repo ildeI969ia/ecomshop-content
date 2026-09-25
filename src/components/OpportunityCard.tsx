@@ -223,11 +223,27 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
         <h4 className="text-base font-bold text-slate-100 line-clamp-1 mb-1.5">
           {opp.actionTitle}
         </h4>
-        <div className="flex items-center justify-between text-sm text-slate-300 mb-2.5">
+        <div className="flex items-center justify-between text-sm text-slate-300 mb-2">
           <span>Target: <strong className="text-white font-semibold">{opp.targetSegment}</strong></span>
           <span className="text-xs font-mono text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-2.5 py-1 rounded shrink-0">
             {opp.pricingCondition || "Tarifa B2B (Consultar)"}
           </span>
+        </div>
+
+        {/* Technical Badges */}
+        <div className="flex flex-wrap gap-1.5 mb-2.5">
+          {opp.sku.includes("536") || opp.sku.includes("510") || opp.sku.includes("526") || opp.sku.includes("546") ? (
+            <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-mono text-sky-300">Wi-Fi 7</span>
+          ) : null}
+          {opp.sku.includes("2512") || opp.sku.includes("536") || opp.sku.includes("546") ? (
+            <span className="rounded-full border border-indigo-500/30 bg-indigo-500/10 px-2 py-0.5 text-[10px] font-mono text-indigo-300">PoE++ (802.3bt)</span>
+          ) : null}
+          {opp.sku.includes("536") || opp.sku.includes("5512") || opp.sku.includes("2512") ? (
+            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-mono text-emerald-300">10 GbE Uplink</span>
+          ) : null}
+          {opp.sku.includes("546") ? (
+            <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-mono text-amber-300">IP67 Outdoor</span>
+          ) : null}
         </div>
 
         {/* Bundle Cross-sell */}
