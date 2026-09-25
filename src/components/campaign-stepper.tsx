@@ -38,27 +38,33 @@ interface StepDef {
 const STEPS: StepDef[] = [
   {
     key: "EXTRACTING",
-    label: "1. Extracción ecomshop.es",
-    sublabel: "Scraping de SKU, especificaciones y ficha técnica",
+    label: "1. Producto",
+    sublabel: "Selección de SKU y datos de ecomshop.es",
     icon: Globe
   },
   {
     key: "NOTEBOOK_GROUNDING",
-    label: "2. Grounding NotebookLM",
-    sublabel: "Alineación de catálogo y matriz de objeciones",
+    label: "2. Enfoque",
+    sublabel: "Alineación de target y matriz de objeciones",
     icon: BookOpen
   },
   {
     key: "GENERATING_CHANNELS",
-    label: "3. Redacción Multicanal",
-    sublabel: "Blog Durable, Mailchimp, WhatsApp y LinkedIn",
+    label: "3. Borrador",
+    sublabel: "Generación de activos multicanal B2B",
     icon: Sparkles
   },
   {
     key: "FACT_CHECKING",
-    label: "4. Fact-Checking EvidenceEngine",
-    sublabel: "Auditoría de claims técnicos y sanitización HTML",
+    label: "4. Revisión",
+    sublabel: "Edición dos columnas y fact-checking",
     icon: ShieldCheck
+  },
+  {
+    key: "COMPLETED",
+    label: "5. Aprobar",
+    sublabel: "Verificación de fidelidad y reglas",
+    icon: CheckCircle2
   }
 ];
 

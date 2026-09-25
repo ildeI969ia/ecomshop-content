@@ -213,6 +213,33 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
     }
   };
 
+  const [isRegeneratingSection, setIsRegeneratingSection] = useState(false);
+
+  const handleRegenerateCurrentSection = async (channel: string) => {
+    if (!content || isRegeneratingSection) return;
+    setIsRegeneratingSection(true);
+    try {
+      const res = await fetch("/api/generate/regenerate-section", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          channel,
+          topicTitle: content.topicTitle,
+          category: content.category,
+          currentText: JSON.stringify((content as any)[channel] || {})
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.updatedPayload) {
+        (content as any)[channel] = data.updatedPayload;
+      }
+    } catch (err) {
+      console.error("Error al rehacer apartado:", err);
+    } finally {
+      setIsRegeneratingSection(false);
+    }
+  };
+
   // ESTADO 1: IDLE (Dashboard de Bienvenida + 4 Tarjetas de Prueba Rápida + Inteligencia en Vivo)
   if (stage === "IDLE" && !content) {
     return (
@@ -228,6 +255,9 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 <BookOpen className="w-3 h-3 text-indigo-400" />
                 59 Fuentes Oficiales NotebookLM
               </Badge>
+              <span className="bg-emerald-950 text-emerald-300 font-mono text-xs px-2 py-0.5 rounded border border-emerald-800 font-bold">
+                Coste estimado: ≈0,03 €
+              </span>
             </div>
             <h2 className="text-lg font-bold text-white tracking-tight">
               Panel de Activación y Grounding Oficial
@@ -245,7 +275,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
               onClick={() => onLaunchWithSku(selectedSku)}
               leftIcon={<Zap className="w-3.5 h-3.5 text-amber-300" />}
             >
-              🚀 Lanzar Campaña ({selectedSku})
+              🚀 Lanzar Campaña ({selectedSku}) &bull; ≈0,03 €
             </Button>
           )}
         </div>
@@ -913,6 +943,17 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={isRegeneratingSection}
+                      isLoading={isRegeneratingSection}
+                      onClick={() => handleRegenerateCurrentSection("blog")}
+                      leftIcon={<RefreshCw className={`w-3.5 h-3.5 text-amber-400 ${isRegeneratingSection ? "animate-spin" : ""}`} />}
+                    >
+                      Rehacer este apartado (Blog)
+                    </Button>
                     {onSaveToFirestore && (
                       <Button
                         type="button"
@@ -1024,7 +1065,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                   className="border border-slate-200 rounded-xl p-6 bg-white text-slate-900 shadow-xs max-h-[600px] overflow-y-auto"
                 >
                   <SafeHtml
-                    className="prose max-w-none text-sm font-sans leading-relaxed"
+                    className="prose max-w-none text-[15px] font-sans leading-relaxed"
                     html={enrichedBlogHtml}
                   />
                 </div>
@@ -1075,6 +1116,17 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                     Preview Text: <strong className="text-white">{content.mailchimp.previewText}</strong>
                   </span>
                   <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={isRegeneratingSection}
+                      isLoading={isRegeneratingSection}
+                      onClick={() => handleRegenerateCurrentSection("mailchimp")}
+                      leftIcon={<RefreshCw className={`w-3.5 h-3.5 text-amber-400 ${isRegeneratingSection ? "animate-spin" : ""}`} />}
+                    >
+                      Rehacer este apartado (Mailchimp)
+                    </Button>
                     {onSaveToFirestore && (
                       <Button
                         type="button"
@@ -1106,22 +1158,33 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                   className="border border-slate-200 rounded-xl p-6 bg-white text-slate-900 shadow-xs max-h-[500px] overflow-y-auto"
                 >
                   <SafeHtml
-                    className="prose max-w-none text-sm font-sans"
+                    className="prose max-w-none text-[15px] font-sans"
                     html={enrichedMailchimpHtml}
                   />
                 </div>
               </div>
             )}
 
-            {/* 3. WHATSAPP TAB */}
+            {/* 3. WHATSAPP TAB CON VISTA PREVIA DE MÓVIL REAL */}
             {activeTab === "whatsapp" && (
-              <div className="flex flex-col gap-4 max-w-2xl mx-auto">
+              <div className="flex flex-col gap-6 max-w-3xl mx-auto">
                 <div className="bg-emerald-950 border border-emerald-800/80 text-white p-4 rounded-t-xl flex items-center justify-between shadow-xs">
                   <div className="flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-emerald-400" />
                     <span className="text-xs font-bold tracking-wide uppercase">WhatsApp Broadcast B2B</span>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="xs"
+                      disabled={isRegeneratingSection}
+                      isLoading={isRegeneratingSection}
+                      onClick={() => handleRegenerateCurrentSection("whatsapp")}
+                      leftIcon={<RefreshCw className={`w-3.5 h-3.5 text-emerald-300 ${isRegeneratingSection ? "animate-spin" : ""}`} />}
+                    >
+                      Rehacer este apartado
+                    </Button>
                     {onSaveToFirestore && (
                       <Button
                         type="button"
@@ -1147,23 +1210,48 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                     </Button>
                   </div>
                 </div>
-                <div className="bg-emerald-50/50 border border-emerald-200 p-6 rounded-b-xl">
-                  <pre className="whitespace-pre-wrap font-sans text-xs text-slate-800 leading-relaxed bg-white p-5 rounded-lg border border-emerald-100 shadow-xs">
-                    {content.whatsapp.formattedMessage}
-                  </pre>
+
+                {/* Mockup de teléfono móvil de WhatsApp */}
+                <div className="w-[320px] mx-auto border-4 border-slate-700 rounded-[36px] bg-[rgb(11,20,26)] overflow-hidden shadow-2xl font-sans my-2">
+                  <div className="bg-[rgb(32,44,51)] text-white px-4 py-3 flex items-center gap-3 border-b border-slate-700">
+                    <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-xs text-white">
+                      ES
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-100">EcomShop Broadcast</p>
+                      <p className="text-[10px] text-emerald-400">Canal verificado B2B</p>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-[rgb(11,20,26)] min-h-[260px] flex flex-col justify-end">
+                    <div className="bg-[rgb(0,92,75)] text-slate-100 p-3.5 rounded-xl rounded-tr-none text-[13px] leading-relaxed shadow-sm">
+                      <p className="whitespace-pre-wrap">{content.whatsapp.formattedMessage}</p>
+                      <span className="text-[9px] text-emerald-200/70 block text-right mt-1 font-mono">10:42 ✓✓</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* 4. LINKEDIN TAB */}
+            {/* 4. LINKEDIN TAB CON CORTE VER MÁS REAL */}
             {activeTab === "linkedin" && (
-              <div className="flex flex-col gap-4 max-w-2xl mx-auto">
+              <div className="flex flex-col gap-6 max-w-3xl mx-auto">
                 <div className="bg-slate-950 border border-slate-800 text-white p-4 rounded-t-xl flex items-center justify-between shadow-xs">
                   <div className="flex items-center gap-2">
                     <Share2 className="w-4 h-4 text-sky-400" />
                     <span className="text-xs font-bold tracking-wide uppercase">LinkedIn B2B Post</span>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="xs"
+                      disabled={isRegeneratingSection}
+                      isLoading={isRegeneratingSection}
+                      onClick={() => handleRegenerateCurrentSection("linkedin")}
+                      leftIcon={<RefreshCw className={`w-3.5 h-3.5 text-sky-300 ${isRegeneratingSection ? "animate-spin" : ""}`} />}
+                    >
+                      Rehacer este apartado
+                    </Button>
                     {onSaveToFirestore && (
                       <Button
                         type="button"
@@ -1188,10 +1276,27 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                     </Button>
                   </div>
                 </div>
-                <div className="bg-slate-50 border border-slate-200 p-6 rounded-b-xl">
-                  <pre className="whitespace-pre-wrap font-sans text-xs text-slate-800 leading-relaxed bg-white p-5 rounded-lg border border-slate-200 shadow-xs">
-                    {content.linkedin.fullPostText}
-                  </pre>
+
+                {/* Feed Card Mockup LinkedIn */}
+                <div className="max-w-xl mx-auto bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg text-slate-200 text-[14px] font-sans my-2 w-full">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">
+                      EC
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white text-xs">EcomShop Telecomunicaciones</h4>
+                      <p className="text-[11px] text-slate-400">Director de Estrategia Técnica • 1h • 🌐</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="font-bold text-slate-100">{content.linkedin.hook}</p>
+                    <p className="whitespace-pre-wrap text-slate-300 leading-relaxed text-xs">{content.linkedin.fullPostText}</p>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-slate-800 flex justify-between text-xs text-slate-400 font-semibold">
+                    <span className="hover:text-sky-400 cursor-pointer">👍 Me gusta</span>
+                    <span className="hover:text-sky-400 cursor-pointer">💬 Comentar</span>
+                    <span className="hover:text-sky-400 cursor-pointer">🔁 Compartir</span>
+                  </div>
                 </div>
               </div>
             )}
