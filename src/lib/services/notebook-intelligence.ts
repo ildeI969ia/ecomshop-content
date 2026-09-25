@@ -550,26 +550,26 @@ export class NotebookIntelligenceService {
           "Cero cuotas de renovación anual en EnGenius Cloud"
         ];
       } else {
-        // ECW546
-        modelName = "EnGenius ECW546 Outdoor Wi-Fi 7 AP IP67";
-        standards = ["Wi-Fi 7 (IEEE 802.11be)", "Carcasa IP67 Intemperie", "Protección 6kV Sobretensiones", "Antenas Omnidireccionales"];
-        ports = ["1x 10 GbE PoE++ impermeable", "1x 2.5 GbE RJ45"];
-        powerReq = "PoE++ 802.3bt (Máx. 35W)";
-        wirelessStandards = ["Wi-Fi 7 (IEEE 802.11be)", "Wi-Fi 6E/6 (802.11ax)"];
-        frequencyBands = ["2.4 GHz", "5 GHz", "6 GHz"];
-        mimo = "4x4:4 Tri-Band Outdoor";
-        switchSku = "ECS2512FP";
-        switchName = "Switch Cloud Multi-Gigabit PoE++ 60W (ECS2512FP)";
-        switchReason = "Alimentación PoE++ y protección contra sobretensiones para exteriores exigentes.";
-        naturalSector = "LOGISTICS_INDUSTRY";
-        naturalAudience = "Campings, terrazas hoteleras, naves logísticas e instalaciones a la intemperie";
-        recommendedAngle = "OPERATIONS";
+        // Fallback dinámico usando catalogItem si está disponible o datos del SKU
+        modelName = catalogItem?.name || `Equipo ${catalogItem?.brand || ""} ${cleanSku}`.trim();
+        standards = catalogItem?.standards || ["Estándares IEEE B2B", "Certificación CE"];
+        ports = catalogItem?.interfaces || ["Puertos Ethernet Gigabit/Multi-Gigabit"];
+        powerReq = catalogItem?.powerRequirements || "Alimentación según especificaciones de catálogo";
+        wirelessStandards = catalogItem?.polymorphicSpecs?.accessPoint?.wirelessStandards || [catalogItem?.specs?.[0] || "Wi-Fi corporativo"];
+        frequencyBands = catalogItem?.polymorphicSpecs?.accessPoint?.frequencyBands || ["2.4 GHz", "5 GHz"];
+        mimo = catalogItem?.polymorphicSpecs?.accessPoint?.mimo || "2x2:2 MIMO";
+        switchSku = catalogItem?.recommendedBundle?.sku || "ECS2512FP";
+        switchName = catalogItem?.recommendedBundle?.name || "Switch Cloud de Interconexión";
+        switchReason = catalogItem?.recommendedBundle?.rationale || "Alimentación y conmutación recomendada.";
+        naturalSector = "ENTERPRISE_OFFICE";
+        naturalAudience = catalogItem?.targetSegment || "Integradores IT y Telecomunicaciones";
+        recommendedAngle = catalogItem?.defaultAngle || "ROI";
         recommendedTone = "ENGINEERING_PREVENTA";
-        recommendedCompetitor = "UNIFI";
-        keyDiffs = [
-          "Chasis estanco IP67 para climas severos de -20ºC a +60ºC",
-          "Protección de sobretensiones 6kV integrada",
-          "Puerto 10 GbE PoE++ para backhauls exteriores"
+        recommendedCompetitor = "MERAKI";
+        keyDiffs = catalogItem?.keyAdvantages || [
+          "Hardware B2B homologado con garantía de sustitución avanzada en 24h EcomSpain",
+          "Sin costes ocultos de licencias ni permanencia",
+          "Soporte preventa directo de ingeniería"
         ];
       }
 

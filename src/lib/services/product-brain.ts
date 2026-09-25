@@ -80,7 +80,7 @@ export class ProductBrainService {
         name: "Instalador Tipo A / F (Telecomunicaciones & CCTV)",
         role: "Instalador de redes y sistemas de videovigilancia",
         primaryConcern: "Tiempos de mano de obra en obra, presupuesto PoE que no tire las cámaras y soporte preventa directo",
-        pitchIn30Seconds: `El equipo ${cleanSku} se aprovisiona en 2 minutos con código QR desde el móvil. Cero cuotas de licencias y sustitución en 24h de EcomSpain si falla en obra.`,
+        pitchIn30Seconds: `El equipo ${catalogItem ? `${catalogItem.brand} ${catalogItem.model}` : cleanSku} ofrece aprovisionamiento rápido en 2 minutos. Cero cuotas de licencias y sustitución en 24h de EcomSpain si falla en obra.`,
         recommendedCta: "Solicitar Tarifa de Instalador con Descuento por Volumen"
       },
       {

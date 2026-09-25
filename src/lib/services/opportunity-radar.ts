@@ -106,29 +106,76 @@ export class OpportunityRadarService {
     businessGoalAffinity: Record<BusinessGoal, number>;
     catalogItem: CatalogProduct;
   }> {
-    return ECOMSHOP_FULL_CATALOG.map(item => ({
-      sku: item.sku,
-      model: item.model,
-      category: (item.category === "wifi" ? "wifi" :
-                item.category === "switches" ? "switches" :
-                item.category === "gateways" ? "gateways" :
-                item.category === "fibra" ? "fibra" : "accesorios") as "wifi" | "switches" | "gateways" | "fibra" | "accesorios",
-      brand: item.brand,
-      priceEur: item.priceEur,
-      url: item.url,
-      actionTitle: item.actionTitle,
-      targetSegment: item.targetSegment,
-      defaultAngle: item.defaultAngle,
-      suggestedBundle: {
-        accessorySku: item.bundleDetails?.sku || item.recommendedBundle.sku,
-        accessoryName: item.bundleDetails?.name || item.recommendedBundle.sku,
-        rationale: item.bundleDetails?.rationale || item.recommendedBundle.rationale
-      },
-      sourceIds: [item.notebookSourceId || item.notebookSource.sourceId, ...(item.additionalSourceIds || [])].filter((s): s is string => Boolean(s)),
-      sectorAffinity: item.sectorAffinity,
-      businessGoalAffinity: item.businessGoalAffinity,
-      catalogItem: item
-    }));
+    return ECOMSHOP_FULL_CATALOG.map(item => {
+      // 1. Título de acción dinámico si es genérico
+      let dynamicActionTitle = item.actionTitle;
+      if (!dynamicActionTitle || dynamicActionTitle.startsWith("Despliegue y Solución B2B con")) {
+        if (item.deviceType === "ROUTER_CELLULAR" || item.category === "cellular") {
+          dynamicActionTitle = `Conectividad Celular 4G/5G y Doble SIM para Flotas o M2M con ${item.model}`;
+        } else if (item.deviceType === "ACCESS_POINT" || item.category === "wifi") {
+          const isOutdoor = item.name.toLowerCase().includes("outdoor") || item.specs.some(s => s.toLowerCase().includes("ip67"));
+          dynamicActionTitle = isOutdoor
+            ? `Cobertura Wi-Fi Exterior IP67 y Alta Densidad con ${item.brand} ${item.model}`
+            : `Cobertura Wi-Fi Corporativa y Roaming de Alta Densidad con ${item.brand} ${item.model}`;
+        } else if (item.deviceType === "SWITCH" || item.category === "switches") {
+          dynamicActionTitle = `Infraestructura de Conmutación Multi-Gigabit y PoE++ con ${item.brand} ${item.model}`;
+        } else if (item.deviceType === "GATEWAY" || item.category === "gateways") {
+          dynamicActionTitle = `Seguridad Perimetral, SD-WAN y VPN Corporativa con ${item.brand} ${item.model}`;
+        } else if (item.deviceType === "TESTER" || item.category === "testers") {
+          dynamicActionTitle = `Auditoría, Certificación de Red y Diagnóstico Preventa con ${item.brand} ${item.model}`;
+        } else if (item.deviceType === "ACCESSORY" || item.category === "poe_injectors") {
+          dynamicActionTitle = `Alimentación PoE Dedicada y Protección Eléctrica con ${item.brand} ${item.model}`;
+        } else {
+          dynamicActionTitle = `Solución de Networking B2B Homologada con ${item.brand} ${item.model}`;
+        }
+      }
+
+      // 2. Bundle dinámico coherente si el bundle configurado es genérico SFP-10G-SR-KIT para productos incompatibles
+      let accessorySku = item.bundleDetails?.sku || item.recommendedBundle.sku;
+      let accessoryName = item.bundleDetails?.name || item.recommendedBundle.name || accessorySku;
+      let rationale = item.bundleDetails?.rationale || item.recommendedBundle.rationale;
+
+      if (accessorySku === "SFP-10G-SR-KIT" || rationale === "Accesorios e interconexión recomendados para este equipo.") {
+        if (item.deviceType === "ROUTER_CELLULAR" || item.category === "cellular") {
+          accessorySku = "ANT-4G-LTE-MAG";
+          accessoryName = "Kit Antenas Celulares Magnéticas de Alta Ganancia 4G/LTE (SMA)";
+          rationale = "Antenas exteriores de alta ganancia para maximizar la cobertura en entornos metálicos o remotos.";
+        } else if (item.deviceType === "ACCESSORY" || item.category === "poe_injectors" || item.sku.startsWith("EPA")) {
+          accessorySku = "PATCH-CAT6A-2M";
+          accessoryName = "Latiguillo de Red Cat6A SFTP 500MHz Blindado (2m)";
+          rationale = "Latiguillo apantallado homologado para transporte PoE sin pérdidas ni interferencias EMI.";
+        } else if (item.deviceType === "ACCESS_POINT" || item.category === "wifi") {
+          const reqPoe = item.poeType === "802.3bt" ? "EPA5006GAT" : "POE30Gv2";
+          accessorySku = reqPoe;
+          accessoryName = reqPoe === "EPA5006GAT" ? "Inyector Ultra PoE 60W Gigabit (EPA5006GAT)" : "Inyector PoE+ 30W Gigabit (POE30Gv2)";
+          rationale = `Alimentación PoE dedicada para despliegue directo de APs en obra sin cambiar la electrónica previa.`;
+        }
+      }
+
+      return {
+        sku: item.sku,
+        model: item.model,
+        category: (item.category === "wifi" ? "wifi" :
+                  item.category === "switches" ? "switches" :
+                  item.category === "gateways" ? "gateways" :
+                  item.category === "fibra" ? "fibra" : "accesorios") as "wifi" | "switches" | "gateways" | "fibra" | "accesorios",
+        brand: item.brand,
+        priceEur: item.priceEur,
+        url: item.url,
+        actionTitle: dynamicActionTitle,
+        targetSegment: item.targetSegment,
+        defaultAngle: item.defaultAngle,
+        suggestedBundle: {
+          accessorySku,
+          accessoryName,
+          rationale
+        },
+        sourceIds: [item.notebookSourceId || item.notebookSource?.sourceId, ...(item.additionalSourceIds || [])].filter((s): s is string => Boolean(s)),
+        sectorAffinity: item.sectorAffinity,
+        businessGoalAffinity: item.businessGoalAffinity,
+        catalogItem: item
+      };
+    });
   }
 
   /**
@@ -338,18 +385,40 @@ export class OpportunityRadarService {
         }
       }
 
-      // Hilo conductor narrativo canónico con salvaguardas anti-alucinación
-      let defaultPitch = `El equipo ${def.sku} se aprovisiona en 2 minutos con código QR desde el móvil. Cero cuotas de licencias y sustitución en 24h de EcomSpain si falla en obra.`;
-      let defaultObjection = "¿Qué ventaja tiene frente a marcas con suscripción cloud obligatoria?";
-      let defaultCounterArgument = "Con EnGenius Cloud en EcomShop no hay suscripción obligatoria. Ahorro de hasta el 42% en TCO a 3 años frente a Cisco Meraki sin cuotas recurrentes.";
+      // Hilo conductor narrativo canónico con salvaguardas anti-alucinación por categoría y marca
+      let defaultPitch = `El equipo ${def.brand} ${def.sku} ofrece rendimiento B2B homologado con entrega rápida desde almacén EcomSpain y soporte preventa directo.`;
+      let defaultObjection = `¿Qué garantía y soporte de integración ofrece ${def.brand} para este equipo?`;
+      let defaultCounterArgument = `Soporte de ingeniería en España por EcomSpain con sustitución avanzada en 24h e interoperabilidad bajo estándares abiertos.`;
 
-      if (def.category === "wifi") {
-        defaultObjection = "¿Es compatible con la red existente de mi cliente si usan otra marca (Cisco, Ubiquiti, MikroTik)?";
-        defaultCounterArgument = "Totalmente compatible mediante estándares abiertos IEEE 802.3 y VLANs 802.1Q. Permite una migración escalonada sede por sede sin cambiar la electrónica previa.";
+      const isCellular = def.catalogItem?.deviceType === "ROUTER_CELLULAR" || def.category === "cellular" as any || def.sku.startsWith("RUT") || def.sku.startsWith("TRB");
+      const isInjector = def.catalogItem?.deviceType === "ACCESSORY" || def.category === "accesorios" || def.sku.startsWith("EPA") || def.sku.startsWith("POE");
+      const isSwitch = def.catalogItem?.deviceType === "SWITCH" || def.category === "switches";
+      const isTester = def.catalogItem?.deviceType === "TESTER" || def.sku.includes("LINK") || def.sku.includes("SCOPE") || def.sku.includes("CHECK");
+
+      if (isCellular) {
+        defaultPitch = `El router industrial ${def.brand} ${def.sku} garantiza conectividad celular 4G/5G crítica para entornos M2M, movilidad y conectividad remota ininterrumpida.`;
+        defaultObjection = `¿Es adecuado ${def.sku} para despliegues de misión crítica en vehículos o ubicaciones remotas sin línea fija?`;
+        defaultCounterArgument = `Sí, cuenta con chasis reforzado de aluminio, rango térmico extendido, gestión RMS remota y failover inteligente Dual-SIM / WAN.`;
+      } else if (isInjector) {
+        defaultPitch = `El inyector PoE ${def.brand} ${def.sku} proporciona alimentación limpia y alta potencia a puntos de acceso y cámaras sin necesidad de cambiar el switch de red.`;
+        defaultObjection = `¿Es compatible el inyector ${def.sku} con equipos PoE de cualquier fabricante?`;
+        defaultCounterArgument = `Totalmente compatible con estándares IEEE 802.3af/at/bt e inyección pasiva de alta eficiencia con protección contra sobretensiones.`;
+      } else if (isSwitch) {
+        defaultPitch = `El switch ${def.brand} ${def.sku} proporciona conmutación de alta densidad Multi-Gigabit/10G y presupuesto PoE optimizado para backbone corporativo.`;
+        defaultObjection = `¿Cómo gestiona ${def.brand} los picos de potencia PoE y los uplinks saturados?`;
+        defaultCounterArgument = `Soporta balanceo dinámico de energía PoE+/PoE++, enlaces de fibra SFP+ 10G y VLANs avanzadas L2+/L3.`;
+      } else if (isTester) {
+        defaultPitch = `El certificador/tester ${def.brand} ${def.sku} diagnostica redes de cobre, fibra y Wi-Fi en segundos para acelerar certificaciones de cableado e instalaciones IT.`;
+        defaultObjection = `¿Permite ${def.sku} generar informes de auditoría profesional para entregar al cliente final?`;
+        defaultCounterArgument = `Genera reportes técnicos detallados exportables en PDF/Cloud listos para la firma del proyecto.`;
+      } else if (def.category === "wifi") {
+        defaultPitch = `El AP ${def.brand} ${def.sku} se aprovisiona en 2 minutos con código QR. Cobertura de alta densidad sin cuotas de licencias obligatorias.`;
+        defaultObjection = "¿Qué ventaja tiene frente a marcas con suscripción cloud obligatoria?";
+        defaultCounterArgument = "Con EnGenius Cloud en EcomShop no hay suscripción obligatoria. Ahorro de hasta el 42% en TCO a 3 años frente a marcas con licencias recurrentes.";
       } else if (def.category === "gateways" || def.sku.startsWith("ESG")) {
         defaultPitch = `El gateway ${def.sku} ofrece seguridad 2.5 GbE con doble WAN y VPN WireGuard nativa sin suscripción obligatoria. Ahorra más del 40% en TCO.`;
         defaultObjection = `¿Tiene el gateway ${def.sku} antena o punto de acceso Wi-Fi integrado para la oficina?`;
-        defaultCounterArgument = `No, el ${def.sku} es un gateway y firewall perimetral exclusivamente cableado (cero Wi-Fi integrado). Se complementa con APs Wi-Fi 7 ECW alimentados por switch PoE en la misma consola cloud.`;
+        defaultCounterArgument = `No, el ${def.sku} es un gateway y firewall perimetral exclusivamente cableado (cero Wi-Fi integrado). Se complementa con APs Wi-Fi alimentados por switch PoE.`;
       }
 
       const groundedClaimsPreview: string[] = [

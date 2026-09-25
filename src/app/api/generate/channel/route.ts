@@ -55,15 +55,31 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
       url: d.productUrl
     }));
 
+    const strictGroundingHeader = `
+INSTRUCCIÓN ESTRICTA: El contenido debe centrarse exclusivamente en el producto solicitado (${device.brand} ${device.sku}). Queda terminantemente prohibido mencionar modelos o tecnologías ajenas al producto indicado.
+- Si el SKU es un router 4G/LTE (ej. RUTX11) o un inyector (ej. EPA5006GAT), el texto DEBE tratar de routers industriales o de inyectores PoE, NUNCA de puntos de acceso Wi-Fi 7 ni switches de otras marcas.
+`;
+
     let prompt = "";
     if (channel === "linkedin") {
+      const dynamicHashtags = Array.from(new Set([
+        `#${device.brand.replace(/\s+/g, "")}`,
+        `#${device.sku.replace(/[^a-zA-Z0-9]/g, "")}`,
+        "#Networking",
+        "#EcomShop",
+        device.category === "ROUTER_CELLULAR" ? "#IoT" : device.category === "WIFI_7" ? "#WiFi7" : "#B2B"
+      ]));
+
       prompt = `
+${strictGroundingHeader}
+
 Genera una publicación profesional de LinkedIn B2B sobre el producto ${device.brand} ${device.sku}: ${device.name}.
 
 ESPECIFICACIONES DEL PRODUCTO:
 - SKU: ${device.sku}
 - Marca: ${device.brand}
 - Nombre: ${device.name}
+- Tipo de dispositivo: ${device.type} (${device.category})
 - Descripción: ${device.shortDesc}
 - Especificaciones: ${JSON.stringify(device.specs)}
 - Ventajas clave: ${device.keyAdvantages.join("; ")}
@@ -71,11 +87,11 @@ ESPECIFICACIONES DEL PRODUCTO:
 
 REQUISITOS OBLIGATORIOS LINKEDIN:
 1. 'hook': Gancho comercial potente de menos de 210 caracteres antes de la línea 'ver más'. Debe captar de inmediato la atención de integradores/CTOs.
-2. 'licensingCostComparison': Comparativa cuantitativa de coste de licencias destacando los 0€ en cuotas de gestión Cloud de EnGenius frente a competidores con suscripción recurrente.
+2. 'licensingCostComparison': Comparativa cuantitativa de propuesta de valor B2B destacando ventajas competitivas del modelo ${device.sku} de ${device.brand} (ej. 0€ cuotas de gestión en EnGenius Cloud si es EnGenius, o fiabilidad celular/M2M si es Teltonika/Ruckus) frente a competidores con suscripción recurrente o hardware convencional.
 3. 'technicalSolution': Solución técnica detallada que resuelve el dispositivo en despliegues corporativos o pymes.
 4. 'callToAction': Llamada a la acción clara dirigiendo a ecomshop.es.
 5. 'fullPostText': El texto completo unificado listo para publicar en LinkedIn con emojis profesionales.
-6. 'hashtags': Array de hashtags B2B relevantes (#Wi-Fi7 #Networking #EnGenius #EcomShop #PoE).
+6. 'hashtags': Array de hashtags B2B relevantes ${JSON.stringify(dynamicHashtags)}.
 
 ${customPrompt ? `INSTRUCCIONES ADICIONALES: ${customPrompt}` : ""}
 
@@ -92,10 +108,13 @@ Responde ÚNICAMENTE con un JSON con la estructura:
 `;
     } else if (channel === "whatsapp") {
       prompt = `
+${strictGroundingHeader}
+
 Genera un mensaje comercial condensado de WhatsApp sobre el producto ${device.brand} ${device.sku}: ${device.name}.
 
 DATOS DEL PRODUCTO:
 - SKU: ${device.sku}
+- Marca: ${device.brand}
 - Nombre: ${device.name}
 - Especificaciones: ${JSON.stringify(device.specs)}
 - Ventajas: ${device.keyAdvantages.join("; ")}
@@ -118,10 +137,13 @@ Responde ÚNICAMENTE con un JSON con la estructura:
 `;
     } else if (channel === "product-sheet") {
       prompt = `
+${strictGroundingHeader}
+
 Genera una ficha de producto optimizada para ecomshop.es sobre ${device.brand} ${device.sku}: ${device.name}.
 
 DATOS DISPONIBLES:
 - SKU: ${device.sku}
+- Marca: ${device.brand}
 - Especificaciones: ${JSON.stringify(device.specs)}
 - Ventajas: ${device.keyAdvantages.join("; ")}
 - Catálogo de productos relacionados: ${JSON.stringify(availableAccessories)}
