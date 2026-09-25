@@ -112,6 +112,20 @@ export const ContentOutputSchema = z.object({
   status: z.enum(["DRAFT", "NEEDS_REVIEW", "APPROVED", "PUBLISHED"]).optional(),
   fallbackNotice: z.string().optional(),
 
+  // Reporte de Reglas por Canal (Fase 6d)
+  channelValidation: z.object({
+    passed: z.boolean(),
+    score: z.number(),
+    rules: z.array(z.object({
+      id: z.string(),
+      channel: z.string(),
+      label: z.string(),
+      passed: z.boolean(),
+      message: z.string()
+    })),
+    failedChannels: z.array(z.string())
+  }).optional(),
+
   // Metadatos reales de consumo de tokens Gemini
   usageMetadata: z.object({
     promptTokenCount: z.number().optional(),

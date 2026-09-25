@@ -157,6 +157,12 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     const { validateContentGrounding } = await import("@/lib/services/claim-validator");
     content.groundingValidation = validateContentGrounding(content);
 
+    // 4.6. Validación y Autofix de Reglas por Canal (Fase 6d)
+    const { autoFixFailedChannels } = await import("@/lib/quality/channel-fixer");
+    const channelFixResult = await autoFixFailedChannels(content);
+    content = channelFixResult.updatedContent;
+    content.channelValidation = channelFixResult.report;
+
     // 5. Persistencia en Firestore (Contents, Variants, ProductIntelligence, FinOps, Audit)
     let contentId = `content-${content.topicId}-${Date.now().toString(36)}`;
     try {

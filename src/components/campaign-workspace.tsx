@@ -559,6 +559,36 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             </div>
           )}
 
+          {content && (() => {
+            const { validateChannelRules } = require("@/lib/quality/channel-rules");
+            const report = content.channelValidation || validateChannelRules(content);
+            return (
+              <div className="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 my-3 text-xs">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                  <span className="font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                    <FileCheck className="w-4 h-4 text-indigo-400" />
+                    Lista de Comprobación de Calidad por Canal ({report.score}% Cumplimiento)
+                  </span>
+                  <Badge variant={report.passed ? "success" : "warning"} size="xs">
+                    {report.passed ? "Reglas Superadas (Verde)" : `${report.rules.filter((r: any) => !r.passed).length} Alertas (Rojo)`}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-3">
+                  {report.rules.map((rule: any) => (
+                    <div key={rule.id} className="flex items-start gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800/60">
+                      <span className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${rule.passed ? "bg-emerald-400 shadow-[0_0_6px_#10b981]" : "bg-rose-500 shadow-[0_0_6px_#f43f5e]"}`} />
+                      <div className="flex-1">
+                        <p className={`font-semibold ${rule.passed ? "text-slate-300" : "text-rose-300 font-bold"}`}>{rule.label}</p>
+                        <p className="text-[11px] text-slate-400 font-mono">{rule.message}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
           <div className="flex items-center gap-2 shrink-0 flex-wrap">
             <Badge
               variant={content?.source === "fallback" || content?.status === "NEEDS_REVIEW" ? "warning" : (content?.factCheckScore !== null && (content?.factCheckScore ?? 100) < 70 ? "danger" : "success")}
