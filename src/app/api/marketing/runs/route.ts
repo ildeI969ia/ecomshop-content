@@ -29,10 +29,21 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
     const { sku, provider: providerType, forceRegenerate } = parsed.data;
 
     // Seleccionar provider
-    const provider =
-      providerType === "antigravity"
-        ? new AntigravityPythonSdkProvider()
-        : new MockAgentProvider();
+    let provider;
+    if (providerType === "antigravity" && process.env.ANTIGRAVITY_SDK_ENABLED === "true") {
+      provider = new AntigravityPythonSdkProvider();
+    } else if (process.env.NODE_ENV === "production" && process.env.ALLOW_MOCK_AGENT !== "true") {
+      return NextResponse.json(
+        {
+          status: "ERROR",
+          code: "GENERATION_UNAVAILABLE",
+          message: "Servicio de generación IA no disponible en producción (MockAgentProvider no permitido)."
+        },
+        { status: 503 }
+      );
+    } else {
+      provider = new MockAgentProvider();
+    }
 
     const engine = new MarketingPipelineEngine(provider);
     const hash = engine.calculateIdempotencyHash(sku);
@@ -77,12 +88,20 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
       contentVersion: nextContentVersion
     });
 
-    // Persistir si está disponible
+    // Persistir ejecuciones y paquetes con fail-safe estricto
     try {
       await repository.saveRun(run);
       await repository.savePackage(marketingPackage);
-    } catch {
-      // Continuar retornando el resultado aunque la persistencia remota no esté inicializada
+    } catch (dbErr: any) {
+      console.error("[api/marketing/runs] Fallo crítico de persistencia en Firestore:", dbErr);
+      return NextResponse.json(
+        {
+          status: "PERSISTENCE_FAILED",
+          error: "No se pudo guardar la ejecución ni el paquete en la base de datos",
+          details: dbErr?.message
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(

@@ -126,7 +126,9 @@ export const MarketingRunSchema = z.object({
   knowledgeVersion: z.string().default("v1.0.0"),
   catalogVersion: z.string().default("canonical-2026"),
   provider: z.string().default("google-antigravity"),
-  model: z.string().default("gemini-2.5-flash")
+  model: z.string().default("gemini-2.0-flash"),
+  actualModel: z.string().optional(),
+  fallbackUsed: z.boolean().default(false)
 });
 export type MarketingRun = z.infer<typeof MarketingRunSchema>;
 

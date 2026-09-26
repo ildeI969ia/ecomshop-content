@@ -90,11 +90,18 @@ export class AntigravityTsProvider implements IAgentProvider {
 
       let response: any;
       let lastError: any;
+      let usedModel = candidateModels[0];
+      let fallbackUsed = false;
 
-      for (const modelName of candidateModels) {
+      for (let i = 0; i < candidateModels.length; i++) {
+        const modelName = candidateModels[i];
         try {
           response = await generateWithModel(modelName);
-          if (response?.text) break;
+          if (response?.text) {
+            usedModel = modelName;
+            fallbackUsed = i > 0;
+            break;
+          }
         } catch (err: any) {
           console.warn(`[AntigravityTsProvider] Modelo ${modelName} falló en Vertex AI (${err?.message || err}). Probando siguiente...`);
           lastError = err;
@@ -117,7 +124,9 @@ export class AntigravityTsProvider implements IAgentProvider {
         stderr: "",
         timedOut: false,
         filesChanged: manifest.filesAllowed.length > 0 ? [manifest.filesAllowed[0]] : [],
-        summary: `Agente TypeScript completó exitosamente la tarea ${taskId}`
+        summary: `Agente TypeScript completó exitosamente la tarea ${taskId}`,
+        actualModel: usedModel,
+        fallbackUsed
       };
     } catch (err: any) {
       let errorMessage = err?.message || String(err);

@@ -37,10 +37,21 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
       );
     }
 
-    const provider =
-      process.env.ANTIGRAVITY_SDK_ENABLED === "true"
-        ? new AntigravityPythonSdkProvider()
-        : new MockAgentProvider();
+    let provider;
+    if (process.env.ANTIGRAVITY_SDK_ENABLED === "true") {
+      provider = new AntigravityPythonSdkProvider();
+    } else if (process.env.NODE_ENV === "production" && process.env.ALLOW_MOCK_AGENT !== "true") {
+      return NextResponse.json(
+        {
+          status: "ERROR",
+          code: "GENERATION_UNAVAILABLE",
+          message: "Servicio de generación IA no disponible en producción (MockAgentProvider no permitido)."
+        },
+        { status: 503 }
+      );
+    } else {
+      provider = new MockAgentProvider();
+    }
 
     const engine = new MarketingPipelineEngine(provider);
 
@@ -79,8 +90,16 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
         if (res.run) await repository.saveRun(res.run);
         if (res.package) await repository.savePackage(res.package);
       }
-    } catch {
-      // Ignorar persistencia local
+    } catch (dbErr: any) {
+      console.error("[api/marketing/batches/retry] Fallo crítico de persistencia en Firestore:", dbErr);
+      return NextResponse.json(
+        {
+          status: "PERSISTENCE_FAILED",
+          error: "No se pudo actualizar la información en la base de datos",
+          details: dbErr?.message
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({

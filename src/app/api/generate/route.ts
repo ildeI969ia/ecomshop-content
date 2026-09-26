@@ -252,7 +252,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         timestamp: nowIso,
         userId: user.uid,
         action: "gemini_generation",
-        model: "gemini-2.5-flash",
+        model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
         provider: "vertex-ai",
         operation: "content_generation",
         sku: intelligenceCard?.product?.sku,

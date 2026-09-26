@@ -27,7 +27,8 @@
     "test:marketing-real-e2e": "tsx scripts/test-marketing-real-e2e.ts",
     "test:marketing-ui-flow": "tsx scripts/test-marketing-ui-flow.ts",
     "test:p0a": "tsx scripts/test-p0a-workspace-isolation.ts",
-    "test:p0b": "tsx scripts/test-p0b-rbac-rules.ts"
+    "test:p0b": "tsx scripts/test-p0b-rbac-rules.ts",
+    "test:p0c": "tsx scripts/test-p0c-persistence-failsafe.ts"
   },
   "dependencies": {
     "@google-cloud/firestore": "^9.1.0",

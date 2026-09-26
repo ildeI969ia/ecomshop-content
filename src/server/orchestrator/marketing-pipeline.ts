@@ -330,7 +330,9 @@ Responde ÚNICAMENTE con un JSON válido con la siguiente estructura exacta:
       knowledgeVersion: "v1.0.0",
       catalogVersion: "canonical-2026",
       provider: "google-antigravity",
-      model: "gemini-2.5-flash"
+      model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
+      actualModel: agentResult.actualModel || process.env.GEMINI_MODEL || "gemini-2.0-flash",
+      fallbackUsed: agentResult.fallbackUsed ?? false
     };
 
     return { run, marketingPackage };
