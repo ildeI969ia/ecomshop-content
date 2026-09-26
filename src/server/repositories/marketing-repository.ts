@@ -39,7 +39,12 @@ export class MarketingRunRepository {
   }
 
   async savePackage(pkg: MarketingPackage): Promise<void> {
-    await this.packagesCollection().doc(pkg.packageId).set(pkg);
+    const pkgToSave: MarketingPackage = {
+      ...pkg,
+      workspaceId: pkg.workspaceId || "default-ecomspain",
+      organizationId: pkg.organizationId || "org-ecomspain"
+    };
+    await this.packagesCollection().doc(pkgToSave.packageId).set(pkgToSave);
   }
 
   async findPackageById(packageId: string): Promise<MarketingPackage | null> {
@@ -53,8 +58,14 @@ export class MarketingRunRepository {
     return snapshot.docs[0].data() as MarketingPackage;
   }
 
-  async listPackagesByWorkspace(limitCount = 100): Promise<MarketingPackage[]> {
-    const snapshot = await this.packagesCollection().limit(limitCount).get();
+  async listPackagesByWorkspace(workspaceId: string, limitCount = 100): Promise<MarketingPackage[]> {
+    if (!workspaceId) {
+      throw new Error("workspaceId es obligatorio para listar packages por workspace");
+    }
+    const snapshot = await this.packagesCollection()
+      .where("workspaceId", "==", workspaceId)
+      .limit(limitCount)
+      .get();
     return snapshot.docs.map((d: QueryDocumentSnapshot) => d.data() as MarketingPackage);
   }
 

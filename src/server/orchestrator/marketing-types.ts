@@ -226,6 +226,8 @@ export const MarketingSeoSchema = z.object({
 export type MarketingSeo = z.infer<typeof MarketingSeoSchema>;
 
 export const MarketingPackageSchema = z.object({
+  workspaceId: z.string().default("default-ecomspain"),
+  organizationId: z.string().default("org-ecomspain"),
   packageId: z.string(),
   runId: z.string(),
   product: z.object({
