@@ -32,7 +32,8 @@
     "test:p1b": "tsx scripts/test-p1b-product-identity.ts",
     "test:p1c": "tsx scripts/test-p1c-honest-fallback.ts",
     "test:p1d": "tsx scripts/test-p1d-finops-reconciliation.ts",
-    "test:p1e": "tsx scripts/test-p1e-tenant-isolation.ts"
+    "test:p1e": "tsx scripts/test-p1e-tenant-isolation.ts",
+    "test:editorial": "tsx scripts/test-sprint-editorial-quality.ts"
   },
   "dependencies": {
     "@google-cloud/firestore": "^9.1.0",

@@ -113,8 +113,14 @@ export async function recordAiUsage(
   const totalTokens = meta?.totalTokenCount ?? (tokensIn + tokensOut);
 
   await db.runTransaction(async (transaction) => {
-    // 1. Actualización por usuario (ai_usage/{uid}/months/{YYYY-MM})
+    // 1. TODAS las lecturas primero (Requisito estricto de Firestore Transactions)
     const doc = await transaction.get(docRef);
+    const globalDoc = await transaction.get(globalSummaryRef);
+    const projDoc = await transaction.get(projectSummaryRef);
+
+    // 2. ESCRITURAS
+
+    // A. Actualización por usuario (ai_usage/{uid}/months/{YYYY-MM})
     if (!doc.exists) {
       transaction.set(docRef, {
         totalEur: estimatedCostEur,
@@ -137,8 +143,7 @@ export async function recordAiUsage(
       });
     }
 
-    // 2. Actualización global mensual en ai_usage_summary/{YYYY-MM}
-    const globalDoc = await transaction.get(globalSummaryRef);
+    // B. Actualización global mensual en ai_usage_summary/{YYYY-MM}
     if (!globalDoc.exists) {
       transaction.set(globalSummaryRef, {
         month: yearMonth,
@@ -184,8 +189,7 @@ export async function recordAiUsage(
       });
     }
 
-    // 3. Acumulador Global Persistente del Proyecto GCP (ai_usage_project_summary/{projectId})
-    const projDoc = await transaction.get(projectSummaryRef);
+    // C. Acumulador Global Persistente del Proyecto GCP (ai_usage_project_summary/{projectId})
     if (!projDoc.exists) {
       transaction.set(projectSummaryRef, {
         projectId,

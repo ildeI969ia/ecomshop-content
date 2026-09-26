@@ -90,7 +90,7 @@ ${draft}
     });
 
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("[EvidenceEngine] Timeout excedido en auditoria (6s)")), 6000)
+      setTimeout(() => reject(new Error("[EvidenceEngine] Timeout excedido en auditoria (25s)")), 25000)
     );
 
     const res = await Promise.race([generatePromise, timeoutPromise]);
