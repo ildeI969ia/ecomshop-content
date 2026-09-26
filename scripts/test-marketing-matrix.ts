@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { MockAgentProvider } from "../src/server/orchestrator/agent-provider";
-import { AntigravityPythonSdkProvider } from "../src/server/orchestrator/antigravity-python-provider";
+import { AntigravityTsProvider } from "../src/server/orchestrator/antigravity-ts-provider";
 import { MarketingPipelineEngine } from "../src/server/orchestrator/marketing-pipeline";
 import { findCatalogProduct } from "../src/lib/data/ecomshop-catalog";
 

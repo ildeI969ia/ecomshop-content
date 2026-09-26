@@ -789,6 +789,8 @@ Responde ÚNICAMENTE con un JSON válido con la siguiente estructura exacta:
       quality: qualityReport,
       contentVersion: 1,
       createdAt: now,
+      generator: "catalog-fallback",
+      fallbackUsed: true,
       metadata: {
         tokenUsage: {
           promptTokens: 1200,

@@ -29,7 +29,8 @@
     "test:p0a": "tsx scripts/test-p0a-workspace-isolation.ts",
     "test:p0b": "tsx scripts/test-p0b-rbac-rules.ts",
     "test:p0c": "tsx scripts/test-p0c-persistence-failsafe.ts",
-    "test:p1b": "tsx scripts/test-p1b-product-identity.ts"
+    "test:p1b": "tsx scripts/test-p1b-product-identity.ts",
+    "test:p1c": "tsx scripts/test-p1c-honest-fallback.ts"
   },
   "dependencies": {
     "@google-cloud/firestore": "^9.1.0",

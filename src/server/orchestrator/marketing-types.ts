@@ -278,6 +278,8 @@ export const MarketingPackageSchema = z.object({
   productCopy: z.record(z.string(), z.any()).optional(),
   socialCopy: z.record(z.string(), z.any()).optional(),
   creativeBrief: CreativeBriefSchema.optional(),
+  generator: z.string().optional(),
+  fallbackUsed: z.boolean().optional(),
   metadata: z.record(z.string(), z.any()).optional(),
   quality: QualityReportSchema,
   contentVersion: z.number().default(1),

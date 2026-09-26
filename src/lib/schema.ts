@@ -127,6 +127,8 @@ export const ContentOutputSchema = z.object({
 
   // Trazabilidad de origen y revisión (Fase 6b)
   source: z.enum(["ai", "fallback"]).optional(),
+  generator: z.string().optional(),
+  fallbackUsed: z.boolean().optional(),
   status: z.enum(["DRAFT", "NEEDS_REVIEW", "APPROVED", "PUBLISHED"]).optional(),
   fallbackNotice: z.string().optional(),
 

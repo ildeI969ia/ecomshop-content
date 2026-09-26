@@ -239,6 +239,8 @@ Genera los 4 canales completos (Blog con HTML Durable, Mailchimp B2B, WhatsApp B
       category: req.category || intel.card.product.category,
       generatedAt: new Date().toISOString(),
       source: "fallback",
+      generator: "catalog-fallback",
+      fallbackUsed: true,
       status: "NEEDS_REVIEW",
       fallbackNotice: "La IA no ha respondido, vuelve a intentarlo. Se ha generado contenido con plantilla de respaldo sin cifras inventadas. Requiere revisión previa a su aprobación.",
       blog: {
