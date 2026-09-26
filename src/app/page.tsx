@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { AI_TEXT_MODEL } from "@/lib/ai-config";
 import { 
   Sparkles, 
   Copy, 
@@ -1254,7 +1255,7 @@ export default function ContentDashboard() {
   const [loadingAngles, setLoadingAngles] = useState(false);
 
   const [activeBackendLabel, setActiveBackendLabel] = useState<string>("Google GenAI Servidor");
-  const [connectedModel, setConnectedModel] = useState<string>("gemini-2.0-flash");
+  const [connectedModel, setConnectedModel] = useState<string>(AI_TEXT_MODEL);
 
   const handleGenerateStrategicAngles = async () => {
     if (!topicTitle) return;

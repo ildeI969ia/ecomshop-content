@@ -108,6 +108,8 @@ export const MarketingRunStatusSchema = z.enum([
 ]);
 export type MarketingRunStatus = z.infer<typeof MarketingRunStatusSchema>;
 
+import { AI_TEXT_MODEL } from "@/lib/ai-config";
+
 export const MarketingRunSchema = z.object({
   runId: z.string(),
   productId: z.string(),
@@ -126,7 +128,7 @@ export const MarketingRunSchema = z.object({
   knowledgeVersion: z.string().default("v1.0.0"),
   catalogVersion: z.string().default("canonical-2026"),
   provider: z.string().default("google-antigravity"),
-  model: z.string().default("gemini-2.0-flash"),
+  model: z.string().default(AI_TEXT_MODEL),
   actualModel: z.string().optional(),
   fallbackUsed: z.boolean().default(false)
 });

@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { AI_TEXT_MODEL, VERTEX_LOCATION } from "@/lib/ai-config";
 
 /**
  * Cliente SDK unificado para Google GenAI en GCP Cloud Run (Vertex AI) / Local Development.
@@ -6,7 +7,7 @@ import { GoogleGenAI } from "@google/genai";
  * En producción (GCP Cloud Run):
  * - Usa Vertex AI con Application Default Credentials (ADC) o Service Account asociada.
  * - Proyecto GCP: ecomshop-marketing-prod (o process.env.GOOGLE_CLOUD_PROJECT)
- * - Región de texto/chat: process.env.GOOGLE_CLOUD_LOCATION || 'europe-west1'
+ * - Región de texto/chat: VERTEX_LOCATION ("us-central1")
  *
  * En desarrollo local:
  * - Soporta GOOGLE_APPLICATION_CREDENTIALS con ADC en Vertex AI.
@@ -29,13 +30,13 @@ const shouldUseVertex =
   (isProduction && hasGcpProject && !hasApiKey) ||
   (!hasApiKey && hasGcpProject);
 
-/** Singleton para texto/chat — puede usar europe-west1 sin problema */
+/** Singleton para texto/chat — usa VERTEX_LOCATION ("us-central1") */
 export const aiClient = new GoogleGenAI(
   shouldUseVertex
     ? {
         vertexai: true,
         project: process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || "ecomshop-marketing-prod",
-        location: process.env.VERTEX_LOCATION || "us-central1",
+        location: VERTEX_LOCATION,
       }
     : {
         apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY || "",
@@ -85,9 +86,9 @@ export function getGenAIClient(apiKeyOverride?: string): GoogleGenAI {
 
 /**
  * Devuelve el modelo adecuado según el contexto:
- * - Para Google AI Studio con claves de nuevo usuario: 'gemini-2.5-flash'
- * - Para Vertex AI en GCP Cloud Run: 'gemini-2.5-flash'
+ * - Para Google AI Studio con claves de nuevo usuario: AI_TEXT_MODEL
+ * - Para Vertex AI en GCP Cloud Run: AI_TEXT_MODEL
  */
 export function getActiveGeminiModel(apiKey?: string): string {
-  return process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  return AI_TEXT_MODEL;
 }

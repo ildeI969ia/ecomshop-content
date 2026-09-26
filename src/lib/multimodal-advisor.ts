@@ -73,13 +73,14 @@ export async function analyzeMultimodalInput(params: {
   if (key || isVertex) {
     try {
       const { getGenAIClient, getActiveGeminiModel } = await import("./genai-client");
+      const { AI_TEXT_MODEL, AI_FALLBACK_MODEL } = await import("@/lib/ai-config");
       const ai = getGenAIClient(params.apiKey);
       const activeModel = getActiveGeminiModel(params.apiKey);
 
       const candidateModels = [
         activeModel,
-        "gemini-2.0-flash",
-        "gemini-1.5-flash"
+        AI_TEXT_MODEL,
+        AI_FALLBACK_MODEL
       ].filter((m, i, arr) => arr.indexOf(m) === i);
 
       const contents: any[] = [];

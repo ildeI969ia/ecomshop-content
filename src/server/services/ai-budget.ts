@@ -1,6 +1,7 @@
 import { getAdminFirestore } from "@/server/config/firebase";
 import { FieldValue } from "firebase-admin/firestore";
 import { calculateUsageCost } from "@/lib/finops";
+import { AI_TEXT_MODEL } from "@/lib/ai-config";
 
 export interface AiBudgetConfig {
   defaultMonthlyLimitEur: number;
@@ -61,7 +62,7 @@ export async function recordAiUsage(
   tokensOut: number,
   imageCount = 0,
   userInfo?: { email?: string; displayName?: string },
-  modelName = process.env.GEMINI_MODEL || "gemini-2.0-flash"
+  modelName = AI_TEXT_MODEL
 ): Promise<void> {
   const db = getAdminFirestore();
   const yearMonth = getMadridYearMonth();
