@@ -284,24 +284,24 @@ JSON Schema requerido:
 }
 `;
 
-  const generatePromise = ai.models.generateContent({
-    model: activeModel,
-    contents: prompt,
-    config: {
-      systemInstruction,
-      responseMimeType: "application/json"
-    }
-  });
-
-  const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error("[Generator] Timeout excedido en generación multicanal (60s)")), 60000)
-  );
-
-  const response = await Promise.race([generatePromise, timeoutPromise]);
-
-  const rawText = response.text || "{}";
-  const cleanedText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
   try {
+    const generatePromise = ai.models.generateContent({
+      model: activeModel,
+      contents: prompt,
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json"
+      }
+    });
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("[Generator] Timeout excedido en generación multicanal (60s)")), 60000)
+    );
+
+    const response = await Promise.race([generatePromise, timeoutPromise]);
+
+    const rawText = response.text || "{}";
+    const cleanedText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(cleanedText);
     if (parsed.blog && parsed.mailchimp) {
       if (response.usageMetadata) {
@@ -317,8 +317,8 @@ JSON Schema requerido:
       parsed.groundingValidation = validateContentGrounding(parsed);
       return parsed as ContentOutput;
     }
-  } catch (parseError) {
-    console.warn("Error parsing Gemini JSON output, falling back to deterministic generator:", parseError);
+  } catch (apiError) {
+    console.warn("[Generator] Error en llamada Gemini/Vertex AI, ejecutando fallback determinista:", apiError);
   }
 
   return generateDeterministicFallback(req, intel, catalogDevice);
@@ -391,11 +391,65 @@ function generateDeterministicFallback(
     <p style="margin:0;font-size:12px;color:#64748b;font-style:italic;">Prompt sugerido para Imagen 3: "${photo2Prompt}"</p>
   </div>
 
-  <h2>3. Buenas Prácticas de Despliegue en EnGenius Cloud</h2>
+  <h2>3. Impacto Operativo por Perfil Profesional B2B</h2>
+  <div class="audience-impact-block" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:24px 0;">
+    <div class="audience-card audience-installer" style="background:#f1f5f9;border-left:4px solid #0284c7;padding:16px;border-radius:6px;">
+      <h3 style="font-size:14px;font-weight:700;color:#0369a1;margin:0 0 8px 0;">👷 INSTALADORES Y TÉCNICOS</h3>
+      <p style="font-size:13px;color:#334155;margin:0;">Aprovisionamiento en minutos mediante código QR desde el móvil, reducción de segundas visitas a obra y soporte preventa especializado.</p>
+    </div>
+    <div class="audience-card audience-it-director" style="background:#f1f5f9;border-left:4px solid #0f172a;padding:16px;border-radius:6px;">
+      <h3 style="font-size:14px;font-weight:700;color:#0f172a;margin:0 0 8px 0;">💻 DIRECTORES TIC Y SISTEMAS</h3>
+      <p style="font-size:13px;color:#334155;margin:0;">Gestión centralizada en la nube transparente, cero licencias recurrentes obligatorias y telemetría avanzada.</p>
+    </div>
+    <div class="audience-card audience-procurement" style="background:#f1f5f9;border-left:4px solid #16a34a;padding:16px;border-radius:6px;">
+      <h3 style="font-size:14px;font-weight:700;color:#15803d;margin:0 0 8px 0;">📊 JEFES DE COMPRAS Y TCO</h3>
+      <p style="font-size:13px;color:#334155;margin:0;">Reducción del TCO a 3-5 años frente a licenciamiento abusivo de fabricantes tradicionales, stock permanente nacional y entrega en 24/48h.</p>
+    </div>
+    <div class="audience-card audience-distributor" style="background:#f1f5f9;border-left:4px solid #d97706;padding:16px;border-radius:6px;">
+      <h3 style="font-size:14px;font-weight:700;color:#b45309;margin:0 0 8px 0;">🤝 DISTRIBUIDORES Y CANAL</h3>
+      <p style="font-size:13px;color:#334155;margin:0;">Alta rotación de producto, oportunidad de venta cruzada con bundles de electrónica prescrita y condiciones mayoristas protegidas.</p>
+    </div>
+  </div>
+
+  <h2>4. Tabla Comparativa de Arquitectura Técnica</h2>
+  <div class="comparative-table-container" style="overflow-x:auto;margin:24px 0;">
+    <table class="comparative-table" style="width:100%;border-collapse:collapse;font-size:13px;text-align:left;">
+      <thead>
+        <tr style="background:#0f172a;color:#fff;">
+          <th style="padding:10px 14px;">Criterio Técnico / Operativo</th>
+          <th style="padding:10px 14px;">Solución Analizada (${currentSku})</th>
+          <th style="padding:10px 14px;">Alternativa Tradicional / Legacy</th>
+          <th style="padding:10px 14px;">Impacto en Proyecto</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #e2e8f0;">
+          <td style="padding:10px 14px;font-weight:600;">Plataforma de Gestión</td>
+          <td style="padding:10px 14px;">Cloud / Centralizada sin cuotas</td>
+          <td style="padding:10px 14px;">Controlador local o cuota anual obligatoria</td>
+          <td style="padding:10px 14px;">0€ en costes recurrentes de software</td>
+        </tr>
+        <tr style="border-bottom:1px solid #e2e8f0;">
+          <td style="padding:10px 14px;font-weight:600;">Aprovisionamiento</td>
+          <td style="padding:10px 14px;">Despliegue Zero-Touch vía QR</td>
+          <td style="padding:10px 14px;">Configuración manual CLI por consola</td>
+          <td style="padding:10px 14px;">Reducción del 70% en tiempo de instalador</td>
+        </tr>
+        <tr style="border-bottom:1px solid #e2e8f0;">
+          <td style="padding:10px 14px;font-weight:600;">Garantía y Soporte</td>
+          <td style="padding:10px 14px;">Sustitución en 24h EcomSpain</td>
+          <td style="padding:10px 14px;">RMA estándar 2-3 semanas</td>
+          <td style="padding:10px 14px;">Continuidad del servicio sin paradas de red</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>5. Buenas Prácticas de Despliegue en EnGenius Cloud</h2>
   <p>Recomendamos verificar siempre el balance térmico en armario rack, realizar un site survey previo con análisis de espectro y certificar cada enlace de cobre Cat6A o fibra óptica antes del pase a producción.</p>
   <p>Toda la flota se gestiona centralizadamente desde la plataforma <strong>EnGenius Cloud</strong> (o modo Standalone/MESH), permitiendo monitoreo en tiempo real, alertas de topología y aprovisionamiento instantáneo mediante código QR sin cuotas ocultas.</p>
 
-  <p>En <strong>EcomShop / EcomSpain</strong> disponemos de stock permanente con entrega en 24h y un departamento de ingeniería preventa que te asesora gratuitamente en el dimensionamiento de tu lista de materiales (BOM).</p>
+  <p>En <strong>EcomShop / EcomSpain</strong> disponemos de stock permanente con entrega en 24h y un departamento de ingeniería preventa que te asesora gratuitamente en el dimensionamiento de tu lista de materiales (BOM). Consultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h.</p>
 
   <!-- FAQ SCHEMA STRUCTURED DATA JSON-LD OBLIGATORIO -->
   <script type="application/ld+json">

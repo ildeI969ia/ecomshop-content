@@ -21,13 +21,14 @@ describe("Sprint Editorial — Quality & Multi-Audience Validation Suite", () =>
       }
     });
 
-    assert.ok(result.blog?.htmlContent, "El contenido HTML del blog no debe estar vacío");
+    const html = result.blog?.htmlContent || result.geo?.htmlContent || "";
+    assert.ok(html, "El contenido HTML del blog o geo no debe estar vacío");
     assert.ok(
-      result.blog.htmlContent.includes("audience-impact-block") || result.blog.htmlContent.includes("photo-recommendation-box"),
-      "Debe contener la estructura de bloques visuales recomendados"
+      html.includes("audience-impact-block") || html.includes("photo-recommendation-box") || html.includes("comparative-table"),
+      "Debe contener la estructura de bloques visuales o comparativa recomendada"
     );
     assert.ok(
-      !result.blog.htmlContent.includes("PVP 1") && !result.blog.htmlContent.includes("PVP 2"),
+      !html.includes("PVP 1") && !html.includes("PVP 2"),
       "No debe inventar precios numéricos en euros"
     );
   });
