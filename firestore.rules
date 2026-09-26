@@ -7,9 +7,15 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.email.matches('.*@ecomspain[.]com$');
     }
     
-    // Función auxiliar: Obtener datos de perfil y rol
+    // Función auxiliar: Obtener rol desde user_roles/{uid} (Unificación de fuente de verdad)
     function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return get(/databases/$(database)/documents/user_roles/$(request.auth.uid)).data.role;
+    }
+
+    // Función auxiliar: Obtener workspaceId del usuario desde user_roles/{uid} (predeterminado fallback)
+    function getUserWorkspace() {
+      let roleDoc = get(/databases/$(database)/documents/user_roles/$(request.auth.uid)).data;
+      return roleDoc.keys().contains('workspaceId') ? roleDoc.workspaceId : 'default-ecomspain';
     }
     
     function isAdmin() {
@@ -26,8 +32,19 @@ service cloud.firestore {
         getUserRole() == 'MARKETING_MANAGER' || 
         getUserRole() == 'CONTENT_MANAGER' || 
         getUserRole() == 'PRODUCT_MANAGER' || 
-        getUserRole() == 'DESIGNER'
+        getUserRole() == 'DESIGNER' ||
+        getUserRole() == 'EDITOR'
       );
+    }
+
+    function isSameWorkspace(resourceData) {
+      return !resourceData.keys().contains('workspaceId') || resourceData.workspaceId == getUserWorkspace();
+    }
+
+    // Reglas para User Roles
+    match /user_roles/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
     // Reglas para Users
@@ -38,16 +55,18 @@ service cloud.firestore {
 
     // Reglas para Campaigns
     match /campaigns/{campaignId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isManager();
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && isSameWorkspace(resource.data);
+      allow create: if isManager() && isSameWorkspace(request.resource.data);
+      allow update: if isManager() && isSameWorkspace(resource.data) && isSameWorkspace(request.resource.data);
+      allow delete: if isAdmin() && isSameWorkspace(resource.data);
     }
 
     // Reglas para Contents y Variantes
     match /contents/{contentId} {
-      allow read: if isAuthenticated();
-      allow create, update: if canEditContent();
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && isSameWorkspace(resource.data);
+      allow create: if canEditContent() && isSameWorkspace(request.resource.data);
+      allow update: if canEditContent() && isSameWorkspace(resource.data) && isSameWorkspace(request.resource.data);
+      allow delete: if isAdmin() && isSameWorkspace(resource.data);
 
       match /variants/{variantId} {
         allow read: if isAuthenticated();
@@ -55,10 +74,24 @@ service cloud.firestore {
       }
     }
 
+    // Reglas para Marketing Packages
+    match /marketing_packages/{packageId} {
+      allow read: if isAuthenticated() && isSameWorkspace(resource.data);
+      allow create, update: if isManager() && isSameWorkspace(request.resource.data);
+      allow delete: if isAdmin() && isSameWorkspace(resource.data);
+    }
+
+    // Reglas para Marketing Runs
+    match /marketing_runs/{runId} {
+      allow read: if isAuthenticated() && isSameWorkspace(resource.data);
+      allow create, update: if canEditContent() && isSameWorkspace(request.resource.data);
+      allow delete: if isAdmin() && isSameWorkspace(resource.data);
+    }
+
     // Reglas para Sources, Brands y Products
     match /sources/{sourceId} {
-      allow read: if isAuthenticated();
-      allow write: if isManager();
+      allow read: if isAuthenticated() && isSameWorkspace(resource.data);
+      allow write: if isManager() && isSameWorkspace(request.resource.data);
     }
     match /products/{productId} {
       allow read: if isAuthenticated();
@@ -67,9 +100,10 @@ service cloud.firestore {
 
     // Reglas para Assets (Imágenes, Fotos y Archivos Multimedia)
     match /assets/{assetId} {
-      allow read: if isAuthenticated();
-      allow create, update: if canEditContent();
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && isSameWorkspace(resource.data);
+      allow create: if canEditContent() && isSameWorkspace(request.resource.data);
+      allow update: if canEditContent() && isSameWorkspace(resource.data) && isSameWorkspace(request.resource.data);
+      allow delete: if isAdmin() && isSameWorkspace(resource.data);
     }
 
     // Reglas para Usage Records (FinOps)
