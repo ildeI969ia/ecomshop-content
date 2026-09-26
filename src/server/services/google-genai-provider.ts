@@ -6,18 +6,36 @@ import { getGenAIClient, getActiveGeminiModel } from "@/lib/genai-client";
 export class GoogleGenAIProvider implements AIProvider {
   async generateText(prompt: string, options?: TextGenerationOptions): Promise<TextGenerationResult> {
     const ai = getGenAIClient();
-    const model = options?.model || getActiveGeminiModel();
+    const primaryModel = options?.model || getActiveGeminiModel();
     const startTime = Date.now();
 
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        systemInstruction: options?.systemInstruction,
-        responseMimeType: options?.responseMimeType || "application/json",
-        temperature: options?.temperature
-      }
-    });
+    let response: any;
+    let usedModel = primaryModel;
+
+    try {
+      response = await ai.models.generateContent({
+        model: primaryModel,
+        contents: prompt,
+        config: {
+          systemInstruction: options?.systemInstruction,
+          responseMimeType: options?.responseMimeType || "application/json",
+          temperature: options?.temperature
+        }
+      });
+    } catch (err) {
+      console.warn(`[GoogleGenAIProvider] Error con modelo principal ${primaryModel}, reintentando con fallback...`, err);
+      const fallbackModel = process.env.GEMINI_FALLBACK_MODEL || "gemini-2.0-flash";
+      usedModel = fallbackModel;
+      response = await ai.models.generateContent({
+        model: fallbackModel,
+        contents: prompt,
+        config: {
+          systemInstruction: options?.systemInstruction,
+          responseMimeType: options?.responseMimeType || "application/json",
+          temperature: options?.temperature
+        }
+      });
+    }
 
     const latencyMs = Date.now() - startTime;
     const inputTokens = (response as any).usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4);
@@ -30,7 +48,7 @@ export class GoogleGenAIProvider implements AIProvider {
 
     const provenance: AIProvenance = {
       provider: "google-vertex-genai",
-      model,
+      model: usedModel,
       requestId: `req-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       inputTokens,
       outputTokens,

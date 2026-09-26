@@ -1,20 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
-import { AI_TEXT_MODEL, VERTEX_LOCATION } from "@/lib/ai-config";
+import { AI_TEXT_MODEL, AI_FALLBACK_MODEL, VERTEX_LOCATION } from "@/lib/ai-config";
 
 /**
  * Cliente SDK unificado para Google GenAI en GCP Cloud Run (Vertex AI) / Local Development.
- *
- * En producción (GCP Cloud Run):
- * - Usa Vertex AI con Application Default Credentials (ADC) o Service Account asociada.
- * - Proyecto GCP: ecomshop-marketing-prod (o process.env.GOOGLE_CLOUD_PROJECT)
- * - Región de texto/chat: VERTEX_LOCATION ("us-central1")
- *
- * En desarrollo local:
- * - Soporta GOOGLE_APPLICATION_CREDENTIALS con ADC en Vertex AI.
- * - Soporta GEMINI_API_KEY / GOOGLE_API_KEY como fallback.
- *
- * NOTA: Imagen 3 solo está disponible en us-central1 y europe-west4.
- * Usar getVertexImageClient() para obtener un cliente en una región soportada.
  */
 
 /** Regiones con soporte activo de Imagen 3 en Vertex AI */
@@ -23,72 +11,76 @@ export type ImagenLocation = (typeof IMAGEN_SUPPORTED_LOCATIONS)[number];
 
 const isProduction = process.env.NODE_ENV === "production";
 const hasGcpProject = Boolean(process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT);
-const hasApiKey = Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY);
-const shouldUseVertex =
-  process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" ||
-  process.env.USE_VERTEX_AI === "true" ||
-  (isProduction && hasGcpProject && !hasApiKey) ||
-  (!hasApiKey && hasGcpProject);
+const getApiKeyFromEnv = (): string =>
+  (process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY || "").trim();
 
-/** Singleton para texto/chat — usa VERTEX_LOCATION ("us-central1") */
-export const aiClient = new GoogleGenAI(
-  shouldUseVertex
-    ? {
-        vertexai: true,
-        project: process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || "ecomshop-marketing-prod",
-        location: VERTEX_LOCATION,
-      }
-    : {
-        apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY || "",
-      }
-);
+/**
+ * Determina si se debe usar Vertex AI o Gemini API Studio.
+ * Si existe una API Key explícita, PREFIERE Gemini API Studio para evitar bloqueos por ADC desconfigurado.
+ */
+export function isVertexEnabled(): boolean {
+  const apiKey = getApiKeyFromEnv();
+  if (apiKey) return false;
+  if (process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || process.env.USE_VERTEX_AI === "true") return true;
+  return hasGcpProject;
+}
+
+export function createGenAIInstance(apiKeyOverride?: string, locationOverride?: string): GoogleGenAI {
+  const isServer = typeof window === "undefined";
+  const apiKey = apiKeyOverride?.trim() || getApiKeyFromEnv() || (isServer ? "" : "dummy_browser_key");
+  
+  if (apiKey) {
+    return new GoogleGenAI({
+      vertexai: false,
+      apiKey: apiKey,
+      httpOptions: {
+        headers: {
+          "x-goog-api-key": apiKey,
+        },
+      },
+    });
+  }
+
+  const project = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || "ecomshop-marketing-prod";
+  const location = locationOverride || VERTEX_LOCATION;
+
+  return new GoogleGenAI({
+    vertexai: true,
+    project,
+    location,
+  });
+}
+
+/** Singleton por defecto para texto/chat */
+export const aiClient = createGenAIInstance();
 
 /**
  * Factory de cliente Vertex AI especializado para Imagen 3.
- * Siempre usa una región con soporte de Imagen 3.
- *
- * @param location - Región de Vertex AI. Por defecto "us-central1".
  */
 export function getVertexImageClient(location: ImagenLocation = "us-central1"): GoogleGenAI {
+  const apiKey = getApiKeyFromEnv();
+  if (apiKey) {
+    return createGenAIInstance(apiKey);
+  }
+
   return new GoogleGenAI({
-    vertexai: true, // ← lowercase 'ai' para SDK @google/genai v2+
+    vertexai: true,
     project: process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || "ecomshop-marketing-prod",
     location: process.env.IMAGEN_LOCATION || location,
   });
 }
 
 /**
- * Función factory unificada que devuelve el cliente singleton `aiClient`
- * o una instancia configurada con un override de API key en tiempo de ejecución.
- * Soporta tanto claves legadas (AIza...) como las nuevas Authorization Keys de Google (AQ...).
+ * Devuelve una instancia de GenAI según se pase apiKeyOverride o se use el cliente singleton.
  */
 export function getGenAIClient(apiKeyOverride?: string): GoogleGenAI {
-  const cleanKey = apiKeyOverride?.trim();
-  if (cleanKey) {
-    // vertexai: false es OBLIGATORIO cuando se usa una Gemini API Key de AI Studio.
-    // Sin esta propiedad, el SDK auto-detecta GOOGLE_CLOUD_PROJECT del entorno y
-    // enruta a aiplatform.googleapis.com en lugar de generativelanguage.googleapis.com,
-    // causando el error "Requests to this API are blocked".
-    return new GoogleGenAI({
-      vertexai: false,
-      apiKey: cleanKey,
-      httpOptions: {
-        headers: {
-          "x-goog-api-key": cleanKey,
-        },
-      },
-    });
+  if (apiKeyOverride?.trim()) {
+    return createGenAIInstance(apiKeyOverride);
   }
-
   return aiClient;
 }
 
-
-/**
- * Devuelve el modelo adecuado según el contexto:
- * - Para Google AI Studio con claves de nuevo usuario: AI_TEXT_MODEL
- * - Para Vertex AI en GCP Cloud Run: AI_TEXT_MODEL
- */
 export function getActiveGeminiModel(apiKey?: string): string {
   return AI_TEXT_MODEL;
 }
+
