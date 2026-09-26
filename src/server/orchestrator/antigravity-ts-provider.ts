@@ -81,12 +81,12 @@ export class AntigravityTsProvider implements IAgentProvider {
     };
 
     try {
-      const candidateModels = [
-        this.model || process.env.GEMINI_MODEL || "gemini-2.0-flash",
-        "gemini-1.5-flash-002",
-        "gemini-1.5-flash-001",
-        "gemini-2.0-flash-001"
-      ].filter(Boolean);
+      const initialModel = (this.model || process.env.GEMINI_MODEL || "gemini-2.0-flash").replace(/-001$/, "");
+      const candidateModels = Array.from(new Set([
+        initialModel,
+        "gemini-2.0-flash",
+        "gemini-1.5-flash"
+      ])).filter(Boolean);
 
       let response: any;
       let lastError: any;
