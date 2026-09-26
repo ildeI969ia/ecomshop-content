@@ -174,12 +174,26 @@ export const PATCH = withAuthAndPermission("content:edit", async (req: NextReque
     const cleanId = String(id).replace(/^(content-)+/, "");
     const contentId = `content-${cleanId}`;
 
+    const existingContent = await repo.findById(contentId);
+    if (!existingContent) {
+      return NextResponse.json({ error: "Contenido no encontrado" }, { status: 404 });
+    }
+
+    if (existingContent.workspaceId && existingContent.workspaceId !== user.workspaceId && user.role !== "ADMIN") {
+      return NextResponse.json(
+        {
+          error: "Acceso denegado: No se permite modificar contenido perteneciente a otro workspace",
+          code: "FORBIDDEN_WORKSPACE_MISMATCH"
+        },
+        { status: 403 }
+      );
+    }
+
     if (normalizedStatus === "PUBLISHED") {
-      const existing = await repo.findById(contentId);
-      const versionBody = existing?.versions?.[0]?.body || {};
+      const versionBody = existingContent.versions?.[0]?.body || {};
       const isFallback =
-        (existing as any)?.generator === "catalog-fallback" ||
-        (existing as any)?.fallbackUsed === true ||
+        (existingContent as any)?.generator === "catalog-fallback" ||
+        (existingContent as any)?.fallbackUsed === true ||
         versionBody.generator === "catalog-fallback" ||
         versionBody.fallbackUsed === true ||
         versionBody.source === "fallback";
@@ -252,6 +266,22 @@ export const DELETE = withAuthAndPermission("content:delete", async (req: NextRe
 
     const repo = new ContentRepository();
     const auditRepo = new AuditRepository();
+
+    // Validar que todos los elementos a eliminar pertenezcan al workspace del usuario
+    for (const targetId of idsToDelete) {
+      const cleanId = String(targetId).replace(/^(content-)+/, "");
+      const contentId = `content-${cleanId}`;
+      const existing = await repo.findById(contentId);
+      if (existing && existing.workspaceId && existing.workspaceId !== user.workspaceId && user.role !== "ADMIN") {
+        return NextResponse.json(
+          {
+            error: `Acceso denegado: El contenido '${targetId}' pertenece a otro workspace`,
+            code: "FORBIDDEN_WORKSPACE_MISMATCH"
+          },
+          { status: 403 }
+        );
+      }
+    }
 
     const expandedIds = Array.from(
       new Set(

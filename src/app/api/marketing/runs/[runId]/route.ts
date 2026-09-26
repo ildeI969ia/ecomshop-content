@@ -13,17 +13,13 @@ export const GET = withAuthAndPermission("content:view", async (req: NextRequest
       return NextResponse.json({ error: "runId requerido" }, { status: 400 });
     }
 
-    const run = await repository.findRunById(runId);
+    const userWorkspace = user.role === "ADMIN" ? undefined : user.workspaceId;
+    const run = await repository.findRunById(runId, userWorkspace);
     if (!run) {
       return NextResponse.json({ error: `Run '${runId}' no encontrado` }, { status: 404 });
     }
 
-    // Aislamiento por workspace
-    if (run.workspaceId !== (user.workspaceId || "default-ecomspain") && user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Acceso denegado a este workspace" }, { status: 403 });
-    }
-
-    const pkg = await repository.findPackageByRunId(runId);
+    const pkg = await repository.findPackageByRunId(runId, userWorkspace);
 
     return NextResponse.json({
       run,

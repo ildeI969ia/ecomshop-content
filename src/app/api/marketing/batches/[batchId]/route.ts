@@ -13,14 +13,11 @@ export const GET = withAuthAndPermission("content:view", async (req: NextRequest
       return NextResponse.json({ error: "batchId requerido" }, { status: 400 });
     }
 
-    const batch = await repository.findBatchById(batchId);
+    const userWorkspace = user.role === "ADMIN" ? undefined : user.workspaceId;
+    const batch = await repository.findBatchById(batchId, userWorkspace);
 
     if (!batch) {
       return NextResponse.json({ error: "Batch no encontrado" }, { status: 404 });
-    }
-
-    if (batch.workspaceId && batch.workspaceId !== (user.workspaceId || "default-ecomspain")) {
-      return NextResponse.json({ error: "Acceso denegado a este workspace" }, { status: 403 });
     }
 
     return NextResponse.json({ batch });
