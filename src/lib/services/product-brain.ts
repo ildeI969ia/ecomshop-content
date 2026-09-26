@@ -67,12 +67,17 @@ export class ProductBrainService {
   async getProductBrainProfile(sku: string, intelligenceCard?: ProductIntelligenceCard): Promise<ProductBrainProfile> {
     const cleanSku = sku.trim().toUpperCase();
     const catalogItem = findCatalogProduct(cleanSku);
-    const star = STAR_PRODUCTS.find(p => p.model.toUpperCase() === cleanSku || p.id.toUpperCase() === cleanSku);
-    const notebookData = await this.notebookService.queryNotebookContext(`${cleanSku} EnGenius EcomShop`);
+    if (!catalogItem) {
+      throw new Error(`PRODUCT_NOT_FOUND: Producto no encontrado en catálogo (${cleanSku})`);
+    }
 
-    const isAP = catalogItem?.category === "wifi" || cleanSku.startsWith("ECW") || (star && (star.category === "wifi" || star.category === "engenius"));
-    const isSwitch = catalogItem?.category === "switches" || cleanSku.startsWith("ECS") || (star && star.category === "switches");
-    const isGateway = catalogItem?.category === "gateways" || cleanSku.startsWith("ESG");
+    const brand = catalogItem.brand;
+    const model = catalogItem.model;
+    const notebookData = await this.notebookService.queryNotebookContext(`${cleanSku} ${brand} EcomShop`);
+
+    const isAP = catalogItem.category === "wifi";
+    const isSwitch = catalogItem.category === "switches";
+    const isGateway = catalogItem.category === "gateways";
 
     // Construcción de Buyer Personas B2B específicas de telecomunicaciones
     const buyerPersonas: BuyerPersonaProfile[] = [
@@ -80,23 +85,23 @@ export class ProductBrainService {
         name: "Instalador Tipo A / F (Telecomunicaciones & CCTV)",
         role: "Instalador de redes y sistemas de videovigilancia",
         primaryConcern: "Tiempos de mano de obra en obra, presupuesto PoE que no tire las cámaras y soporte preventa directo",
-        pitchIn30Seconds: `El equipo ${catalogItem ? `${catalogItem.brand} ${catalogItem.model}` : cleanSku} ofrece aprovisionamiento rápido en 2 minutos. Cero cuotas de licencias y sustitución en 24h de EcomSpain si falla en obra.`,
+        pitchIn30Seconds: `El equipo ${brand} ${model} ofrece aprovisionamiento rápido y fiabilidad en obra. Sustitución en 24h de EcomSpain ante cualquier incidencia.`,
         recommendedCta: "Solicitar Tarifa de Instalador con Descuento por Volumen"
       },
       {
         name: "Integrador IT / Responsable de Sistemas",
         role: "Director TIC / CIO Hospitality & Corporativo",
-        primaryConcern: "Seguridad WPA3 Enterprise, SLAs de red sin microcortes y costes recurrentes de licencias cloud",
+        primaryConcern: "Seguridad Enterprise, SLAs de red sin microcortes y TCO optimizado",
         pitchIn30Seconds: isGateway
-          ? `Gateway de seguridad 2.5 GbE con doble WAN y VPN WireGuard nativa sin suscripción obligatoria. Ahorra más del 40% en TCO frente a Cisco Meraki o Fortinet.`
-          : `Rendimiento Multi-Gigabit de grado industrial sin coste de suscripción obligatoria a 3 años. Ahorra hasta el 42% en TCO frente a Cisco Meraki.`,
+          ? `Gateway de seguridad ${brand} ${model} con firewall perimetral y alto rendimiento de VPN nativa.`
+          : `Rendimiento de grado industrial para ${brand} ${model} con soporte de ingeniería Preventa EcomSpain.`,
         recommendedCta: "Pedir Unidad Demo para Test en Laboratorio"
       },
       {
         name: "Jefe de Compras / Director de Operaciones",
         role: "Gestión de aprovisionamiento en distribuidores y grandes cuentas",
         primaryConcern: "Stock permanente en España, entregas en 24/48h y margen comercial neto asegurado",
-        pitchIn30Seconds: `Hardware oficial en stock permanente en almacén de España. Envíos inmediatos y condiciones preferentes para proyectos licitados.`,
+        pitchIn30Seconds: `Hardware oficial ${brand} ${model} en stock permanente en almacén de España. Envíos inmediatos y condiciones preferentes.`,
         recommendedCta: "Descargar Documentación Técnica y Tarifa Mayorista"
       }
     ];
@@ -105,27 +110,11 @@ export class ProductBrainService {
     const objectionLedger: ObjectionHandler[] = [];
 
     // Salvaguardas específicas por producto / categoría
-    if (cleanSku === "ESG510" || cleanSku === "ESG610" || isGateway) {
+    if (isGateway) {
       objectionLedger.push({
-        objection: `¿El gateway ${cleanSku} incluye antena o punto de acceso Wi-Fi integrado para la oficina?`,
-        counterArgument: `NO, el ${cleanSku} es un gateway y firewall perimetral exclusivamente CABLEADO (cero Wi-Fi integrado). Se combina de forma nativa en EnGenius Cloud con puntos de acceso Wi-Fi 7 (ej. ECW526/ECW536) y switches PoE para distribuir la conectividad sin comprometer el rendimiento de seguridad.`,
-        evidenceRef: `Ficha Técnica Oficial EnGenius ${cleanSku} & Master Notebook EcomShop (src-6)`
-      });
-    }
-
-    if (cleanSku === "ECW536") {
-      objectionLedger.push({
-        objection: "¿Se puede alimentar el AP ECW536 con un switch PoE+ 802.3at de 30W tradicional?",
-        counterArgument: "El ECW536 requiere alimentación PoE++ 802.3bt (hasta 33W máx) para operar sus 3 bandas simultáneas a pleno rendimiento de 18.7 Gbps. Si se alimenta con PoE+ estándar 802.3at, el equipo entrará en modo degradado limitando cadenas de radio. Por ello se recomienda el switch ECS2512FP.",
-        evidenceRef: "Datasheet ECW536 & Guía PoE Budget 802.3bt (src-1, src-8)"
-      });
-    }
-
-    if (cleanSku === "ECS2512FP") {
-      objectionLedger.push({
-        objection: "¿Es necesario invertir en puertos 2.5G PoE++ si la red actual es de 1 Gbps?",
-        counterArgument: "Los puntos de acceso Wi-Fi 7 superan ampliamente 1 Gbps de caudal real. Conectarlos a switches de 1 GbE crea un cuello de botella severo. El ECS2512FP ofrece 8 puertos 2.5G con PoE++ de 60W y 4 uplinks 10G SFP+, garantizando la troncal sin sustituir el cableado Cat6.",
-        evidenceRef: "Whitepaper EcomShop: Migración de Conmutación a 2.5G/10G para Wi-Fi 7 (src-8)"
+        objection: `¿El gateway ${model} incluye antena o punto de acceso Wi-Fi integrado para la oficina?`,
+        counterArgument: `NO, el ${brand} ${model} es un gateway y firewall perimetral exclusivamente CABLEADO (cero Wi-Fi integrado). Se combina de forma nativa con puntos de acceso de la red.`,
+        evidenceRef: `Ficha Técnica Oficial ${brand} ${model} & EcomShop`
       });
     }
 
@@ -137,14 +126,9 @@ export class ProductBrainService {
         evidenceRef: "Datasheet Estándares IEEE & Whitepaper EcomSpain Interoperabilidad"
       },
       {
-        objection: "¿Qué pasa si dejamos de pagar la suscripción Cloud?",
-        counterArgument: "Con EnGenius Cloud en EcomShop no hay suscripción obligatoria. El hardware nunca se bloquea ni apaga sus funciones si decides gestionar localmente.",
-        evidenceRef: "Estudio Comparativa TCO 2026: EnGenius Cloud vs Modelos de Suscripción (src-4, src-11)"
-      },
-      {
-        objection: "¿El ancho de banda de Wi-Fi 7 / 2.5G realmente se aprovecha con conexiones estándar?",
-        counterArgument: "El cuello de botella no es la fibra del operador sino la contención de tráfico local y la latencia entre dispositivos. El canal de 320 MHz y MLO elimina la congestión en horas punta.",
-        evidenceRef: "Guía de Despliegue Wi-Fi 7 de Alta Densidad EcomShop (src-1, src-10)"
+        objection: "¿Qué garantías y soporte ofrece EcomShop para este equipo?",
+        counterArgument: `Garantía oficial ${brand} distribuida por EcomSpain con soporte preventa de ingeniería y sustitución rápida 24/48h.`,
+        evidenceRef: `Garantía y Condiciones de Canal EcomSpain para ${brand}`
       }
     );
 
@@ -254,19 +238,19 @@ export class ProductBrainService {
 
     return {
       sku: cleanSku,
-      brand: catalogItem?.brand || star?.name.split(" ")[0] || intelligenceCard?.product.brand || "EnGenius",
-      model: catalogItem?.model || star?.model || intelligenceCard?.product.model || cleanSku,
+      brand: catalogItem.brand,
+      model: catalogItem.model,
       ean: intelligenceCard?.product.ean,
-      category: catalogItem?.category || star?.category || intelligenceCard?.product.category || "wifi",
-      storeUrl: catalogItem?.url || star?.url || intelligenceCard?.product.url || `https://www.ecomshop.es/${cleanSku.toLowerCase()}`,
-      priceEur: catalogItem?.priceEur ?? (isAP ? 599 : isSwitch ? 689 : 149),
-      stockStatus: (catalogItem?.stockStatus || intelligenceCard?.product.stockStatus || "IN_STOCK") as any,
+      category: catalogItem.category,
+      storeUrl: catalogItem.url || `https://www.ecomshop.es/${cleanSku.toLowerCase()}`,
+      priceEur: catalogItem.priceEur ?? (isAP ? 599 : isSwitch ? 689 : 149),
+      stockStatus: (catalogItem.stockStatus || intelligenceCard?.product.stockStatus || "IN_STOCK") as any,
       hardware: {
-        standards: catalogItem?.standards || intelligenceCard?.technicalSpecs.standards || ["Wi-Fi 7 (802.11be)", "PoE++ (802.3bt)", "IEEE 802.3at"],
-        uplinkInterface: catalogItem ? catalogItem.interfaces.join(" | ") : (isAP ? "1x 2.5GbE / 10GbE RJ45" : "4x 10G SFP+ Uplinks"),
-        powerConsumptionWatts: catalogItem?.powerConsumptionWatts ?? (isAP ? 25 : 410),
-        poeType: catalogItem?.poeType || (isAP ? "802.3bt" : isSwitch ? "802.3at" : "802.3af"),
-        managementMode: catalogItem?.managementMode || "Cloud"
+        standards: catalogItem.standards || intelligenceCard?.technicalSpecs.standards || ["IEEE 802.3at", "Gigabit Ethernet"],
+        uplinkInterface: catalogItem.interfaces ? catalogItem.interfaces.join(" | ") : "1x 2.5GbE / 10GbE RJ45",
+        powerConsumptionWatts: catalogItem.powerConsumptionWatts ?? (isAP ? 25 : 410),
+        poeType: catalogItem.poeType || (isAP ? "802.3bt" : isSwitch ? "802.3at" : "802.3af"),
+        managementMode: catalogItem.managementMode || "Cloud"
       },
       buyerPersonas,
       objectionLedger,
