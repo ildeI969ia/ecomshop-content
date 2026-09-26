@@ -19,7 +19,7 @@ export class AntigravityTsProvider implements IAgentProvider {
 
   constructor(options: AntigravityTsProviderOptions = {}) {
     this.timeoutMs = options.timeoutMs ?? 90000; // 90 segundos por defecto para estabilización de IA
-    this.model = options.model || process.env.GEMINI_MODEL || "gemini-2.0-flash";
+    this.model = options.model || process.env.GEMINI_MODEL || "gemini-2.5-flash";
     this.apiKey = options.apiKey;
   }
 
@@ -81,11 +81,11 @@ export class AntigravityTsProvider implements IAgentProvider {
     };
 
     try {
-      const initialModel = (this.model || process.env.GEMINI_MODEL || "gemini-2.0-flash").replace(/-001$/, "");
+      const initialModel = (this.model || process.env.GEMINI_MODEL || "gemini-2.5-flash").replace(/-001$/, "");
       const candidateModels = Array.from(new Set([
         initialModel,
-        "gemini-2.0-flash",
-        "gemini-1.5-flash"
+        "gemini-2.5-flash",
+        "gemini-3.1-flash-lite"
       ])).filter(Boolean);
 
       let response: any;

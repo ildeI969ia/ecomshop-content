@@ -25,6 +25,17 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
       return NextResponse.json({ error: "Batch no encontrado" }, { status: 404 });
     }
 
+    if (existingBatch.workspaceId !== user.workspaceId) {
+      return NextResponse.json(
+        {
+          status: "FORBIDDEN",
+          code: "FORBIDDEN_WORKSPACE_MISMATCH",
+          message: "No tiene permisos para modificar lotes de otro workspace"
+        },
+        { status: 403 }
+      );
+    }
+
     // Identificar los SKUs fallidos o bloqueados
     const failedSkus = Object.values(existingBatch.items)
       .filter((item) => item.status === "FAILED" || item.status === "BLOCKED")

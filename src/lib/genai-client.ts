@@ -89,5 +89,5 @@ export function getGenAIClient(apiKeyOverride?: string): GoogleGenAI {
  * - Para Vertex AI en GCP Cloud Run: 'gemini-2.5-flash'
  */
 export function getActiveGeminiModel(apiKey?: string): string {
-  return process.env.GEMINI_MODEL || "gemini-2.0-flash";
+  return process.env.GEMINI_MODEL || "gemini-2.5-flash";
 }
