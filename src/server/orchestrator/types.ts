@@ -157,6 +157,8 @@ export interface AgentExecutionResult {
   filesChanged?: string[];
   commitSha?: string;
   summary?: string;
+  actualModel?: string;
+  fallbackUsed?: boolean;
 }
 
 export type OrchestrationEventType =

@@ -28,11 +28,22 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
 
     const { skus, provider: providerType, forceRegenerate } = parsed.data;
 
-    // Seleccionar provider respetando sandbox y switches de entorno
-    const provider =
-      providerType === "antigravity" && process.env.ANTIGRAVITY_SDK_ENABLED === "true"
-        ? new AntigravityPythonSdkProvider()
-        : new MockAgentProvider();
+    // Seleccionar provider respetando sandbox, Switches de entorno y seguridad de producción
+    let provider;
+    if (providerType === "antigravity" && process.env.ANTIGRAVITY_SDK_ENABLED === "true") {
+      provider = new AntigravityPythonSdkProvider();
+    } else if (process.env.NODE_ENV === "production" && process.env.ALLOW_MOCK_AGENT !== "true") {
+      return NextResponse.json(
+        {
+          status: "ERROR",
+          code: "GENERATION_UNAVAILABLE",
+          message: "Servicio de generación IA no disponible en producción (MockAgentProvider no permitido)."
+        },
+        { status: 503 }
+      );
+    } else {
+      provider = new MockAgentProvider();
+    }
 
     const engine = new MarketingPipelineEngine(provider);
 
@@ -50,25 +61,28 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
         try {
           await repository.saveBatch(batch);
         } catch {
-          // Ignorar fallo de sincronización progresiva si no hay conexión Firestore
+          // Ignorar fallo de sincronización progresiva intermedia
         }
       }
     );
 
-    // Persistir ejecuciones y paquetes exitosos
-    for (const res of results) {
-      try {
+    // Persistir ejecuciones, paquetes y batch con fail-safe estricto
+    try {
+      for (const res of results) {
         if (res.run) await repository.saveRun(res.run);
         if (res.package) await repository.savePackage(res.package);
-      } catch {
-        // Ignorar fallo de persistencia local
       }
-    }
-
-    try {
       await repository.saveBatch(batch);
-    } catch {
-      // Ignorar fallo si Firestore no está inicializado
+    } catch (dbErr: any) {
+      console.error("[api/marketing/batches] Fallo crítico de persistencia en Firestore:", dbErr);
+      return NextResponse.json(
+        {
+          status: "PERSISTENCE_FAILED",
+          error: "No se pudo guardar el resultado del batch en la base de datos",
+          details: dbErr?.message
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(

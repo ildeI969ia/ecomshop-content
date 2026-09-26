@@ -16,7 +16,8 @@ export interface CheckBudgetResult {
   currentSpentEur: number;
   limitEur: number;
   pct: number;
-  code?: "AI_BUDGET_EXCEEDED";
+  code?: "AI_BUDGET_EXCEEDED" | "BUDGET_VERIFICATION_UNAVAILABLE";
+  error?: string;
 }
 
 const DEFAULT_CONFIG: AiBudgetConfig = {
@@ -60,7 +61,7 @@ export async function recordAiUsage(
   tokensOut: number,
   imageCount = 0,
   userInfo?: { email?: string; displayName?: string },
-  modelName = "gemini-2.5-flash"
+  modelName = process.env.GEMINI_MODEL || "gemini-2.0-flash"
 ): Promise<void> {
   const db = getAdminFirestore();
   const yearMonth = getMadridYearMonth();
@@ -154,15 +155,23 @@ export async function checkAiBudget(
 ): Promise<CheckBudgetResult> {
   const db = getAdminFirestore();
 
-  // 1. Leer configuración desde ai_budget_config/default
+  // 1. Leer configuración desde ai_budget_config/default con fail-closed
   let config = DEFAULT_CONFIG;
   try {
     const configSnap = await db.collection("ai_budget_config").doc("default").get();
     if (configSnap.exists) {
       config = { ...DEFAULT_CONFIG, ...configSnap.data() };
     }
-  } catch (err) {
-    console.warn("[checkAiBudget] Error leyendo ai_budget_config/default, usando valores por defecto:", err);
+  } catch (err: any) {
+    console.error("[checkAiBudget] Error leyendo ai_budget_config/default desde Firestore. Aplicando Fail-Closed:", err);
+    return {
+      allowed: false,
+      currentSpentEur: 0,
+      limitEur: DEFAULT_CONFIG.defaultMonthlyLimitEur,
+      pct: 0,
+      code: "BUDGET_VERIFICATION_UNAVAILABLE",
+      error: `Imposible verificar la configuración del presupuesto de IA: ${err?.message || err}`
+    };
   }
 
   // 2. Determinar límite aplicable (userOverrides > monthlyLimitEurByRole / roleLimitsEur > defaultMonthlyLimit)
@@ -184,7 +193,7 @@ export async function checkAiBudget(
     limitEur = normalizedRoleLimits[normalizedRole];
   }
 
-  // 3. Leer consumo actual del mes (Madrid)
+  // 3. Leer consumo actual del mes (Madrid) con comportamiento fail-closed
   const yearMonth = getMadridYearMonth();
   let currentSpentEur = 0;
   try {
@@ -192,8 +201,16 @@ export async function checkAiBudget(
     if (usageSnap.exists) {
       currentSpentEur = usageSnap.data()?.totalEur || 0;
     }
-  } catch (err) {
-    console.warn("[checkAiBudget] Error leyendo ai_usage del usuario, asumiendo 0:", err);
+  } catch (err: any) {
+    console.error("[checkAiBudget] Error en la verificación de Firestore. Aplicando política Fail-Closed:", err);
+    return {
+      allowed: false,
+      currentSpentEur: 0,
+      limitEur,
+      pct: 0,
+      code: "BUDGET_VERIFICATION_UNAVAILABLE",
+      error: `Imposible verificar el presupuesto acumulado de IA: ${err?.message || err}`
+    };
   }
 
   const projectedSpentEur = currentSpentEur + estimatedCostEur;
