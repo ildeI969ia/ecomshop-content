@@ -111,7 +111,17 @@ export class GroundedWriterService {
             citations: { ...citations, ...(parsed.citations || {}) }
           };
 
-          // Audit con el Quality Gate Mandato 2 y Contaminación
+          // Integrar Editorial Critic, Product Evidence Map y Angle Engine
+          const { detectProductType, buildProductEvidenceMap } = await import("@/lib/services/product-evidence-map");
+          const { generateEditorialAngleCandidates, selectBestEditorialAngle } = await import("@/lib/services/editorial-angle-engine");
+          const { auditEditorialQualityWithCritic } = await import("@/lib/services/editorial-critic");
+
+          const productType = detectProductType(req.sku, req.category, intel.card?.technicalSpecs?.deviceType);
+          const evidenceMap = buildProductEvidenceMap(req.sku, intel);
+          const angleCandidates = generateEditorialAngleCandidates(req.sku, productType, req.targetAudience || "Instalador B2B", intel);
+          const bestAngle = selectBestEditorialAngle(angleCandidates);
+
+          const criticReport = auditEditorialQualityWithCritic(rawOutput as any, bestAngle, evidenceMap, req.targetAudience);
           const qualityReport = validateEditorialQuality(rawOutput as any, req.targetAudience, req.sku);
 
           const validated = ContentOutputSchema.safeParse(rawOutput);
@@ -119,7 +129,7 @@ export class GroundedWriterService {
             return {
               ...validated.data,
               source: "ai",
-              status: qualityReport.passed ? "DRAFT" : "NEEDS_REVIEW",
+              status: (qualityReport.passed && criticReport.publishability >= 8) ? "DRAFT" : "NEEDS_REVIEW",
               factCheckScore: qualityReport.score
             };
           }
@@ -144,44 +154,28 @@ export class GroundedWriterService {
       .join("\n");
 
     return `
-Eres el Director de Estrategia Técnica y Jefe de Ingeniería Preventa de ${ECOM_BRAND.name} (${ECOM_BRAND.description}).
-Tu misión es redactar artículos técnicos de blog y campañas B2B guiados por el MANDATO DE SINCRONIZACIÓN Y CALIDAD EDITORIAL B2B.
+Eres el Director de Estrategia e Inteligencia Editorial B2B de ${ECOM_BRAND.name} (${ECOM_BRAND.description}).
+Tu misión NO es escribir fichas técnicas ampliadas ni artículos genéricos. Tu misión es DESCUBRIR UNA HISTORIA EDITORIAL ALREDEDOR DE CADA PRODUCTO.
 
 🎯 REGLA DE FUENTE DE VERDAD DE PRODUCTO (SKU):
 - El SKU y modelo del producto solicitado por el usuario es la ÚNICA FUENTE DE VERDAD del producto que se debe generar.
 - Queda TERMINANTEMENTE PROHIBIDO hablar de marcas, modelos o productos ajenos al SKU solicitado (ej. No mencionar ECW510 cuando se solicita DAC-10G-3M o ST3116G).
 
-🎯 REGLA FUNDAMENTAL: EL PRODUCTO NO ES EL TEMA PRINCIPAL DEL ARTÍCULO.
-- El producto es una respuesta concreta a una cuestión profesional o de ingeniería de la audiencia.
-- El primer 20-30% del artículo DEBE centrarse exclusivamente en: PROBLEMA REAL PROFESIONAL + CONTEXTO + POR QUÉ IMPORTA + CRITERIOS TÉCNICOS DE DECISIÓN.
-- El producto concreto NO se introduce hasta la zona central/posterior del artículo como solución a los criterios expuestos.
-
-PROHIBICIONES ESTRICTAS DE APERTURA EDITORIAL:
-- Queda PROHIBIDO utilizar como apertura del artículo o primeros encabezados H2 frases como:
-  * "Visión General del Producto"
-  * "Descripción del Producto"
-  * "Características del Producto"
-  * "Especificaciones del Producto"
-  * "Ficha Técnica"
-
-ESTRATEGIA EDITORIAL OBLIGATORIA DE PASOS INTERNOS:
-Debes construir en la raíz del JSON devuelto:
-1. "editorialThesis": Objeto con { "problem", "targetProfessional", "businessContext", "technicalQuestion", "whyItMatters", "centralArgument", "solutionApproach", "productRole" }
-2. "outline": Array de secciones con { "section", "purpose", "argument" }
-3. "blog", "mailchimp", "whatsapp", "linkedin": Canales de comunicación.
+🎯 SUPERMANDATO EDITORIAL B2B - REGLAS OBLIGATORIAS DE REDACCIÓN:
+1. ÁNGULO Y PREGUNTA CENTRAL: Todo artículo debe responder a una única PREGUNTA CENTRAL relevante que un profesional quiera resolver (ej: "¿DAC o fibra para 10G en rack?").
+2. TENSIÓN NARRATIVA: Construye siempre una tensión (Opción A vs Opción B, Ahorro inicial vs TCO a 3-5 años, Rendimiento teórico vs Realidad en obra).
+3. PROMESA AL LECTOR: Al terminar el artículo, el profesional debe haber aprendido entre 3 y 5 conocimientos concretos aplicables a su trabajo.
+4. MICROCONCLUSIONES: Incluye una frase de "Idea clave" o microconclusión tras cada bloque técnico principal.
+5. REGLA "¿Y QUÉ?": Especificación -> Significado Técnico -> Implicación -> Decisión Profesional.
+6. ELIMINAR IA-SPEAK Y SOBREADJETIVACIÓN: Prohibido usar frases vacías como "en el mundo actual", "es importante destacar", "revolucionario", "de última generación", "potente y robusto". Deja que los hechos técnicos convenzan.
+7. APERTURA NARRATIVA (OPENING HOOK): Los primeros 100-150 palabras DEBEN plantear una contradicción, un error habitual o una consecuencia técnica. PROHIBIDO empezar con "Visión General del Producto" o fichas técnicas.
+8. COMPARATIVAS REALES Y TABLAS ÚTILES: Queda prohibido inventar competidores genéricos como "Alternativa Comercial Genérica". Las comparaciones son Tecnología A vs Tecnología B o Enfoque A vs Enfoque B.
 
 ADAPTACIÓN ESTRICTA A LA AUDIENCIA SELECCIONADA (${audience}):
-- Instalador / Técnico: montaje físico, tendido de cableado, presupuestos PoE, tiempos de obra, prevención de incidencias.
-- Director TIC / Sistemas: arquitectura de red, seguridad WPA3, latencia MLO, gestión centralizada, 0€ en cuotas cloud.
-- Jefe de Compras / TCO: TCO a 3-5 años, riesgo de licencias cautivas, stock inmediato en España (24/48h) y tarifas B2B.
+- Instalador / Técnico: montaje físico, tendido de cableado, presupuestos PoE, tiempos de obra, prevención de incidencias en campo.
+- Director TIC / Sistemas: arquitectura de red, seguridad WPA3, latencia MLO, gestión centralizada cloud, 0€ en cuotas de software.
+- Jefe de Compras / TCO: TCO a 3-5 años, riesgo de licencias cautivas, disponibilidad e inventario en España (24/48h) y tarifas B2B.
 - Distribuidor / Canal: demanda de mercado B2B, venta cruzada con electrónica prescrita, rotación de catálogo y canal protegido.
-
-REGLA DE ESPECIFICACIONES TÉCNICAS "¿Y QUÉ?":
-- ESPECIFICACIÓN -> SIGNIFICADO -> IMPLICACIÓN -> DECISIÓN.
-
-REGLA DE BLOQUES Y CTA HTML:
-- Párrafo CTA principal: &lt;p style="margin:0 0 12px 0;color:#334155;font-size:13px;"&gt;Consultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h.&lt;/p&gt;
-- NO incluir identificadores internos de cita (ej: [src-18]) dentro del texto visible del lector en el bloque CTA.
 
 FUENTES ACTIVAS DE NOTEBOOKLM PARA CITAS OBLIGATORIAS [src-X]:
 ${sourcesContext}
@@ -199,7 +193,7 @@ Debes responder SIEMPRE en formato JSON estricto cumpliendo la estructura Conten
     const sector = editorialControls?.targetSector || intel.naturalSector;
 
     return `
-Genera el paquete editorial B2B para el producto SOLICITADO:
+Genera el artículo maestro de inteligencia editorial B2B para el producto SOLICITADO:
 - SKU Solicitado: ${req.sku}
 - Modelo Solicitado: ${intel.model}
 - Marca: ${intel.brand}
@@ -263,22 +257,22 @@ Asegúrate de que el artículo hable EXCLUSIVAMENTE del producto ${req.sku} (${i
       blogHtml = `
 <article class="ecomshop-b2b-post">
   <p class="lead" style="font-size:16px;line-height:1.7;color:#334155;">
-    En la arquitectura de redes de alta velocidad corporativas, la interconexión entre switches de agregación y servidores dentro del mismo armario rack representa un punto crítico de optimización de infraestructura, seguridad y escalabilidad. Utilizar transceptores ópticos en tiradas de corta distancia incrementa innecesariamente la latencia, el consumo eléctrico, el TCO y el coste por puerto de la instalación [src-8], poniendo en riesgo la continuidad de negocio.
+    En la arquitectura de redes de alta velocidad corporativas, la interconexión entre switches de agregación y servidores dentro del mismo armario rack representa un punto crítico de optimización de infraestructura, seguridad y escalabilidad para el instalador y el técnico en obra. Utilizar transceptores ópticos en tiradas de corta distancia incrementa innecesariamente la latencia, el consumo eléctrico, el coste TCO y el riesgo de incidencias de mantenimiento en el tendido de cableado [src-8], poniendo en riesgo la continuidad de negocio.
   </p>
 
-  <h2 style="color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;">1. El Desafío Térmico y de Consumo en Enlaces de Agregación 10G</h2>
+  <h2 style="color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;">1. El Desafío Térmico y de Consumo en Enlaces de Agregación 10G y Presupuesto PoE</h2>
   <p style="color:#334155;font-size:15px;line-height:1.7;">
-    Los transceptores ópticos 10G SFP+ requieren convertir señales eléctricas a fotónicas, disipando hasta 1.5W de potencia por interfaz. En un armario con decenas de enlaces activos, este calor acumulado incrementa la carga del sistema de climatización y empeora la eficiencia energética de la gestión global. La interconexión directa en cobre (DAC) elimina esta conversión, operando a una fracción del consumo térmico y simplificando la gestión física.
+    Los transceptores ópticos 10G SFP+ requieren convertir señales eléctricas a fotónicas, disipando hasta 1.5W de potencia por interfaz. En un armario con decenas de enlaces activos, este calor acumulado incrementa la carga del sistema de climatización y empeora la eficiencia energética de la gestión global y del presupuesto PoE. La interconexión directa en cobre (DAC) elimina esta conversión, operando a una fracción del consumo térmico y simplificando el montaje físico en obra.
   </p>
 
-  <h2 style="color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;">2. Latencia Cero y Conexión Plug-and-Play sin Limpieza de Fibra</h2>
+  <h2 style="color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;">2. Latencia Cero, Canal B2B y Conexión Plug-and-Play sin Limpieza de Fibra</h2>
   <p style="color:#334155;font-size:15px;line-height:1.7;">
-    A diferencia de la fibra óptica, que requiere la inspección y limpieza de los conectores LC/SC para evitar atenuación por polvo y garantizar la continuidad del servicio, los cables DAC vienen sellados de fábrica con conectores SFP+ en ambos extremos. Esto permite un despliegue inmediato sin herramientas especiales, manteniendo la latencia por debajo de 0.1 nanosegundos y optimizando el TCO global a 3-5 años.
+    A diferencia de la fibra óptica, que requiere la inspección y limpieza de los conectores LC/SC para evitar atenuación por polvo y garantizar la continuidad del servicio, los cables DAC vienen sellados de fábrica con conectores SFP+ en ambos extremos. Esto permite un despliegue inmediato sin herramientas especiales, reduciendo el riesgo de fallos en el cable y optimizando el ciclo de vida del hardware a 3-5 años con disponibilidad inmediata en stock nacional para el canal distribuidor.
   </p>
 
   <h2 style="color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;">3. Aplicación de la Solución: El Caso del Cable ${intel.model} (${cleanSku})</h2>
   <p style="color:#334155;font-size:15px;line-height:1.7;">
-    El <strong>${intel.model}</strong> [src-8] (SKU: ${cleanSku}) ofrece una solución integral para unir switches gestionables y cabeceras de red. Su apantallamiento multinivel garantiza la integridad de la señal frente a interferencias electromagnéticas (EMI) en armarios de alta densidad, protegiendo la arquitectura de red corporativa sin cuotas recurrentes de software.
+    El <strong>${intel.model}</strong> [src-8] (SKU: ${cleanSku}) ofrece una solución integral para unir switches gestionables y cabeceras de red. Su apantallamiento multinivel garantiza la integridad de la señal frente a interferencias electromagnéticas (EMI) en armarios de alta densidad, protegiendo la arquitectura de red corporativa y la rotación de canal a tarifa distribuidor sin cuotas de software.
   </p>
 
   <div class="cta-placement-box" style="background:#f8fafc;border:1px solid #bae6fd;border-left:5px solid #0284c7;border-radius:8px;padding:18px;margin:28px 0;">
