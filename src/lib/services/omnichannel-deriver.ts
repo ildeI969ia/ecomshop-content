@@ -1,6 +1,7 @@
 import { ContentOutput } from "@/lib/schema";
 import { FullArticleResult } from "./deep-section-writer";
 import { getGenAIClient, getActiveGeminiModel } from "@/lib/genai-client";
+import { planArticleVisuals } from "./visual-planner";
 
 /**
  * Derivación Omnicanal Automática (The Junia Engine - Fase 09)
@@ -91,6 +92,22 @@ GENERA ÚNICAMENTE UN JSON CON ESTA ESTRUCTURA EXACTA:
 
     const parsed = JSON.parse(cleanJson);
 
+    // Planificación Editorial Visual dinámica (Junia Visual Engine)
+    const visualPlan = planArticleVisuals(
+      article.sections.map((s, idx) => ({
+        id: s.sectionId || `sec-${idx + 1}`,
+        title: s.title,
+        contentType: s.level,
+        bodyHtml: s.htmlContent
+      })),
+      {
+        sku: category ? category.toUpperCase() : "ECW536",
+        name: article.title,
+        brand: "EnGenius",
+        deviceType: "Dispositivo de Red Profesional"
+      }
+    );
+
     return {
       topicId,
       topicTitle: article.title,
@@ -99,44 +116,36 @@ GENERA ÚNICAMENTE UN JSON CON ESTA ESTRUCTURA EXACTA:
       source: "ai",
       status: "DRAFT",
       blog: {
-        title: article.title,
-        metaDescription: article.metaDescription,
-        slug: article.slug,
-        readingTimeMinutes,
-        targetKeywords: ["Wi-Fi 7", "Switches PoE", "EnGenius Cloud", "Telecomunicaciones B2B"],
-        htmlContent: article.combinedHtml,
-        cleanPlainTextExcerpt: plainTextExcerpt,
-        editorialLayout: {
-          targetProfiles: [
-            {
-              profile: "Instalador",
-              keyTakeaway: "Instalación simplificada con aprovisionamiento QR y stock garantizado en 24h."
-            },
-            {
-              profile: "Director TIC",
-              keyTakeaway: "Gestión centralizada en nube empresarial sin cuotas anuales obligatorias."
-            }
-          ],
-          photoPlacements: [
-            {
-              id: "photo-1",
-              placementAfterHeading: "2. El Cuello de Botella Oculto",
-              photoType: "Diagrama de Arquitectura",
-              description: "Topología de cableado y switches multi-gigabit.",
-              imagen3Prompt: "Professional networking rack with PoE switches and fiber patch panel, clean cable management, photorealistic, 8k."
-            }
-          ],
-          ctaPlacements: [
-            {
-              id: "cta-1",
-              placement: "Final del artículo",
-              ctaType: "Tarifa B2B",
-              buttonText: "Solicitar Tarifa de Distribuidor",
-              targetUrl: `https://www.ecomshop.es/${article.slug}`
-            }
-          ]
-        }
-      },
+      title: article.title,
+      metaDescription: article.metaDescription,
+      slug: article.slug,
+      readingTimeMinutes,
+      targetKeywords: ["Wi-Fi 7", "Switches PoE", "EnGenius Cloud", "Telecomunicaciones B2B"],
+      htmlContent: visualPlan.htmlWithSlots,
+      cleanPlainTextExcerpt: plainTextExcerpt,
+      editorialLayout: {
+        targetProfiles: [
+          {
+            profile: "Instalador",
+            keyTakeaway: "Instalación simplificada con aprovisionamiento QR y stock garantizado en 24h."
+          },
+          {
+            profile: "Director TIC",
+            keyTakeaway: "Gestión centralizada en nube empresarial sin cuotas anuales obligatorias."
+          }
+        ],
+        photoPlacements: visualPlan.photoPlacements,
+        ctaPlacements: [
+          {
+            id: "cta-1",
+            placement: "Final del artículo",
+            ctaType: "Tarifa B2B",
+            buttonText: "Solicitar Tarifa de Distribuidor",
+            targetUrl: `https://www.ecomshop.es/${article.slug}`
+          }
+        ]
+      }
+    },
       mailchimp: parsed.mailchimp || generateFallbackMailchimp(article),
       whatsapp: parsed.whatsapp || generateFallbackWhatsApp(article),
       linkedin: parsed.linkedin || generateFallbackLinkedIn(article)

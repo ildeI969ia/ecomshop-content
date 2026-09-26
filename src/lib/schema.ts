@@ -24,9 +24,19 @@ export const ContentOutputSchema = z.object({
       photoPlacements: z.array(z.object({
         id: z.string(),
         placementAfterHeading: z.string(),
+        afterSectionId: z.string().optional(),
+        position: z.enum(["AFTER_SECTION", "BEFORE_SECTION", "INLINE"]).optional(),
         photoType: z.string(),
+        aspectRatio: z.string().optional(),
         description: z.string(),
-        imagen3Prompt: z.string()
+        imagen3Prompt: z.string(),
+        productSku: z.string().optional(),
+        requiresReferenceProductImage: z.boolean().optional(),
+        altText: z.string().optional(),
+        caption: z.string().optional(),
+        assetId: z.string().optional(),
+        imageUrl: z.string().optional(),
+        status: z.enum(["PENDING", "GENERATED", "FAILED"]).optional()
       })).optional(),
       ctaPlacements: z.array(z.object({
         id: z.string(),

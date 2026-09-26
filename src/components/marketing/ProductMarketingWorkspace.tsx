@@ -65,19 +65,55 @@ export function ProductMarketingWorkspace({ onCreateCampaign, initialTab, curren
   const [generatedPackagesMap, setGeneratedPackagesMap] = useState<Record<string, MarketingPackage>>({});
 
   // Cargar paquetes existentes al montar para mapa determinista de estados
-  useEffect(() => {
-    apiFetch<{ packages?: MarketingPackage[] }>("/api/marketing/export?format=json")
-      .then((data) => {
-        if (data.packages && Array.isArray(data.packages)) {
-          const map: Record<string, MarketingPackage> = {};
-          for (const pkg of data.packages) {
-            map[pkg.product.sku] = pkg;
-          }
-          setGeneratedPackagesMap(map);
+  const refreshCatalog = React.useCallback(async () => {
+    try {
+      const data = await apiFetch<{ packages?: MarketingPackage[] }>("/api/marketing/export?format=json");
+      if (data.packages && Array.isArray(data.packages)) {
+        const map: Record<string, MarketingPackage> = {};
+        for (const pkg of data.packages) {
+          map[pkg.product.sku] = pkg;
         }
-      })
-      .catch(() => {});
+        setGeneratedPackagesMap(map);
+      }
+    } catch (err) {
+      console.error("Error al refrescar el catálogo:", err);
+    }
   }, []);
+
+  const loadSkuHistory = React.useCallback(async (sku: string) => {
+    try {
+      const data = await apiFetch<{ packages?: MarketingPackage[] }>(`/api/marketing/packages?sku=${encodeURIComponent(sku)}`);
+      if (data.packages && Array.isArray(data.packages) && data.packages.length > 0) {
+        const records: VersionHistoryRecord[] = data.packages.map((pkg) => ({
+          version: pkg.contentVersion,
+          runId: pkg.runId || `run-v${pkg.contentVersion}`,
+          createdAt: pkg.createdAt ? new Date(pkg.createdAt).toLocaleTimeString("es-ES") : new Date().toLocaleTimeString("es-ES"),
+          marketingPackage: pkg
+        }));
+        setVersions(records);
+        setSelectedVersion(records[0].version);
+        setActivePackage(records[0].marketingPackage);
+        setGeneratedPackagesMap((prev) => ({
+          ...prev,
+          [sku]: records[0].marketingPackage
+        }));
+      } else {
+        setVersions([]);
+      }
+    } catch (err) {
+      console.error("Error al cargar historial del SKU:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshCatalog();
+  }, [refreshCatalog]);
+
+  useEffect(() => {
+    if (selectedSku) {
+      loadSkuHistory(selectedSku);
+    }
+  }, [selectedSku, loadSkuHistory]);
 
   // Deterministic status resolver
   const getProductStatus = (sku: string): { label: string; color: string } => {
@@ -142,18 +178,15 @@ export function ProductMarketingWorkspace({ onCreateCampaign, initialTab, curren
       setCurrentRun(res.run || null);
       setActivePackage(res.package);
 
-      // Guardar en historial de versiones local
-      setVersions((prev) => {
-        const nextVer = prev.length + 1;
-        const newRecord: VersionHistoryRecord = {
-          version: nextVer,
-          runId: res.run?.runId || `run-${Date.now()}`,
-          createdAt: new Date().toLocaleTimeString("es-ES"),
-          marketingPackage: res.package!
-        };
-        setSelectedVersion(nextVer);
-        return [newRecord, ...prev];
-      });
+      // Actualizar inmediatamente mapa de paquetes generados
+      const pkg = res.package;
+      setGeneratedPackagesMap((prev) => ({
+        ...prev,
+        [pkg.product.sku]: pkg
+      }));
+
+      // Cargar historial real desde Firestore
+      await loadSkuHistory(pkg.product.sku);
 
       setActiveTab("package");
     } catch (err: any) {
