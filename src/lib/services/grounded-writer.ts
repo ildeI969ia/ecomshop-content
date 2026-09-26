@@ -55,7 +55,8 @@ export class GroundedWriterService {
       const prompt = this.buildPrompt(req, activeSources);
       const systemInstruction = this.buildSystemInstruction(activeSources);
 
-      const candidateModels = [activeModel, process.env.GEMINI_MODEL || "gemini-2.0-flash", "gemini-1.5-flash"]
+      const { AI_TEXT_MODEL, AI_FALLBACK_MODEL } = await import("@/lib/ai-config");
+      const candidateModels = [activeModel, AI_TEXT_MODEL, AI_FALLBACK_MODEL]
         .filter((m, i, arr) => Boolean(m) && arr.indexOf(m) === i);
 
       for (const modelToTry of candidateModels) {

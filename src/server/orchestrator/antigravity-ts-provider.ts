@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { AgentExecutionManifest, AgentExecutionResult } from "./types";
 import { IAgentProvider } from "./agent-provider";
+import { AI_TEXT_MODEL, AI_FALLBACK_MODEL, VERTEX_LOCATION } from "@/lib/ai-config";
 
 export interface AntigravityTsProviderOptions {
   timeoutMs?: number;
@@ -19,7 +20,7 @@ export class AntigravityTsProvider implements IAgentProvider {
 
   constructor(options: AntigravityTsProviderOptions = {}) {
     this.timeoutMs = options.timeoutMs ?? 90000; // 90 segundos por defecto para estabilización de IA
-    this.model = options.model || process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    this.model = options.model || AI_TEXT_MODEL;
     this.apiKey = options.apiKey;
   }
 
@@ -44,7 +45,7 @@ export class AntigravityTsProvider implements IAgentProvider {
     }
 
     // Fallback a Vertex AI nativo (Application Default Credentials en Cloud Run)
-    const location = process.env.VERTEX_LOCATION || "us-central1";
+    const location = VERTEX_LOCATION;
 
     return new GoogleGenAI({
       vertexai: true,
@@ -81,11 +82,11 @@ export class AntigravityTsProvider implements IAgentProvider {
     };
 
     try {
-      const initialModel = (this.model || process.env.GEMINI_MODEL || "gemini-2.5-flash").replace(/-001$/, "");
+      const initialModel = (this.model || AI_TEXT_MODEL).replace(/-001$/, "");
       const candidateModels = Array.from(new Set([
         initialModel,
-        "gemini-2.5-flash",
-        "gemini-3.1-flash-lite"
+        AI_TEXT_MODEL,
+        AI_FALLBACK_MODEL
       ])).filter(Boolean);
 
       let response: any;

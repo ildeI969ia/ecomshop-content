@@ -15,6 +15,7 @@ import { ProductTruthService, ProductTruthContract } from "../domain/product-tru
 import { MarketingIntelligenceService, MarketingIntelligence } from "../domain/marketing-intelligence";
 import { validateClaimsAgainstProductTruth } from "../services/claim-validator";
 import { calculateMarketingPackageCompleteness, evaluateMarketingJudge } from "../services/marketing-judge";
+import { AI_TEXT_MODEL } from "@/lib/ai-config";
 
 export interface PipelineExecutionOptions {
   workspacePath: string;
@@ -330,8 +331,8 @@ Responde ÚNICAMENTE con un JSON válido con la siguiente estructura exacta:
       knowledgeVersion: "v1.0.0",
       catalogVersion: "canonical-2026",
       provider: "google-antigravity",
-      model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
-      actualModel: agentResult.actualModel || process.env.GEMINI_MODEL || "gemini-2.0-flash",
+      model: AI_TEXT_MODEL,
+      actualModel: agentResult.actualModel || AI_TEXT_MODEL,
       fallbackUsed: agentResult.fallbackUsed ?? false
     };
 

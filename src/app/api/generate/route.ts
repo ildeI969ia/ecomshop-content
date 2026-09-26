@@ -12,6 +12,7 @@ import { ProductIntelligenceCard } from "@/lib/types/product-intelligence";
 import { getCatalogDevice, ECOMSHOP_CATALOG } from "@/lib/catalog";
 
 import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
+import { AI_TEXT_MODEL } from "@/lib/ai-config";
 
 export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
   try {
@@ -252,7 +253,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         timestamp: nowIso,
         userId: user.uid,
         action: "gemini_generation",
-        model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
+        model: AI_TEXT_MODEL,
         provider: "vertex-ai",
         operation: "content_generation",
         sku: intelligenceCard?.product?.sku,

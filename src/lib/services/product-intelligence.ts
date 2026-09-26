@@ -1,3 +1,4 @@
+import { VERTEX_LOCATION } from "@/lib/ai-config";
 import { RawExtractedProduct } from "./ecomshop-extractor";
 import { ProductIntelligenceCard } from "../types/product-intelligence";
 import { ProductIntelligenceCardSchema } from "../schema/product-intelligence";
@@ -80,7 +81,7 @@ Responde ÚNICAMENTE con un JSON que cumpla la estructura de ProductIntelligence
             vertexAiSearch: {
               datastore: datastoreId,
               project: process.env.GOOGLE_CLOUD_PROJECT,
-              location: process.env.GOOGLE_CLOUD_LOCATION || "europe-west1"
+              location: VERTEX_LOCATION
             }
           }
         }
