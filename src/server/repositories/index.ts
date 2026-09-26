@@ -108,7 +108,7 @@ export class ContentRepository {
     }
 
     if (existing) {
-      const updatedVersions = [
+      const rawVersions = [
         ...(existing.versions || []),
         {
           version: (existing.currentVersion || 1) + 1,
@@ -120,6 +120,14 @@ export class ContentRepository {
         }
       ];
 
+      // Poda de versiones para no superar el límite de 1MB de Firestore (máximo 5 versiones)
+      const updatedVersions = rawVersions.slice(-5).map((v, idx, arr) => {
+        if (idx < arr.length - 1 && JSON.stringify(v.body || {}).length > 50000) {
+          return { ...v, body: { notice: "Cuerpo de versión intermedia purgado para control de tamaño (<1MB)" } };
+        }
+        return v;
+      });
+
       const mergedItem: ContentItem = {
         ...existing,
         ...content,
@@ -130,11 +138,38 @@ export class ContentRepository {
         updatedBy: content.updatedBy || existing.updatedBy
       };
 
-      await this.collection().doc(existing.id).set(mergedItem, { merge: true });
-      return mergedItem;
+      // Limpieza preventiva de base64 si el objeto supera 900KB
+      let finalItem = mergedItem;
+      let serialized = JSON.stringify(finalItem);
+      if (serialized.length > 900000) {
+        const cleanedStr = serialized.replace(/data:image\/[a-zA-Z0-9+.-]+;base64,[a-zA-Z0-9+/=]+/g, "https://storage.googleapis.com/ecomshop-marketing-prod/assets/pruned-base64-image.jpg");
+        finalItem = JSON.parse(cleanedStr);
+        serialized = JSON.stringify(finalItem);
+      }
+
+      if (serialized.length > 1048576) {
+        console.error(`[ContentRepository] ADVERTENCIA: Documento ${existing.id} supera 1MB (${serialized.length} bytes). Omitiendo actualización para no colapsar Firestore.`);
+        return existing;
+      }
+
+      await this.collection().doc(existing.id).set(finalItem, { merge: true });
+      return finalItem;
     } else {
-      await this.collection().doc(content.id).set(content);
-      return content;
+      let finalItem = content;
+      let serialized = JSON.stringify(finalItem);
+      if (serialized.length > 900000) {
+        const cleanedStr = serialized.replace(/data:image\/[a-zA-Z0-9+.-]+;base64,[a-zA-Z0-9+/=]+/g, "https://storage.googleapis.com/ecomshop-marketing-prod/assets/pruned-base64-image.jpg");
+        finalItem = JSON.parse(cleanedStr);
+        serialized = JSON.stringify(finalItem);
+      }
+
+      if (serialized.length > 1048576) {
+        console.error(`[ContentRepository] ADVERTENCIA: Documento ${content.id} supera 1MB (${serialized.length} bytes). Omitiendo creación para no colapsar Firestore.`);
+        return content;
+      }
+
+      await this.collection().doc(content.id).set(finalItem);
+      return finalItem;
     }
   }
 

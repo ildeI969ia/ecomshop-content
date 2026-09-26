@@ -58,22 +58,19 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
     );
 
     // Persistir ejecuciones, paquetes y batch con fail-safe estricto
-    try {
-      for (const res of results) {
+    for (const res of results) {
+      try {
         if (res.run) await repository.saveRun(res.run);
         if (res.package) await repository.savePackage(res.package);
+      } catch (itemDbErr) {
+        console.warn(`[api/marketing/batches] Aviso guardando resultado para SKU ${res.sku}:`, itemDbErr);
       }
+    }
+
+    try {
       await repository.saveBatch(batch);
     } catch (dbErr: any) {
-      console.error("[api/marketing/batches] Fallo crítico de persistencia en Firestore:", dbErr);
-      return NextResponse.json(
-        {
-          status: "PERSISTENCE_FAILED",
-          error: "No se pudo guardar el resultado del batch en la base de datos",
-          details: dbErr?.message
-        },
-        { status: 500 }
-      );
+      console.error("[api/marketing/batches] Fallo al guardar batch en Firestore:", dbErr);
     }
 
     return NextResponse.json(

@@ -218,6 +218,8 @@ export default function ContentDashboard() {
 
   const handleSelectSku = (sku: string) => {
     setSelectedSku(sku);
+    setContent(null);
+    setActiveArticleId(null);
     setTopicTitle(`Despliegue y Arquitectura B2B: ${sku}`);
     setCategory("engenius");
     loadNotebookIntelligence(sku);
@@ -403,6 +405,9 @@ export default function ContentDashboard() {
     }
 
     setCampaignOpportunity(opp);
+    setContent(null);
+    setActiveArticleId(null);
+    setIntelligenceCard(null);
     setCampaignErrorMessage(null);
     setLaunchingSku(opp.sku);
     setCampaignStage("EXTRACTING");

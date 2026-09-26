@@ -4,7 +4,7 @@
  */
 
 export const AI_TEXT_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-export const AI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-3.1-flash-lite";
+export const AI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-2.0-flash";
 export const VERTEX_LOCATION = process.env.VERTEX_LOCATION || "us-central1";
 
 /**

@@ -95,7 +95,7 @@ Responde ÚNICAMENTE con un JSON que cumpla la estructura de ProductIntelligence
     });
 
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("[ProductIntelligence] Timeout excedido (8s)")), 8000)
+      setTimeout(() => reject(new Error("[ProductIntelligence] Timeout excedido (30s)")), 30000)
     );
 
     const response = await Promise.race([generatePromise, timeoutPromise]);

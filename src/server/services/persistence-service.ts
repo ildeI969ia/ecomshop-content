@@ -52,65 +52,78 @@ export class PersistenceService {
         const rawId = String(item.id || Date.now());
         const cleanId = rawId.replace(/^(content-)+/, "");
         const contentId = `content-${cleanId}`;
-        const contentItem: ContentItem = {
-          id: contentId,
-          workspaceId,
-          title: item.title || item.content.topicTitle || "Sin título",
-          slug: item.content.blog?.slug || `post-${cleanId}`,
-          category: item.category || item.content.category || "general",
-          status: item.status === "published" ? "PUBLISHED" : item.status === "approved" ? "APPROVED" : item.status === "reviewed" ? "IN_REVIEW" : "DRAFT",
-          currentVersion: 1,
-          authorId: payload.userId,
-          canonicalBody: item.content.blog || {},
-          linkedProductIds: [],
-          linkedSourceIds: [],
-          versions: [
-            {
-              version: 1,
-              body: item.content,
-              changeSummary: "Migrado desde almacenamiento local del navegador",
-              editedByUserId: payload.userId,
-              isAIGenerated: true,
-              timestamp: safeIsoDate(item.createdAt)
+
+        try {
+          const contentItem: ContentItem = {
+            id: contentId,
+            workspaceId,
+            title: item.title || item.content.topicTitle || "Sin título",
+            slug: item.content.blog?.slug || `post-${cleanId}`,
+            category: item.category || item.content.category || "general",
+            status: item.status === "published" ? "PUBLISHED" : item.status === "approved" ? "APPROVED" : item.status === "reviewed" ? "IN_REVIEW" : "DRAFT",
+            currentVersion: 1,
+            authorId: payload.userId,
+            canonicalBody: item.content.blog || {},
+            linkedProductIds: [],
+            linkedSourceIds: [],
+            versions: [
+              {
+                version: 1,
+                body: item.content,
+                changeSummary: "Migrado desde almacenamiento local del navegador",
+                editedByUserId: payload.userId,
+                isAIGenerated: true,
+                timestamp: safeIsoDate(item.createdAt)
+              }
+            ],
+            createdAt: safeIsoDate(item.createdAt),
+            updatedAt: new Date().toISOString(),
+            createdBy: payload.userId,
+            updatedBy: payload.userId
+          };
+
+          await this.contentRepo.save(contentItem);
+          syncedArticles++;
+
+          // Guardar variantes específicas si existen
+          if (item.content.mailchimp) {
+            try {
+              await this.contentRepo.saveVariant(contentId, {
+                id: `var-${contentId}-mailchimp`,
+                contentId,
+                channel: "MAILCHIMP",
+                status: "DRAFT",
+                bodyPayload: item.content.mailchimp,
+                version: 1,
+                isAIGenerated: true,
+                humanModified: false,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              });
+            } catch (varErr) {
+              console.warn(`[PersistenceService] Aviso guardando variante mailchimp para ${contentId}:`, varErr);
             }
-          ],
-          createdAt: safeIsoDate(item.createdAt),
-          updatedAt: new Date().toISOString(),
-          createdBy: payload.userId,
-          updatedBy: payload.userId
-        };
-
-        await this.contentRepo.save(contentItem);
-        syncedArticles++;
-
-        // Guardar variantes específicas si existen
-        if (item.content.mailchimp) {
-          await this.contentRepo.saveVariant(contentId, {
-            id: `var-${contentId}-mailchimp`,
-            contentId,
-            channel: "MAILCHIMP",
-            status: "DRAFT",
-            bodyPayload: item.content.mailchimp,
-            version: 1,
-            isAIGenerated: true,
-            humanModified: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          });
-        }
-        if (item.content.linkedin) {
-          await this.contentRepo.saveVariant(contentId, {
-            id: `var-${contentId}-linkedin`,
-            contentId,
-            channel: "LINKEDIN",
-            status: "DRAFT",
-            bodyPayload: item.content.linkedin,
-            version: 1,
-            isAIGenerated: true,
-            humanModified: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          });
+          }
+          if (item.content.linkedin) {
+            try {
+              await this.contentRepo.saveVariant(contentId, {
+                id: `var-${contentId}-linkedin`,
+                contentId,
+                channel: "LINKEDIN",
+                status: "DRAFT",
+                bodyPayload: item.content.linkedin,
+                version: 1,
+                isAIGenerated: true,
+                humanModified: false,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              });
+            } catch (varErr) {
+              console.warn(`[PersistenceService] Aviso guardando variante linkedin para ${contentId}:`, varErr);
+            }
+          }
+        } catch (itemErr) {
+          console.error(`[PersistenceService] Error aislando guardado de artículo ${contentId}:`, itemErr);
         }
       }
     }
@@ -202,23 +215,27 @@ export class PersistenceService {
     // 3. Migrar registros de FinOps
     if (payload.finopsRecords && Array.isArray(payload.finopsRecords)) {
       for (const rec of payload.finopsRecords) {
-        const finopsItem: FinOpsRecord = {
-          id: `finops-${rec.id || Math.random().toString(36).substring(2, 9)}`,
-          workspaceId,
-          timestamp: safeIsoDate(rec.timestamp),
-          userId: payload.userId,
-          action: rec.action || "gemini_generation",
-          tokensInput: rec.tokensInput || 0,
-          tokensOutput: rec.tokensOutput || 0,
-          cachedTokens: 0,
-          imageCount: rec.imageCount || 0,
-          latencyMs: 0,
-          estimatedCostEur: rec.estimatedCostEur || 0,
-          costStatus: "ESTIMATED",
-          currency: "EUR"
-        };
-        await this.finopsRepo.record(finopsItem);
-        syncedFinops++;
+        try {
+          const finopsItem: FinOpsRecord = {
+            id: `finops-${rec.id || Math.random().toString(36).substring(2, 9)}`,
+            workspaceId,
+            timestamp: safeIsoDate(rec.timestamp),
+            userId: payload.userId,
+            action: rec.action || "gemini_generation",
+            tokensInput: rec.tokensInput || 0,
+            tokensOutput: rec.tokensOutput || 0,
+            cachedTokens: 0,
+            imageCount: rec.imageCount || 0,
+            latencyMs: 0,
+            estimatedCostEur: rec.estimatedCostEur || 0,
+            costStatus: "ESTIMATED",
+            currency: "EUR"
+          };
+          await this.finopsRepo.record(finopsItem);
+          syncedFinops++;
+        } catch (finErr) {
+          console.warn("[PersistenceService] Error aislando registro FinOps:", finErr);
+        }
       }
     }
 

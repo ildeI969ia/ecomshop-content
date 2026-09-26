@@ -294,7 +294,7 @@ JSON Schema requerido:
   });
 
   const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error("[Generator] Timeout excedido en generación multicanal (25s)")), 25000)
+    setTimeout(() => reject(new Error("[Generator] Timeout excedido en generación multicanal (60s)")), 60000)
   );
 
   const response = await Promise.race([generatePromise, timeoutPromise]);
