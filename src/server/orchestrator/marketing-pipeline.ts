@@ -7,7 +7,8 @@ import {
   MarketingPackage,
   MarketingStepType,
   QualityReport,
-  QualityCheckItem
+  QualityCheckItem,
+  QualityCheckStatus
 } from "./marketing-types";
 import { IAgentProvider } from "./agent-provider";
 import { AgentExecutionManifest } from "./types";
@@ -397,14 +398,32 @@ Responde ÚNICAMENTE con un JSON válido con la siguiente estructura exacta:
       critical: true
     });
 
-    // 4. BRAND_CHECK / BRAND_COMPLIANCE
-    const mentionsBrand = fullText.toLowerCase().includes(product.brand.toLowerCase());
+    // 4. BRAND_CHECK / BRAND_COMPLIANCE & BRAND CONTAMINATION GATE
+    const knownBrands = ["EnGenius", "Ruckus", "Stonet", "Teltonika", "Ubiquiti", "Cisco", "MikroTik"];
+    const otherBrands = knownBrands.filter(b => b.toLowerCase() !== product.brand.toLowerCase());
+    const fullTextLower = fullText.toLowerCase();
+
+    let brandCheckStatus: QualityCheckStatus = "PASS";
+    let brandDetails = `Marca ${product.brand} mencionada y validada correctamente sin contaminación de terceros`;
+    const brandReasons: string[] = [];
+
+    const contaminatedBrand = otherBrands.find(b => fullTextLower.includes(b.toLowerCase()));
+    if (contaminatedBrand) {
+      brandCheckStatus = "BLOCKED";
+      brandDetails = `QUALITY_GATE_BLOCKED: BRAND_MIXING - Mención no permitida de marca ajena (${contaminatedBrand}) en producto de marca ${product.brand}`;
+      brandReasons.push(`BRAND_MIXING: Se detectaron menciones a ${contaminatedBrand} en el contenido generado para ${product.brand}`);
+    } else if (!fullTextLower.includes(product.brand.toLowerCase())) {
+      brandCheckStatus = "WARN";
+      brandDetails = `Mención de marca débil para ${product.brand}`;
+    }
+
     checks.push({
       name: "BRAND_CHECK",
-      status: mentionsBrand ? "PASS" : "WARN",
-      severity: "MEDIUM",
-      details: mentionsBrand ? `Marca ${product.brand} mencionada correctamente` : `Mención de marca débil`,
-      critical: false
+      status: brandCheckStatus,
+      severity: "CRITICAL",
+      details: brandDetails,
+      reasons: brandReasons.length > 0 ? brandReasons : undefined,
+      critical: true
     });
 
     // 5. SEO_CHECK / SEO

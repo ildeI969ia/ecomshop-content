@@ -58,77 +58,27 @@ export class ProductIntelligenceService {
   }
 
   private resolveCatalogItem(query: string): ProductEntity {
-    // 1. Búsqueda primaria en ECOMSHOP_CATALOG (máxima prioridad y fidelidad técnica)
+    // Búsqueda en ECOMSHOP_CATALOG (máxima prioridad y fidelidad técnica)
     const cat = findCatalogProduct(query);
-    if (cat) {
-      return {
-        id: cat.id,
-        sku: cat.sku,
-        brand: cat.brand,
-        model: cat.model,
-        title: cat.name,
-        category: cat.category,
-        description: cat.description,
-        url: cat.url,
-        stockStatus: cat.stockStatus,
-        standards: cat.standards,
-        ports: cat.interfaces,
-        poeBudgetWatts: cat.poeBudgetWatts,
-        managementType: `${cat.managementMode} unificada EnGenius Cloud (zero-licensing)`,
-        tags: ["networking", "b2b", cat.category, "official-catalog"],
-        updatedAt: new Date().toISOString()
-      };
+    if (!cat) {
+      throw new Error(`PRODUCT_NOT_FOUND: Producto no encontrado en catálogo para la consulta '${query}'`);
     }
 
-    // 2. Buscar en productos estrella
-    const star = STAR_PRODUCTS.find(p =>
-      p.model.toLowerCase().includes(query) ||
-      p.id.toLowerCase().includes(query) ||
-      p.name.toLowerCase().includes(query)
-    );
-
-    if (star) {
-      return {
-        id: star.id,
-        sku: star.model,
-        brand: "EnGenius",
-        model: star.model,
-        title: star.name,
-        category: star.category,
-        description: star.description,
-        url: star.url,
-        stockStatus: "IN_STOCK",
-        standards: star.specs,
-        ports: star.model === "ECW536" ? ["1x 10GbE PoE++ (802.3bt)", "1x 2.5GbE LAN"] :
-               star.model === "ECW526" || star.model === "ECW510" ? ["1x 2.5GbE PoE+ (802.3at)"] :
-               star.model === "ECS1528FP" ? ["24x GbE PoE+ (802.3at)", "4x 10G SFP+"] :
-               star.model === "ECS2512FP" ? ["8x 2.5GbE PoE++ (802.3bt)", "4x 10G SFP+"] :
-               star.model === "ESG510" || star.model === "ESG610" ? ["4x 2.5GbE RJ45 Multi-WAN/LAN"] :
-               ["1x GbE RJ45"],
-        poeBudgetWatts: star.model === "ECS1528FP" ? 410 :
-                        star.model === "ECS2512FP" ? 240 : undefined,
-        managementType: star.category === "engenius" || star.category === "wifi" || star.category === "gateways" ? "EnGenius Cloud / On-Premise" : "EnGenius Cloud",
-        tags: ["networking", "b2b", star.category],
-        updatedAt: new Date().toISOString()
-      };
-    }
-
-    // 3. Default dinámico para cualquier equipo de conectividad
     return {
-      id: `prod-${query.replace(/[^a-z0-9]/g, "-")}`,
-      sku: query.toUpperCase(),
-      brand: "EnGenius Networks",
-      model: query.toUpperCase(),
-      title: `Equipo de Networking Profesional ${query.toUpperCase()}`,
-      category: "switches",
-      description: `Solución corporativa de alta fiabilidad distribuida por EcomShop con stock 24h.`,
-      url: "https://www.ecomshop.es",
-      stockStatus: "IN_STOCK",
-      standards: ["IEEE 802.3at PoE+", "Gigabit Ethernet"],
-      ports: ["Puertos RJ45 Gigabit", "Slots SFP Uplink"],
-      poeBudgetWatts: 370,
-      managementType: "Cloud Managed / Standalone",
-      tags: ["b2b", "ecomshop"],
+      id: cat.id,
+      sku: cat.sku,
+      brand: cat.brand,
+      model: cat.model,
+      title: cat.name,
+      category: cat.category,
+      description: cat.description,
+      url: cat.url,
+      stockStatus: cat.stockStatus,
+      standards: cat.standards,
+      ports: cat.interfaces,
+      poeBudgetWatts: cat.poeBudgetWatts,
+      managementType: `${cat.managementMode} unificada ${cat.brand} Cloud (zero-licensing)`,
+      tags: ["networking", "b2b", cat.category, "official-catalog"],
       updatedAt: new Date().toISOString()
     };
   }
@@ -309,9 +259,9 @@ Responde estrictamente en JSON con la forma de ProductIntelligenceCard:
         standards: cat?.standards || (product.standards.length > 0 ? product.standards : ["IEEE 802.11be", "802.3bt PoE++"]),
         ports: cat?.interfaces || (product.ports.length > 0 ? product.ports : ["1x 10GbE RJ45", "1x 2.5GbE RJ45"]),
         powerRequirements: cat?.powerRequirements || (product.poeBudgetWatts ? `PoE Budget: ${product.poeBudgetWatts}W (802.3at/bt)` : "Alimentación PoE 802.3at/bt o adaptador DC"),
-        management: cat ? `${cat.managementMode} unificada en EnGenius Cloud con zero-licensing` : (product.managementType || "EnGenius Cloud con zero-touch provisioning"),
+        management: cat ? `${cat.managementMode} unificada ${cat.brand} Cloud con zero-licensing` : (product.managementType || `${product.brand} Cloud con zero-touch provisioning`),
         keyDifferentiators: cat?.keyAdvantages || [
-          "Sin costes ocultos de suscripción anual en gestión cloud",
+          `Sin costes ocultos de suscripción anual en gestión ${product.brand} cloud`,
           "Aprovisionamiento ultra-rápido mediante código QR",
           "Soporte preventa y sustitución avanzada de EcomShop en 24/48h"
         ]

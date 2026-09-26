@@ -1,5 +1,6 @@
 import { getGenAIClient, getActiveGeminiModel } from "@/lib/genai-client";
 import { NotebookGroundingService } from "@/lib/services/notebook-grounding";
+import { findCatalogProduct } from "@/lib/data/ecomshop-catalog";
 import {
   ArticleOutline,
   ArticleOutlineSchema,
@@ -20,9 +21,10 @@ export async function generateArticleOutline(
   vertical = "EMPRESAS_OFICINAS",
   apiKeyOverride?: string
 ): Promise<ArticleOutline> {
+  const catalogItem = findCatalogProduct(topicOrProduct);
   const notebookService = new NotebookGroundingService();
   const notebookData = await notebookService.queryNotebookContext(
-    `${topicOrProduct} ${vertical} EnGenius EcomShop`,
+    `${topicOrProduct} ${vertical} ${catalogItem?.brand || ""} EcomShop`,
     6
   );
 
@@ -36,11 +38,13 @@ Tu objetivo es diseñar un OUTLINE ESTRUCTURADO Y TÉCNICO para un artículo de 
 enfocado en resolver dudas críticas de obra, diseño de red y costes de infraestructura.
 
 TEMA / PRODUCTO: "${topicOrProduct}"
+MARCA DEL PRODUCTO: "${catalogItem?.brand || "EcomShop"}"
+MODELO DE PRODUCTO: "${catalogItem?.model || topicOrProduct}"
 AUDIENCIA OBJETIVO: "${targetAudience}"
 SECTOR / VERTICAL: "${vertical}"
 
 CONOCIMIENTO TÉCNICO OFICIAL VERIFICADO (NotebookLM notebooks/${MASTER_NOTEBOOK_ID}):
-${sourcesContext || "Catálogo de conectividad empresarial EnGenius Cloud, switches PoE++ Multi-Gigabit y enlaces 10G SFP+."}
+${sourcesContext || "Catálogo de conectividad empresarial EcomShop, switches PoE++ Multi-Gigabit y enlaces 10G SFP+."}
 
 DIRECTRICES ARQUITECTÓNICAS OBLIGATORIAS:
 1. RIGOR DE INGENIERÍA: Cero texto plano publicitario o introducciones vacías como "En la era digital". Estructura con H2s de fondo técnico (cuellos de botella 1GbE vs 2.5GbE, disipación y PoE budget, atenuación y roaming con MLO).
@@ -51,10 +55,8 @@ DIRECTRICES ARQUITECTÓNICAS OBLIGATORIAS:
    - 1 sección final con contentType: "FAQ" (preguntas técnicas frecuentes en obra).
    - El resto de secciones con contentType: "TEXT".
 3. POLÍTICA DE ENLACES INTERNOS:
-   - Para las secciones que traten sobre hardware específico (ej: APs Wi-Fi 7, switches PoE o transceptores), indica en 'suggestedProductLink' el SKU exacto (ej: ECW536, ECW526, ECS2512FP, ECS1528FP, ESG610, SFP-10G-SR).
-4. BLACKLIST DE HARDWARE HEREDADO:
-   - Prohibido terminantemente mencionar "Fit", "FitController" o controladores locales descatalogados.
-5. METADATOS:
+   - En la tabla comparativa, la primera columna debe identificarse obligatoriamente con "${catalogItem ? `${catalogItem.brand} ${catalogItem.model}` : topicOrProduct}".
+4. METADATOS:
    - slug limpio en formato kebab-case.
    - metaDescription de 140-155 caracteres con gancho para instaladores.
 
