@@ -45,84 +45,86 @@ export class GroundedWriterService {
     const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!req.apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT));
     const key = req.apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
+    let lastModelError: any = null;
+
     if (key || isVertex) {
-      try {
-        const { getGenAIClient, getActiveGeminiModel } = await import("@/lib/genai-client");
-        const ai = getGenAIClient(req.apiKey);
-        const activeModel = getActiveGeminiModel(req.apiKey);
+      const { getGenAIClient, getActiveGeminiModel } = await import("@/lib/genai-client");
+      const ai = getGenAIClient(req.apiKey);
+      const activeModel = getActiveGeminiModel(req.apiKey);
 
-        const prompt = this.buildPrompt(req, activeSources);
-        const systemInstruction = this.buildSystemInstruction(activeSources);
+      const prompt = this.buildPrompt(req, activeSources);
+      const systemInstruction = this.buildSystemInstruction(activeSources);
 
-        const candidateModels = [activeModel, process.env.GEMINI_MODEL || "gemini-2.0-flash", "gemini-1.5-flash"]
-          .filter((m, i, arr) => Boolean(m) && arr.indexOf(m) === i);
+      const candidateModels = [activeModel, process.env.GEMINI_MODEL || "gemini-2.0-flash", "gemini-1.5-flash"]
+        .filter((m, i, arr) => Boolean(m) && arr.indexOf(m) === i);
 
-        for (const modelToTry of candidateModels) {
-          try {
-            const generatePromise = ai.models.generateContent({
-              model: modelToTry,
-              contents: prompt,
-              config: {
-                systemInstruction,
-                responseMimeType: "application/json"
-              }
-            });
-
-            const timeoutPromise = new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout con modelo ${modelToTry}`)), 35000)
-            );
-
-            const res = await Promise.race([generatePromise, timeoutPromise]);
-            let rawText = (res as any).text || "{}";
-            rawText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
-
-            const parsed = JSON.parse(rawText);
-            const usageMetadata = (res as any).usageMetadata ? {
-              promptTokenCount: (res as any).usageMetadata.promptTokenCount,
-              candidatesTokenCount: (res as any).usageMetadata.candidatesTokenCount,
-              totalTokenCount: (res as any).usageMetadata.totalTokenCount
-            } : undefined;
-
-            const comparativeTableHtml = generateDynamicComparativeTableHtml(intel);
-            const geoObj = {
-              title: parsed.geo?.title || parsed.blog?.title || `${intel.brand} ${intel.model}: Despliegue B2B`,
-              metaDescription: parsed.geo?.metaDescription || parsed.blog?.metaDescription || `Análisis técnico de ${intel.brand} ${intel.model}.`,
-              htmlContent: parsed.geo?.htmlContent || parsed.blog?.htmlContent || "",
-              comparativeTableHtml: parsed.geo?.comparativeTableHtml || comparativeTableHtml,
-              jsonLd: parsed.geo?.jsonLd || JSON.stringify({
-                "@context": "https://schema.org",
-                "@type": "Product",
-                "name": `${intel.brand} ${intel.model}`,
-                "sku": intel.sku,
-                "brand": { "@type": "Brand", "name": intel.brand }
-              }, null, 2),
-              markdownContent: parsed.geo?.markdownContent || `# ${intel.brand} ${intel.model}\n\n${comparativeTableHtml}`
-            };
-
-            const validated = ContentOutputSchema.safeParse({
-              ...parsed,
-              geo: geoObj,
-              usageMetadata,
-              citations: { ...citations, ...(parsed.citations || {}) }
-            });
-
-            if (validated.success) {
-              return {
-                ...validated.data,
-                source: "ai",
-                status: "DRAFT"
-              };
+      for (const modelToTry of candidateModels) {
+        try {
+          const generatePromise = ai.models.generateContent({
+            model: modelToTry,
+            contents: prompt,
+            config: {
+              systemInstruction,
+              temperature: 0.7,
+              maxOutputTokens: 8192,
+              responseMimeType: "application/json"
             }
-          } catch (modelErr) {
-            console.warn(`[GroundedWriter] Fallo con ${modelToTry}, probando siguiente:`, modelErr);
+          });
+
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error(`Timeout con modelo ${modelToTry} en Vertex AI`)), 45000)
+          );
+
+          const res = await Promise.race([generatePromise, timeoutPromise]);
+          let rawText = (res as any).text || "{}";
+          rawText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+
+          const parsed = JSON.parse(rawText);
+          const usageMetadata = (res as any).usageMetadata ? {
+            promptTokenCount: (res as any).usageMetadata.promptTokenCount,
+            candidatesTokenCount: (res as any).usageMetadata.candidatesTokenCount,
+            totalTokenCount: (res as any).usageMetadata.totalTokenCount
+          } : undefined;
+
+          const comparativeTableHtml = generateDynamicComparativeTableHtml(intel);
+          const geoObj = {
+            title: parsed.geo?.title || parsed.blog?.title || `${intel.brand} ${intel.model}: Despliegue B2B`,
+            metaDescription: parsed.geo?.metaDescription || parsed.blog?.metaDescription || `Análisis técnico de ${intel.brand} ${intel.model}.`,
+            htmlContent: parsed.geo?.htmlContent || parsed.blog?.htmlContent || "",
+            comparativeTableHtml: parsed.geo?.comparativeTableHtml || comparativeTableHtml,
+            jsonLd: parsed.geo?.jsonLd || JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Product",
+              "name": `${intel.brand} ${intel.model}`,
+              "sku": intel.sku,
+              "brand": { "@type": "Brand", "name": intel.brand }
+            }, null, 2),
+            markdownContent: parsed.geo?.markdownContent || `# ${intel.brand} ${intel.model}\n\n${comparativeTableHtml}`
+          };
+
+          const validated = ContentOutputSchema.safeParse({
+            ...parsed,
+            geo: geoObj,
+            usageMetadata,
+            citations: { ...citations, ...(parsed.citations || {}) }
+          });
+
+          if (validated.success) {
+            return {
+              ...validated.data,
+              source: "ai",
+              status: "DRAFT"
+            };
           }
+        } catch (modelErr) {
+          lastModelError = modelErr;
+          console.error(`[GroundedWriter] Fallo con ${modelToTry} en Vertex AI:`, modelErr);
         }
-      } catch (err) {
-        console.warn("[GroundedWriter] Error con Gemini API, aplicando fallback de alta fidelidad técnica:", err);
       }
     }
 
-    return this.buildDeterministicGroundedContent(req, citations);
+    const errDetails = lastModelError?.message || lastModelError || "Vertex AI / Gemini client no pudo inicializarse o responder.";
+    throw new Error(`[GroundedWriter Error Transparente] Fallo directo en Vertex AI: ${errDetails}`);
   }
 
   private buildSystemInstruction(activeSources: typeof OFFICIAL_NOTEBOOK.sources): string {
@@ -134,18 +136,24 @@ export class GroundedWriterService {
 Eres el Director de Estrategia Técnica y Jefe de Ingeniería Preventa de ${ECOM_BRAND.name} (${ECOM_BRAND.description}).
 Tu misión es redactar artículos técnicos de blog y campañas multicanal B2B con RIGOR ABSOLUTO fundamentado en el cuaderno oficial de Google NotebookLM (ID: 6ae5b7bb-ab27-4541-80cc-6127730fd01b).
 
+🚨 PROHIBICIÓN ESTRICTA DE CONTAMINACIÓN DE MARCA E IDENTIDAD DE PRODUCTO:
+- El contenido DEBE hablar EXCLUSIVAMENTE de la marca y modelo del producto especificado en la solicitud.
+- Si el producto es de la marca "Tachyon" (ej. Tachyon TNB-600), habla ÚNICAMENTE de transceptores Tachyon y fibra. Si es "Stonet" (ej. Stonet ST3116G), habla ÚNICAMENTE de conmutación Stonet.
+- Queda TERMINANTEMENTE PROHIBIDO incluir marcas o modelos como "EnGenius", "ECW510", "ECW546" o switches "ECS5512FP" en títulos, textos, fragmentos HTML o tablas comparativas cuando el producto sea de otra marca.
+- En la tabla comparativa, la columna del producto evaluado DEBE llamarse estrictamente con la marca y modelo exactos del producto en cuestión.
+
 FUENTES ACTIVAS DE NOTEBOOKLM PARA CITAS OBLIGATORIAS:
 ${sourcesContext}
 
 🚨 REGLA ESTRICTA DE CITAS TÉCNICAS [src-X]:
-- Cada vez que menciones un dato técnico sensible (puertos de red, interfaces 2.5G/10G, alimentación PoE+/PoE++, modulación 4096-QAM, roaming 802.11k/v/r, MLO, TCO o garantía 24h), DEBES ACOMPAÑARLO OBLIGATORIAMENTE con la etiqueta de cita correspondiente entre corchetes: [src-X] (ejemplo: "puerto 2.5GbE PoE+ [src-0]", "switch Multi-Gigabit ECS2512FP [src-8]", "garantía de sustitución 24h [src-18]").
+- Cada vez que menciones un dato técnico sensible (puertos de red, interfaces 2.5G/10G, alimentación PoE+/PoE++, modulación 4096-QAM, roaming 802.11k/v/r, MLO, TCO o garantía 24h), DEBES ACOMPAÑARLO OBLIGATORIAMENTE con la etiqueta de cita correspondiente entre corchetes: [src-X] (ejemplo: "puerto 2.5GbE PoE+ [src-0]", "garantía de sustitución 24h [src-18]").
 - Esto permite al frontend renderizar tooltips interactivos con el párrafo original del datasheet.
 
 🚨 REGLA ESTRICTA DE PRECIOS B2B:
 - TOLERANCIA CERO A PRECIOS NUMÉRICOS INVENTADOS EN EUROS. Indicar siempre: "Consultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h".
 
 🚨 HARDWARE BLACKLIST:
-- Queda terminantemente PROHIBIDO mencionar gamas obsoletas o en desuso como "Fit" o "FitController". El estándar oficial es exclusivamente EnGenius Cloud o Standalone.
+- Queda terminantemente PROHIBIDO mencionar gamas obsoletas o en desuso como "Fit" o "FitController". El estándar oficial es exclusivamente Cloud o Standalone de la marca correspondiente.
 
 Debes responder SIEMPRE en formato JSON estricto cumpliendo la estructura ContentOutputSchema con el objeto "citations".
 `;

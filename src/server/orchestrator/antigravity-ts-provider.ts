@@ -71,7 +71,8 @@ export class AntigravityTsProvider implements IAgentProvider {
         contents: prompt,
         config: {
           systemInstruction,
-          temperature: 0.2,
+          temperature: 0.7,
+          maxOutputTokens: 8192,
           responseMimeType: "application/json"
         }
       });

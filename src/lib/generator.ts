@@ -36,39 +36,30 @@ export async function generateB2BContent(req: GenerateRequest & { apiKey?: strin
 
   // Integración prioritaria de GroundedWriterService con NotebookLM
   if (effectiveSourceIds && effectiveSourceIds.length > 0) {
-    try {
-      const { GroundedWriterService } = await import("./services/grounded-writer");
-      const { NotebookIntelligenceService } = await import("./services/notebook-intelligence");
-      const intelService = new NotebookIntelligenceService();
-      const intel = intelService.synthesizeProductIntelligence(productIdentifier, effectiveSourceIds);
-      const writer = new GroundedWriterService();
-      return await writer.generateGroundedContent({
-        sku: catalogDevice?.sku || intel.sku,
-        topicTitle: req.topicTitle || catalogDevice?.name || intel.model,
-        category: req.category,
-        productUrl: req.productUrl || catalogDevice?.productUrl,
-        targetAudience: req.targetAudience,
-        customNotes: req.customNotes,
-        editorialControls: req.editorialControls,
-        selectedSourceIds: effectiveSourceIds,
-        intel,
-        apiKey
-      });
-    } catch (groundedErr) {
-      console.warn("Fallo en GroundedWriterService, continuando con flujo estándar:", groundedErr);
-    }
+    const { GroundedWriterService } = await import("./services/grounded-writer");
+    const { NotebookIntelligenceService } = await import("./services/notebook-intelligence");
+    const intelService = new NotebookIntelligenceService();
+    const intel = intelService.synthesizeProductIntelligence(productIdentifier, effectiveSourceIds);
+    const writer = new GroundedWriterService();
+    return await writer.generateGroundedContent({
+      sku: catalogDevice?.sku || intel.sku,
+      topicTitle: req.topicTitle || catalogDevice?.name || intel.model,
+      category: req.category,
+      productUrl: req.productUrl || catalogDevice?.productUrl,
+      targetAudience: req.targetAudience,
+      customNotes: req.customNotes,
+      editorialControls: req.editorialControls,
+      selectedSourceIds: effectiveSourceIds,
+      intel,
+      apiKey
+    });
   }
 
   if (apiKey || isVertex) {
-    try {
-      return await generateWithGeminiAPI(req, apiKey, intelligenceCard, catalogDevice);
-    } catch (err) {
-      console.warn("Error calling Gemini API, falling back to deterministic high-quality B2B generator:", err);
-    }
+    return await generateWithGeminiAPI(req, apiKey, intelligenceCard, catalogDevice);
   }
 
-  // Fallback de alta fidelidad técnica (modo offline o sin API key inmediata)
-  return generateDeterministicFallback(req, intelligenceCard);
+  throw new Error("[Generator Error] Ni Vertex AI (ADC / GOOGLE_CLOUD_PROJECT) ni GEMINI_API_KEY están configuradas.");
 }
 
 async function generateWithGeminiAPI(

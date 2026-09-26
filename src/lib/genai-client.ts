@@ -33,7 +33,7 @@ const shouldUseVertex =
 export const aiClient = new GoogleGenAI(
   shouldUseVertex
     ? {
-        vertexai: true, // ← lowercase correcto según tipo ApiClientInitOptions del SDK
+        vertexai: true,
         project: process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || "ecomshop-marketing-prod",
         location: process.env.VERTEX_LOCATION || "us-central1",
       }
