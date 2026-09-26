@@ -40,8 +40,8 @@ export function getAdminFirestore(): Firestore {
     db = getFirestore(adminApp);
     try {
       db.settings({ ignoreUndefinedProperties: true });
-    } catch {
-      // Ignore if already set
+    } catch (e) {
+      // silenciar si ya estaba inicializado
     }
   }
   return db;

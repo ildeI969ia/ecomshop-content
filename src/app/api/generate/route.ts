@@ -177,9 +177,10 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
 
       const contentItem: ContentItem = {
         id: contentId,
+        campaignId: (inputData as any).campaignId || null,
         workspaceId: user.workspaceId,
-        title: content.blog.title || content.topicTitle,
-        slug: content.blog.slug || content.topicId,
+        title: content.blog?.title || content.topicTitle || "Contenido B2B",
+        slug: content.blog?.slug || content.topicId,
         category: content.category,
         status: "DRAFT",
         currentVersion: 1,
@@ -206,10 +207,10 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
 
       // Guardar variantes por canal
       const channels: Array<{ channel: "BLOG" | "MAILCHIMP" | "WHATSAPP" | "LINKEDIN"; payload: any; title?: string }> = [
-        { channel: "BLOG", payload: content.blog, title: content.blog.title },
-        { channel: "MAILCHIMP", payload: content.mailchimp, title: content.mailchimp.subjectA },
-        { channel: "WHATSAPP", payload: content.whatsapp, title: content.whatsapp.headline },
-        { channel: "LINKEDIN", payload: content.linkedin, title: content.linkedin.hook }
+        { channel: "BLOG", payload: content.blog, title: content.blog?.title },
+        { channel: "MAILCHIMP", payload: content.mailchimp, title: content.mailchimp?.subjectA },
+        { channel: "WHATSAPP", payload: content.whatsapp, title: content.whatsapp?.headline },
+        { channel: "LINKEDIN", payload: content.linkedin, title: content.linkedin?.hook }
       ];
 
       for (const ch of channels) {
@@ -218,7 +219,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
           contentId,
           channel: ch.channel,
           status: "DRAFT",
-          title: ch.title,
+          title: ch.title || content.blog?.title || content.topicTitle || "Variante " + ch.channel,
           bodyPayload: ch.payload,
           version: 1,
           isAIGenerated: true,

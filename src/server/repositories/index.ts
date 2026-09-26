@@ -43,6 +43,25 @@ export class CampaignRepository {
   }
 }
 
+function sanitizeUndefined<T>(obj: T): T {
+  if (obj === null || obj === undefined) return null as unknown as T;
+  if (typeof obj !== "object") return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeUndefined) as unknown as T;
+  }
+  const clean: any = {};
+  for (const [key, value] of Object.entries(obj as any)) {
+    if (value === undefined) {
+      clean[key] = null;
+    } else if (value !== null && typeof value === "object") {
+      clean[key] = sanitizeUndefined(value);
+    } else {
+      clean[key] = value;
+    }
+  }
+  return clean;
+}
+
 export class ContentRepository {
   private collection = () => getAdminFirestore().collection("contents");
 
@@ -98,7 +117,8 @@ export class ContentRepository {
     }
   }
 
-  async upsertBySlug(content: ContentItem): Promise<ContentItem> {
+  async upsertBySlug(rawContent: ContentItem): Promise<ContentItem> {
+    const content = sanitizeUndefined(rawContent);
     const existing = await this.findBySlug(content.slug, content.workspaceId);
     let nowIso = new Date().toISOString();
 
@@ -128,7 +148,7 @@ export class ContentRepository {
         return v;
       });
 
-      const mergedItem: ContentItem = {
+      const mergedItem: ContentItem = sanitizeUndefined({
         ...existing,
         ...content,
         id: existing.id, // Mantener ID único existente para evitar duplicados
@@ -136,14 +156,14 @@ export class ContentRepository {
         versions: updatedVersions,
         updatedAt: nowIso,
         updatedBy: content.updatedBy || existing.updatedBy
-      };
+      });
 
       // Limpieza preventiva de base64 si el objeto supera 900KB
       let finalItem = mergedItem;
       let serialized = JSON.stringify(finalItem);
       if (serialized.length > 900000) {
         const cleanedStr = serialized.replace(/data:image\/[a-zA-Z0-9+.-]+;base64,[a-zA-Z0-9+/=]+/g, "https://storage.googleapis.com/ecomshop-marketing-prod/assets/pruned-base64-image.jpg");
-        finalItem = JSON.parse(cleanedStr);
+        finalItem = sanitizeUndefined(JSON.parse(cleanedStr));
         serialized = JSON.stringify(finalItem);
       }
 
@@ -155,11 +175,11 @@ export class ContentRepository {
       await this.collection().doc(existing.id).set(finalItem, { merge: true });
       return finalItem;
     } else {
-      let finalItem = content;
+      let finalItem = sanitizeUndefined(content);
       let serialized = JSON.stringify(finalItem);
       if (serialized.length > 900000) {
         const cleanedStr = serialized.replace(/data:image\/[a-zA-Z0-9+.-]+;base64,[a-zA-Z0-9+/=]+/g, "https://storage.googleapis.com/ecomshop-marketing-prod/assets/pruned-base64-image.jpg");
-        finalItem = JSON.parse(cleanedStr);
+        finalItem = sanitizeUndefined(JSON.parse(cleanedStr));
         serialized = JSON.stringify(finalItem);
       }
 
@@ -178,10 +198,10 @@ export class ContentRepository {
   }
 
   async update(id: string, updates: Partial<ContentItem>): Promise<void> {
-    await this.collection().doc(id).update({
+    await this.collection().doc(id).update(sanitizeUndefined({
       ...updates,
       updatedAt: new Date().toISOString()
-    });
+    }));
   }
 
   async updateStatus(id: string, status: ContentItem["status"]): Promise<void> {
@@ -192,11 +212,12 @@ export class ContentRepository {
   }
 
   async saveVariant(contentId: string, variant: ContentVariant): Promise<void> {
+    const cleanVariant = sanitizeUndefined(variant);
     await this.collection()
       .doc(contentId)
       .collection("variants")
-      .doc(variant.id)
-      .set(variant);
+      .doc(cleanVariant.id)
+      .set(cleanVariant);
   }
 
   async delete(id: string): Promise<void> {
