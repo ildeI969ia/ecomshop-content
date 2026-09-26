@@ -23,9 +23,20 @@ export const GET = withAuthAndPermission("finops:view", async (req: NextRequest)
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ??
     "ecomshop-marketing-prod";
 
-  const snapshot = await fetchCloudBillingSnapshot(projectId);
-
-  cachedSnapshot = { data: snapshot, at: Date.now() };
-
-  return NextResponse.json({ ...snapshot, cached: false });
+  try {
+    const snapshot = await fetchCloudBillingSnapshot(projectId);
+    cachedSnapshot = { data: snapshot, at: Date.now() };
+    return NextResponse.json({ ...snapshot, cached: false });
+  } catch (err: any) {
+    console.error("[api/finops/cloud-costs] Error obteniendo facturación oficial de GCP:", err);
+    return NextResponse.json(
+      {
+        status: "DATA_UNAVAILABLE",
+        code: "BILLING_DATA_UNAVAILABLE",
+        error: `Facturación oficial de GCP no disponible: ${err?.message || err}`,
+        projectId,
+      },
+      { status: 503 }
+    );
+  }
 });

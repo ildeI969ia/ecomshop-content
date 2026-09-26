@@ -118,6 +118,46 @@ export class AntigravityTsProvider implements IAgentProvider {
         throw new Error("EMPTY_AI_RESPONSE: El modelo de IA devolvió una respuesta vacía");
       }
 
+      // Extraer metadatos de consumo reales de Vertex AI / Gemini
+      const rawMeta = response.usageMetadata || {};
+      const usageMetadata = {
+        promptTokenCount: typeof rawMeta.promptTokenCount === "number" ? rawMeta.promptTokenCount : null,
+        candidatesTokenCount: typeof rawMeta.candidatesTokenCount === "number" ? rawMeta.candidatesTokenCount : null,
+        totalTokenCount: typeof rawMeta.totalTokenCount === "number" ? rawMeta.totalTokenCount : null,
+        thoughtsTokenCount: typeof rawMeta.thoughtsTokenCount === "number" ? rawMeta.thoughtsTokenCount : (typeof rawMeta.candidatesTokensDetails?.[0]?.tokens === "number" ? rawMeta.candidatesTokensDetails[0].tokens : null),
+        cachedContentTokenCount: typeof rawMeta.cachedContentTokenCount === "number" ? rawMeta.cachedContentTokenCount : null,
+      };
+
+      // Registrar evento de consumo FinOps en ai_usage / ai_usage_project_summary
+      try {
+        const { recordAiUsage } = await import("@/server/services/ai-budget");
+        const projectId = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || "ecomshop-marketing-prod";
+        const workspaceId = (manifest.payload as any)?.workspaceId || "default-ecomspain";
+        const sku = (manifest.payload as any)?.sku || "UNKNOWN_SKU";
+
+        await recordAiUsage(
+          "system-orchestrator",
+          "gemini_generation",
+          usageMetadata.promptTokenCount ?? 0,
+          usageMetadata.candidatesTokenCount ?? 0,
+          0,
+          { email: "orchestrator@ecomspain.com", displayName: "Antigravity Orchestrator" },
+          usedModel,
+          {
+            projectId,
+            workspaceId,
+            runId: manifest.runId,
+            taskId,
+            sku,
+            actualModel: usedModel,
+            fallbackUsed,
+            usageMetadata
+          }
+        );
+      } catch (finopsErr) {
+        console.warn("[AntigravityTsProvider] Evento FinOps no pudo registrarse:", finopsErr);
+      }
+
       return {
         taskId,
         exitCode: 0,
@@ -127,7 +167,8 @@ export class AntigravityTsProvider implements IAgentProvider {
         filesChanged: manifest.filesAllowed.length > 0 ? [manifest.filesAllowed[0]] : [],
         summary: `Agente TypeScript completó exitosamente la tarea ${taskId}`,
         actualModel: usedModel,
-        fallbackUsed
+        fallbackUsed,
+        usageMetadata
       };
     } catch (err: any) {
       let errorMessage = err?.message || String(err);

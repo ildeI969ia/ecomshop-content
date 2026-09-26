@@ -159,6 +159,13 @@ export interface AgentExecutionResult {
   summary?: string;
   actualModel?: string;
   fallbackUsed?: boolean;
+  usageMetadata?: {
+    promptTokenCount?: number | null;
+    candidatesTokenCount?: number | null;
+    totalTokenCount?: number | null;
+    thoughtsTokenCount?: number | null;
+    cachedContentTokenCount?: number | null;
+  };
 }
 
 export type OrchestrationEventType =

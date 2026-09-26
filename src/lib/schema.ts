@@ -162,6 +162,8 @@ export const GenerateRequestSchema = z.object({
   sku: z.string().optional().default(""),
   productName: z.string().optional().default(""),
   bundleSku: z.string().optional().default(""),
+  topic: z.string().optional().default(""),
+  editorialThesis: z.string().optional().default(""),
   topicTitle: z.string().optional().default("Solución de Conectividad B2B"),
   category: z.string().optional().default("general"),
   customNotes: z.string().optional().default(""),
