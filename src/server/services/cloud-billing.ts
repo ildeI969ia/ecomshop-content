@@ -106,14 +106,17 @@ async function getAccessToken(): Promise<string> {
     }
   }
 
-  // Fallback: Google Metadata Server (Cloud Run nativo)
-  const metaRes = await fetch(
-    "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
-    { headers: { "Metadata-Flavor": "Google" }, signal: AbortSignal.timeout(2000) }
-  );
-  if (!metaRes.ok) throw new Error("No se pudo obtener token desde Metadata Server");
-  const meta = await metaRes.json() as { access_token: string };
-  return meta.access_token;
+  try {
+    const metaRes = await fetch(
+      "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
+      { headers: { "Metadata-Flavor": "Google" }, signal: AbortSignal.timeout(2000) }
+    );
+    if (!metaRes.ok) throw new Error("No se pudo obtener token desde Metadata Server");
+    const meta = await metaRes.json() as { access_token: string };
+    return meta.access_token;
+  } catch (err: any) {
+    throw new Error(`BILLING_DATA_UNAVAILABLE: No se pudo obtener credenciales de autenticación para Cloud Billing: ${err?.message || err}`);
+  }
 }
 
 /** Obtiene el Billing Account vinculado al proyecto */
@@ -223,35 +226,34 @@ export async function fetchCloudBillingSnapshot(
     period: { start: periodStart, end: periodEnd },
     services: [],
     totalEur: 0,
-    source: "fallback_estimation",
+    source: "google_cloud_billing_api",
     fetchedAt: now.toISOString(),
   };
 
-  try {
-    const token = await getAccessToken();
+  const token = await getAccessToken();
 
-    // 1. Obtener Billing Account
-    const billingAccountId = await getBillingAccountId(projectId, token);
-    base.billingAccountId = billingAccountId;
+  // 1. Obtener Billing Account
+  const billingAccountId = await getBillingAccountId(projectId, token);
+  base.billingAccountId = billingAccountId;
 
-    // 2. Intentar costes reales desde Cloud Monitoring
-    const services = await fetchCostsFromMonitoring(projectId, token, periodStart, periodEnd);
+  // 2. Intentar costes reales desde Cloud Monitoring
+  const services = await fetchCostsFromMonitoring(projectId, token, periodStart, periodEnd);
 
-    if (services.length > 0) {
-      const totalEur = services.reduce((s, c) => s + c.costEur, 0);
-      return {
-        ...base,
-        services,
-        totalEur: Math.round(totalEur * 1_000_000) / 1_000_000,
-        source: "google_cloud_monitoring",
-      };
-    }
+  if (services.length > 0) {
+    const totalEur = services.reduce((s, c) => s + c.costEur, 0);
+    return {
+      ...base,
+      services,
+      totalEur: Math.round(totalEur * 1_000_000) / 1_000_000,
+      source: "google_cloud_monitoring",
+    };
+  }
 
-    // 3. Fallback: servicios conocidos con 0€ (capa gratuita confirmada)
+  if (billingAccountId) {
     return {
       ...base,
       billingAccountId,
-      source: billingAccountId ? "google_cloud_billing_api" : "fallback_estimation",
+      source: "google_cloud_billing_api",
       services: [
         { service: "Cloud Run",       displayName: "Cloud Run",           costEur: 0, currency: "EUR" },
         { service: "Cloud Firestore", displayName: "Firebase Firestore",  costEur: 0, currency: "EUR" },
@@ -260,17 +262,7 @@ export async function fetchCloudBillingSnapshot(
       ],
       totalEur: 0,
     };
-
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("[cloud-billing] fetchCloudBillingSnapshot error:", msg);
-    return {
-      ...base,
-      error: msg,
-      services: [
-        { service: "Cloud Run",       displayName: "Cloud Run",           costEur: 0, currency: "EUR" },
-        { service: "Cloud Firestore", displayName: "Firebase Firestore",  costEur: 0, currency: "EUR" },
-      ],
-    };
   }
+
+  throw new Error(`BILLING_DATA_UNAVAILABLE: No se pudo verificar la API de Google Cloud Billing ni la cuenta de facturación vinculada al proyecto '${projectId}'.`);
 }

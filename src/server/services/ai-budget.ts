@@ -55,6 +55,28 @@ function getMadridYearMonth(date = new Date()): string {
  * y actualiza en ai_usage_summary/{AAAA-MM} el acumulador mensual global.
  * Actualización transaccional con FieldValue.increment para totalEur y requests.
  */
+export interface UsageExtraOptions {
+  projectId?: string;
+  workspaceId?: string;
+  runId?: string;
+  taskId?: string;
+  sku?: string;
+  actualModel?: string;
+  fallbackUsed?: boolean;
+  usageMetadata?: {
+    promptTokenCount?: number | null;
+    candidatesTokenCount?: number | null;
+    totalTokenCount?: number | null;
+    thoughtsTokenCount?: number | null;
+    cachedContentTokenCount?: number | null;
+  };
+}
+
+/**
+ * Acumula el uso de IA en Firestore: ai_usage/{uid}/months/{AAAA-MM} (hora de Madrid),
+ * actualiza en ai_usage_summary/{AAAA-MM} el acumulador mensual global,
+ * y en ai_usage_project_summary/{projectId} el acumulador global del proyecto GCP.
+ */
 export async function recordAiUsage(
   uid: string,
   action: string,
@@ -62,12 +84,17 @@ export async function recordAiUsage(
   tokensOut: number,
   imageCount = 0,
   userInfo?: { email?: string; displayName?: string },
-  modelName = AI_TEXT_MODEL
+  modelName = AI_TEXT_MODEL,
+  extraOptions?: UsageExtraOptions
 ): Promise<void> {
   const db = getAdminFirestore();
   const yearMonth = getMadridYearMonth();
+  const projectId = extraOptions?.projectId || process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || "ecomshop-marketing-prod";
+  const nowIso = new Date().toISOString();
+
   const docRef = db.collection("ai_usage").doc(uid).collection("months").doc(yearMonth);
   const globalSummaryRef = db.collection("ai_usage_summary").doc(yearMonth);
+  const projectSummaryRef = db.collection("ai_usage_project_summary").doc(projectId);
 
   const estimatedCostEur = calculateUsageCost({
     action: action as any,
@@ -80,26 +107,33 @@ export async function recordAiUsage(
   const displayName = userInfo?.displayName || userInfo?.email?.split("@")[0] || uid;
   const sanitizedModelKey = modelName.replace(/[^a-zA-Z0-9_-]/g, "_");
 
+  const meta = extraOptions?.usageMetadata;
+  const thoughtsTokens = meta?.thoughtsTokenCount ?? 0;
+  const cachedTokens = meta?.cachedContentTokenCount ?? 0;
+  const totalTokens = meta?.totalTokenCount ?? (tokensIn + tokensOut);
+
   await db.runTransaction(async (transaction) => {
-    // 1. Actualización por usuario
+    // 1. Actualización por usuario (ai_usage/{uid}/months/{YYYY-MM})
     const doc = await transaction.get(docRef);
     if (!doc.exists) {
       transaction.set(docRef, {
         totalEur: estimatedCostEur,
+        estimatedCostEur,
         requests: 1,
         tokensIn: tokensIn,
         tokensOut: tokensOut,
         imageCount: imageCount,
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: nowIso,
       });
     } else {
       transaction.update(docRef, {
         totalEur: FieldValue.increment(estimatedCostEur),
+        estimatedCostEur: FieldValue.increment(estimatedCostEur),
         requests: FieldValue.increment(1),
         tokensIn: FieldValue.increment(tokensIn),
         tokensOut: FieldValue.increment(tokensOut),
         imageCount: FieldValue.increment(imageCount),
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: nowIso,
       });
     }
 
@@ -109,6 +143,7 @@ export async function recordAiUsage(
       transaction.set(globalSummaryRef, {
         month: yearMonth,
         totalCostEur: estimatedCostEur,
+        estimatedCostEur,
         totalInputTokens: tokensIn,
         totalOutputTokens: tokensOut,
         totalImageGenerations: imageCount,
@@ -117,30 +152,63 @@ export async function recordAiUsage(
             email,
             displayName,
             costEur: estimatedCostEur,
+            estimatedCostEur,
             operationsCount: 1,
           },
         },
         byModel: {
           [sanitizedModelKey]: {
             costEur: estimatedCostEur,
+            estimatedCostEur,
             calls: 1,
           },
         },
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: nowIso,
       });
     } else {
       transaction.update(globalSummaryRef, {
         totalCostEur: FieldValue.increment(estimatedCostEur),
+        estimatedCostEur: FieldValue.increment(estimatedCostEur),
         totalInputTokens: FieldValue.increment(tokensIn),
         totalOutputTokens: FieldValue.increment(tokensOut),
         totalImageGenerations: FieldValue.increment(imageCount),
         [`byUser.${uid}.email`]: email,
         [`byUser.${uid}.displayName`]: displayName,
         [`byUser.${uid}.costEur`]: FieldValue.increment(estimatedCostEur),
+        [`byUser.${uid}.estimatedCostEur`]: FieldValue.increment(estimatedCostEur),
         [`byUser.${uid}.operationsCount`]: FieldValue.increment(1),
         [`byModel.${sanitizedModelKey}.costEur`]: FieldValue.increment(estimatedCostEur),
+        [`byModel.${sanitizedModelKey}.estimatedCostEur`]: FieldValue.increment(estimatedCostEur),
         [`byModel.${sanitizedModelKey}.calls`]: FieldValue.increment(1),
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: nowIso,
+      });
+    }
+
+    // 3. Acumulador Global Persistente del Proyecto GCP (ai_usage_project_summary/{projectId})
+    const projDoc = await transaction.get(projectSummaryRef);
+    if (!projDoc.exists) {
+      transaction.set(projectSummaryRef, {
+        projectId,
+        totalRequests: 1,
+        totalInputTokens: tokensIn,
+        totalOutputTokens: tokensOut,
+        totalThoughtsTokens: thoughtsTokens,
+        totalCachedTokens: cachedTokens,
+        totalTokens: totalTokens,
+        estimatedAiCostEur: estimatedCostEur,
+        firstUsageAt: nowIso,
+        lastUsageAt: nowIso,
+      });
+    } else {
+      transaction.update(projectSummaryRef, {
+        totalRequests: FieldValue.increment(1),
+        totalInputTokens: FieldValue.increment(tokensIn),
+        totalOutputTokens: FieldValue.increment(tokensOut),
+        totalThoughtsTokens: FieldValue.increment(thoughtsTokens),
+        totalCachedTokens: FieldValue.increment(cachedTokens),
+        totalTokens: FieldValue.increment(totalTokens),
+        estimatedAiCostEur: FieldValue.increment(estimatedCostEur),
+        lastUsageAt: nowIso,
       });
     }
   });

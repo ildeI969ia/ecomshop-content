@@ -57,7 +57,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
 
     // 1. Fase de Extracción o Enriquecimiento con ECOMSHOP_CATALOG
     let intelligenceCard: ProductIntelligenceCard | null = null;
-    let effectiveTitle = inputData.topicTitle;
+    let effectiveTitle = inputData.topicTitle || inputData.topic || inputData.editorialThesis || "Solución de Conectividad B2B";
     let effectiveCategory = inputData.category;
     let productUrl = inputData.productUrl;
 
