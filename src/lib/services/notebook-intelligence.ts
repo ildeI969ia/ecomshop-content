@@ -658,8 +658,8 @@ export class NotebookIntelligenceService {
         standards = ["IEEE 802.3ae 10GBASE-SR", "SFF-8431 SFP+", "Fibra OM4 50/125µm"];
         ports = ["2x Transceptores SFP+ 10G (LC Dúplex)", "Latiguillo OM4 Dúplex"];
         powerReq = "Alimentación por puerto SFP+ (<1W por módulo)";
-        switchSku = "ECS1528FP";
-        switchName = "Switch EnGenius Cloud PoE+ 24 Puertos con 4x 10G SFP+";
+        switchSku = cleanSku;
+        switchName = "Kit Transceptores 10G SFP+ & Latiguillos OM4";
         switchReason = "Troncal 10G de fibra óptica entre armarios sin pérdidas de paquetes.";
         naturalSector = "LOGISTICS_INDUSTRY";
         naturalAudience = "Instaladores Telecomunicaciones y Cableado Estructurado";

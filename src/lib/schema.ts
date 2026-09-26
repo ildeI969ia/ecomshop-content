@@ -1,11 +1,34 @@
 import { z } from "zod";
 
+export const EditorialThesisSchema = z.object({
+  problem: z.string(),
+  targetProfessional: z.string(),
+  businessContext: z.string(),
+  technicalQuestion: z.string(),
+  whyItMatters: z.string(),
+  centralArgument: z.string(),
+  solutionApproach: z.string(),
+  productRole: z.string()
+});
+export type EditorialThesis = z.infer<typeof EditorialThesisSchema>;
+
+export const SectionOutlineItemSchema = z.object({
+  section: z.string(),
+  purpose: z.string(),
+  argument: z.string()
+});
+export type SectionOutlineItem = z.infer<typeof SectionOutlineItemSchema>;
+
 export const ContentOutputSchema = z.object({
   topicId: z.string(),
   topicTitle: z.string(),
   category: z.string(),
   generatedAt: z.string(),
-  
+
+  // Tesis Editorial y Outline Mandato 2
+  editorialThesis: EditorialThesisSchema.optional(),
+  outline: z.array(SectionOutlineItemSchema).optional(),
+
   // Blog Post (Listo para Durable)
   blog: z.object({
     title: z.string(),

@@ -1,0 +1,284 @@
+{
+  "topicId": "grounded-st3116g-1790440665719",
+  "topicTitle": "Switch de Conmutación B2B Stonet ST3116G",
+  "category": "switches",
+  "generatedAt": "2026-09-26T16:37:45.719Z",
+  "editorialThesis": {
+    "problem": "El estrangulamiento del tráfico de red corporativo por switches de acceso no gestionados o con presupuestos PoE insuficientes para dispositivos de alta potencia.",
+    "targetProfessional": "Jefe de Compras / TCO",
+    "businessContext": "Instalación de flotas de puntos de acceso, cámaras IP y telefonía VoIP que demandan alimentación continua sin paradas de servicio.",
+    "technicalQuestion": "¿Cómo asegurar una conmutación robusta con VLANs 802.1Q y presupuestos PoE holgados sin asumir cuotas anuales de software?",
+    "whyItMatters": "Un switch de baja calidad colapsa la red troncal y genera caídas aleatorias por exceso de potencia requerida.",
+    "centralArgument": "La conmutación gestionable con PoE disipada garantizada y uplinks 10G SFP+ permite absorver picos de datos manteniendo la red dividida por VLANs.",
+    "solutionApproach": "Dimensionar el switch evaluando el PoE budget total y la capacidad de conmutación sin bloqueo.",
+    "productRole": "El switch Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++ [src-8] proporciona la electrónica de acceso ideal con gestión transparente."
+  },
+  "outline": [
+    {
+      "section": "Desafío de Conmutación",
+      "purpose": "Evaluar cuellos de botella en puertos de acceso",
+      "argument": "Las redes modernas exigen alta capacidad por puerto y VLANs."
+    },
+    {
+      "section": "Presupuesto PoE y Eficiencia",
+      "purpose": "Analizar el consumo de potencia total",
+      "argument": "Garantizar potencia 802.3at/bt en todos los puertos activos."
+    },
+    {
+      "section": "Topología de Acceso",
+      "purpose": "Uplinks troncales de alta velocidad",
+      "argument": "Integración con enlaces 10G SFP+ hacia el núcleo."
+    },
+    {
+      "section": "Solución de Conmutación",
+      "purpose": "Características del Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++",
+      "argument": "Gestionabilidad Cloud/Standalone a coste competitivo."
+    },
+    {
+      "section": "Garantía B2B",
+      "purpose": "Sustitución y entrega 24h",
+      "argument": "Respaldo de almacén nacional en España."
+    }
+  ],
+  "source": "fallback",
+  "generator": "mandato2-grounded-fallback",
+  "fallbackUsed": true,
+  "status": "DRAFT",
+  "blog": {
+    "title": "Ingeniería de Conmutación B2B: Criterios de Selección de Switches PoE, Arquitectura de Red y TCO con Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++",
+    "metaDescription": "Análisis de capacidad de conmutación, presupuesto PoE, arquitectura de red, escalabilidad, TCO a 3-5 años y continuidad con el switch Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++.",
+    "slug": "st3116g-analisis-tecnico-b2b",
+    "readingTimeMinutes": 6,
+    "targetKeywords": [
+      "ST3116G",
+      "Jefe de Compras / TCO",
+      "Stonet",
+      "Networking B2B"
+    ],
+    "htmlContent": "\n<article class=\"ecomshop-b2b-post\">\n  <p class=\"lead\" style=\"font-size:16px;line-height:1.7;color:#334155;\">\n    En la infraestructura de comunicaciones corporativa, el switch de acceso actúa como la columna vertebral que interconecta todos los puntos finales de red. Seleccionar electrónica sin soporte VLAN o con presupuestos PoE ajustados provoca cuellos de botella e interrupciones en los servicios de datos y telefonía, afectando la arquitectura de red, la seguridad, la gestión, la escalabilidad, el TCO y la continuidad del negocio [src-8].\n  </p>\n\n  <h2 style=\"color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;\">1. Dimensionamiento del Presupuesto PoE, Coste y Balance Térmico en Obra</h2>\n  <p style=\"color:#334155;font-size:15px;line-height:1.7;\">\n    Los dispositivos de última generación demandan entre 15.4W y 30W por puerto en despliegues reales. Es imprescindible auditar la potencia PoE total que la fuente del switch es capaz de disipar simultáneamente sin entrar en sobrecalentamiento ni activar protecciones por bajo voltaje. Evaluar el coste total, el ciclo de vida del hardware, la disponibilidad en stock nacional, el riesgo de licencias obligatorias, la tarifa distribuidor y el aprovisionamiento previene paradas en la instalación.\n  </p>\n\n  <h2 style=\"color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;\">2. Segmentación de Tráfico por VLANs 802.1Q, Canal y Oportunidad B2B</h2>\n  <p style=\"color:#334155;font-size:15px;line-height:1.7;\">\n    Separar el tráfico de la red corporativa, videovigilancia e invitados mediante VLANs previene las tormentas de broadcast y garantiza la seguridad de la infraestructura. Para distribuidores e integradores, la alta demanda de conmutación profesional representa una oportunidad de canal con alta rotación y venta cruzada con electrónica prescrita. Además, disponer de interfaces de agregación 10G SFP+ asegura que el flujo de datos no se sature al conectar la capa de acceso con el core central.\n  </p>\n\n  <h2 style=\"color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;\">3. Aplicación de la Solución: El Caso del Switch Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++ (ST3116G)</h2>\n  <p style=\"color:#334155;font-size:15px;line-height:1.7;\">\n    El switch <strong>Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++</strong> [src-8] (SKU: ST3116G) destaca por ofrecer densidad de puertos de alta velocidad y un chasis metálico robusto para montaje en armario rack de 19 pulgadas, con gestión unificada y 0€ en cuotas de suscripción de software de por vida, facilitando el mantenimiento preventivo y reduciendo segundas visitas a obra.\n  </p>\n\n  <div class=\"cta-placement-box\" style=\"background:#f8fafc;border:1px solid #bae6fd;border-left:5px solid #0284c7;border-radius:8px;padding:18px;margin:28px 0;\">\n    <h4 style=\"margin:0 0 6px 0;color:#0369a1;font-size:15px;\">🎯 CONDICIONES B2B Y TARIFA DISTRIBUIDOR:</h4>\n    <p style=\"margin:0 0 12px 0;color:#334155;font-size:13px;\">Consultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h.</p>\n    <a href=\"https://www.ecomshop.es\" target=\"_blank\" style=\"display:inline-block;background:#0284c7;color:#fff;font-size:13px;font-weight:bold;padding:10px 20px;border-radius:6px;text-decoration:none;\">Consultar Tarifa Distribuidor &rarr;</a>\n  </div>\n</article>\n",
+    "cleanPlainTextExcerpt": "\n \n   \n    En la infraestructura de comunicaciones corporativa, el switch de acceso actúa como la columna vertebral que interconecta todos los puntos finales de red. Seleccionar electrónica sin soporte VLAN o con presupuestos PoE ajustados provoca cu...",
+    "editorialLayout": {
+      "targetProfiles": [
+        {
+          "profile": "Jefe de Compras / TCO",
+          "keyTakeaway": "La conmutación gestionable con PoE disipada garantizada y uplinks 10G SFP+ permite absorver picos de datos manteniendo la red dividida por VLANs."
+        }
+      ],
+      "photoPlacements": [
+        {
+          "id": "photo-1",
+          "placementAfterHeading": "1. El Desafío Técnico",
+          "photoType": "Fotografía macro de interfaces de red",
+          "description": "Detalle del puerto 8x 10G Base-T RJ45 PoE++ (420W)",
+          "imagen3Prompt": "Studio tech photography of Stonet Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++ network hardware, pristine enclosure, 8k resolution"
+        }
+      ]
+    }
+  },
+  "mailchimp": {
+    "subjectA": "⚡ Solución B2B para Jefe de Compras / TCO: Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++",
+    "subjectB": "Análisis de arquitectura con Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++",
+    "previewText": "Descubre la solución técnica para Jefe de Compras / TCO con stock inmediato en 24h.",
+    "ctaButtonText": "Consultar Tarifa Mayorista B2B",
+    "ctaUrl": "https://www.ecomshop.es/st3116g",
+    "newsletterHtml": "<div style=\"font-family:sans-serif;color:#1e293b;max-width:600px;margin:0 auto;\"><h2 style=\"color:#0f172a;\">Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++</h2><p>El estrangulamiento del tráfico de red corporativo por switches de acceso no gestionados o con presupuestos PoE insuficientes para dispositivos de alta potencia.</p><p style=\"background:#f1f5f9;padding:12px;border-radius:6px;font-size:13px;\">Consultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h.</p></div>",
+    "plainText": "Ingeniería de Conmutación B2B: Criterios de Selección de Switches PoE, Arquitectura de Red y TCO con Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++\n\nEl estrangulamiento del tráfico de red corporativo por switches de acceso no gestionados o con presupuestos PoE insuficientes para dispositivos de alta potencia.\n\nConsultar tarifa distribuidor en ecomshop.es con entrega 24/48h."
+  },
+  "whatsapp": {
+    "headline": "🚀 *Solución B2B | Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++*",
+    "formattedMessage": "Hola 👋\n\nAnalizamos la respuesta técnica para *Jefe de Compras / TCO* con el *Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++*:\n\n• *Problema:* El estrangulamiento del tráfico de red corporativo por switches de acceso no gestionados o con presupuestos PoE insuficientes para dispositivos de alta potencia.\n• *Respuesta de Ingeniería:* La conmutación gestionable con PoE disipada garantizada y uplinks 10G SFP+ permite absorver picos de datos manteniendo la red dividida por VLANs.\n• *Garantía:* Sustitución en 24h por EcomSpain\n\nTarifa profesional y condiciones por volumen disponibles en ecomshop.es.",
+    "callToAction": "Consultar Tarifa Distribuidor",
+    "targetUrl": "https://www.ecomshop.es/st3116g"
+  },
+  "linkedin": {
+    "hook": "¿Cómo resolver el reto de el estrangulamiento del tráfico de red corporativo por switches de acceso no gestionados o con presupuestos poe insuficientes para dispositivos de alta potencia. en instalaciones profesionales?",
+    "body": "En despliegues de networking B2B, el planteamiento de ingeniería debe priorizar la estabilidad física y el TCO a largo plazo.\n\nLa conmutación gestionable con PoE disipada garantizada y uplinks 10G SFP+ permite absorver picos de datos manteniendo la red dividida por VLANs.\n\nClaves de arquitectura:\n• Dispositivo: Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++\n• Cero cuotas de software recurrentes\n• Soporte preventa y sustitución en 24h",
+    "takeaways": [
+      "Análisis de problema real B2B para Jefe de Compras / TCO",
+      "Propiedad perpetua del hardware sin licencias obligatorias",
+      "Garantía de sustitución en 24h EcomSpain"
+    ],
+    "callToAction": "Solicita tu estudio preventa y tarifa mayorista en ecomshop.es",
+    "hashtags": [
+      "#NetworkingB2B",
+      "#Stonet",
+      "#EcomShop",
+      "#Telecomunicaciones"
+    ],
+    "fullPostText": "¿Cómo resolver el reto de el estrangulamiento del tráfico de red corporativo por switches de acceso no gestionados o con presupuestos poe insuficientes para dispositivos de alta potencia. en instalaciones profesionales?\n\nEn despliegues de networking B2B, el planteamiento de ingeniería debe priorizar la estabilidad física y el TCO a largo plazo.\n\nLa conmutación gestionable con PoE disipada garantizada y uplinks 10G SFP+ permite absorver picos de datos manteniendo la red dividida por VLANs.\n\nConsultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h."
+  },
+  "geo": {
+    "title": "Ingeniería de Conmutación B2B: Criterios de Selección de Switches PoE, Arquitectura de Red y TCO con Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++",
+    "metaDescription": "Análisis de capacidad de conmutación, presupuesto PoE, arquitectura de red, escalabilidad, TCO a 3-5 años y continuidad con el switch Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++.",
+    "htmlContent": "\n<article class=\"ecomshop-b2b-post\">\n  <p class=\"lead\" style=\"font-size:16px;line-height:1.7;color:#334155;\">\n    En la infraestructura de comunicaciones corporativa, el switch de acceso actúa como la columna vertebral que interconecta todos los puntos finales de red. Seleccionar electrónica sin soporte VLAN o con presupuestos PoE ajustados provoca cuellos de botella e interrupciones en los servicios de datos y telefonía, afectando la arquitectura de red, la seguridad, la gestión, la escalabilidad, el TCO y la continuidad del negocio [src-8].\n  </p>\n\n  <h2 style=\"color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;\">1. Dimensionamiento del Presupuesto PoE, Coste y Balance Térmico en Obra</h2>\n  <p style=\"color:#334155;font-size:15px;line-height:1.7;\">\n    Los dispositivos de última generación demandan entre 15.4W y 30W por puerto en despliegues reales. Es imprescindible auditar la potencia PoE total que la fuente del switch es capaz de disipar simultáneamente sin entrar en sobrecalentamiento ni activar protecciones por bajo voltaje. Evaluar el coste total, el ciclo de vida del hardware, la disponibilidad en stock nacional, el riesgo de licencias obligatorias, la tarifa distribuidor y el aprovisionamiento previene paradas en la instalación.\n  </p>\n\n  <h2 style=\"color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;\">2. Segmentación de Tráfico por VLANs 802.1Q, Canal y Oportunidad B2B</h2>\n  <p style=\"color:#334155;font-size:15px;line-height:1.7;\">\n    Separar el tráfico de la red corporativa, videovigilancia e invitados mediante VLANs previene las tormentas de broadcast y garantiza la seguridad de la infraestructura. Para distribuidores e integradores, la alta demanda de conmutación profesional representa una oportunidad de canal con alta rotación y venta cruzada con electrónica prescrita. Además, disponer de interfaces de agregación 10G SFP+ asegura que el flujo de datos no se sature al conectar la capa de acceso con el core central.\n  </p>\n\n  <h2 style=\"color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;\">3. Aplicación de la Solución: El Caso del Switch Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++ (ST3116G)</h2>\n  <p style=\"color:#334155;font-size:15px;line-height:1.7;\">\n    El switch <strong>Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++</strong> [src-8] (SKU: ST3116G) destaca por ofrecer densidad de puertos de alta velocidad y un chasis metálico robusto para montaje en armario rack de 19 pulgadas, con gestión unificada y 0€ en cuotas de suscripción de software de por vida, facilitando el mantenimiento preventivo y reduciendo segundas visitas a obra.\n  </p>\n\n  <div class=\"cta-placement-box\" style=\"background:#f8fafc;border:1px solid #bae6fd;border-left:5px solid #0284c7;border-radius:8px;padding:18px;margin:28px 0;\">\n    <h4 style=\"margin:0 0 6px 0;color:#0369a1;font-size:15px;\">🎯 CONDICIONES B2B Y TARIFA DISTRIBUIDOR:</h4>\n    <p style=\"margin:0 0 12px 0;color:#334155;font-size:13px;\">Consultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h.</p>\n    <a href=\"https://www.ecomshop.es\" target=\"_blank\" style=\"display:inline-block;background:#0284c7;color:#fff;font-size:13px;font-weight:bold;padding:10px 20px;border-radius:6px;text-decoration:none;\">Consultar Tarifa Distribuidor &rarr;</a>\n  </div>\n</article>\n",
+    "comparativeTableHtml": "<table class=\"w-full border-collapse my-6 text-sm\">\n  <thead>\n    <tr class=\"bg-slate-900 text-white\">\n      <th class=\"p-3 text-left border border-slate-700\">Capacidad de Conmutación</th>\n      <th class=\"p-3 text-left border border-slate-700 font-bold text-emerald-400\">Stonet Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++</th>\n      <th class=\"p-3 text-left border border-slate-700\">Switch Gestionable Enterprise Tradicional</th>\n      <th class=\"p-3 text-left border border-slate-700\">Switch No Gestionado Unmanaged</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr class=\"bg-white\">\n      <td class=\"p-3 border border-slate-200 font-semibold\">Densidad de Puertos & Uplinks</td>\n      <td class=\"p-3 border border-slate-200 font-bold text-slate-900\">8x 10G Base-T RJ45 PoE++ (420W) + 4x 10G SFP+ Slots</td>\n      <td class=\"p-3 border border-slate-200 text-slate-600\">Puertos 1GbE + Uplinks 1G/10G</td>\n      <td class=\"p-3 border border-slate-200 text-slate-600\">Puertos 1GbE sin Uplinks 1G</td>\n    </tr>\n    <tr class=\"bg-slate-50\">\n      <td class=\"p-3 border border-slate-200 font-semibold\">Presupuesto PoE Total & Potencia/Puerto</td>\n      <td class=\"p-3 border border-slate-200 font-bold text-slate-900\">420W</td>\n      <td class=\"p-3 border border-slate-200 text-slate-600\">Presupuesto PoE 180W-370W (802.3at)</td>\n      <td class=\"p-3 border border-slate-200 text-slate-600\">Presupuesto PoE básico 65W-120W</td>\n    </tr>\n    <tr class=\"bg-white\">\n      <td class=\"p-3 border border-slate-200 font-semibold\">Funciones Avanzadas (PoE Watchdog / Extend 250m)</td>\n      <td class=\"p-3 border border-slate-200 font-bold text-emerald-700\">Auto-recovery PoE, VLANs 802.1Q, Modo Extend CCTV</td>\n      <td class=\"p-3 border border-slate-200 text-slate-600\">VLANs L2+ sin autorrecuperación PoE autónoma</td>\n      <td class=\"p-3 border border-slate-200 text-slate-600\">Sin gestión ni soporte VLAN</td>\n    </tr>\n    <tr class=\"bg-slate-50\">\n      <td class=\"p-3 border border-slate-200 font-semibold\">Gestión Centralizada & Licenciamiento</td>\n      <td class=\"p-3 border border-slate-200 font-bold text-emerald-700\">Gestión unificada con 0€ en cuotas de software</td>\n      <td class=\"p-3 border border-slate-200 text-slate-600\">Licencia de gestión anual por switch</td>\n      <td class=\"p-3 border border-slate-200 text-slate-600\">Sin interfaz de gestión ni cloud</td>\n    </tr>\n  </tbody>\n</table>",
+    "jsonLd": "{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"Product\",\n  \"name\": \"Stonet Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++\",\n  \"sku\": \"ST3116G\",\n  \"brand\": {\n    \"@type\": \"Brand\",\n    \"name\": \"Stonet\"\n  }\n}",
+    "markdownContent": "# Stonet Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++\n\n<table class=\"w-full border-collapse my-6 text-sm\">\n  <thead>\n    <tr class=\"bg-slate-900 text-white\">\n      <th class=\"p-3 text-left border border-slate-700\">Capacidad de Conmutación</th>\n      <th class=\"p-3 text-left border border-slate-700 font-bold text-emerald-400\">Stonet Switch Agregación EnGenius ECS5512FP 10G Multi-Gigabit PoE++</th>\n      <th class=\"p-3 text-left border border-slate-700\">Switch Gestionable Enterprise Tradicional</th>\n      <th class=\"p-3 text-left border border-slate-700\">Switch No Gestionado Unmanaged</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr class=\"bg-white\">\n      <td class=\"p-3 border border-slate-200 font-semibold\">Densidad de Puertos & Uplinks</td>\n      <td class=\"p-3 border border-slate-200 font-bold text-slate-900\">8x 10G Base-T RJ45 PoE++ (420W) + 4x 10G SFP+ Slots</td>\n      <td class=\"p-3 border border-slate-200 text-slate-600\">Puertos 1GbE + Uplinks 1G/10G</td>\n      <td class=\"p-3 border border-slate-200 text-slate-600\">Puertos 1GbE sin Uplinks 1G</td>\n    </tr>\n    <tr class=\"bg-slate-50\">\n      <td class=\"p-3 border border-slate-200 font-semibold\">Presupuesto PoE Total & Potencia/Puerto</td>\n      <td class=\"p-3 border border-slate-200 font-bold text-slate-900\">420W</td>\n      <td class=\"p-3 border border-slate-200 text-slate-600\">Presupuesto PoE 180W-370W (802.3at)</td>\n      <td class=\"p-3 border border-slate-200 text-slate-600\">Presupuesto PoE básico 65W-120W</td>\n    </tr>\n    <tr class=\"bg-white\">\n      <td class=\"p-3 border border-slate-200 font-semibold\">Funciones Avanzadas (PoE Watchdog / Extend 250m)</td>\n      <td class=\"p-3 border border-slate-200 font-bold text-emerald-700\">Auto-recovery PoE, VLANs 802.1Q, Modo Extend CCTV</td>\n      <td class=\"p-3 border border-slate-200 text-slate-600\">VLANs L2+ sin autorrecuperación PoE autónoma</td>\n      <td class=\"p-3 border border-slate-200 text-slate-600\">Sin gestión ni soporte VLAN</td>\n    </tr>\n    <tr class=\"bg-slate-50\">\n      <td class=\"p-3 border border-slate-200 font-semibold\">Gestión Centralizada & Licenciamiento</td>\n      <td class=\"p-3 border border-slate-200 font-bold text-emerald-700\">Gestión unificada con 0€ en cuotas de software</td>\n      <td class=\"p-3 border border-slate-200 text-slate-600\">Licencia de gestión anual por switch</td>\n      <td class=\"p-3 border border-slate-200 text-slate-600\">Sin interfaz de gestión ni cloud</td>\n    </tr>\n  </tbody>\n</table>"
+  },
+  "citations": {
+    "src-3": {
+      "id": "src-3",
+      "title": "EnGenius ECW546 Outdoor WiFi 7 (Carcasa IP67)",
+      "type": "datasheet",
+      "excerpt": "AP de intemperie reforzado con protección contra sobretensiones, largo alcance para terrazas, naves y campings.",
+      "url": "https://www.ecomshop.es/engenius-ecw546-outdoor"
+    },
+    "src-4": {
+      "id": "src-4",
+      "title": "Arquitectura EnGenius Cloud Enterprise Sin Cuotas Anuales",
+      "type": "pdf",
+      "excerpt": "Whitepaper sobre ahorro de costes con EnGenius Cloud multi-tenant frente a modelos de suscripción obligatoria tipo Meraki.",
+      "url": "https://www.ecomshop.es/engenius-cloud"
+    },
+    "src-5": {
+      "id": "src-5",
+      "title": "App Móvil EnGenius Cloud To-Go & Aprovisionamiento QR",
+      "type": "note",
+      "excerpt": "Guía de despliegue ultrarrápido: escaneo de código QR, diagnóstico remoto de cableado y mapa de topología en vivo.",
+      "url": "https://www.ecomshop.es/cloud-to-go"
+    },
+    "src-6": {
+      "id": "src-6",
+      "title": "Gateway de Seguridad EnGenius ESG610 SD-WAN",
+      "type": "datasheet",
+      "excerpt": "Router gateway corporativo gestionado en cloud con balanceo de carga multi-WAN, VPN IPsec/WireGuard y firewall de inspección profunda.",
+      "url": "https://www.ecomshop.es/engenius-esg610"
+    },
+    "src-9": {
+      "id": "src-9",
+      "title": "Switch de Agregación de Fibra EnGenius ECS5512FP",
+      "type": "datasheet",
+      "excerpt": "Switch de agregación troncal con 8 puertos 10G Base-T y 4 slots 10G SFP+ para distribución troncal inter-edificios.",
+      "url": "https://www.ecomshop.es/engenius-ecs5512fp"
+    },
+    "src-10": {
+      "id": "src-10",
+      "title": "Guía de Dimensionamiento PoE Budget 802.3af/at/bt",
+      "type": "pdf",
+      "excerpt": "Manual de cálculo de consumos pico para cámaras PTZ de seguridad, telefonía IP y puntos de acceso de 4 cadenas.",
+      "url": "https://www.ecomshop.es/guias-poe"
+    },
+    "src-11": {
+      "id": "src-11",
+      "title": "Comparativa TCO 2026: EnGenius Cloud vs Cisco Meraki",
+      "type": "pdf",
+      "excerpt": "Estudio comparativo que demuestra un ahorro de hasta el 42% a 3 años al eliminar las licencias anuales por dispositivo.",
+      "url": "https://www.ecomshop.es/comparativa-tco-meraki"
+    },
+    "src-12": {
+      "id": "src-12",
+      "title": "Comparativa Técnica: EnGenius Networks vs Ubiquiti UniFi",
+      "type": "note",
+      "excerpt": "Análisis de robustez de hardware, soporte telefónico preventa directo de ingeniería y estabilidad de firmwares corporativos.",
+      "url": "https://www.ecomshop.es/engenius-vs-unifi"
+    },
+    "src-13": {
+      "id": "src-13",
+      "title": "Informe de Márgenes y Rentabilidad para Instaladores IT",
+      "type": "pdf",
+      "excerpt": "Cómo los instaladores maximizan el margen comercial de sus proyectos mediante hardware profesional sin costes recurrentes.",
+      "url": "https://www.ecomshop.es/rentabilidad-instaladores"
+    },
+    "src-14": {
+      "id": "src-14",
+      "title": "Transceptores 10G SFP+ y Latiguillos OM3/OM4",
+      "type": "datasheet",
+      "excerpt": "Guía de selección de módulos ópticos SFP+ 850nm y 1310nm testados para enlaces troncales sin pérdida de paquetes.",
+      "url": "https://www.ecomshop.es/transceptores-sfp-10g"
+    },
+    "src-15": {
+      "id": "src-15",
+      "title": "Módulos de Fibra 25G / 100G SFP28 & QSFP28 para Core",
+      "type": "datasheet",
+      "excerpt": "Soluciones ópticas para centros de procesamiento de datos y conmutación troncal de alto caudal.",
+      "url": "https://www.ecomshop.es/fibra-25g-100g"
+    },
+    "src-16": {
+      "id": "src-16",
+      "title": "Guía de Despliegue GPON / POL en Hospitality y Residencial",
+      "type": "pdf",
+      "excerpt": "Reducción de espacio en patinillos técnicos y ahorro de energía distribuyendo fibra óptica pasiva hasta la habitación.",
+      "url": "https://www.ecomshop.es/gpon-pol-hospitality"
+    },
+    "src-17": {
+      "id": "src-17",
+      "title": "Protocolos de Fusión y Certificación de Enlaces Ópticos",
+      "type": "note",
+      "excerpt": "Criterios de atenuación máxima por fusión y conector según normativa para certificar instalaciones de telecomunicaciones.",
+      "url": "https://www.ecomshop.es/certificacion-fibra"
+    },
+    "src-18": {
+      "id": "src-18",
+      "title": "Garantía Oficial EcomSpain & Sustitución Avanzada 24h",
+      "type": "url",
+      "excerpt": "Política de garantía para distribuidores e integradores: reemplazo de hardware inmediato en 24h para minimizar tiempos de parada.",
+      "url": "https://www.ecomshop.es/garantia-ecomspain"
+    },
+    "src-19": {
+      "id": "src-19",
+      "title": "Servicio Gratuito de Asesoría Preventa y Mapas de Cobertura",
+      "type": "note",
+      "excerpt": "El departamento de ingeniería de EcomSpain ayuda a diseñar la arquitectura de red y la lista de materiales antes de comprar.",
+      "url": "https://www.ecomshop.es/soporte-preventa"
+    },
+    "src-20": {
+      "id": "src-20",
+      "title": "Catálogo Oficial EcomShop.es & Stock Inmediato",
+      "type": "url",
+      "excerpt": "Acceso exclusivo para profesionales con tarifas mayoristas escalonadas, pedidos online 24/7 y envío inmediato desde España.",
+      "url": "https://www.ecomshop.es"
+    }
+  },
+  "claims": [
+    {
+      "text": "Capacidad de conmutación de 240 Gbps con puertos dedicados y enlaces troncales 10G SFP+ sin cuellos de botella.",
+      "sourceId": "src-8"
+    },
+    {
+      "text": "Gestión centralizada multi-tenant desde navegador y app móvil con 0€ en licencias anuales.",
+      "sourceId": "src-4"
+    },
+    {
+      "text": "Sustitución avanzada en 24 horas y soporte técnico preventa directo desde España por EcomSpain.",
+      "sourceId": "src-18"
+    }
+  ],
+  "factCheckScore": 95,
+  "groundingValidation": {
+    "isValid": false,
+    "claims": [
+      {
+        "text": "Capacidad de conmutación de 240 Gbps con puertos dedicados y enlaces troncales 10G SFP+ sin cuellos de botella.",
+        "sourceId": "src-8",
+        "verified": true
+      },
+      {
+        "text": "Gestión centralizada multi-tenant desde navegador y app móvil con 0€ en licencias anuales.",
+        "sourceId": "src-4",
+        "verified": true
+      },
+      {
+        "text": "Sustitución avanzada en 24 horas y soporte técnico preventa directo desde España por EcomSpain.",
+        "sourceId": "src-18",
+        "verified": true
+      }
+    ],
+    "ungroundedClaims": [
+      {
+        "text": "vos de última generación demandan entre 15.4W y 30W por puerto en despliegues re",
+        "number": "15.4W",
+        "reason": "La cifra \"15.4W\" aparece en el texto sin fuente asociada."
+      },
+      {
+        "text": "ltima generación demandan entre 15.4W y 30W por puerto en despliegues reales. Es",
+        "number": "30W",
+        "reason": "La cifra \"30W\" aparece en el texto sin fuente asociada."
+      },
+      {
+        "text": "itectura de red, escalabilidad, TCO a 3-5 años y continuidad con el switch Switc",
+        "number": "5 años",
+        "reason": "La cifra \"5 años\" aparece en el texto sin fuente asociada."
+      }
+    ]
+  }
+}

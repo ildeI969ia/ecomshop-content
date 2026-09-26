@@ -218,10 +218,15 @@ export default function ContentDashboard() {
 
   const handleSelectSku = (sku: string) => {
     setSelectedSku(sku);
+    setEntryOrigin("custom");
     setContent(null);
     setActiveArticleId(null);
     setTopicTitle(`Despliegue y Arquitectura B2B: ${sku}`);
     setCategory("engenius");
+    const matchingOpp = opportunities.find(o => o.sku.toUpperCase() === sku.toUpperCase());
+    if (matchingOpp) {
+      setSelectedRadarOppId(matchingOpp.id);
+    }
     loadNotebookIntelligence(sku);
   };
 
@@ -561,9 +566,9 @@ export default function ContentDashboard() {
   };
 
   const handleUnifiedLaunch = async () => {
-    if (entryOrigin === "radar") {
-      const activeOpp = opportunities.find(o => o.id === selectedRadarOppId) || opportunities[0];
-      if (activeOpp) {
+    if (entryOrigin === "radar" && selectedRadarOppId) {
+      const activeOpp = opportunities.find(o => o.id === selectedRadarOppId);
+      if (activeOpp && activeOpp.sku.toUpperCase() === selectedSku.toUpperCase()) {
         await handleLaunchCampaign(activeOpp);
         return;
       }
@@ -1439,6 +1444,7 @@ export default function ContentDashboard() {
       const data = await apiFetch<ContentOutput & { intelligenceCard?: ProductIntelligenceCard }>("/api/generate", {
         method: "POST",
         body: JSON.stringify({
+          sku: selectedSku,
           topicTitle,
           category,
           targetAudience,

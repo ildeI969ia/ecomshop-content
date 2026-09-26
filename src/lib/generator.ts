@@ -5,7 +5,7 @@ import { ProductIntelligenceService } from "@/server/services/product-intelligen
 import { ProductIntelligenceCard } from "./types/product-intelligence";
 import { getCatalogDevice, CatalogDevice } from "./catalog";
 
-export async function generateB2BContent(req: GenerateRequest & { apiKey?: string }): Promise<ContentOutput> {
+export async function generateB2BContent(req: Partial<GenerateRequest> & { apiKey?: string }): Promise<ContentOutput> {
   const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!req.apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT));
   const apiKey = req.apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
@@ -44,7 +44,7 @@ export async function generateB2BContent(req: GenerateRequest & { apiKey?: strin
     return await writer.generateGroundedContent({
       sku: catalogDevice?.sku || intel.sku,
       topicTitle: req.topicTitle || catalogDevice?.name || intel.model,
-      category: req.category,
+      category: req.category || "general",
       productUrl: req.productUrl || catalogDevice?.productUrl,
       targetAudience: req.targetAudience,
       customNotes: req.customNotes,
@@ -63,7 +63,7 @@ export async function generateB2BContent(req: GenerateRequest & { apiKey?: strin
 }
 
 async function generateWithGeminiAPI(
-  req: GenerateRequest,
+  req: Partial<GenerateRequest>,
   apiKey?: string,
   intel?: ProductIntelligenceCard | null,
   catalogDevice?: CatalogDevice
@@ -325,7 +325,7 @@ JSON Schema requerido:
 }
 
 function generateDeterministicFallback(
-  req: GenerateRequest,
+  req: Partial<GenerateRequest>,
   intel?: ProductIntelligenceCard | null,
   catalogDevice?: CatalogDevice
 ): ContentOutput {
@@ -596,7 +596,7 @@ ${ctaDestination}
   return {
     topicId: slug,
     topicTitle: effectiveTitle,
-    category: req.category,
+    category: req.category || "general",
     generatedAt: now,
     source: "fallback",
     status: "NEEDS_REVIEW",
@@ -611,7 +611,7 @@ ${ctaDestination}
       metaDescription: `Guía técnica para instaladores, directores TIC y jefes de compras sobre ${effectiveTitle}. Buenas prácticas y catálogo oficial en EcomShop.`,
       slug,
       readingTimeMinutes: 5,
-      targetKeywords: [req.category, "EnGenius Networks", "Networking B2B", "Switches PoE", "WiFi profesional", "TCO sin licencias"],
+      targetKeywords: [req.category || "Networking B2B", "EnGenius Networks", "Networking B2B", "Switches PoE", "WiFi profesional", "TCO sin licencias"],
       htmlContent: blogHtml,
       cleanPlainTextExcerpt: matchedPreset.keyPoints.join(". "),
       editorialLayout: {
