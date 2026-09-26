@@ -37,10 +37,10 @@ export function planArticleVisuals(
   const photoPlacements: PhotoPlacement[] = [];
   const processedSections: string[] = [];
 
-  const brand = product.brand || "EnGenius";
+  const brand = product.brand ? product.brand : "";
   const sku = product.sku || "PROD-1";
   const name = product.name || sku;
-  const deviceType = product.deviceType || "B2B networking hardware";
+  const deviceType = product.deviceType || "Dispositivo de Red Profesional";
 
   // 1. Imagen Hero / Producto Contextual para la primera sección
   const firstSec = sections[0];

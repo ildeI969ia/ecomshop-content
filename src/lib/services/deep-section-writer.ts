@@ -9,6 +9,7 @@ export interface WrittenSectionResult {
   sectionId: string;
   title: string;
   level: "H2" | "H3";
+  contentType?: string;
   htmlContent: string;
   wordCount: number;
   usageMetadata?: {
@@ -120,6 +121,7 @@ RESPONDE ÚNICAMENTE CON EL FRAGMENTO HTML LIMPIO DE LA SECCIÓN (comenzando con
         sectionId: section.id,
         title: section.title,
         level: section.level,
+        contentType: section.contentType,
         htmlContent: rawHtml,
         wordCount,
         usageMetadata
@@ -134,7 +136,7 @@ RESPONDE ÚNICAMENTE CON EL FRAGMENTO HTML LIMPIO DE LA SECCIÓN (comenzando con
 }
 
 /**
- * Fallback determinista por sección
+ * Fallback determinista por sección (basado estrictamente en Product Truth, sin hardcodear marcas)
  */
 function generateDeterministicSectionFallback(section: ArticleOutlineSection): WrittenSectionResult {
   let content = "";
@@ -144,60 +146,50 @@ function generateDeterministicSectionFallback(section: ArticleOutlineSection): W
     case "COMPARISON_TABLE":
       content = `
 <${tag}>${section.title}</${tag}>
-<p>Al seleccionar equipamiento para despliegues de alta densidad o entornos corporativos, es imprescindible evaluar los parámetros eléctricos y de conmutación reales frente a especificaciones comerciales teóricas.</p>
+<p>Al seleccionar equipamiento para despliegues corporativos y redes de alto rendimiento, es fundamental comparar las especificaciones clave de hardware y conmutación:</p>
 <div style="overflow-x:auto; margin:20px 0;">
   <table class="tech-comparison-table" style="width:100%; border-collapse:collapse; border:1px solid #cbd5e1; font-size:14px; text-align:left;">
     <thead>
       <tr style="background:#f1f5f9; border-bottom:2px solid #94a3b8;">
-        <th style="padding:10px 14px; font-weight:600; color:#1e293b;">Parámetro / Modelo</th>
-        <th style="padding:10px 14px; font-weight:600; color:#1e293b;">EnGenius ECW536 (Wi-Fi 7)</th>
-        <th style="padding:10px 14px; font-weight:600; color:#1e293b;">EnGenius ECW526 (Wi-Fi 7)</th>
-        <th style="padding:10px 14px; font-weight:600; color:#1e293b;">Switch ECS2512FP (PoE++)</th>
+        <th style="padding:10px 14px; font-weight:600; color:#1e293b;">Parámetro Técnico</th>
+        <th style="padding:10px 14px; font-weight:600; color:#1e293b;">Modelo Principal</th>
+        <th style="padding:10px 14px; font-weight:600; color:#1e293b;">Alternativa / Modelo Estándar</th>
       </tr>
     </thead>
     <tbody>
       <tr style="border-bottom:1px solid #e2e8f0;">
-        <td style="padding:10px 14px; font-weight:600;">Estándar / Modulación</td>
-        <td style="padding:10px 14px;">Wi-Fi 7 Tri-Band (4096-QAM)</td>
-        <td style="padding:10px 14px;">Wi-Fi 7 Dual-Band (4096-QAM)</td>
-        <td style="padding:10px 14px;">L2+ Conmutación 2.5G Wire-speed</td>
+        <td style="padding:10px 14px; font-weight:600;">Estándar & Modulación</td>
+        <td style="padding:10px 14px;">Alta Densidad Multi-Gigabit</td>
+        <td style="padding:10px 14px;">Estándar Gigabit Concurrente</td>
       </tr>
       <tr style="border-bottom:1px solid #e2e8f0; background:#f8fafc;">
-        <td style="padding:10px 14px; font-weight:600;">Puertos Uplink / Conexión</td>
-        <td style="padding:10px 14px;">1x 10GbE RJ45 PoE++</td>
-        <td style="padding:10px 14px;">1x 2.5GbE RJ45 PoE+</td>
-        <td style="padding:10px 14px;">8x 2.5GbE PoE++ + 4x 10G SFP+</td>
+        <td style="padding:10px 14px; font-weight:600;">Conectividad / Uplinks</td>
+        <td style="padding:10px 14px;">Multi-Gigabit / 10G SFP+</td>
+        <td style="padding:10px 14px;">1G RJ45 / PoE+</td>
       </tr>
       <tr style="border-bottom:1px solid #e2e8f0;">
-        <td style="padding:10px 14px; font-weight:600;">Requisito de Alimentación</td>
-        <td style="padding:10px 14px;">PoE++ 802.3bt (38W pico)</td>
-        <td style="padding:10px 14px;">PoE+ 802.3at (21W pico)</td>
-        <td style="padding:10px 14px;">Presupuesto PoE 240W</td>
-      </tr>
-      <tr style="border-bottom:1px solid #e2e8f0; background:#f8fafc;">
-        <td style="padding:10px 14px; font-weight:600;">Licencias de Gestión</td>
-        <td style="padding:10px 14px; color:#16a34a; font-weight:600;">0 € / Año (EnGenius Cloud)</td>
-        <td style="padding:10px 14px; color:#16a34a; font-weight:600;">0 € / Año (EnGenius Cloud)</td>
-        <td style="padding:10px 14px; color:#16a34a; font-weight:600;">0 € / Año (EnGenius Cloud)</td>
+        <td style="padding:10px 14px; font-weight:600;">Gestión & Licenciamiento</td>
+        <td style="padding:10px 14px; color:#16a34a; font-weight:600;">Nube Centralizada sin Cuotas</td>
+        <td style="padding:10px 14px;">Standalone / Cloud Basico</td>
       </tr>
     </tbody>
   </table>
 </div>
-<p><em>Conclusión: ${section.keyTakeaway}</em></p>
+<p><em>Conclusión Técnica: ${section.keyTakeaway}</em></p>
 `;
       break;
 
     case "INSTALLER_CALLOUT":
       content = `
 <${tag}>${section.title}</${tag}>
-<p>Durante la puesta en marcha de enlaces inalámbricos de alta velocidad y alimentación centralizada en obra, los errores de cálculo de consumo o caída de tensión en tiradas largas representan más del 65% de los partes de avería en las primeras 48 horas tras la inauguración.</p>
+<p>Durante la instalación en obra y despliegue de infraestructura, la correcta certificación del cableado y el cálculo preciso de consumos evitan incidencias técnicas tras la puesta en marcha.</p>
 <div class="installer-callout-box" style="background:#fffbeb; border-left:5px solid #d97706; padding:18px; margin:24px 0; border-radius:6px;">
-  <h4 style="color:#b45309; margin:0 0 8px 0; font-size:16px;">⚠️ TIP DEL INSTALADOR: Caída de Tensión y Consumo PoE++ 802.3bt</h4>
+  <h4 style="color:#b45309; margin:0 0 8px 0; font-size:16px;">⚠️ RECOMENDACIÓN DE CAMPO PARA INSTALADORES:</h4>
   <p style="margin:0 0 8px 0; color:#451a03; font-size:14px; line-height:1.5;">
-    Al alimentar puntos de acceso Wi-Fi 7 con radios 4x4 concurrentes mediante switches PoE, la potencia demandada en arranque puede superar los 35W. Si utilizas cableado Cat5e de sección reducida (AWG 26 o inferior) o tiradas superiores a 60 metros sin certificar, la resistencia del cobre provocará caídas por debajo del umbral mínimo de 42.5V, induciendo reinicios cíclicos (boot-loops) en el AP bajo picos de tráfico.
+    En tiradas de red de larga distancia alimentadas por PoE/PoE++, verifica siempre la sección del conductor de cobre y el presupuesto energético (PoE Budget) total disponible en el switch antes de conectar equipos de alto consumo.
   </p>
   <p style="margin:0; color:#78350f; font-size:13px; font-weight:bold;">
-    Recomendación de Campo: Emplear cable rígido Cat6A U/UTP de cobre puro (mínimo AWG 23) y reservar un margen del 20% en el PoE Budget del switch ECS2512FP.
+    Clave de Garantía: Utilizar cable rígido certificado Cat6A o superior de cobre puro y reservar un margen de seguridad del 20% en el consumo energético.
   </p>
 </div>
 <p>${section.keyTakeaway}</p>
@@ -207,21 +199,18 @@ function generateDeterministicSectionFallback(section: ArticleOutlineSection): W
     case "TOPOLOGY_DIAGRAM":
       content = `
 <${tag}>${section.title}</${tag}>
-<p>La topología troncal debe estructurarse eliminando cuellos de botella entre la conmutación de borde y la salida de datos a Internet o servicios locales:</p>
+<p>Topología recomendada para garantizar máxima disponibilidad y eliminación de cuellos de botella:</p>
 <pre class="topology-diagram" style="background:#0f172a; color:#38bdf8; padding:18px; border-radius:8px; font-family:monospace; font-size:13px; line-height:1.6; overflow-x:auto;">
-[ WAN / Internet ]
+[ Gateway / Firewall SD-WAN ]
+        | (Uplink 10G / 2.5G)
+ [ Switch Core / Distribución ]
         |
- [ Gateway SD-WAN ESG610 ]  (Firewall L7 + VPN WireGuard)
-        |  (Uplink 10G SFP+ / 2.5GbE)
- [ Switch Core/Agregación ECS5512FP ]  (Distribución de Fibra Troncal)
         |---------------------------------------|
-        |  (Troncal 10G SFP+ Fibra OM4)         |  (Troncal 10G SFP+ Fibra OM4)
- [ Switch PoE++ ECS2512FP ] (Rack Planta 1)   [ Switch PoE+ ECS1528FP ] (Rack Planta 2)
-   |-- 2.5GbE PoE++ --> AP Wi-Fi 7 (ECW536)      |-- GbE PoE+ --> Cámaras CCTV IP
-   |-- 2.5GbE PoE++ --> AP Wi-Fi 7 (ECW526)      |-- GbE PoE+ --> Telefonía VoIP
-   |-- 2.5GbE PoE++ --> Puestos de Trabajo        |-- GbE PoE+ --> Control de Accesos
+ [ Switch Acceso PoE / Borde ]           [ Switch Acceso PoE / Planta ]
+   |-- Conexión APs Inalámbricos           |-- Equipos IoT & Cámaras IP
+   |-- Puestos de Trabajo                  |-- Control de Accesos
 </pre>
-<p>Esta distribución garantiza que los APs Wi-Fi 7 no saturen los canales de subida, canalizando el caudal completo hacia el Core mediante transceptores 10G SFP+ sin pérdidas de paquetes.</p>
+<p>Esta arquitectura garantiza la óptima canalización del tráfico sin pérdidas de paquetes.</p>
 `;
       break;
 
@@ -230,16 +219,12 @@ function generateDeterministicSectionFallback(section: ArticleOutlineSection): W
 <${tag}>${section.title}</${tag}>
 <div class="faq-container" style="margin:20px 0;">
   <div style="margin-bottom:16px;">
-    <h4 style="color:#0f172a; margin:0 0 4px 0; font-size:15px; font-weight:700;">¿Puedo conectar un AP Wi-Fi 7 a mi switch PoE actual de 1 Gbps?</h4>
-    <p style="margin:0; color:#334155; font-size:14px;">Sí, funcionará a nivel de enlace Ethernet, pero actuará como un embudo severo. El punto de acceso limitará su velocidad máxima agregada a 940 Mbps netos. Para aprovechar el estándar 802.11be es indispensable migrar los puertos de conexión a switches PoE Multi-Gigabit de 2.5G o 10G.</p>
+    <h4 style="color:#0f172a; margin:0 0 4px 0; font-size:15px; font-weight:700;">¿Cuál es la ventaja de utilizar equipos gestionados en la nube?</h4>
+    <p style="margin:0; color:#334155; font-size:14px;">Permite la monitorización remota en tiempo real, diagnósticos centralizados y despliegues sin necesidad de desplazamientos físicos a la instalación.</p>
   </div>
   <div style="margin-bottom:16px;">
-    <h4 style="color:#0f172a; margin:0 0 4px 0; font-size:15px; font-weight:700;">¿EnGenius Cloud cobra licencias anuales por AP o switch?</h4>
-    <p style="margin:0; color:#334155; font-size:14px;">No. La gestión en la nube básica y avanzada de EnGenius Cloud está incluida de por vida con la compra del hardware, eliminando renovaciones recurrentes de licencias y reduciendo el TCO hasta un 42% frente a competidores.</p>
-  </div>
-  <div style="margin-bottom:16px;">
-    <h4 style="color:#0f172a; margin:0 0 4px 0; font-size:15px; font-weight:700;">¿Dónde se tramita el soporte técnico y la garantía en España?</h4>
-    <p style="margin:0; color:#334155; font-size:14px;">A través del soporte preventa de ingeniería de EcomSpain en Alcalá de Henares, con servicio de sustitución en 24h para minimizar tiempos de parada en instalaciones críticas.</p>
+    <h4 style="color:#0f172a; margin:0 0 4px 0; font-size:15px; font-weight:700;">¿Cómo tramitar el soporte y garantía oficial?</h4>
+    <p style="margin:0; color:#334155; font-size:14px;">A través del canal oficial de EcomSpain, disponiendo de asesoramiento preventa de ingeniería y sustitución de equipamiento.</p>
   </div>
 </div>
 `;
@@ -248,9 +233,8 @@ function generateDeterministicSectionFallback(section: ArticleOutlineSection): W
     default: // TEXT
       content = `
 <${tag}>${section.title}</${tag}>
-<p>El despliegue de infraestructuras de red en instalaciones profesionales requiere un equilibrio estricto entre velocidad de transmisión, compatibilidad electromagnética y control del gasto operativo. Los instaladores certificados se enfrentan hoy al reto de garantizar coberturas fiables en bandas congestionadas, minimizando los tiempos de instalación en obra y evitando cuellos de botella estructurales.</p>
-<p>La adopción de tecnologías como Wi-Fi 7 introduce esquemas de modulación 4096-QAM y canales de 320 MHz, capaces de transferir mayores densidades de información en menor tiempo de ocupación aérea. No obstante, para que estas prestaciones se traduzcan en una experiencia de usuario tangible en entornos de oficina densa o industria, la red troncal debe responder con idéntica solvencia.</p>
-<p>En este escenario, contar con equipamiento profesional gestionado centralmente en la nube y respaldado por stock inmediato y asesoramiento directo se convierte en la principal garantía de rentabilidad para el integrador.</p>
+<p>El despliegue de infraestructuras de red profesionales exige combinar componentes de alta calidad, topologías optimizadas y monitorización continua. Los profesionales de integración priorizan la fiabilidad, la escalabilidad y el control del coste total de propiedad (TCO).</p>
+<p>Contar con equipamiento respaldado por stock local, garantía directa y soporte de ingeniería es la clave para asegurar el éxito en cada proyecto.</p>
 <p><em>Punto clave de ingeniería: ${section.keyTakeaway}</em></p>
 `;
       break;
@@ -261,6 +245,7 @@ function generateDeterministicSectionFallback(section: ArticleOutlineSection): W
     sectionId: section.id,
     title: section.title,
     level: section.level,
+    contentType: section.contentType,
     htmlContent: content.trim(),
     wordCount
   };
