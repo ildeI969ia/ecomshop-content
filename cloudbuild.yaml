@@ -28,7 +28,7 @@ steps:
       - '--max-instances=5'
       - '--memory=1Gi'
       - '--cpu=1'
-      - '--update-env-vars=GOOGLE_CLOUD_PROJECT=ecomshop-marketing-prod,GOOGLE_CLOUD_LOCATION=europe-west1,VERTEX_LOCATION=us-central1,GOOGLE_GENAI_USE_VERTEXAI=true,GCS_BUCKET_NAME=ecomshop-marketing-assets'
+      - '--update-env-vars=GOOGLE_CLOUD_PROJECT=ecomshop-marketing-prod,GOOGLE_CLOUD_LOCATION=europe-west1,VERTEX_LOCATION=us-central1,GOOGLE_GENAI_USE_VERTEXAI=true,GCS_BUCKET_NAME=ecomshop-marketing-assets,ANTIGRAVITY_SDK_ENABLED=true'
       # Fase F6: Secret Manager integration. Una vez creados los secretos en Secret Manager,
       # descomentar la bandera siguiente para mapearlos automáticamente como variables de entorno seguras:
       # - '--update-secrets=SESSION_SECRET=SESSION_SECRET:latest,CORPORATE_ACCESS_PASSWORD=CORPORATE_ACCESS_PASSWORD:latest,ADMIN_ACCESS_PASSWORD=ADMIN_ACCESS_PASSWORD:latest'
