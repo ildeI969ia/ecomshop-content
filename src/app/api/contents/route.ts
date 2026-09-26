@@ -6,10 +6,7 @@ import { ContentItem } from "@/server/domain/types";
 export const GET = withAuthAndPermission("content:view", async (req: NextRequest, user) => {
   const repo = new ContentRepository();
   try {
-    let list = await repo.listRecent(100, user.workspaceId);
-    if (list.length === 0) {
-      list = await repo.listRecent(100);
-    }
+    const list = await repo.listRecent(100, user.workspaceId);
 
     const formatted = list.map((item: ContentItem) => {
       const versionBody = item.versions?.[0]?.body;

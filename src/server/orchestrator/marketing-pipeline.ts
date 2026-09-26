@@ -200,6 +200,8 @@ Responde ÚNICAMENTE con un JSON válido con la siguiente estructura exacta:
     }
 
     const marketingPackage: MarketingPackage = {
+      workspaceId: options.workspaceId || "default-ecomspain",
+      organizationId: options.organizationId || "org-ecomspain",
       packageId: `pkg-${product.sku.toLowerCase()}-${Date.now()}`,
       runId,
       product: {
@@ -709,6 +711,8 @@ Responde ÚNICAMENTE con un JSON válido con la siguiente estructura exacta:
     const qualityReport = dummyEngine.evaluateQualityGate(product, contract.evidence as any, output);
 
     return {
+      workspaceId: "default-ecomspain",
+      organizationId: "org-ecomspain",
       version: "2.0.0",
       packageId: `pkg-${cleanSku}-deterministic`,
       runId: `run-${cleanSku}-deterministic`,

@@ -17,6 +17,10 @@ export const GET = withAuthAndPermission("campaign:view", async (req: NextReques
     return NextResponse.json({ error: "Campaña no encontrada" }, { status: 404 });
   }
 
+  if (campaign.workspaceId && campaign.workspaceId !== user.workspaceId) {
+    return NextResponse.json({ error: "Acceso no autorizado al workspace de esta campaña" }, { status: 403 });
+  }
+
   return NextResponse.json({ campaign });
 });
 
@@ -34,6 +38,10 @@ export const PATCH = withAuthAndPermission("campaign:edit", async (req: NextRequ
     const existing = await repo.findById(campaignId);
     if (!existing) {
       return NextResponse.json({ error: "Campaña no encontrada" }, { status: 404 });
+    }
+
+    if (existing.workspaceId && existing.workspaceId !== user.workspaceId) {
+      return NextResponse.json({ error: "Acceso no autorizado al workspace de esta campaña" }, { status: 403 });
     }
 
     const updates: Record<string, any> = {};

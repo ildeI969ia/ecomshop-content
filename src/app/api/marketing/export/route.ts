@@ -10,12 +10,12 @@ function escapeCsv(value: any): string {
   return `"${str}"`;
 }
 
-export const GET = withAuthAndPermission("content:view", async (req: NextRequest) => {
+export const GET = withAuthAndPermission("content:view", async (req: NextRequest, user) => {
   try {
     const url = new URL(req.url);
     const format = url.searchParams.get("format") || "json";
 
-    const packages = await repository.listPackagesByWorkspace(200);
+    const packages = await repository.listPackagesByWorkspace(user.workspaceId, 200);
 
     if (format === "csv") {
       const headers = [
