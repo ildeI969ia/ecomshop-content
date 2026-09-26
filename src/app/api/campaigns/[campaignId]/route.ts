@@ -50,6 +50,19 @@ export const PATCH = withAuthAndPermission("campaign:edit", async (req: NextRequ
 
     const targetStage = body.lifecycleStage || (body.status as any);
     if (targetStage && targetStage !== existing.lifecycleStage) {
+      const isFallback =
+        (existing as any)?.generator === "catalog-fallback" ||
+        (existing as any)?.fallbackUsed === true ||
+        body.generator === "catalog-fallback" ||
+        body.fallbackUsed === true;
+
+      if ((targetStage === "APPROVED" || targetStage === "PUBLISHED") && isFallback && !body.humanApproved) {
+        return NextResponse.json(
+          { error: "No se puede aprobar ni publicar automáticamente una campaña generada en modo catálogo (catalog-fallback) sin aprobación humana explícita." },
+          { status: 400 }
+        );
+      }
+
       const { validateCampaignTransition } = await import("@/server/domain/types");
       const qualityPassed = body.qualityState?.passed ?? existing.qualityState?.passed;
       const isApproved = existing.lifecycleStage === "APPROVED" || body.lifecycleStage === "APPROVED";

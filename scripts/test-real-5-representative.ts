@@ -11,7 +11,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { AntigravityPythonSdkProvider } from "../src/server/orchestrator/antigravity-python-provider";
+import { AntigravityTsProvider } from "../src/server/orchestrator/antigravity-ts-provider";
 import { MarketingPipelineEngine } from "../src/server/orchestrator/marketing-pipeline";
 
 async function main() {
@@ -23,7 +23,7 @@ async function main() {
   fs.mkdirSync(tempWorkspace, { recursive: true });
 
   process.env.ANTIGRAVITY_SDK_ENABLED = "true";
-  const provider = new AntigravityPythonSdkProvider();
+  const provider = new AntigravityTsProvider();
   const engine = new MarketingPipelineEngine(provider);
 
   const representativeSkus = [

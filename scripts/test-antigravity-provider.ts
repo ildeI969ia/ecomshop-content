@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { AntigravityPythonSdkProvider } from "../src/server/orchestrator/antigravity-python-provider";
+import { AntigravityTsProvider } from "../src/server/orchestrator/antigravity-ts-provider";
 import { AgentExecutionManifest } from "../src/server/orchestrator/types";
 
 async function runTest() {
@@ -15,7 +15,7 @@ async function runTest() {
   try {
     // 1. Probar rechazo cuando ANTIGRAVITY_SDK_ENABLED=false
     delete process.env.ANTIGRAVITY_SDK_ENABLED;
-    const providerDisabled = new AntigravityPythonSdkProvider();
+    const providerDisabled = new AntigravityTsProvider();
     const manifestDisabled: AgentExecutionManifest = {
       runId: "run-disabled-test",
       taskId: "task-disabled-1",
@@ -36,7 +36,7 @@ async function runTest() {
 
     // 2. Probar ejecución real cuando ANTIGRAVITY_SDK_ENABLED=true
     process.env.ANTIGRAVITY_SDK_ENABLED = "true";
-    const providerEnabled = new AntigravityPythonSdkProvider();
+    const providerEnabled = new AntigravityTsProvider();
 
     const manifestEnabled: AgentExecutionManifest = {
       runId: "run-node-e2e",

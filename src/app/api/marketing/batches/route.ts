@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { MarketingPipelineEngine } from "@/server/orchestrator/marketing-pipeline";
-import { AntigravityPythonSdkProvider } from "@/server/orchestrator/antigravity-python-provider";
+import { AntigravityTsProvider } from "@/server/orchestrator/antigravity-ts-provider";
 import { MockAgentProvider } from "@/server/orchestrator/agent-provider";
 import { MarketingRunRepository } from "@/server/repositories/marketing-repository";
 
@@ -28,19 +28,10 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
 
     const { skus, provider: providerType, forceRegenerate } = parsed.data;
 
-    // Seleccionar provider respetando sandbox, Switches de entorno y seguridad de producción
+    // Seleccionar provider: En producción o cuando provider === 'antigravity', usar siempre AntigravityTsProvider real
     let provider;
-    if (providerType === "antigravity" && process.env.ANTIGRAVITY_SDK_ENABLED === "true") {
-      provider = new AntigravityPythonSdkProvider();
-    } else if (process.env.NODE_ENV === "production" && process.env.ALLOW_MOCK_AGENT !== "true") {
-      return NextResponse.json(
-        {
-          status: "ERROR",
-          code: "GENERATION_UNAVAILABLE",
-          message: "Servicio de generación IA no disponible en producción (MockAgentProvider no permitido)."
-        },
-        { status: 503 }
-      );
+    if (process.env.NODE_ENV === "production" || providerType === "antigravity" || process.env.ANTIGRAVITY_SDK_ENABLED === "true") {
+      provider = new AntigravityTsProvider();
     } else {
       provider = new MockAgentProvider();
     }
@@ -51,7 +42,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
     const { batch, results } = await engine.executeBatch(
       skus,
       {
-        workspacePath: process.env.TEMP || "C:\\temp",
+        workspacePath: process.env.TEMP || process.env.TMPDIR || "/tmp",
         requestedBy: user.email,
         workspaceId: user.workspaceId || "default-ecomspain",
         organizationId: "org-ecomspain",

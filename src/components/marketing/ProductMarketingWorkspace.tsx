@@ -651,6 +651,12 @@ export function ProductMarketingWorkspace({ onCreateCampaign, initialTab, curren
           {/* TAB 2: CANONICAL MARKETING PACKAGE VIEW */}
           {activeTab === "package" && activePackage && (
             <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 flex flex-col gap-6 shadow-lg">
+              {(activePackage.generator === "catalog-fallback" || activePackage.fallbackUsed) && (
+                <div className="bg-amber-950/60 border border-amber-800/80 rounded-xl p-3 flex items-center gap-2.5 text-xs text-amber-300">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+                  <span className="font-medium">Generado en modo catálogo (IA no disponible)</span>
+                </div>
+              )}
               {/* Posicionamiento y Propuesta de Valor */}
               <div className="flex flex-col gap-2">
                 <span className="text-[10px] font-mono text-indigo-400 font-bold uppercase">Posicionamiento B2B</span>
@@ -954,6 +960,11 @@ export function ProductMarketingWorkspace({ onCreateCampaign, initialTab, curren
                             {item.qualityScore !== undefined && (
                               <span className="text-[11px] text-slate-400">Score: {item.qualityScore}/100</span>
                             )}
+                            {(item as any).generator === "catalog-fallback" || (item as any).fallbackUsed ? (
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800">
+                                Generado en modo catálogo (IA no disponible)
+                              </span>
+                            ) : null}
                           </div>
 
                           <div className="text-[11px] text-slate-400 truncate max-w-[280px]">

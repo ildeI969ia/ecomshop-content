@@ -54,6 +54,20 @@ export const POST = withAuthAndPermission("content:create", async (req: NextRequ
       body.status === "approved" || body.status === "APPROVED" ? "APPROVED" :
       body.status === "reviewed" || body.status === "IN_REVIEW" ? "IN_REVIEW" : "DRAFT";
 
+    const isFallback =
+      body.generator === "catalog-fallback" ||
+      body.fallbackUsed === true ||
+      body.content?.generator === "catalog-fallback" ||
+      body.content?.fallbackUsed === true ||
+      body.content?.source === "fallback";
+
+    if (normalizedStatus === "PUBLISHED" && isFallback && !body.humanApproved) {
+      return NextResponse.json(
+        { error: "No se puede publicar directamente contenido generado en modo catálogo (catalog-fallback) sin aprobación humana explícita." },
+        { status: 400 }
+      );
+    }
+
     if (normalizedStatus === "PUBLISHED" && !hasPermission(user.role, "content:publish") && user.role !== "ADMIN") {
       return NextResponse.json(
         { error: `Su rol (${user.role}) no tiene el permiso 'content:publish' necesario para publicar contenido.` },
@@ -156,16 +170,34 @@ export const PATCH = withAuthAndPermission("content:edit", async (req: NextReque
       status === "approved" || status === "APPROVED" ? "APPROVED" :
       status === "reviewed" || status === "IN_REVIEW" ? "IN_REVIEW" : "DRAFT";
 
+    const repo = new ContentRepository();
+    const cleanId = String(id).replace(/^(content-)+/, "");
+    const contentId = `content-${cleanId}`;
+
+    if (normalizedStatus === "PUBLISHED") {
+      const existing = await repo.findById(contentId);
+      const versionBody = existing?.versions?.[0]?.body || {};
+      const isFallback =
+        (existing as any)?.generator === "catalog-fallback" ||
+        (existing as any)?.fallbackUsed === true ||
+        versionBody.generator === "catalog-fallback" ||
+        versionBody.fallbackUsed === true ||
+        versionBody.source === "fallback";
+
+      if (isFallback && !body.humanApproved) {
+        return NextResponse.json(
+          { error: "No se puede publicar directamente contenido generado en modo catálogo (catalog-fallback) sin aprobación humana explícita." },
+          { status: 400 }
+        );
+      }
+    }
+
     if (normalizedStatus === "PUBLISHED" && !hasPermission(user.role, "content:publish") && user.role !== "ADMIN") {
       return NextResponse.json(
         { error: `Su rol (${user.role}) no tiene el permiso 'content:publish' necesario para publicar contenido.` },
         { status: 403 }
       );
     }
-
-    const repo = new ContentRepository();
-    const cleanId = String(id).replace(/^(content-)+/, "");
-    const contentId = `content-${cleanId}`;
 
     await repo.updateStatus(contentId, normalizedStatus as any);
 
