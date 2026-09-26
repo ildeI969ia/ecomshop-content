@@ -15,9 +15,14 @@ export class MarketingRunRepository {
     await this.runsCollection().doc(run.runId).set(run);
   }
 
-  async findRunById(runId: string): Promise<MarketingRun | null> {
+  async findRunById(runId: string, workspaceId?: string): Promise<MarketingRun | null> {
     const doc = await this.runsCollection().doc(runId).get();
-    return doc.exists ? (doc.data() as MarketingRun) : null;
+    if (!doc.exists) return null;
+    const run = doc.data() as MarketingRun;
+    if (workspaceId && run.workspaceId && run.workspaceId !== workspaceId) {
+      return null;
+    }
+    return run;
   }
 
   async findRunByIdempotencyHash(hash: string, workspaceId = "default-ecomspain"): Promise<MarketingRun | null> {
@@ -47,13 +52,22 @@ export class MarketingRunRepository {
     await this.packagesCollection().doc(pkgToSave.packageId).set(pkgToSave);
   }
 
-  async findPackageById(packageId: string): Promise<MarketingPackage | null> {
+  async findPackageById(packageId: string, workspaceId?: string): Promise<MarketingPackage | null> {
     const doc = await this.packagesCollection().doc(packageId).get();
-    return doc.exists ? (doc.data() as MarketingPackage) : null;
+    if (!doc.exists) return null;
+    const pkg = doc.data() as MarketingPackage;
+    if (workspaceId && pkg.workspaceId && pkg.workspaceId !== workspaceId) {
+      return null;
+    }
+    return pkg;
   }
 
-  async findPackageByRunId(runId: string): Promise<MarketingPackage | null> {
-    const snapshot = await this.packagesCollection().where("runId", "==", runId).limit(1).get();
+  async findPackageByRunId(runId: string, workspaceId?: string): Promise<MarketingPackage | null> {
+    let query = this.packagesCollection().where("runId", "==", runId);
+    if (workspaceId) {
+      query = query.where("workspaceId", "==", workspaceId);
+    }
+    const snapshot = await query.limit(1).get();
     if (snapshot.empty) return null;
     return snapshot.docs[0].data() as MarketingPackage;
   }
@@ -69,8 +83,12 @@ export class MarketingRunRepository {
     return snapshot.docs.map((d: QueryDocumentSnapshot) => d.data() as MarketingPackage);
   }
 
-  async listPackagesBySku(sku: string, limitCount = 20): Promise<MarketingPackage[]> {
+  async listPackagesBySku(sku: string, workspaceId: string, limitCount = 20): Promise<MarketingPackage[]> {
+    if (!workspaceId) {
+      throw new Error("workspaceId es obligatorio para listar packages por SKU");
+    }
     const snapshot = await this.packagesCollection()
+      .where("workspaceId", "==", workspaceId)
       .where("product.sku", "==", sku)
       .limit(limitCount)
       .get();
@@ -81,9 +99,14 @@ export class MarketingRunRepository {
     await this.batchesCollection().doc(batch.batchId).set(batch);
   }
 
-  async findBatchById(batchId: string): Promise<MarketingBatch | null> {
+  async findBatchById(batchId: string, workspaceId?: string): Promise<MarketingBatch | null> {
     const doc = await this.batchesCollection().doc(batchId).get();
-    return doc.exists ? (doc.data() as MarketingBatch) : null;
+    if (!doc.exists) return null;
+    const batch = doc.data() as MarketingBatch;
+    if (workspaceId && batch.workspaceId && batch.workspaceId !== workspaceId) {
+      return null;
+    }
+    return batch;
   }
 
   async listBatchesByWorkspace(workspaceId: string, limitCount = 20): Promise<MarketingBatch[]> {

@@ -60,7 +60,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
     // Determinar siguiente contentVersion para el SKU
     let nextContentVersion = 1;
     try {
-      const pastPackages = await repository.listPackagesBySku(sku);
+      const pastPackages = await repository.listPackagesBySku(sku, user.workspaceId || "default-ecomspain");
       if (pastPackages.length > 0) {
         const maxVer = Math.max(...pastPackages.map((p) => p.contentVersion || 1));
         nextContentVersion = maxVer + 1;

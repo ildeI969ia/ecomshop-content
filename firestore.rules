@@ -69,8 +69,8 @@ service cloud.firestore {
       allow delete: if isAdmin() && isSameWorkspace(resource.data);
 
       match /variants/{variantId} {
-        allow read: if isAuthenticated();
-        allow write: if canEditContent();
+        allow read: if isAuthenticated() && isSameWorkspace(get(/databases/$(database)/documents/contents/$(contentId)).data);
+        allow write: if canEditContent() && isSameWorkspace(get(/databases/$(database)/documents/contents/$(contentId)).data);
       }
     }
 
