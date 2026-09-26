@@ -44,10 +44,12 @@ export class AntigravityTsProvider implements IAgentProvider {
     }
 
     // Fallback a Vertex AI nativo (Application Default Credentials en Cloud Run)
+    const location = process.env.VERTEX_LOCATION || "us-central1";
+
     return new GoogleGenAI({
       vertexai: true,
       project: process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || "ecomshop-marketing-prod",
-      location: process.env.GOOGLE_CLOUD_LOCATION || process.env.VERTEX_LOCATION || "us-central1"
+      location
     });
   }
 

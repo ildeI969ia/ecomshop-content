@@ -35,7 +35,7 @@ export const aiClient = new GoogleGenAI(
     ? {
         vertexai: true, // ← lowercase correcto según tipo ApiClientInitOptions del SDK
         project: process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || "ecomshop-marketing-prod",
-        location: process.env.GOOGLE_CLOUD_LOCATION || process.env.VERTEX_LOCATION || "us-central1",
+        location: process.env.VERTEX_LOCATION || "us-central1",
       }
     : {
         apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY || "",
