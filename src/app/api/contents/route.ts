@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
+import { hasPermission } from "@/server/security/rbac";
 import { ContentRepository, AuditRepository } from "@/server/repositories";
 import { ContentItem } from "@/server/domain/types";
 
@@ -52,6 +53,13 @@ export const POST = withAuthAndPermission("content:create", async (req: NextRequ
       body.status === "published" || body.status === "PUBLISHED" ? "PUBLISHED" :
       body.status === "approved" || body.status === "APPROVED" ? "APPROVED" :
       body.status === "reviewed" || body.status === "IN_REVIEW" ? "IN_REVIEW" : "DRAFT";
+
+    if (normalizedStatus === "PUBLISHED" && !hasPermission(user.role, "content:publish") && user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: `Su rol (${user.role}) no tiene el permiso 'content:publish' necesario para publicar contenido.` },
+        { status: 403 }
+      );
+    }
 
     const contentItem: ContentItem = {
       id: contentId,
@@ -147,6 +155,13 @@ export const PATCH = withAuthAndPermission("content:edit", async (req: NextReque
       status === "published" || status === "PUBLISHED" ? "PUBLISHED" :
       status === "approved" || status === "APPROVED" ? "APPROVED" :
       status === "reviewed" || status === "IN_REVIEW" ? "IN_REVIEW" : "DRAFT";
+
+    if (normalizedStatus === "PUBLISHED" && !hasPermission(user.role, "content:publish") && user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: `Su rol (${user.role}) no tiene el permiso 'content:publish' necesario para publicar contenido.` },
+        { status: 403 }
+      );
+    }
 
     const repo = new ContentRepository();
     const cleanId = String(id).replace(/^(content-)+/, "");

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
+import { hasPermission } from "@/server/security/rbac";
 import { CampaignRepository } from "@/server/repositories";
 
 export const GET = withAuthAndPermission("campaign:view", async (req: NextRequest, user) => {
@@ -78,18 +79,27 @@ export const PATCH = withAuthAndPermission("campaign:edit", async (req: NextRequ
     if (body.channelState !== undefined) updates.channelState = body.channelState;
     if (body.qualityState !== undefined) updates.qualityState = body.qualityState;
     if (body.reviewState !== undefined) updates.reviewState = body.reviewState;
-    if (body.spentEur !== undefined) updates.spentEur = body.spentEur;
-    if (body.aiCostEur !== undefined) updates.aiCostEur = body.aiCostEur;
+    if (body.spentEur !== undefined || body.aiCostEur !== undefined) {
+      if (user.role !== "ADMIN" && !hasPermission(user.role, "finops:manage")) {
+        return NextResponse.json(
+          { error: "No tiene permisos para modificar los costes de la campaña (spentEur/aiCostEur)." },
+          { status: 403 }
+        );
+      }
+      if (body.spentEur !== undefined) updates.spentEur = body.spentEur;
+      if (body.aiCostEur !== undefined) updates.aiCostEur = body.aiCostEur;
+    }
 
     if (body.newVersionSnapshot) {
       const currentVersions = existing.versions || [];
+      const { version, updatedBy, timestamp, ...cleanSnapshot } = body.newVersionSnapshot || {};
       updates.versions = [
         ...currentVersions,
         {
+          ...cleanSnapshot,
           version: currentVersions.length + 1,
           timestamp: new Date().toISOString(),
-          updatedBy: user.uid,
-          ...body.newVersionSnapshot
+          updatedBy: user.uid
         }
       ];
     }

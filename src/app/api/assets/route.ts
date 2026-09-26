@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
-import { AssetRepository, AuditRepository } from "@/server/repositories";
+import { AssetRepository, AuditRepository, CampaignRepository, ContentRepository, ProductRepository } from "@/server/repositories";
 import { GoogleCloudStorageProvider } from "@/server/services/storage-provider";
 import { Asset } from "@/server/domain/types";
 import { prepareImageBinary, sha256Of } from "@/server/services/image-binary";
@@ -43,6 +43,28 @@ export const POST = withAuthAndPermission("content:create", async (req: NextRequ
 
     if (!filename || !mimeType || !base64Data) {
       return NextResponse.json({ error: "Faltan parámetros obligatorios del asset" }, { status: 400 });
+    }
+
+    if (campaignId) {
+      const campaignRepo = new CampaignRepository();
+      const campaign = await campaignRepo.findById(campaignId);
+      if (campaign && campaign.workspaceId && campaign.workspaceId !== user.workspaceId) {
+        return NextResponse.json(
+          { error: `La campaña '${campaignId}' no pertenece al workspace '${user.workspaceId}'` },
+          { status: 403 }
+        );
+      }
+    }
+
+    if (contentId) {
+      const contentRepo = new ContentRepository();
+      const contentItem = await contentRepo.findById(contentId);
+      if (contentItem && contentItem.workspaceId && contentItem.workspaceId !== user.workspaceId) {
+        return NextResponse.json(
+          { error: `El contenido '${contentId}' no pertenece al workspace '${user.workspaceId}'` },
+          { status: 403 }
+        );
+      }
     }
 
     const sanitizedFilename = filename.replace(/[^a-zA-Z0-9_.-]/g, "_").replace(/\.\./g, "");
