@@ -52,8 +52,8 @@ export async function apiFetch<T = any>(
       }
 
       const errorMessage =
-        errPayload.error ||
         errPayload.message ||
+        errPayload.error ||
         `Error HTTP ${res.status}: ${res.statusText}`;
 
       throw new ApiError(

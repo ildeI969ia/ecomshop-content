@@ -43,9 +43,10 @@ export class CampaignRepository {
   }
 }
 
-function sanitizeUndefined<T>(obj: T): T {
+export function sanitizeUndefined<T>(obj: T): T {
   if (obj === null || obj === undefined) return null as unknown as T;
   if (typeof obj !== "object") return obj;
+  if (obj instanceof Date) return obj as unknown as T;
   if (Array.isArray(obj)) {
     return obj.map(sanitizeUndefined) as unknown as T;
   }
@@ -243,7 +244,7 @@ export class FinOpsRepository {
   private collection = () => getAdminFirestore().collection("usage_records");
 
   async record(record: FinOpsRecord): Promise<void> {
-    await this.collection().doc(record.id).set(record);
+    await this.collection().doc(record.id).set(sanitizeUndefined(record));
   }
 
   async listRecent(limitCount = 100): Promise<FinOpsRecord[]> {
@@ -266,7 +267,7 @@ export class AuditRepository {
   private collection = () => getAdminFirestore().collection("audit_logs");
 
   async record(log: AuditLog): Promise<void> {
-    await this.collection().doc(log.id).set(log);
+    await this.collection().doc(log.id).set(sanitizeUndefined(log));
   }
 
   async listByEntity(entity: string, entityId: string): Promise<AuditLog[]> {
@@ -291,7 +292,7 @@ export class SourceRepository {
   }
 
   async save(source: SourceItem): Promise<void> {
-    await this.collection().doc(source.id).set(source);
+    await this.collection().doc(source.id).set(sanitizeUndefined(source));
   }
 }
 export class AssetRepository {
@@ -340,7 +341,7 @@ export class AssetRepository {
   }
 
   async save(asset: Asset): Promise<void> {
-    await this.collection().doc(asset.id).set(asset);
+    await this.collection().doc(asset.id).set(sanitizeUndefined(asset));
   }
 
   async delete(id: string): Promise<void> {
@@ -387,7 +388,7 @@ export class ProductRepository {
   }
 
   async save(product: ProductEntity): Promise<void> {
-    await this.collection().doc(product.id).set(product);
+    await this.collection().doc(product.id).set(sanitizeUndefined(product));
   }
 }
 
@@ -406,7 +407,7 @@ export class ProductIntelligenceRepository {
   }
 
   async save(record: ProductIntelligenceRecord): Promise<void> {
-    await this.collection().doc(record.id).set(record);
+    await this.collection().doc(record.id).set(sanitizeUndefined(record));
   }
 }
 

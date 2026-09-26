@@ -1,6 +1,7 @@
 import { getAdminFirestore } from "../config/firebase";
 import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { MarketingRun, MarketingPackage, QualityReport, MarketingBatch } from "../orchestrator/marketing-types";
+import { sanitizeUndefined } from "./index";
 
 /**
  * Repositorio de persistencia en Firestore para MarketingRuns, MarketingPackages y MarketingBatches.
@@ -12,7 +13,7 @@ export class MarketingRunRepository {
   private batchesCollection = () => getAdminFirestore().collection("marketing_batches");
 
   async saveRun(run: MarketingRun): Promise<void> {
-    await this.runsCollection().doc(run.runId).set(run);
+    await this.runsCollection().doc(run.runId).set(sanitizeUndefined(run));
   }
 
   async findRunById(runId: string, workspaceId?: string): Promise<MarketingRun | null> {
@@ -49,7 +50,7 @@ export class MarketingRunRepository {
       workspaceId: pkg.workspaceId || "default-ecomspain",
       organizationId: pkg.organizationId || "org-ecomspain"
     };
-    await this.packagesCollection().doc(pkgToSave.packageId).set(pkgToSave);
+    await this.packagesCollection().doc(pkgToSave.packageId).set(sanitizeUndefined(pkgToSave));
   }
 
   async findPackageById(packageId: string, workspaceId?: string): Promise<MarketingPackage | null> {
@@ -96,7 +97,7 @@ export class MarketingRunRepository {
   }
 
   async saveBatch(batch: MarketingBatch): Promise<void> {
-    await this.batchesCollection().doc(batch.batchId).set(batch);
+    await this.batchesCollection().doc(batch.batchId).set(sanitizeUndefined(batch));
   }
 
   async findBatchById(batchId: string, workspaceId?: string): Promise<MarketingBatch | null> {
