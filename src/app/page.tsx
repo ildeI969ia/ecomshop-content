@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Sparkles,
   Store,
+  Upload,
   Wand2,
   Zap,
 } from "lucide-react";
@@ -76,7 +77,7 @@ export default function Page() {
         />
       )}
 
-      <div className="min-h-screen bg-slate-950 text-slate-100">
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-slate-100">
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
           <header className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-lg shadow-slate-950/30 backdrop-blur-sm">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -128,6 +129,9 @@ export default function Page() {
                         Flujo guiado
                       </div>
                       <h2 className="text-3xl font-bold leading-tight">Crea tu campaña en 3 pasos</h2>
+                      <p className="mt-2 text-sm text-slate-300">
+                        Contenido listo para publicar sin reformatear. Basado en documentación oficial.
+                      </p>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -217,7 +221,7 @@ export default function Page() {
                         <div className="space-y-4">
                           <div>
                             <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-400">Tono</label>
-                            <select className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 outline-none">
+                            <select className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 outline-none transition hover:border-slate-600">
                               <option>Preventa técnica</option>
                               <option>Directivo ROI</option>
                               <option>Comparativa</option>
@@ -225,8 +229,8 @@ export default function Page() {
                           </div>
 
                           <div>
-                            <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-400">Público</label>
-                            <select className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 outline-none">
+                            <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-400">Público objetivo</label>
+                            <select className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 outline-none transition hover:border-slate-600">
                               <option>Integradores B2B</option>
                               <option>Equipos IT</option>
                               <option>Directivos</option>
@@ -234,70 +238,93 @@ export default function Page() {
                           </div>
 
                           <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-3 text-sm text-slate-300">
-                            Baseado en documentación oficial y validado para contenido comercial.
+                            <p className="font-semibold text-white mb-2">Validación incluida</p>
+                            <p>✓ Basado en documentación oficial</p>
+                            <p>✓ Contenido comercial B2B</p>
+                            <p>✓ Listo para publicar sin reformatear</p>
                           </div>
                         </div>
                       </div>
                     )}
                   </div>
 
-                  <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/40">
-                    <div className="flex items-center justify-between gap-3 pb-4">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-indigo-400" />
-                        <h3 className="text-lg font-bold text-white">Resultado listo</h3>
-                      </div>
-                      <span className="rounded-full border border-slate-700 bg-slate-950 px-2 py-1 text-[10px] uppercase text-slate-300">
-                        4 canales
-                      </span>
-                    </div>
-
-                    <div className="space-y-3">
-                      {CHANNELS.map(({ label, icon: Icon, color }) => (
-                        <div key={label} className="rounded-xl border border-slate-800 bg-slate-950/80 p-3">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2">
-                              <Icon className={`h-4 w-4 ${color}`} />
-                              <span className="font-semibold text-white">{label}</span>
-                            </div>
-                            <span className="text-[10px] uppercase tracking-[0.1em] text-emerald-300">listo</span>
-                          </div>
-                          <p className="mt-2 text-sm text-slate-400">
-                            Mensaje preparado con tono claro, útil y orientado a venta B2B.
-                          </p>
-                          <button
-                            onClick={() => copyText(`Campaña ${label} para ${product.name} (${product.sku})`, `${label}-copy`)}
-                            className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-indigo-500 hover:text-white"
-                          >
-                            {copiedKey === `${label}-copy` ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-                            {copiedKey === `${label}-copy` ? "Copiado" : "Copiar texto"}
-                          </button>
+                  <div className="flex flex-col gap-6">
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/40">
+                      <div className="flex items-center justify-between gap-3 pb-4">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-indigo-400" />
+                          <h3 className="text-lg font-bold text-white">Resultado listo</h3>
                         </div>
-                      ))}
+                        <span className="rounded-full border border-slate-700 bg-slate-950 px-2 py-1 text-[10px] uppercase text-slate-300">
+                          4 canales
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        {CHANNELS.map(({ label, icon: Icon, color }) => (
+                          <div key={label} className="rounded-xl border border-slate-800 bg-slate-950/80 p-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2">
+                                <Icon className={`h-4 w-4 ${color}`} />
+                                <span className="font-semibold text-white">{label}</span>
+                              </div>
+                              <span className="text-[10px] uppercase tracking-[0.1em] text-emerald-300">listo</span>
+                            </div>
+                            <p className="mt-2 text-sm text-slate-400">
+                              Mensaje preparado con tono claro, útil y orientado a venta B2B.
+                            </p>
+                            <button
+                              onClick={() => copyText(`Campaña ${label} para ${product.name} (${product.sku})`, `${label}-copy`)}
+                              className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-indigo-500 hover:text-white"
+                            >
+                              {copiedKey === `${label}-copy` ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                              {copiedKey === `${label}-copy` ? "Copiado" : "Copiar texto"}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
-                    <div className="mt-5 rounded-xl border border-slate-800 bg-slate-950/80 p-4">
-                      <div className="flex items-center gap-2 text-white">
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/40">
+                      <div className="flex items-center gap-2 mb-4 text-white">
                         <Store className="h-4 w-4 text-indigo-400" />
                         <span className="font-semibold">Resumen final</span>
                       </div>
-                      <p className="mt-3 text-sm text-slate-300">{summary.replace(/\n/g, " ")}</p>
-                    </div>
+                      <p className="text-sm text-slate-300 mb-5">{summary.replace(/\n/g, " ")}</p>
 
-                    <div className="mt-5 flex gap-3">
-                      <button
-                        type="button"
-                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white transition hover:bg-indigo-500"
-                      >
-                        Guardar campaña
-                        <ArrowRight className="h-4 w-4" />
-                      </button>
+                      <div className="flex flex-col gap-3">
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white transition hover:bg-indigo-500"
+                        >
+                          <Check className="h-4 w-4" />
+                          Guardar campaña
+                        </button>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 font-semibold text-slate-200 transition hover:border-slate-600 hover:text-white"
+                        >
+                          <Upload className="h-4 w-4" />
+                          Publicar ahora
+                        </button>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-slate-600 hover:text-white"
+                        >
+                          <ArrowRight className="h-3.5 w-3.5" />
+                          Compartir
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </section>
               </>
             )}
           </main>
+
+          <footer className="mt-16 border-t border-slate-800 pt-8 text-center text-xs text-slate-500">
+            <p>© 2024 EcomSpain Marketing OS • Powered by AI • Basado en documentación oficial</p>
+          </footer>
         </div>
       </div>
 
