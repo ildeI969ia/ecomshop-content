@@ -1,339 +1,212 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  ArrowRight,
-  BookOpen,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  Copy,
-  FileText,
-  Mail,
-  MessageSquare,
-  Sparkles,
-  Store,
-  Upload,
-  Wand2,
-  Zap,
-} from "lucide-react";
-import { OnboardingWizard } from "@/components/onboarding-wizard";
-import { QuickStartModal } from "@/components/quick-start-modal";
-import { SimplifiedDashboard } from "@/components/simplified-dashboard";
+import { useEffect, useState } from "react";
+import { LogOut, RefreshCw, Sparkles, ArrowLeft } from "lucide-react";
+import { CorporateSignIn } from "@/components/auth/CorporateSignIn";
+import { CommandCenter } from "@/components/os/CommandCenter";
+import { CampaignWorkspace } from "@/components/os/CampaignWorkspace";
 
-const PRODUCT_CATALOG = [
-  { sku: "ECW510", name: "ECW510 Wi‑Fi 7 Gateway", category: "Gateway" },
-  { sku: "ST3116G", name: "ST3116G Switch PoE", category: "Switch" },
-  { sku: "ECW210", name: "ECW210 Access Point", category: "Wi‑Fi" },
-  { sku: "DAC-10G-3M", name: "DAC-10G-3M 3m", category: "Fibra" },
-  { sku: "RUTX12", name: "RUTX12 Router Cellular", category: "Gateway" },
-  { sku: "LUX-100", name: "LUX-100 Optics Kit", category: "Fibra" },
+type User = {
+  uid: string;
+  email: string;
+  role: string;
+  workspaceId: string;
+};
+
+type View = "command" | "campaign" | "content";
+
+const PRODUCTS = [
+  { sku: "ECW510", name: "ECW510 Wi-Fi 7 Gateway", url: "https://www.ecomshop.es/ecw510/", category: "wifi" },
+  { sku: "ST3116G", name: "ST3116G Switch PoE", url: "https://www.ecomshop.es/", category: "switches" },
 ];
 
-const CHANNELS = [
-  { label: "Blog", icon: BookOpen, color: "text-sky-400" },
-  { label: "LinkedIn", icon: FileText, color: "text-blue-400" },
-  { label: "WhatsApp", icon: MessageSquare, color: "text-emerald-400" },
-  { label: "Email", icon: Mail, color: "text-violet-400" },
-];
-
-export default function Page() {
-  const [showOnboarding, setShowOnboarding] = useState(true);
-  const [showQuickStart, setShowQuickStart] = useState(false);
-  const [selectedSku, setSelectedSku] = useState<string | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-
-  const product = useMemo(
-    () => PRODUCT_CATALOG.find((item) => item.sku === selectedSku) ?? PRODUCT_CATALOG[0],
-    [selectedSku],
+function LoadingScreen() {
+  return (
+    <main className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center">
+      <div className="flex items-center gap-3 text-sm text-slate-400">
+        <RefreshCw className="h-4 w-4 animate-spin" />
+        Verificando sesión corporativa...
+      </div>
+    </main>
   );
+}
 
-  const copyText = async (text: string, key: string) => {
+function ContentStudio({ onBack }: { onBack: () => void }) {
+  const [sku, setSku] = useState(PRODUCTS[0].sku);
+  const [topicTitle, setTopicTitle] = useState("Wi-Fi 7 profesional para despliegues B2B");
+  const [audience, setAudience] = useState("Integrador B2B");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState<any>(null);
+
+  const product = PRODUCTS.find((item) => item.sku === sku) ?? PRODUCTS[0];
+
+  const generate = async () => {
+    setLoading(true);
+    setError("");
+    setResult(null);
     try {
-      await navigator.clipboard.writeText(text);
-      setCopiedKey(key);
-      setTimeout(() => setCopiedKey(null), 1500);
-    } catch {
-      setCopiedKey(null);
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sku: product.sku,
+          topicTitle,
+          category: product.category,
+          targetAudience: audience,
+          productUrl: product.url,
+          customAngle: "ROI",
+          businessGoal: "ALL_OPPORTUNITIES",
+          syncWhatsApp: true,
+          syncLinkedIn: true,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || data.message || `Error HTTP ${response.status}`);
+      setResult(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo generar el contenido.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleGenerateCampaign = () => setShowQuickStart(true);
+  return (
+    <div className="space-y-6">
+      <button onClick={onBack} className="inline-flex items-center gap-2 text-xs font-mono font-bold text-slate-600 hover:text-slate-900">
+        <ArrowLeft className="h-4 w-4" /> VOLVER AL COMMAND CENTER
+      </button>
 
-  const handleSelectProduct = (sku: string) => {
-    setSelectedSku(sku);
-    setShowQuickStart(false);
+      <section className="bg-white border border-slate-200 rounded-sm p-6">
+        <div className="flex items-center gap-2 text-sky-700 text-xs font-mono font-bold uppercase tracking-widest">
+          <Sparkles className="h-4 w-4" /> Content Studio
+        </div>
+        <h1 className="mt-2 text-2xl font-serif font-bold text-slate-900">Generación multicanal real</h1>
+        <p className="mt-1 text-sm text-slate-600">
+          La petición pasa por autenticación, presupuesto, inteligencia de producto, generación, validación y persistencia.
+        </p>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <label className="text-xs font-semibold text-slate-700">
+            Producto
+            <select value={sku} onChange={(e) => setSku(e.target.value)} className="mt-1 w-full rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm">
+              {PRODUCTS.map((item) => <option key={item.sku} value={item.sku}>{item.sku} — {item.name}</option>)}
+            </select>
+          </label>
+          <label className="text-xs font-semibold text-slate-700 md:col-span-2">
+            Tema
+            <input value={topicTitle} onChange={(e) => setTopicTitle(e.target.value)} className="mt-1 w-full rounded-sm border border-slate-300 px-3 py-2 text-sm" />
+          </label>
+          <label className="text-xs font-semibold text-slate-700">
+            Público
+            <input value={audience} onChange={(e) => setAudience(e.target.value)} className="mt-1 w-full rounded-sm border border-slate-300 px-3 py-2 text-sm" />
+          </label>
+        </div>
+
+        <button onClick={generate} disabled={loading} className="mt-6 inline-flex items-center gap-2 rounded-sm bg-slate-900 px-4 py-2.5 text-xs font-mono font-bold uppercase text-white disabled:opacity-50">
+          <Sparkles className="h-4 w-4" /> {loading ? "GENERANDO..." : "GENERAR PAQUETE"}
+        </button>
+
+        {error && <div className="mt-4 rounded-sm border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</div>}
+
+        {result && (
+          <div className="mt-6 rounded-sm border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+            <div className="font-bold">Generación completada</div>
+            <div className="mt-1">ID: {result.id ?? "—"}</div>
+            <div>Fact-check: {result.factCheckScore ?? "—"}</div>
+            <div>Grounding: {result.groundingValidation?.isValid === true ? "válido" : result.groundingValidation ? "requiere revisión" : "no disponible"}</div>
+            <div>Canales: Blog, Mailchimp, WhatsApp y LinkedIn</div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+export default function Page() {
+  const [status, setStatus] = useState<"loading" | "signed-out" | "signed-in">("loading");
+  const [user, setUser] = useState<User | null>(null);
+  const [view, setView] = useState<View>("command");
+  const [syncing, setSyncing] = useState(false);
+
+  const loadSession = async () => {
+    try {
+      const response = await fetch("/api/auth/me", { cache: "no-store" });
+      if (!response.ok) {
+        setUser(null);
+        setStatus("signed-out");
+        return;
+      }
+      const data = await response.json();
+      setUser(data.user);
+      setStatus("signed-in");
+    } catch {
+      setUser(null);
+      setStatus("signed-out");
+    }
   };
 
-  const summary = `Producto: ${product.name} (${product.sku})\n\nPunto fuerte: conectividad, rendimiento y facilidad de despliegue para clientes B2B.\nCanales: Blog, LinkedIn, WhatsApp y Email.`;
+  useEffect(() => {
+    void loadSession();
+  }, []);
+
+  const logout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
+    setUser(null);
+    setStatus("signed-out");
+    setView("command");
+  };
+
+  const sync = async () => {
+    setSyncing(true);
+    try {
+      const response = await fetch("/api/health/persistence?verifyUrls=0", { cache: "no-store" });
+      if (!response.ok) throw new Error("El diagnóstico de persistencia no está disponible.");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  if (status === "loading") return <LoadingScreen />;
+  if (status === "signed-out") return <CorporateSignIn onSuccess={(nextUser) => { setUser(nextUser); setStatus("signed-in"); }} />;
+  if (!user) return <LoadingScreen />;
 
   return (
-    <>
-      {showOnboarding && (
-        <OnboardingWizard
-          onComplete={() => setShowOnboarding(false)}
-          onSkip={() => setShowOnboarding(false)}
-        />
-      )}
+    <main className="min-h-screen bg-slate-50 text-slate-900">
+      <div className="mx-auto max-w-[1500px] px-4 py-5 sm:px-6 lg:px-8">
+        <header className="mb-6 flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="text-[10px] font-mono uppercase tracking-[0.25em] text-sky-700">EcomSpain</div>
+            <h1 className="text-xl font-serif font-bold">Marketing OS</h1>
+          </div>
+          <div className="flex items-center gap-3 text-xs">
+            <span className="font-mono text-slate-500">{user.email} · {user.role}</span>
+            <button onClick={logout} className="inline-flex items-center gap-1.5 rounded-sm border border-slate-300 px-3 py-1.5 font-mono font-bold hover:bg-white">
+              <LogOut className="h-3.5 w-3.5" /> SALIR
+            </button>
+          </div>
+        </header>
 
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-slate-100">
-        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-          <header className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-lg shadow-slate-950/30 backdrop-blur-sm">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-3">
-                <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-lg font-black text-white shadow-lg shadow-indigo-900/40">
-                  E
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.25em] text-slate-400">EcomSpain</p>
-                  <h1 className="text-lg font-bold text-white">Marketing OS</h1>
-                </div>
-              </div>
+        {view === "command" && (
+          <CommandCenter
+            user={user}
+            onNavigateToContent={() => setView("content")}
+            onNavigateToCampaign={() => setView("campaign")}
+            onNavigateToDiagnostic={() => setView("content")}
+            onSyncFirestore={sync}
+            syncing={syncing}
+          />
+        )}
 
-              <nav className="flex flex-wrap items-center gap-2 text-sm text-slate-300">
-                <button className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 transition hover:border-slate-600 hover:text-white">
-                  Inicio
-                </button>
-                <button
-                  onClick={handleGenerateCampaign}
-                  className="rounded-xl bg-indigo-600 px-3 py-2 font-semibold text-white transition hover:bg-indigo-500"
-                >
-                  Crear campaña
-                </button>
-                <button className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 transition hover:border-slate-600 hover:text-white">
-                  Historial
-                </button>
-              </nav>
-            </div>
-          </header>
+        {view === "campaign" && (
+          <CampaignWorkspace
+            onBack={() => setView("command")}
+            onOpenContentStudio={() => setView("content")}
+          />
+        )}
 
-          <main className="mt-8 space-y-8">
-            {!selectedSku ? (
-              <SimplifiedDashboard
-                onGenerateCampaign={handleGenerateCampaign}
-                onViewHistory={() => setShowQuickStart(true)}
-                onViewRadar={() => setShowQuickStart(true)}
-                recentCampaigns={[
-                  { id: "1", title: "Campaña ECW510", date: "Hoy" },
-                  { id: "2", title: "Lanzamiento ST3116G", date: "Ayer" },
-                ]}
-              />
-            ) : (
-              <>
-                <section className="rounded-3xl border border-indigo-800/40 bg-gradient-to-r from-indigo-950 via-slate-900 to-slate-950 p-6 text-white shadow-2xl shadow-indigo-950/20">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                    <div>
-                      <div className="mb-3 flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-indigo-300">
-                        <Wand2 className="h-4 w-4" />
-                        Flujo guiado
-                      </div>
-                      <h2 className="text-3xl font-bold leading-tight">Crea tu campaña en 3 pasos</h2>
-                      <p className="mt-2 text-sm text-slate-300">
-                        Contenido listo para publicar sin reformatear. Basado en documentación oficial.
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setShowAdvanced(false)}
-                        className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
-                          !showAdvanced
-                            ? "bg-white text-slate-950"
-                            : "border border-slate-700 bg-slate-900/70 text-slate-200"
-                        }`}
-                      >
-                        Modo simple
-                      </button>
-                      <button
-                        onClick={() => setShowAdvanced(true)}
-                        className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
-                          showAdvanced
-                            ? "bg-white text-slate-950"
-                            : "border border-slate-700 bg-slate-900/70 text-slate-200"
-                        }`}
-                      >
-                        Más opciones
-                      </button>
-                    </div>
-                  </div>
-                </section>
-
-                <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-                  <div className="space-y-6">
-                    <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/40">
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Producto activo</p>
-                          <h3 className="mt-2 text-2xl font-bold text-white">{product.name}</h3>
-                          <p className="mt-1 text-sm text-slate-400">SKU: {product.sku}</p>
-                        </div>
-                        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3 py-1 text-xs font-semibold text-emerald-300">
-                          <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                          Listo para publicar
-                        </div>
-                      </div>
-
-                      <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                        {[
-                          "Selecciona producto",
-                          "Genera contenido",
-                          "Copia y publica",
-                        ].map((step, index) => (
-                          <div key={step} className="rounded-xl border border-slate-800 bg-slate-950/80 p-3">
-                            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
-                              {index + 1}
-                            </div>
-                            <p className="text-sm font-semibold text-white">{step}</p>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="mt-6 flex flex-wrap gap-3">
-                        <button
-                          onClick={() => setShowQuickStart(true)}
-                          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 font-semibold text-white transition hover:bg-indigo-500"
-                        >
-                          Cambiar producto
-                          <ChevronRight className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => copyText(summary, "summary")}
-                          className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 font-semibold text-slate-200 transition hover:border-slate-600 hover:text-white"
-                        >
-                          {copiedKey === "summary" ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-                          {copiedKey === "summary" ? "Resumen copiado" : "Copiar resumen"}
-                        </button>
-                      </div>
-                    </div>
-
-                    {showAdvanced && (
-                      <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/40">
-                        <button
-                          type="button"
-                          onClick={() => setShowAdvanced(false)}
-                          className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-slate-200"
-                        >
-                          <ChevronDown className="h-4 w-4" />
-                          Ocultar ajustes avanzados
-                        </button>
-
-                        <div className="space-y-4">
-                          <div>
-                            <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-400">Tono</label>
-                            <select className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 outline-none transition hover:border-slate-600">
-                              <option>Preventa técnica</option>
-                              <option>Directivo ROI</option>
-                              <option>Comparativa</option>
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-400">Público objetivo</label>
-                            <select className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 outline-none transition hover:border-slate-600">
-                              <option>Integradores B2B</option>
-                              <option>Equipos IT</option>
-                              <option>Directivos</option>
-                            </select>
-                          </div>
-
-                          <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-3 text-sm text-slate-300">
-                            <p className="font-semibold text-white mb-2">Validación incluida</p>
-                            <p>✓ Basado en documentación oficial</p>
-                            <p>✓ Contenido comercial B2B</p>
-                            <p>✓ Listo para publicar sin reformatear</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col gap-6">
-                    <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/40">
-                      <div className="flex items-center justify-between gap-3 pb-4">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="h-4 w-4 text-indigo-400" />
-                          <h3 className="text-lg font-bold text-white">Resultado listo</h3>
-                        </div>
-                        <span className="rounded-full border border-slate-700 bg-slate-950 px-2 py-1 text-[10px] uppercase text-slate-300">
-                          4 canales
-                        </span>
-                      </div>
-
-                      <div className="space-y-3">
-                        {CHANNELS.map(({ label, icon: Icon, color }) => (
-                          <div key={label} className="rounded-xl border border-slate-800 bg-slate-950/80 p-3">
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-2">
-                                <Icon className={`h-4 w-4 ${color}`} />
-                                <span className="font-semibold text-white">{label}</span>
-                              </div>
-                              <span className="text-[10px] uppercase tracking-[0.1em] text-emerald-300">listo</span>
-                            </div>
-                            <p className="mt-2 text-sm text-slate-400">
-                              Mensaje preparado con tono claro, útil y orientado a venta B2B.
-                            </p>
-                            <button
-                              onClick={() => copyText(`Campaña ${label} para ${product.name} (${product.sku})`, `${label}-copy`)}
-                              className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-indigo-500 hover:text-white"
-                            >
-                              {copiedKey === `${label}-copy` ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-                              {copiedKey === `${label}-copy` ? "Copiado" : "Copiar texto"}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/40">
-                      <div className="flex items-center gap-2 mb-4 text-white">
-                        <Store className="h-4 w-4 text-indigo-400" />
-                        <span className="font-semibold">Resumen final</span>
-                      </div>
-                      <p className="text-sm text-slate-300 mb-5">{summary.replace(/\n/g, " ")}</p>
-
-                      <div className="flex flex-col gap-3">
-                        <button
-                          type="button"
-                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white transition hover:bg-indigo-500"
-                        >
-                          <Check className="h-4 w-4" />
-                          Guardar campaña
-                        </button>
-                        <button
-                          type="button"
-                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 font-semibold text-slate-200 transition hover:border-slate-600 hover:text-white"
-                        >
-                          <Upload className="h-4 w-4" />
-                          Publicar ahora
-                        </button>
-                        <button
-                          type="button"
-                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-slate-600 hover:text-white"
-                        >
-                          <ArrowRight className="h-3.5 w-3.5" />
-                          Compartir
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-              </>
-            )}
-          </main>
-
-          <footer className="mt-16 border-t border-slate-800 pt-8 text-center text-xs text-slate-500">
-            <p>© 2024 EcomSpain Marketing OS • Powered by AI • Basado en documentación oficial</p>
-          </footer>
-        </div>
+        {view === "content" && <ContentStudio onBack={() => setView("command")} />}
       </div>
-
-      <QuickStartModal
-        isOpen={showQuickStart}
-        onClose={() => setShowQuickStart(false)}
-        onSelectProduct={handleSelectProduct}
-        products={PRODUCT_CATALOG}
-      />
-    </>
+    </main>
   );
 }
