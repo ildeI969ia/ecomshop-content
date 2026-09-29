@@ -23,6 +23,8 @@ RUN npm run build
 
 FROM base AS runner
 WORKDIR /app
+ARG APP_VERSION=0.1.0
+ARG GIT_COMMIT_SHA=unknown
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
