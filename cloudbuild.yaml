@@ -1,26 +1,34 @@
 steps:
-  # Paso 1: Construir la imagen Docker multi-stage
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
+      - '--build-arg'
+      - 'APP_VERSION=0.1.0'
+      - '--build-arg'
+      - 'GIT_COMMIT_SHA=$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/ecomshop-content:$COMMIT_SHA'
       - '-t'
       - 'gcr.io/$PROJECT_ID/ecomshop-content:latest'
       - '.'
 
-  # Paso 2: Subir imagen a Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/ecomshop-content:$COMMIT_SHA'
+
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - 'gcr.io/$PROJECT_ID/ecomshop-content:latest'
 
-  # Paso 3: Desplegar en Cloud Run (europe-west1)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
       - 'ecomshop-content'
-      - '--image=gcr.io/$PROJECT_ID/ecomshop-content:latest'
+      - '--image=gcr.io/$PROJECT_ID/ecomshop-content:$COMMIT_SHA'
       - '--region=europe-west1'
       - '--platform=managed'
       - '--no-allow-unauthenticated'
@@ -29,11 +37,10 @@ steps:
       - '--memory=1Gi'
       - '--cpu=1'
       - '--update-env-vars=GOOGLE_CLOUD_PROJECT=ecomshop-marketing-prod,GOOGLE_CLOUD_LOCATION=europe-west1,VERTEX_LOCATION=us-central1,GOOGLE_GENAI_USE_VERTEXAI=true,GCS_BUCKET_NAME=ecomshop-marketing-assets,ANTIGRAVITY_SDK_ENABLED=true'
-      # Fase F6: Secret Manager integration. Una vez creados los secretos en Secret Manager,
-      # descomentar la bandera siguiente para mapearlos automáticamente como variables de entorno seguras:
-      # - '--update-secrets=SESSION_SECRET=SESSION_SECRET:latest,CORPORATE_ACCESS_PASSWORD=CORPORATE_ACCESS_PASSWORD:latest,ADMIN_ACCESS_PASSWORD=ADMIN_ACCESS_PASSWORD:latest'
+      - '--update-secrets=FIREBASE_API_KEY=FIREBASE_API_KEY:latest'
 
 images:
+  - 'gcr.io/$PROJECT_ID/ecomshop-content:$COMMIT_SHA'
   - 'gcr.io/$PROJECT_ID/ecomshop-content:latest'
 
 options:
