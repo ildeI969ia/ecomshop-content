@@ -5,6 +5,7 @@ import {
   ArrowRight,
   BookOpen,
   Check,
+  ChevronDown,
   ChevronRight,
   Copy,
   FileText,
@@ -39,7 +40,7 @@ export default function Page() {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [showQuickStart, setShowQuickStart] = useState(false);
   const [selectedSku, setSelectedSku] = useState<string | null>(null);
-  const [mode, setMode] = useState<"simple" | "advanced">("simple");
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const product = useMemo(
@@ -77,7 +78,7 @@ export default function Page() {
 
       <div className="min-h-screen bg-slate-950 text-slate-100">
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-          <header className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 backdrop-blur-sm shadow-lg shadow-slate-950/40">
+          <header className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-lg shadow-slate-950/30 backdrop-blur-sm">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3">
                 <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-lg font-black text-white shadow-lg shadow-indigo-900/40">
@@ -126,14 +127,14 @@ export default function Page() {
                         <Wand2 className="h-4 w-4" />
                         Flujo guiado
                       </div>
-                      <h2 className="text-3xl font-bold leading-tight">Crea la campaña en 3 pasos</h2>
+                      <h2 className="text-3xl font-bold leading-tight">Crea tu campaña en 3 pasos</h2>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setMode("simple")}
+                        onClick={() => setShowAdvanced(false)}
                         className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
-                          mode === "simple"
+                          !showAdvanced
                             ? "bg-white text-slate-950"
                             : "border border-slate-700 bg-slate-900/70 text-slate-200"
                         }`}
@@ -141,26 +142,27 @@ export default function Page() {
                         Modo simple
                       </button>
                       <button
-                        onClick={() => setMode("advanced")}
+                        onClick={() => setShowAdvanced(true)}
                         className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
-                          mode === "advanced"
+                          showAdvanced
                             ? "bg-white text-slate-950"
                             : "border border-slate-700 bg-slate-900/70 text-slate-200"
                         }`}
                       >
-                        Avanzado
+                        Más opciones
                       </button>
                     </div>
                   </div>
                 </section>
 
-                <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+                <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
                   <div className="space-y-6">
                     <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/40">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Producto activo</p>
                           <h3 className="mt-2 text-2xl font-bold text-white">{product.name}</h3>
+                          <p className="mt-1 text-sm text-slate-400">SKU: {product.sku}</p>
                         </div>
                         <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3 py-1 text-xs font-semibold text-emerald-300">
                           <span className="h-2 w-2 rounded-full bg-emerald-400" />
@@ -201,16 +203,39 @@ export default function Page() {
                       </div>
                     </div>
 
-                    {mode === "advanced" && (
+                    {showAdvanced && (
                       <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/40">
-                        <div className="flex items-center gap-2 text-white">
-                          <Zap className="h-4 w-4 text-amber-400" />
-                          <h3 className="font-bold">Opciones avanzadas</h3>
-                        </div>
-                        <div className="mt-4 space-y-3 text-sm text-slate-300">
-                          <p>• Ajustes de tono y público objetivo</p>
-                          <p>• Enfoque competitivo y mensajes B2B</p>
-                          <p>• Validación de contenido y exportación técnica</p>
+                        <button
+                          type="button"
+                          onClick={() => setShowAdvanced(false)}
+                          className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-slate-200"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                          Ocultar ajustes avanzados
+                        </button>
+
+                        <div className="space-y-4">
+                          <div>
+                            <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-400">Tono</label>
+                            <select className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 outline-none">
+                              <option>Preventa técnica</option>
+                              <option>Directivo ROI</option>
+                              <option>Comparativa</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-400">Público</label>
+                            <select className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 outline-none">
+                              <option>Integradores B2B</option>
+                              <option>Equipos IT</option>
+                              <option>Directivos</option>
+                            </select>
+                          </div>
+
+                          <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-3 text-sm text-slate-300">
+                            Baseado en documentación oficial y validado para contenido comercial.
+                          </div>
                         </div>
                       </div>
                     )}
@@ -220,7 +245,7 @@ export default function Page() {
                     <div className="flex items-center justify-between gap-3 pb-4">
                       <div className="flex items-center gap-2">
                         <Sparkles className="h-4 w-4 text-indigo-400" />
-                        <h3 className="text-lg font-bold text-white">Resultado de la campaña</h3>
+                        <h3 className="text-lg font-bold text-white">Resultado listo</h3>
                       </div>
                       <span className="rounded-full border border-slate-700 bg-slate-950 px-2 py-1 text-[10px] uppercase text-slate-300">
                         4 canales
@@ -257,6 +282,16 @@ export default function Page() {
                         <span className="font-semibold">Resumen final</span>
                       </div>
                       <p className="mt-3 text-sm text-slate-300">{summary.replace(/\n/g, " ")}</p>
+                    </div>
+
+                    <div className="mt-5 flex gap-3">
+                      <button
+                        type="button"
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white transition hover:bg-indigo-500"
+                      >
+                        Guardar campaña
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
                 </section>
