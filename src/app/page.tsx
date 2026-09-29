@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Sparkles,
   Store,
+  Wand2,
   Zap,
 } from "lucide-react";
 import { OnboardingWizard } from "@/components/onboarding-wizard";
@@ -56,9 +57,7 @@ export default function Page() {
     }
   };
 
-  const handleGenerateCampaign = () => {
-    setShowQuickStart(true);
-  };
+  const handleGenerateCampaign = () => setShowQuickStart(true);
 
   const handleSelectProduct = (sku: string) => {
     setSelectedSku(sku);
@@ -78,10 +77,10 @@ export default function Page() {
 
       <div className="min-h-screen bg-slate-950 text-slate-100">
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-          <header className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 backdrop-blur-sm">
+          <header className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 backdrop-blur-sm shadow-lg shadow-slate-950/40">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3">
-                <div className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-600 text-lg font-black text-white">
+                <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-lg font-black text-white shadow-lg shadow-indigo-900/40">
                   E
                 </div>
                 <div>
@@ -91,16 +90,16 @@ export default function Page() {
               </div>
 
               <nav className="flex flex-wrap items-center gap-2 text-sm text-slate-300">
-                <button className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 hover:border-slate-600">
+                <button className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 transition hover:border-slate-600 hover:text-white">
                   Inicio
                 </button>
                 <button
                   onClick={handleGenerateCampaign}
-                  className="rounded-lg bg-indigo-600 px-3 py-2 font-semibold text-white hover:bg-indigo-500"
+                  className="rounded-xl bg-indigo-600 px-3 py-2 font-semibold text-white transition hover:bg-indigo-500"
                 >
                   Crear campaña
                 </button>
-                <button className="rounded-lg border border-slate-700 px-3 py-2 hover:border-slate-600">
+                <button className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 transition hover:border-slate-600 hover:text-white">
                   Historial
                 </button>
               </nav>
@@ -120,11 +119,14 @@ export default function Page() {
               />
             ) : (
               <>
-                <section className="rounded-2xl border border-indigo-800/40 bg-gradient-to-r from-indigo-950 via-slate-900 to-slate-950 p-6 text-white shadow-xl shadow-indigo-950/20">
+                <section className="rounded-3xl border border-indigo-800/40 bg-gradient-to-r from-indigo-950 via-slate-900 to-slate-950 p-6 text-white shadow-2xl shadow-indigo-950/20">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.25em] text-indigo-300">Tu flujo simplificado</p>
-                      <h2 className="mt-3 text-3xl font-bold">Crea la campaña en 3 pasos</h2>
+                      <div className="mb-3 flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-indigo-300">
+                        <Wand2 className="h-4 w-4" />
+                        Flujo guiado
+                      </div>
+                      <h2 className="text-3xl font-bold leading-tight">Crea la campaña en 3 pasos</h2>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -133,7 +135,7 @@ export default function Page() {
                         className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
                           mode === "simple"
                             ? "bg-white text-slate-950"
-                            : "border border-slate-700 bg-slate-900 text-slate-200"
+                            : "border border-slate-700 bg-slate-900/70 text-slate-200"
                         }`}
                       >
                         Modo simple
@@ -143,7 +145,7 @@ export default function Page() {
                         className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
                           mode === "advanced"
                             ? "bg-white text-slate-950"
-                            : "border border-slate-700 bg-slate-900 text-slate-200"
+                            : "border border-slate-700 bg-slate-900/70 text-slate-200"
                         }`}
                       >
                         Avanzado
@@ -152,15 +154,16 @@ export default function Page() {
                   </div>
                 </section>
 
-                <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+                <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
                   <div className="space-y-6">
-                    <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-                      <div className="flex items-center justify-between gap-3">
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/40">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Producto activo</p>
+                          <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Producto activo</p>
                           <h3 className="mt-2 text-2xl font-bold text-white">{product.name}</h3>
                         </div>
-                        <div className="rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3 py-1 text-xs font-semibold text-emerald-300">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3 py-1 text-xs font-semibold text-emerald-300">
+                          <span className="h-2 w-2 rounded-full bg-emerald-400" />
                           Listo para publicar
                         </div>
                       </div>
@@ -171,7 +174,7 @@ export default function Page() {
                           "Genera contenido",
                           "Copia y publica",
                         ].map((step, index) => (
-                          <div key={step} className="rounded-xl border border-slate-800 bg-slate-950 p-3">
+                          <div key={step} className="rounded-xl border border-slate-800 bg-slate-950/80 p-3">
                             <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
                               {index + 1}
                             </div>
@@ -183,25 +186,25 @@ export default function Page() {
                       <div className="mt-6 flex flex-wrap gap-3">
                         <button
                           onClick={() => setShowQuickStart(true)}
-                          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 font-semibold text-white hover:bg-indigo-500"
+                          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 font-semibold text-white transition hover:bg-indigo-500"
                         >
                           Cambiar producto
-                          <ChevronRight className="w-4 h-4" />
+                          <ChevronRight className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => copyText(summary, "summary")}
-                          className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 font-semibold text-slate-200 hover:border-slate-600"
+                          className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 font-semibold text-slate-200 transition hover:border-slate-600 hover:text-white"
                         >
-                          {copiedKey === "summary" ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                          Copiar resumen
+                          {copiedKey === "summary" ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                          {copiedKey === "summary" ? "Resumen copiado" : "Copiar resumen"}
                         </button>
                       </div>
                     </div>
 
                     {mode === "advanced" && (
-                      <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+                      <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/40">
                         <div className="flex items-center gap-2 text-white">
-                          <Zap className="w-4 h-4 text-amber-400" />
+                          <Zap className="h-4 w-4 text-amber-400" />
                           <h3 className="font-bold">Opciones avanzadas</h3>
                         </div>
                         <div className="mt-4 space-y-3 text-sm text-slate-300">
@@ -213,10 +216,10 @@ export default function Page() {
                     )}
                   </div>
 
-                  <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+                  <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/40">
                     <div className="flex items-center justify-between gap-3 pb-4">
                       <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-indigo-400" />
+                        <Sparkles className="h-4 w-4 text-indigo-400" />
                         <h3 className="text-lg font-bold text-white">Resultado de la campaña</h3>
                       </div>
                       <span className="rounded-full border border-slate-700 bg-slate-950 px-2 py-1 text-[10px] uppercase text-slate-300">
@@ -226,10 +229,10 @@ export default function Page() {
 
                     <div className="space-y-3">
                       {CHANNELS.map(({ label, icon: Icon, color }) => (
-                        <div key={label} className="rounded-xl border border-slate-800 bg-slate-950 p-3">
+                        <div key={label} className="rounded-xl border border-slate-800 bg-slate-950/80 p-3">
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2">
-                              <Icon className={`w-4 h-4 ${color}`} />
+                              <Icon className={`h-4 w-4 ${color}`} />
                               <span className="font-semibold text-white">{label}</span>
                             </div>
                             <span className="text-[10px] uppercase tracking-[0.1em] text-emerald-300">listo</span>
@@ -239,18 +242,18 @@ export default function Page() {
                           </p>
                           <button
                             onClick={() => copyText(`Campaña ${label} para ${product.name} (${product.sku})`, `${label}-copy`)}
-                            className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-200 hover:border-indigo-500 hover:text-white"
+                            className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-indigo-500 hover:text-white"
                           >
-                            {copiedKey === `${label}-copy` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copiedKey === `${label}-copy` ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                             {copiedKey === `${label}-copy` ? "Copiado" : "Copiar texto"}
                           </button>
                         </div>
                       ))}
                     </div>
 
-                    <div className="mt-5 rounded-xl border border-slate-800 bg-slate-950 p-4">
+                    <div className="mt-5 rounded-xl border border-slate-800 bg-slate-950/80 p-4">
                       <div className="flex items-center gap-2 text-white">
-                        <Store className="w-4 h-4 text-indigo-400" />
+                        <Store className="h-4 w-4 text-indigo-400" />
                         <span className="font-semibold">Resumen final</span>
                       </div>
                       <p className="mt-3 text-sm text-slate-300">{summary.replace(/\n/g, " ")}</p>
