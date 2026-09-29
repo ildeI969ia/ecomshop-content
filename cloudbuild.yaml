@@ -31,7 +31,7 @@ steps:
       - '--image=gcr.io/$PROJECT_ID/ecomshop-content:$COMMIT_SHA'
       - '--region=europe-west1'
       - '--platform=managed'
-      - '--no-allow-unauthenticated'
+      - '--allow-unauthenticated'
       - '--min-instances=0'
       - '--max-instances=5'
       - '--memory=1Gi'
