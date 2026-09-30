@@ -1,4 +1,12 @@
+# Build & deploy de producción para Cloud Run (LOCAL → GITHUB main → CLOUD BUILD → CLOUD RUN).
+#
+# Reglas de seguridad aplicadas aquí:
+#  1. La identidad de runtime es DEDICADA (ecomshop-content-runtime), nunca la SA por defecto.
+#  2. No se incluye ningún valor de secreto: FIREBASE_API_KEY se inyecta desde Secret Manager.
+#  3. La imagen se publica en Artifact Registry (repositorio existente `cloud-run-source-deploy`).
+#  4. El tag es inmutable (commit SHA): nunca `latest`.
 steps:
+  # 1. Build de la imagen de producción.
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -7,41 +15,43 @@ steps:
       - '--build-arg'
       - 'GIT_COMMIT_SHA=$COMMIT_SHA'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/ecomshop-content:$COMMIT_SHA'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/ecomshop-content:latest'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content/ecomshop-content:$COMMIT_SHA'
       - '.'
 
+  # 2. Push a Artifact Registry.
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/ecomshop-content:$COMMIT_SHA'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content/ecomshop-content:$COMMIT_SHA'
 
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'push'
-      - 'gcr.io/$PROJECT_ID/ecomshop-content:latest'
-
+  # 3. Deploy a Cloud Run con identidad dedicada y secretos desde Secret Manager.
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
       - 'ecomshop-content'
-      - '--image=gcr.io/$PROJECT_ID/ecomshop-content:$COMMIT_SHA'
+      - '--image=europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content/ecomshop-content:$COMMIT_SHA'
       - '--region=europe-west1'
       - '--platform=managed'
+      # Identidad de runtime dedicada: IAM de mínimo privilegio (datastore.user,
+      # aiplatform.user, storage.objectUser en el bucket y secretAccessor SOLO
+      # sobre el secreto FIREBASE_API_KEY). Nunca la SA por defecto del proyecto.
+      - '--service-account=ecomshop-content-runtime@ecomshop-marketing-prod.iam.gserviceaccount.com'
+      # El shell público es necesario para exponer la pantalla de login;
+      # las APIs se protegen en la capa de aplicación (Firebase Auth + RBAC).
       - '--allow-unauthenticated'
       - '--min-instances=0'
       - '--max-instances=5'
       - '--memory=1Gi'
       - '--cpu=1'
       - '--update-env-vars=GOOGLE_CLOUD_PROJECT=ecomshop-marketing-prod,GOOGLE_CLOUD_LOCATION=europe-west1,VERTEX_LOCATION=us-central1,GOOGLE_GENAI_USE_VERTEXAI=true,GCS_BUCKET_NAME=ecomshop-marketing-assets,ANTIGRAVITY_SDK_ENABLED=true'
+      # Sólo referencias a secretos: jamás el valor de la API key en el repo.
       - '--update-secrets=FIREBASE_API_KEY=FIREBASE_API_KEY:latest'
 
+# Imagen inmutable publicada (un único tag = commit SHA).
 images:
-  - 'gcr.io/$PROJECT_ID/ecomshop-content:$COMMIT_SHA'
-  - 'gcr.io/$PROJECT_ID/ecomshop-content:latest'
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ecomshop-content/ecomshop-content:$COMMIT_SHA'
 
 options:
   logging: CLOUD_LOGGING_ONLY
