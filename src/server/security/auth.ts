@@ -42,7 +42,7 @@ export async function authenticateServerRequest(req: NextRequest): Promise<Authe
     let decodedToken: DecodedIdToken | null = null;
 
     try {
-      decodedToken = await adminAuth.verifySessionCookie(token, true);
+      decodedToken = await adminAuth.verifySessionCookie(token, false);
     } catch {
       try {
         decodedToken = await adminAuth.verifyIdToken(token);

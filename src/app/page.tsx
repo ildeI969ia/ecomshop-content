@@ -1,212 +1,686 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { LogOut, RefreshCw, Sparkles, ArrowLeft } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { 
+  Sparkles, 
+  Layers, 
+  Menu, 
+  RefreshCw, 
+  CheckCircle2, 
+  AlertCircle,
+  Package,
+  Zap,
+  ShieldCheck,
+  TrendingUp,
+  Cpu,
+  Database,
+  ArrowRight
+} from "lucide-react";
+import { Sidebar, NavSection } from "@/components/layout/sidebar";
+import { useAuth } from "@/lib/auth/use-auth";
 import { CorporateSignIn } from "@/components/auth/CorporateSignIn";
-import { CommandCenter } from "@/components/os/CommandCenter";
-import { CampaignWorkspace } from "@/components/os/CampaignWorkspace";
+import { apiFetch, ApiError } from "@/lib/api-client";
+import { ECOMSHOP_FULL_CATALOG, CatalogProduct } from "@/lib/data/ecomshop-catalog";
+import { ContentOutput } from "@/lib/schema";
+import { ProductOpportunityRecord } from "@/lib/services/opportunity-radar";
+import { ProductIntelligenceCard } from "@/lib/types/product-intelligence";
+import { BusinessGoal } from "@/lib/types/editorial-controls";
+import { EditorialAngle } from "@/app/api/editorial/suggest-angles/route";
+import { PRESET_IMAGE_PROMPTS } from "@/lib/image-generator";
+import { StarProduct } from "@/lib/knowledge";
+import { catalogDeviceToStarProduct, getCatalogDevice } from "@/lib/catalog";
+import { EnhancedProductSheet } from "@/types/catalog-enhancer";
 
-type User = {
-  uid: string;
-  email: string;
-  role: string;
-  workspaceId: string;
-};
-
-type View = "command" | "campaign" | "content";
-
-const PRODUCTS = [
-  { sku: "ECW510", name: "ECW510 Wi-Fi 7 Gateway", url: "https://www.ecomshop.es/ecw510/", category: "wifi" },
-  { sku: "ST3116G", name: "ST3116G Switch PoE", url: "https://www.ecomshop.es/", category: "switches" },
-];
+// Componentes modulares del Sistema
+import { CampaignWorkspace } from "@/components/campaign-workspace";
+import { GenerationStage } from "@/components/campaign-stepper";
+import { OpportunityRadarWidget } from "@/components/opportunity-radar-widget";
+import { ProductMarketingWorkspace } from "@/components/marketing/ProductMarketingWorkspace";
+import { ProductEnhancer } from "@/components/product-enhancer";
+import { ImageStudioView, GeneratedImageItem } from "@/components/image-studio-view";
+import { FinOpsDashboard } from "@/components/finops-dashboard";
+import { ImageInterrogatorModal } from "@/components/ImageInterrogatorModal";
+import { ImageDetailModal, ImageDetailItem } from "@/components/ImageDetailModal";
+import { PromptRefinementData } from "@/components/PromptRefinementCard";
 
 function LoadingScreen() {
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center">
-      <div className="flex items-center gap-3 text-sm text-slate-400">
-        <RefreshCw className="h-4 w-4 animate-spin" />
-        Verificando sesión corporativa...
+      <div className="flex items-center gap-3 text-sm text-slate-400 font-mono">
+        <RefreshCw className="h-4 w-4 animate-spin text-sky-400" />
+        Verificando sesión corporativa @ecomspain.com...
       </div>
     </main>
-  );
-}
-
-function ContentStudio({ onBack }: { onBack: () => void }) {
-  const [sku, setSku] = useState(PRODUCTS[0].sku);
-  const [topicTitle, setTopicTitle] = useState("Wi-Fi 7 profesional para despliegues B2B");
-  const [audience, setAudience] = useState("Integrador B2B");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [result, setResult] = useState<any>(null);
-
-  const product = PRODUCTS.find((item) => item.sku === sku) ?? PRODUCTS[0];
-
-  const generate = async () => {
-    setLoading(true);
-    setError("");
-    setResult(null);
-    try {
-      const response = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sku: product.sku,
-          topicTitle,
-          category: product.category,
-          targetAudience: audience,
-          productUrl: product.url,
-          customAngle: "ROI",
-          businessGoal: "ALL_OPPORTUNITIES",
-          syncWhatsApp: true,
-          syncLinkedIn: true,
-        }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || data.message || `Error HTTP ${response.status}`);
-      setResult(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo generar el contenido.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <button onClick={onBack} className="inline-flex items-center gap-2 text-xs font-mono font-bold text-slate-600 hover:text-slate-900">
-        <ArrowLeft className="h-4 w-4" /> VOLVER AL COMMAND CENTER
-      </button>
-
-      <section className="bg-white border border-slate-200 rounded-sm p-6">
-        <div className="flex items-center gap-2 text-sky-700 text-xs font-mono font-bold uppercase tracking-widest">
-          <Sparkles className="h-4 w-4" /> Content Studio
-        </div>
-        <h1 className="mt-2 text-2xl font-serif font-bold text-slate-900">Generación multicanal real</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          La petición pasa por autenticación, presupuesto, inteligencia de producto, generación, validación y persistencia.
-        </p>
-
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          <label className="text-xs font-semibold text-slate-700">
-            Producto
-            <select value={sku} onChange={(e) => setSku(e.target.value)} className="mt-1 w-full rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm">
-              {PRODUCTS.map((item) => <option key={item.sku} value={item.sku}>{item.sku} — {item.name}</option>)}
-            </select>
-          </label>
-          <label className="text-xs font-semibold text-slate-700 md:col-span-2">
-            Tema
-            <input value={topicTitle} onChange={(e) => setTopicTitle(e.target.value)} className="mt-1 w-full rounded-sm border border-slate-300 px-3 py-2 text-sm" />
-          </label>
-          <label className="text-xs font-semibold text-slate-700">
-            Público
-            <input value={audience} onChange={(e) => setAudience(e.target.value)} className="mt-1 w-full rounded-sm border border-slate-300 px-3 py-2 text-sm" />
-          </label>
-        </div>
-
-        <button onClick={generate} disabled={loading} className="mt-6 inline-flex items-center gap-2 rounded-sm bg-slate-900 px-4 py-2.5 text-xs font-mono font-bold uppercase text-white disabled:opacity-50">
-          <Sparkles className="h-4 w-4" /> {loading ? "GENERANDO..." : "GENERAR PAQUETE"}
-        </button>
-
-        {error && <div className="mt-4 rounded-sm border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</div>}
-
-        {result && (
-          <div className="mt-6 rounded-sm border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-            <div className="font-bold">Generación completada</div>
-            <div className="mt-1">ID: {result.id ?? "—"}</div>
-            <div>Fact-check: {result.factCheckScore ?? "—"}</div>
-            <div>Grounding: {result.groundingValidation?.isValid === true ? "válido" : result.groundingValidation ? "requiere revisión" : "no disponible"}</div>
-            <div>Canales: Blog, Mailchimp, WhatsApp y LinkedIn</div>
-          </div>
-        )}
-      </section>
-    </div>
   );
 }
 
 export default function Page() {
-  const [status, setStatus] = useState<"loading" | "signed-out" | "signed-in">("loading");
-  const [user, setUser] = useState<User | null>(null);
-  const [view, setView] = useState<View>("command");
-  const [syncing, setSyncing] = useState(false);
+  const { user, loading, refreshUser } = useAuth();
+  const [activeSection, setActiveSection] = useState<NavSection>("workspace");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const loadSession = async () => {
+  // Estados del Campaign Workspace Multicanal (43+ productos de ecomshop.es)
+  const [campaignStage, setCampaignStage] = useState<GenerationStage>("IDLE");
+  const [campaignContent, setCampaignContent] = useState<ContentOutput | null>(null);
+  const [selectedSku, setSelectedSku] = useState<string>("ECW536");
+  const [campaignOpportunity, setCampaignOpportunity] = useState<ProductOpportunityRecord | null>(null);
+  const [campaignErrorMessage, setCampaignErrorMessage] = useState<string | null>(null);
+  const [intelligenceCard, setIntelligenceCard] = useState<ProductIntelligenceCard | null>(null);
+  const [loadingIntelligence, setLoadingIntelligence] = useState(false);
+  const [selectedAngle, setSelectedAngle] = useState<EditorialAngle | null>(null);
+  const [freeTopicTitle, setFreeTopicTitle] = useState<string>("");
+  const [isSavingArticle, setIsSavingArticle] = useState(false);
+
+  // Radar de Oportunidades
+  const [radarOpportunities, setRadarOpportunities] = useState<ProductOpportunityRecord[]>([]);
+  const [loadingRadar, setLoadingRadar] = useState(false);
+  const [radarGoal, setRadarGoal] = useState<BusinessGoal>("ALL_OPPORTUNITIES");
+  const [launchingRadarSku, setLaunchingRadarSku] = useState<string | null>(null);
+
+  // Mejorador de Ficha de Producto
+  const [enhancedSheet, setEnhancedSheet] = useState<EnhancedProductSheet | undefined>(undefined);
+  const [loadingEnhancedSheet, setLoadingEnhancedSheet] = useState(false);
+
+  // Estudio de Imágenes
+  const [galleryImages, setGalleryImages] = useState<GeneratedImageItem[]>([]);
+  const [selectedImageIds, setSelectedImageIds] = useState<string[]>([]);
+  const [loadingDatabaseAssets, setLoadingDatabaseAssets] = useState(false);
+  const [imagePrompt, setImagePrompt] = useState(PRESET_IMAGE_PROMPTS[0].prompt);
+  const [imageAspectRatio, setImageAspectRatio] = useState<"16:9" | "1:1" | "4:3">("16:9");
+  const [imageBase, setImageBase] = useState<string | null>(null);
+  const [generatingImage, setGeneratingImage] = useState(false);
+  const [imageNotice, setImageNotice] = useState<string | null>(null);
+  const [showInterrogatorModal, setShowInterrogatorModal] = useState(false);
+  const [selectedImageForDetail, setSelectedImageForDetail] = useState<ImageDetailItem | null>(null);
+  const [promptRefinement, setPromptRefinement] = useState<PromptRefinementData | null>(null);
+  const [refiningPrompt, setRefiningPrompt] = useState(false);
+
+  // 1. Cargar Oportunidades del Radar al entrar en la sección o al iniciar
+  const fetchRadar = useCallback(async (goal: BusinessGoal = radarGoal) => {
+    setLoadingRadar(true);
     try {
-      const response = await fetch("/api/auth/me", { cache: "no-store" });
-      if (!response.ok) {
-        setUser(null);
-        setStatus("signed-out");
-        return;
+      const data = await apiFetch<{ opportunities: ProductOpportunityRecord[] }>(
+        `/api/opportunities?limit=6&goal=${encodeURIComponent(goal)}`
+      );
+      if (data?.opportunities) {
+        setRadarOpportunities(data.opportunities);
       }
-      const data = await response.json();
-      setUser(data.user);
-      setStatus("signed-in");
-    } catch {
-      setUser(null);
-      setStatus("signed-out");
+    } catch (err) {
+      console.warn("[Radar] No se pudieron cargar oportunidades:", err);
+    } finally {
+      setLoadingRadar(false);
     }
-  };
+  }, [radarGoal]);
 
-  useEffect(() => {
-    void loadSession();
+  // 2. Cargar ficha de inteligencia técnica al seleccionar SKU
+  const loadIntelligenceCard = useCallback(async (sku: string) => {
+    setLoadingIntelligence(true);
+    try {
+      const card = await apiFetch<ProductIntelligenceCard>("/api/intelligence", {
+        method: "POST",
+        body: JSON.stringify({ skuOrModel: sku })
+      });
+      setIntelligenceCard(card);
+    } catch (err) {
+      console.warn("[Intelligence] Error al cargar ficha de inteligencia:", err);
+    } finally {
+      setLoadingIntelligence(false);
+    }
   }, []);
 
-  const logout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
-    setUser(null);
-    setStatus("signed-out");
-    setView("command");
-  };
-
-  const sync = async () => {
-    setSyncing(true);
+  // 3. Cargar imágenes persistidas desde Firestore / Cloud Storage
+  const loadDatabaseAssets = useCallback(async () => {
+    setLoadingDatabaseAssets(true);
     try {
-      const response = await fetch("/api/health/persistence?verifyUrls=0", { cache: "no-store" });
-      if (!response.ok) throw new Error("El diagnóstico de persistencia no está disponible.");
+      const res = await apiFetch<{ assets?: Array<any> }>("/api/assets");
+      if (res?.assets && Array.isArray(res.assets)) {
+        const formatted: GeneratedImageItem[] = res.assets.map((a: any) => ({
+          id: a.id || String(Math.random()),
+          url: a.publicUrl || a.url || a.storagePath || "",
+          prompt: a.prompt || a.filename || "Activo de Imagen EcomShop",
+          createdAt: a.createdAt ? new Date(a.createdAt).toLocaleTimeString("es-ES") : new Date().toLocaleTimeString("es-ES"),
+          sourceType: a.aiProvenance?.model || a.sourceType || "imagen3",
+          title: a.filename
+        }));
+        setGalleryImages(formatted);
+      }
+    } catch (err) {
+      console.warn("[Assets] Error cargando galería:", err);
     } finally {
-      setSyncing(false);
+      setLoadingDatabaseAssets(false);
+    }
+  }, []);
+
+  // Efecto para sincronizar según sección activa
+  useEffect(() => {
+    if (!user) return;
+    if (activeSection === "radar" && radarOpportunities.length === 0) {
+      fetchRadar();
+    }
+    if (activeSection === "images" && galleryImages.length === 0) {
+      loadDatabaseAssets();
+    }
+  }, [activeSection, user, fetchRadar, loadDatabaseAssets, radarOpportunities.length, galleryImages.length]);
+
+  // Cargar inteligencia técnica del SKU por defecto
+  useEffect(() => {
+    if (user && selectedSku && !intelligenceCard) {
+      loadIntelligenceCard(selectedSku);
+    }
+  }, [user, selectedSku, intelligenceCard, loadIntelligenceCard]);
+
+  // Disparar generación multicanal completa para un SKU
+  const handleLaunchWithSku = async (sku: string) => {
+    const product = ECOMSHOP_FULL_CATALOG.find((p) => p.sku === sku);
+    setSelectedSku(sku);
+    setCampaignStage("EXTRACTING");
+    setCampaignErrorMessage(null);
+    setCampaignContent(null);
+    setActiveSection("workspace");
+
+    // Progresión visual de etapas
+    const t1 = setTimeout(() => {
+      setCampaignStage((prev) => (prev === "EXTRACTING" ? "NOTEBOOK_GROUNDING" : prev));
+    }, 1200);
+
+    const t2 = setTimeout(() => {
+      setCampaignStage((prev) => (prev === "NOTEBOOK_GROUNDING" ? "GENERATING_CHANNELS" : prev));
+    }, 3000);
+
+    try {
+      const data = await apiFetch<ContentOutput & { intelligenceCard?: ProductIntelligenceCard }>("/api/generate", {
+        method: "POST",
+        body: JSON.stringify({
+          sku,
+          topicTitle: freeTopicTitle || selectedAngle?.title || (product ? `${product.name} - Conectividad B2B Enterprise` : `Solución ${sku}`),
+          category: product ? product.category : "general",
+          targetAudience: selectedAngle?.targetAudience || "Instalador B2B",
+          productUrl: product ? product.url : `https://ecomshop.es/productos/${sku.toLowerCase()}`,
+          customAngle: selectedAngle?.intent || "ROI",
+          businessGoal: "ALL_OPPORTUNITIES",
+          syncWhatsApp: true,
+          syncLinkedIn: true,
+        })
+      });
+
+      clearTimeout(t1);
+      clearTimeout(t2);
+
+      setCampaignStage("COMPLETED");
+      setCampaignContent(data);
+      if (data.intelligenceCard) {
+        setIntelligenceCard(data.intelligenceCard);
+      }
+    } catch (err: any) {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      setCampaignStage("ERROR");
+      setCampaignErrorMessage(err.message || "Error al generar el paquete de contenido multicanal");
     }
   };
 
-  if (status === "loading") return <LoadingScreen />;
-  if (status === "signed-out") return <CorporateSignIn onSuccess={(nextUser) => { setUser(nextUser); setStatus("signed-in"); }} />;
-  if (!user) return <LoadingScreen />;
+  // Guardar en Firestore
+  const handleSaveToFirestore = async (status: "approved" | "published" = "approved") => {
+    if (!campaignContent) return;
+    setIsSavingArticle(true);
+    try {
+      await apiFetch("/api/contents", {
+        method: "POST",
+        body: JSON.stringify({
+          title: campaignContent.blog?.title || campaignContent.topicTitle,
+          category: campaignContent.category,
+          status,
+          content: campaignContent,
+          sku: selectedSku
+        })
+      });
+      alert(`¡Campaña guardada con éxito con estado: ${status}!`);
+    } catch (err: any) {
+      alert(`Error al guardar: ${err.message}`);
+    } finally {
+      setIsSavingArticle(false);
+    }
+  };
+
+  // Lanzar desde el Radar B2B
+  const handleLaunchRadarOpportunity = async (opp: ProductOpportunityRecord) => {
+    setLaunchingRadarSku(opp.sku);
+    setCampaignOpportunity(opp);
+    setSelectedSku(opp.sku);
+    await handleLaunchWithSku(opp.sku);
+    setLaunchingRadarSku(null);
+  };
+
+  // Generar Ficha Mejorada
+  const handleEnhanceProductSheet = async () => {
+    setLoadingEnhancedSheet(true);
+    try {
+      const res = await apiFetch<{ enhanced: EnhancedProductSheet }>("/api/catalog/enhance-sheet", {
+        method: "POST",
+        body: JSON.stringify({ sku: selectedSku, format: "html" })
+      });
+      if (res?.enhanced) {
+        setEnhancedSheet(res.enhanced);
+      }
+    } catch (err: any) {
+      alert(`Error al mejorar ficha: ${err.message}`);
+    } finally {
+      setLoadingEnhancedSheet(false);
+    }
+  };
+
+  // Generar Imagen con Imagen 3
+  const handleGenerateImage = async (mode: "ai" | "curated") => {
+    setGeneratingImage(true);
+    setImageNotice(null);
+    try {
+      const res = await apiFetch<{
+        imageUrl: string;
+        id: string;
+        sourceType?: string;
+        warning?: string;
+      }>("/api/images/generate", {
+        method: "POST",
+        body: JSON.stringify({
+          prompt: imagePrompt,
+          aspectRatio: imageAspectRatio,
+          baseImage: imageBase,
+          mode
+        })
+      });
+
+      if (res?.imageUrl) {
+        const newImg: GeneratedImageItem = {
+          id: res.id || `img-${Date.now()}`,
+          url: res.imageUrl,
+          prompt: imagePrompt,
+          createdAt: new Date().toLocaleTimeString("es-ES"),
+          sourceType: res.sourceType || "imagen3",
+          warning: res.warning
+        };
+        setGalleryImages((prev) => [newImg, ...prev]);
+        setImageNotice("Imagen generada y persistida en GCS correctamente.");
+      }
+    } catch (err: any) {
+      setImageNotice(`Error: ${err.message}`);
+    } finally {
+      setGeneratingImage(false);
+    }
+  };
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  if (!user) {
+    return <CorporateSignIn onSuccess={() => refreshUser()} />;
+  }
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="mx-auto max-w-[1500px] px-4 py-5 sm:px-6 lg:px-8">
-        <header className="mb-6 flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="text-[10px] font-mono uppercase tracking-[0.25em] text-sky-700">EcomSpain</div>
-            <h1 className="text-xl font-serif font-bold">Marketing OS</h1>
-          </div>
-          <div className="flex items-center gap-3 text-xs">
-            <span className="font-mono text-slate-500">{user.email} · {user.role}</span>
-            <button onClick={logout} className="inline-flex items-center gap-1.5 rounded-sm border border-slate-300 px-3 py-1.5 font-mono font-bold hover:bg-white">
-              <LogOut className="h-3.5 w-3.5" /> SALIR
+    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+      {/* Barra Lateral Profesional de Navegación B2B */}
+      <Sidebar
+        activeSection={activeSection}
+        onSelectSection={(section) => setActiveSection(section)}
+        mobileOpen={mobileMenuOpen}
+        onCloseMobile={() => setMobileMenuOpen(false)}
+      />
+
+      {/* Contenedor Principal */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Barra Superior Móvil */}
+        <header className="lg:hidden flex items-center justify-between p-4 border-b border-slate-800 bg-slate-900 sticky top-0 z-20">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white"
+            >
+              <Menu className="w-5 h-5" />
             </button>
+            <span className="font-bold text-sm text-white">EcomSpain Marketing OS</span>
           </div>
+          <span className="font-mono text-xs text-sky-400 bg-sky-950/80 px-2 py-0.5 rounded border border-sky-800">
+            {user.role}
+          </span>
         </header>
 
-        {view === "command" && (
-          <CommandCenter
-            user={user}
-            onNavigateToContent={() => setView("content")}
-            onNavigateToCampaign={() => setView("campaign")}
-            onNavigateToDiagnostic={() => setView("content")}
-            onSyncFirestore={sync}
-            syncing={syncing}
-          />
-        )}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1700px] w-full mx-auto space-y-6">
+          {/* SECCIÓN 1: RESUMEN BENTO */}
+          {activeSection === "resumen" && (
+            <div className="space-y-6">
+              <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-300">
+                        SISTEMA OPERATIVO // NOC EN LÍNEA
+                      </span>
+                    </div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                      Plataforma Multicanal de Marketing B2B — EcomShop
+                    </h1>
+                    <p className="text-sm text-slate-300 max-w-3xl leading-relaxed">
+                      Generación y orquestación unificada para todo el catálogo oficial ({ECOMSHOP_FULL_CATALOG.length} dispositivos).
+                      Activos auditados para Prensa/Blog GEO, LinkedIn, WhatsApp Broadcast y Fichas de Producto ecomshop.es con grounding en Vertex AI y Firebase.
+                    </p>
+                  </div>
 
-        {view === "campaign" && (
-          <CampaignWorkspace
-            onBack={() => setView("command")}
-            onOpenContentStudio={() => setView("content")}
-          />
-        )}
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setActiveSection("workspace")}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold font-mono transition shadow-lg"
+                    >
+                      <Zap className="w-4 h-4 text-amber-300" />
+                      IR AL WORKSPACE
+                    </button>
+                  </div>
+                </div>
 
-        {view === "content" && <ContentStudio onBack={() => setView("command")} />}
+                {/* Métricas Bento */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-slate-800/80">
+                  <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
+                    <span className="text-[10px] font-mono text-slate-400 uppercase block">Catálogo Canónico</span>
+                    <span className="text-xl font-bold text-white mt-1 block">{ECOMSHOP_FULL_CATALOG.length} SKUs</span>
+                  </div>
+                  <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
+                    <span className="text-[10px] font-mono text-slate-400 uppercase block">Canales Simultáneos</span>
+                    <span className="text-xl font-bold text-sky-400 mt-1 block">5 Canales</span>
+                  </div>
+                  <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
+                    <span className="text-[10px] font-mono text-slate-400 uppercase block">Coste x Campaña</span>
+                    <span className="text-xl font-bold text-emerald-400 mt-1 block">≈0,0045 €</span>
+                  </div>
+                  <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
+                    <span className="text-[10px] font-mono text-slate-400 uppercase block">Rigor Técnico</span>
+                    <span className="text-xl font-bold text-indigo-400 mt-1 block">100% Grounded</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Acceso Rápido a Secciones */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div 
+                  onClick={() => setActiveSection("workspace")}
+                  className="bg-slate-900 border border-slate-800 hover:border-indigo-500/50 p-6 rounded-2xl cursor-pointer transition group"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-2.5 rounded-xl bg-indigo-600/20 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition">
+                      <Layers className="w-6 h-6" />
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition" />
+                  </div>
+                  <h3 className="font-bold text-white text-base">Campaign Workspace Multicanal</h3>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    Accede a los 43+ productos de networking, filtra por familia y genera contenidos con un clic.
+                  </p>
+                </div>
+
+                <div 
+                  onClick={() => setActiveSection("radar")}
+                  className="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 p-6 rounded-2xl cursor-pointer transition group"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-2.5 rounded-xl bg-emerald-600/20 text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition">
+                      <Sparkles className="w-6 h-6" />
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition" />
+                  </div>
+                  <h3 className="font-bold text-white text-base">Radar B2B de Oportunidades</h3>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    Detección automática de productos en stock con alta demanda comercial y brechas de contenido.
+                  </p>
+                </div>
+
+                <div 
+                  onClick={() => setActiveSection("enhancer")}
+                  className="bg-slate-900 border border-slate-800 hover:border-sky-500/50 p-6 rounded-2xl cursor-pointer transition group"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-2.5 rounded-xl bg-sky-600/20 text-sky-400 group-hover:bg-sky-600 group-hover:text-white transition">
+                      <Package className="w-6 h-6" />
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-sky-400 transition" />
+                  </div>
+                  <h3 className="font-bold text-white text-base">Optimizador de Fichas ecomshop.es</h3>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    Enriquece las fichas técnicas con argumentarios de venta B2B, esquemas FAQ y diferencias técnicas.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SECCIÓN 2: RADAR B2B DE OPORTUNIDADES */}
+          {activeSection === "radar" && (
+            <div className="space-y-6">
+              <OpportunityRadarWidget
+                opportunities={radarOpportunities}
+                isLoading={loadingRadar}
+                selectedBusinessGoal={radarGoal}
+                onSelectBusinessGoal={(g) => {
+                  setRadarGoal(g);
+                  fetchRadar(g);
+                }}
+                onRegenerateRadar={() => fetchRadar(radarGoal)}
+                isRegeneratingRadar={loadingRadar}
+                onLaunchCampaign={handleLaunchRadarOpportunity}
+                launchingSku={launchingRadarSku}
+              />
+            </div>
+          )}
+
+          {/* SECCIÓN 3: CAMPAIGN WORKSPACE (CORAZÓN DEL MARKETING MULTICANAL) */}
+          {activeSection === "workspace" && (
+            <div className="space-y-6">
+              <CampaignWorkspace
+                stage={campaignStage}
+                opportunity={campaignOpportunity}
+                content={campaignContent}
+                intelligenceCard={intelligenceCard}
+                errorMessage={campaignErrorMessage}
+                selectedSku={selectedSku}
+                isLoadingIntelligence={loadingIntelligence}
+                onSelectQuickSku={(sku) => {
+                  setSelectedSku(sku);
+                  loadIntelligenceCard(sku);
+                }}
+                onLaunchWithSku={handleLaunchWithSku}
+                onRetry={() => handleLaunchWithSku(selectedSku)}
+                onReset={() => {
+                  setCampaignStage("IDLE");
+                  setCampaignContent(null);
+                  setCampaignErrorMessage(null);
+                }}
+                onOpenImageStudio={(prompt) => {
+                  setImagePrompt(prompt);
+                  setActiveSection("images");
+                }}
+                onSaveToFirestore={handleSaveToFirestore}
+                onApprove={() => handleSaveToFirestore("approved")}
+                onPublishToStore={() => handleSaveToFirestore("published")}
+                isSavingArticle={isSavingArticle}
+                selectedAngle={selectedAngle}
+                onSelectAngle={setSelectedAngle}
+                freeTopicTitle={freeTopicTitle}
+                onFreeTopicChange={setFreeTopicTitle}
+              />
+            </div>
+          )}
+
+          {/* SECCIÓN 4: CATÁLOGO Y MEJORADOR DE FICHAS DE PRODUCTO */}
+          {activeSection === "enhancer" && (
+            <div className="space-y-6">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold text-white">Optimizador Técnico de Fichas ecomshop.es</h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    SKU seleccionado actualmente: <strong className="text-indigo-400">{selectedSku}</strong>.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <select
+                    value={selectedSku}
+                    onChange={(e) => {
+                      setSelectedSku(e.target.value);
+                      loadIntelligenceCard(e.target.value);
+                    }}
+                    className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono"
+                  >
+                    {ECOMSHOP_FULL_CATALOG.map((p) => (
+                      <option key={p.sku} value={p.sku}>
+                        {p.sku} — {p.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleEnhanceProductSheet}
+                    disabled={loadingEnhancedSheet}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition disabled:opacity-50"
+                  >
+                    {loadingEnhancedSheet ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    Optimizar Ficha
+                  </button>
+                </div>
+              </div>
+
+              <ProductEnhancer
+                sheet={enhancedSheet}
+                isLoading={loadingEnhancedSheet}
+                onRefresh={handleEnhanceProductSheet}
+              />
+            </div>
+          )}
+
+          {/* SECCIÓN 5: ESTUDIO DE IMÁGENES FOTORREALISTAS (IMAGEN 3) */}
+          {activeSection === "images" && (
+            <div className="space-y-6">
+              <ImageStudioView
+                images={galleryImages}
+                selectedImageIds={selectedImageIds}
+                onSelectImage={(id, sel) => {
+                  setSelectedImageIds((prev) => (sel ? [...prev, id] : prev.filter((item) => item !== id)));
+                }}
+                onSelectAll={(all) => setSelectedImageIds(all ? galleryImages.map((i) => i.id) : [])}
+                onClearAll={() => setSelectedImageIds([])}
+                onRefreshDatabase={loadDatabaseAssets}
+                loadingDatabaseAssets={loadingDatabaseAssets}
+                onOpenLightbox={(img) => setSelectedImageForDetail(img)}
+                onDeleteImage={(id) => {
+                  setGalleryImages((prev) => prev.filter((i) => i.id !== id));
+                }}
+                onApplyToCampaignBlog={(img) => {
+                  setActiveSection("workspace");
+                }}
+                onUseAsBase={(url) => {
+                  setImageBase(url);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                onReuseInLinkedIn={(img) => {
+                  setActiveSection("workspace");
+                }}
+                imagePrompt={imagePrompt}
+                onChangePrompt={setImagePrompt}
+                imageAspectRatio={imageAspectRatio}
+                onChangeAspectRatio={setImageAspectRatio}
+                imageBase={imageBase}
+                onSetImageBase={setImageBase}
+                generatingImage={generatingImage}
+                onGenerateImage={handleGenerateImage}
+                imageNotice={imageNotice}
+                onOpenInterrogatorModal={() => setShowInterrogatorModal(true)}
+                refiningPrompt={refiningPrompt}
+                promptRefinement={promptRefinement}
+                onRefinePrompt={async () => {
+                  setRefiningPrompt(true);
+                  try {
+                    const res = await apiFetch<{ refinement: PromptRefinementData }>("/api/images/refine-prompt", {
+                      method: "POST",
+                      body: JSON.stringify({ prompt: imagePrompt })
+                    });
+                    if (res?.refinement) setPromptRefinement(res.refinement);
+                  } catch (e: any) {
+                    alert(`Error refinando: ${e.message}`);
+                  } finally {
+                    setRefiningPrompt(false);
+                  }
+                }}
+                onApplyRefinedPrompt={(ref) => {
+                  setImagePrompt(ref);
+                  setPromptRefinement(null);
+                }}
+                onApplyAndGenerateRefinedPrompt={(ref) => {
+                  setImagePrompt(ref);
+                  setPromptRefinement(null);
+                  handleGenerateImage("ai");
+                }}
+                onDismissRefinement={() => setPromptRefinement(null)}
+                presetTemplates={PRESET_IMAGE_PROMPTS}
+                onVarySingleTemplate={(tmpl) => {
+                  setImagePrompt(tmpl.prompt);
+                  setImageAspectRatio(tmpl.aspectRatio);
+                }}
+                varyingTemplateId={null}
+                isRegeneratingTemplates={false}
+                onRegenerateAllTemplates={() => {}}
+                onRestoreDefaultTemplates={() => {}}
+                currentUserRole={user.role}
+                onUseRealProductPhoto={(prod: StarProduct) => {
+                  setImagePrompt(`Fotografía de estudio industrial del producto ${prod.name}, chasis metálico en alta definición, iluminación comercial 8k`);
+                  if (prod.imageUrl) setImageBase(prod.imageUrl);
+                }}
+              />
+            </div>
+          )}
+
+          {/* SECCIÓN 6: FINOPS GLOBAL */}
+          {activeSection === "finops" && (
+            <div className="space-y-6">
+              <FinOpsDashboard />
+            </div>
+          )}
+        </main>
       </div>
-    </main>
+
+      {/* Modal Interrogador Creativo de Imagen */}
+      <ImageInterrogatorModal
+        isOpen={showInterrogatorModal}
+        onClose={() => setShowInterrogatorModal(false)}
+        currentBaseImage={imageBase}
+        onApplyPrompt={(newPrompt, newRatio, baseImg) => {
+          setImagePrompt(newPrompt);
+          setImageAspectRatio(newRatio);
+          if (baseImg !== undefined) {
+            setImageBase(baseImg);
+          }
+          setShowInterrogatorModal(false);
+        }}
+      />
+
+      {/* Modal de Detalle de Imagen */}
+      {selectedImageForDetail && (
+        <ImageDetailModal
+          image={selectedImageForDetail}
+          onClose={() => setSelectedImageForDetail(null)}
+          onUseAsBase={(url) => {
+            setImageBase(url);
+            setSelectedImageForDetail(null);
+            setActiveSection("images");
+          }}
+          onDelete={(id) => {
+            setGalleryImages((prev) => prev.filter((i) => i.id !== id));
+            setSelectedImageForDetail(null);
+          }}
+          onInsertIntoArticle={() => {
+            setSelectedImageForDetail(null);
+            setActiveSection("workspace");
+          }}
+          onReuseInCampaign={() => {
+            setSelectedImageForDetail(null);
+            setActiveSection("workspace");
+          }}
+        />
+      )}
+    </div>
   );
 }

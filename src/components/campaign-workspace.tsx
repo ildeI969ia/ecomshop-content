@@ -272,6 +272,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
       if (targetChannel === "geo") {
         const res = await fetch("/api/generate/geo-article", {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             sku: selectedSku,
@@ -304,6 +305,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
       } else {
         const res = await fetch("/api/generate/channel", {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             channel: targetChannel,
