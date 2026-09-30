@@ -9,6 +9,10 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
     (isStaticFile && !pathname.startsWith("/api/")) ||
+    // Liveness/readiness público para Cloud Run y monitorización.
+    // Sólo devuelve estado del proceso + metadatos de build: ninguna dependencia
+    // ni dato de negocio (el diagnóstico profundo sigue en /api/health/persistence).
+    pathname === "/health" ||
     pathname === "/api/auth/login" ||
     pathname === "/api/auth/logout"
   ) {
