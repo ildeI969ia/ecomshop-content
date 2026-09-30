@@ -27,9 +27,18 @@ interface SidebarProps {
   onSelectSection: (section: NavSection) => void;
   mobileOpen: boolean;
   onCloseMobile: () => void;
+  onSyncCatalog?: () => void;
+  isSyncingCatalog?: boolean;
 }
 
-export function Sidebar({ activeSection, onSelectSection, mobileOpen, onCloseMobile }: SidebarProps) {
+export function Sidebar({ 
+  activeSection, 
+  onSelectSection, 
+  mobileOpen, 
+  onCloseMobile,
+  onSyncCatalog,
+  isSyncingCatalog = false
+}: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const { user, logout } = useAuth();
 
@@ -105,6 +114,26 @@ export function Sidebar({ activeSection, onSelectSection, mobileOpen, onCloseMob
             );
           })}
         </nav>
+
+        {/* Botón de Sincronización Directa con ecomshop.es */}
+        {onSyncCatalog && (
+          <div className="px-3 py-2">
+            <button
+              onClick={onSyncCatalog}
+              disabled={isSyncingCatalog}
+              title={collapsed ? "Sincronizar catálogo con ecomshop.es" : undefined}
+              className={cn(
+                "flex w-full items-center gap-2.5 rounded-lg border border-sky-500/40 bg-sky-950/40 px-3 py-2 text-xs font-semibold text-sky-300 transition hover:bg-sky-900/60 disabled:opacity-50",
+                collapsed && "justify-center px-0"
+              )}
+            >
+              <span className={cn("size-2 rounded-full bg-sky-400", isSyncingCatalog ? "animate-ping" : "")} />
+              <span className={cn("truncate font-mono", collapsed && "lg:hidden")}>
+                {isSyncingCatalog ? "Sincronizando..." : "Sincronizar ecomshop.es"}
+              </span>
+            </button>
+          </div>
+        )}
 
         {/* Footer User Profile & Collapse */}
         <div className="border-t border-sidebar-border p-3 space-y-2">

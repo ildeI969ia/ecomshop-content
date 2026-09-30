@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { STAR_PRODUCTS, StarProduct } from "@/lib/knowledge";
 import { ECOMSHOP_CATALOG, getCatalogDevice, getAllCatalogDevices, getEcomshopOnlyDevices, catalogDeviceToStarProduct, CatalogDevice } from "@/lib/catalog";
-import { PRESET_IMAGE_PROMPTS } from "@/lib/image-generator";
+import { PRESET_IMAGE_PROMPTS } from "@/lib/image-presets";
 import { PromptRefinementCard, PromptRefinementData } from "@/components/PromptRefinementCard";
 import { compressImageToDataUrl } from "@/lib/image-compressor";
 

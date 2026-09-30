@@ -26,7 +26,7 @@ import { ProductOpportunityRecord } from "@/lib/services/opportunity-radar";
 import { ProductIntelligenceCard } from "@/lib/types/product-intelligence";
 import { BusinessGoal } from "@/lib/types/editorial-controls";
 import { EditorialAngle } from "@/app/api/editorial/suggest-angles/route";
-import { PRESET_IMAGE_PROMPTS } from "@/lib/image-generator";
+import { PRESET_IMAGE_PROMPTS } from "@/lib/image-presets";
 import { StarProduct } from "@/lib/knowledge";
 import { catalogDeviceToStarProduct, getCatalogDevice } from "@/lib/catalog";
 import { EnhancedProductSheet } from "@/types/catalog-enhancer";
@@ -70,6 +70,12 @@ export default function Page() {
   const [selectedAngle, setSelectedAngle] = useState<EditorialAngle | null>(null);
   const [freeTopicTitle, setFreeTopicTitle] = useState<string>("");
   const [isSavingArticle, setIsSavingArticle] = useState(false);
+
+  // Catálogo dinámico de ecomshop.es (Firestore + fallback canónico)
+  const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>(ECOMSHOP_FULL_CATALOG);
+  const [loadingCatalog, setLoadingCatalog] = useState(false);
+  const [isSyncingCatalog, setIsSyncingCatalog] = useState(false);
+  const [lastSyncInfo, setLastSyncInfo] = useState<{ timestamp?: string; count?: number } | null>(null);
 
   // Radar de Oportunidades
   const [radarOpportunities, setRadarOpportunities] = useState<ProductOpportunityRecord[]>([]);
@@ -151,16 +157,53 @@ export default function Page() {
     }
   }, []);
 
-  // Efecto para sincronizar según sección activa
+  // 4. Cargar catálogo dinámico de productos desde Firestore (/api/catalog/products)
+  const fetchCatalog = useCallback(async () => {
+    setLoadingCatalog(true);
+    try {
+      const res = await apiFetch<{ products?: CatalogProduct[]; lastSync?: any }>("/api/catalog/products?limit=100");
+      if (res?.products && Array.isArray(res.products) && res.products.length > 0) {
+        setCatalogProducts(res.products);
+      }
+      if (res?.lastSync) {
+        setLastSyncInfo(res.lastSync);
+      }
+    } catch (err) {
+      console.warn("[Catalog] Usando catálogo estático por fallback:", err);
+    } finally {
+      setLoadingCatalog(false);
+    }
+  }, []);
+
+  // 5. Disparar sincronización activa contra ecomshop.es (/api/catalog/sync)
+  const handleSyncWithEcomshop = async () => {
+    if (isSyncingCatalog) return;
+    setIsSyncingCatalog(true);
+    try {
+      const res = await apiFetch<{ success: boolean; count: number; message: string }>("/api/catalog/sync", {
+        method: "POST",
+        body: JSON.stringify({ maxItems: 35 })
+      });
+      alert(res.message || "Catálogo sincronizado exitosamente con ecomshop.es");
+      await fetchCatalog();
+    } catch (err: any) {
+      alert(`Error al sincronizar con ecomshop.es: ${err.message || String(err)}`);
+    } finally {
+      setIsSyncingCatalog(false);
+    }
+  };
+
+  // Efecto para sincronizar según sección activa y cargar catálogo
   useEffect(() => {
     if (!user) return;
+    fetchCatalog();
     if (activeSection === "radar" && radarOpportunities.length === 0) {
       fetchRadar();
     }
     if (activeSection === "images" && galleryImages.length === 0) {
       loadDatabaseAssets();
     }
-  }, [activeSection, user, fetchRadar, loadDatabaseAssets, radarOpportunities.length, galleryImages.length]);
+  }, [activeSection, user, fetchRadar, fetchCatalog, loadDatabaseAssets, radarOpportunities.length, galleryImages.length]);
 
   // Cargar inteligencia técnica del SKU por defecto
   useEffect(() => {
@@ -171,7 +214,7 @@ export default function Page() {
 
   // Disparar generación multicanal completa para un SKU
   const handleLaunchWithSku = async (sku: string) => {
-    const product = ECOMSHOP_FULL_CATALOG.find((p) => p.sku === sku);
+    const product = catalogProducts.find((p) => p.sku === sku) || ECOMSHOP_FULL_CATALOG.find((p) => p.sku === sku);
     setSelectedSku(sku);
     setCampaignStage("EXTRACTING");
     setCampaignErrorMessage(null);
@@ -324,6 +367,8 @@ export default function Page() {
         onSelectSection={(section) => setActiveSection(section)}
         mobileOpen={mobileMenuOpen}
         onCloseMobile={() => setMobileMenuOpen(false)}
+        onSyncCatalog={handleSyncWithEcomshop}
+        isSyncingCatalog={isSyncingCatalog}
       />
 
       {/* Contenedor Principal */}
@@ -480,6 +525,7 @@ export default function Page() {
                 intelligenceCard={intelligenceCard}
                 errorMessage={campaignErrorMessage}
                 selectedSku={selectedSku}
+                products={catalogProducts}
                 isLoadingIntelligence={loadingIntelligence}
                 onSelectQuickSku={(sku) => {
                   setSelectedSku(sku);
@@ -515,7 +561,7 @@ export default function Page() {
                 <div>
                   <h2 className="text-xl font-bold text-white">Optimizador Técnico de Fichas ecomshop.es</h2>
                   <p className="text-xs text-slate-400 mt-1">
-                    SKU seleccionado actualmente: <strong className="text-indigo-400">{selectedSku}</strong>.
+                    SKU seleccionado actualmente: <strong className="text-indigo-400">{selectedSku}</strong> ({catalogProducts.length} productos en catálogo).
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -527,7 +573,7 @@ export default function Page() {
                     }}
                     className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono"
                   >
-                    {ECOMSHOP_FULL_CATALOG.map((p) => (
+                    {catalogProducts.map((p) => (
                       <option key={p.sku} value={p.sku}>
                         {p.sku} — {p.name}
                       </option>

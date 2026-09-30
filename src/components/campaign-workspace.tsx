@@ -78,6 +78,7 @@ interface CampaignWorkspaceProps {
   onSelectAngle?: (angle: EditorialAngle | null, isFreeTopic?: boolean) => void;
   freeTopicTitle?: string;
   onFreeTopicChange?: (title: string) => void;
+  products?: CatalogProduct[];
 }
 
 export function getProductFamily(deviceType: string): ProductFamily {
@@ -121,7 +122,8 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   selectedAngle,
   onSelectAngle,
   freeTopicTitle,
-  onFreeTopicChange
+  onFreeTopicChange,
+  products: initialProducts
 }) => {
   const [content, setContent] = useState<ContentOutput | null>(initialContent);
 
@@ -148,10 +150,11 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
 
   const [isRegeneratingChannel, setIsRegeneratingChannel] = useState(false);
 
-  // 1. Filtrado dinámico de los productos de ECOMSHOP_FULL_CATALOG por Familia y Buscador
+  // 1. Filtrado dinámico de los productos (desde Firestore si se pasan o catálogo canónico por defecto)
   const allCatalogDevices = useMemo(() => {
-    return ECOMSHOP_FULL_CATALOG.map(catalogProductToCatalogDevice);
-  }, []);
+    const sourceProducts = initialProducts && initialProducts.length > 0 ? initialProducts : ECOMSHOP_FULL_CATALOG;
+    return sourceProducts.map(catalogProductToCatalogDevice);
+  }, [initialProducts]);
 
   const familyCounts = useMemo(() => {
     const counts = { ALL: allCatalogDevices.length, WIFI: 0, SWITCHES: 0, GATEWAYS: 0, FIBER: 0 };

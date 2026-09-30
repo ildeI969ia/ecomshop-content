@@ -10,6 +10,7 @@ import { buildProductIntelligenceCard } from "@/lib/services/product-intelligenc
 import { verifyAndSanitizeContent } from "@/lib/services/evidence-engine";
 import { ProductIntelligenceCard } from "@/lib/types/product-intelligence";
 import { getCatalogDevice, ECOMSHOP_CATALOG } from "@/lib/catalog";
+import { getDynamicCatalogDevice } from "@/lib/catalog-server";
 
 import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
 import { AI_TEXT_MODEL } from "@/lib/ai-config";
@@ -49,11 +50,11 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
 
     const inputData = parsed.data;
 
-    // Detectar si el SKU corresponde a un dispositivo canónico de ECOMSHOP_CATALOG
+    // Detectar si el SKU corresponde a un dispositivo de catálogo (Firestore o local)
     const targetSku = inputData.sku || inputData.customEquipmentName || (inputData.promotedProductIds && inputData.promotedProductIds[0]) || "";
-    const catalogDevice = getCatalogDevice(targetSku) ||
-      (inputData.topicTitle ? getCatalogDevice(inputData.topicTitle) : undefined) ||
-      (inputData.productUrl ? getCatalogDevice(inputData.productUrl) : undefined);
+    const catalogDevice = (await getDynamicCatalogDevice(targetSku)) ||
+      (inputData.topicTitle ? await getDynamicCatalogDevice(inputData.topicTitle) : undefined) ||
+      (inputData.productUrl ? await getDynamicCatalogDevice(inputData.productUrl) : undefined);
 
     // 1. Fase de Extracción o Enriquecimiento con ECOMSHOP_CATALOG
     let intelligenceCard: ProductIntelligenceCard | null = null;
