@@ -12,7 +12,6 @@ export async function generateB2BContent(
       apiKey: req.apiKey
     }));
 
-  const { NotebookIntelligenceService } = await import("./services/notebook-intelligence");
   const { EditorialOrchestrator } = await import("./services/editorial-orchestrator");
   const { GroundedWriterService } = await import("./services/grounded-writer");
 
@@ -55,16 +54,9 @@ export async function generateB2BContent(
     editorialControls: req.editorialControls,
     selectedSourceIds:
       generationContext.sourceIds ||
-      generationContext.catalogDevice?.notebookSourceId
-        ? Array.from(
-            new Set([
-              ...(generationContext.sourceIds || []),
-              ...(generationContext.catalogDevice?.notebookSourceId
-                ? [generationContext.catalogDevice.notebookSourceId]
-                : [])
-            ])
-          )
-        : undefined,
+      (generationContext.catalogDevice?.notebookSourceId
+        ? [generationContext.catalogDevice.notebookSourceId]
+        : undefined),
     intel: generationContext.intel,
     editorialDecision,
     apiKey: req.apiKey
