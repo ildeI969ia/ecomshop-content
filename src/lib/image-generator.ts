@@ -247,6 +247,7 @@ export async function generateImageWithImagen(params: {
   aspectRatio: "16:9" | "1:1" | "4:3";
   baseImage?: string;
   mode?: "ai" | "curated";
+  preservePrompt?: boolean;
 }): Promise<GenerateImageResult> {
   // Si se solicita expresamente modo curado / stock gratuito (Coste 0€)
   if (params.mode === "curated") {
@@ -281,7 +282,7 @@ export async function generateImageWithImagen(params: {
   // ─── Multimodal vision enrichment & base image resolution ────────────────
   const baseImageData = await resolveBaseImageToData(params.baseImage);
 
-  if (baseImageData) {
+  if (baseImageData && !params.preservePrompt) {
     try {
       const { getGenAIClient, getActiveGeminiModel } = await import("./genai-client");
       const ai = getGenAIClient();
