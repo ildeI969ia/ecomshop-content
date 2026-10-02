@@ -196,7 +196,8 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         title: content.blog?.title || content.topicTitle || "Contenido B2B",
         slug: content.blog?.slug || content.topicId,
         category: content.category,
-        // Toda generación entra en revisión humana; el Quality Gate decide si puede aprobarse.\n        status: "IN_REVIEW",
+        // Toda generación entra en revisión humana; el Quality Gate decide si puede aprobarse.
+        status: "IN_REVIEW",
         currentVersion: 1,
         authorId: user.uid,
         versions: [
