@@ -279,24 +279,23 @@ export default function Page() {
     }
   };
 
-  // Guardar en Firestore
+  // Cambiar el estado del contenido ya persistido por /api/generate.
+  // Evita crear un segundo ContentItem y obliga a pasar por el workflow de aprobación.
   const handleSaveToFirestore = async (status: "approved" | "published" = "approved") => {
-    if (!campaignContent) return;
+    if (!campaignContent || !activeContentId) {
+      setCampaignErrorMessage("No existe un contenido persistido que pueda aprobarse o publicarse.");
+      return;
+    }
     setIsSavingArticle(true);
     try {
-      await apiFetch("/api/contents", {
-        method: "POST",
-        body: JSON.stringify({
-          title: campaignContent.blog?.title || campaignContent.topicTitle,
-          category: campaignContent.category,
-          status,
-          content: campaignContent,
-          sku: selectedSku
-        })
+      const result = await apiFetch<{ success: boolean; id: string; status: string }>("/api/contents", {
+        method: "PATCH",
+        body: JSON.stringify({ id: activeContentId, status })
       });
-      alert(`¡Campaña guardada con éxito con estado: ${status}!`);
-    } catch (err: any) {
-      alert(`Error al guardar: ${err.message}`);
+      setCampaignContent((prev) => prev ? { ...prev, status: result.status === "APPROVED" ? "APPROVED" : result.status === "PUBLISHED" ? "PUBLISHED" : prev.status } : prev);
+      alert(`Campaña actualizada correctamente: ${status}.`);
+    } catch (err: unknown) {
+      alert(`Error al actualizar el estado: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsSavingArticle(false);
     }
