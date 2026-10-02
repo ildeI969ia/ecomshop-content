@@ -5,6 +5,7 @@ import { AssetRepository, AuditRepository } from "@/server/repositories";
 import { GoogleCloudStorageProvider, StorageProviderError } from "@/server/services/storage-provider";
 import { prepareImageBinary } from "@/server/services/image-binary";
 import { Asset } from "@/server/domain/types";
+import { critiqueGeneratedImage } from "@/lib/services/image-critic";
 
 /**
  * Extrae MIME type y buffer binario de un Data URL base64.
@@ -32,13 +33,14 @@ import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
 
 export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
   try {
-    const { prompt, aspectRatio, baseImage, mode } = await req.json();
-    if (!prompt) {
+    const { prompt, aspectRatio, baseImage, mode, autoImprove } = await req.json();
+    if (!prompt || typeof prompt !== "string") {
       return NextResponse.json({ error: "Falta el prompt para generar la imagen" }, { status: 400 });
     }
 
     // Comprobar presupuesto FinOps (estimado ~0.0038€ por imagen)
-    const budgetCheck = await checkAiBudget(user.uid, user.role, 0.0038);
+    const shouldAutoImprove = autoImprove === true && mode !== "curated";
+    const budgetCheck = await checkAiBudget(user.uid, user.role, shouldAutoImprove ? 0.0076 : 0.0038);
     if (!budgetCheck.allowed) {
       return NextResponse.json(
         {
@@ -53,12 +55,49 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       );
     }
 
-    const result = await generateImageWithImagen({
-      prompt,
+    let finalPrompt = prompt;
+    let result = await generateImageWithImagen({
+      prompt: finalPrompt,
       aspectRatio: aspectRatio || "16:9",
       baseImage,
       mode: mode || "ai"
     });
+
+    let qualityReview: {
+      productFidelity: string;
+      intentMatch: string;
+      realism: string;
+      composition: string;
+      detectedProblems: string[];
+      regenerated: boolean;
+    } | undefined;
+
+    if (shouldAutoImprove && typeof result.imageUrl === "string" && result.imageUrl.startsWith("data:image/")) {
+      try {
+        const review = await critiqueGeneratedImage(result.imageUrl, finalPrompt);
+        qualityReview = {
+          productFidelity: review.productFidelity,
+          intentMatch: review.intentMatch,
+          realism: review.realism,
+          composition: review.composition,
+          detectedProblems: review.detectedProblems,
+          regenerated: false,
+        };
+
+        if (review.shouldRegenerate && review.optimizedPromptInstructions.trim()) {
+          finalPrompt = `${finalPrompt}\n\nVISUAL CORRECTIONS FROM QA:\n${review.optimizedPromptInstructions}`;
+          result = await generateImageWithImagen({
+            prompt: finalPrompt,
+            aspectRatio: aspectRatio || "16:9",
+            baseImage,
+            mode: mode || "ai"
+          });
+          qualityReview.regenerated = true;
+        }
+      } catch (criticError) {
+        console.warn("[api/images/generate] Visual critic unavailable; keeping first generation:", criticError);
+      }
+    }
 
     const assetId = `asset-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const nowIso = new Date().toISOString();
@@ -135,7 +174,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     const asset: Asset = {
       id: assetId,
       workspaceId: user.workspaceId,
-      filename: `AI: ${prompt.substring(0, 60)}`,
+      filename: `AI: ${finalPrompt.substring(0, 60)}`,
       mimeType,
       sizeBytes,
       storagePath,
@@ -190,7 +229,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         action: "GENERATE_AI",
         entity: "ASSET",
         entityId: assetId,
-        diff: { prompt: prompt.substring(0, 60), model: result.sourceType, storageStatus, sha256 },
+        diff: { prompt: finalPrompt.substring(0, 60), model: result.sourceType, storageStatus, sha256 },
         source: "UI"
       });
     } catch (auditErr) {
@@ -199,7 +238,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     }
 
     try {
-      await recordAiUsage(user.uid, "imagen_image", 0, 0, 1);
+      await recordAiUsage(user.uid, "imagen_image", 0, 0, qualityReview?.regenerated ? 2 : 1);
     } catch (finopsErr) {
       console.warn("[api/images/generate] Imagen registrada; fallo al grabar ai_usage:", finopsErr);
     }
@@ -210,8 +249,9 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       imageUrl: finalPublicUrl,
       sourceType: result.sourceType,
       warning: result.warning,
-      refinedPrompt: result.refinedPrompt,
+      refinedPrompt: finalPrompt,
       assetId,
+      qualityReview,
       persisted: true,
       storageStatus,
       budget: {
