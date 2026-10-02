@@ -188,7 +188,8 @@ export default function Page() {
       alert(res.message || "Catálogo sincronizado exitosamente con ecomshop.es");
       await fetchCatalog();
     } catch (err: unknown) {
-      alert(`Error al sincronizar con ecomshop.es: ${err.message || String(err)}`);
+      const message = err instanceof Error ? err.message : String(err);
+      alert(`Error al sincronizar con ecomshop.es: ${message}`);
     } finally {
       setIsSyncingCatalog(false);
     }
