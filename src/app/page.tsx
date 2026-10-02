@@ -213,6 +213,19 @@ export default function Page() {
     }
   }, [user, selectedSku, intelligenceCard, loadIntelligenceCard]);
 
+  // Preparar un SKU para el workspace sin generar todavía: limpia cualquier decisión editorial anterior.
+  const handlePrepareCampaignSku = async (sku: string, opportunity?: ProductOpportunityRecord) => {
+    setSelectedSku(sku);
+    setCampaignOpportunity(opportunity || null);
+    setSelectedAngle(null);
+    setFreeTopicTitle("");
+    setCampaignContent(null);
+    setCampaignErrorMessage(null);
+    setCampaignStage("IDLE");
+    setActiveSection("workspace");
+    await loadIntelligenceCard(sku);
+  };
+
   // Disparar generación multicanal completa para un SKU
   const handleLaunchWithSku = async (sku: string) => {
     const product = catalogProducts.find((p) => p.sku === sku) || ECOMSHOP_FULL_CATALOG.find((p) => p.sku === sku);
@@ -292,10 +305,12 @@ export default function Page() {
   // Lanzar desde el Radar B2B
   const handleLaunchRadarOpportunity = async (opp: ProductOpportunityRecord) => {
     setLaunchingRadarSku(opp.sku);
-    setCampaignOpportunity(opp);
-    setSelectedSku(opp.sku);
-    await handleLaunchWithSku(opp.sku);
-    setLaunchingRadarSku(null);
+    try {
+      // Desde el Radar no generamos a ciegas: primero cargamos el SKU y sus nuevas ideas editoriales.
+      await handlePrepareCampaignSku(opp.sku, opp);
+    } finally {
+      setLaunchingRadarSku(null);
+    }
   };
 
   // Generar Ficha Mejorada
@@ -536,8 +551,7 @@ export default function Page() {
                 products={catalogProducts}
                 isLoadingIntelligence={loadingIntelligence}
                 onSelectQuickSku={(sku) => {
-                  setSelectedSku(sku);
-                  loadIntelligenceCard(sku);
+                  void handlePrepareCampaignSku(sku);
                 }}
                 onLaunchWithSku={handleLaunchWithSku}
                 onRetry={() => handleLaunchWithSku(selectedSku)}
