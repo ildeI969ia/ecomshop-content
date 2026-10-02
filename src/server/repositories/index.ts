@@ -1,9 +1,10 @@
 import { getAdminFirestore } from "../config/firebase";
-import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
+import { FieldValue, type QueryDocumentSnapshot } from "firebase-admin/firestore";
 import {
   Campaign,
   ContentItem,
   ContentVariant,
+  ContentVersion,
   FinOpsRecord,
   AuditLog,
   SourceItem,
@@ -66,9 +67,21 @@ export function sanitizeUndefined<T>(obj: T): T {
 export class ContentRepository {
   private collection = () => getAdminFirestore().collection("contents");
 
+  private async hydrateVersions(id: string, root: ContentItem): Promise<ContentItem> {
+    const snapshot = await this.collection().doc(id).collection("versions").orderBy("version", "desc").get();
+    if (snapshot.empty) {
+      return root;
+    }
+    return {
+      ...root,
+      versions: snapshot.docs.map((doc) => doc.data() as ContentVersion)
+    };
+  }
+
   async findById(id: string): Promise<ContentItem | null> {
     const doc = await this.collection().doc(id).get();
-    return doc.exists ? (doc.data() as ContentItem) : null;
+    if (!doc.exists) return null;
+    return this.hydrateVersions(id, doc.data() as ContentItem);
   }
 
   async listByCampaign(campaignId: string): Promise<ContentItem[]> {
@@ -102,96 +115,81 @@ export class ContentRepository {
   }
 
   async findBySlug(slug: string, workspaceId?: string): Promise<ContentItem | null> {
-    try {
-      let query: any = this.collection().where("slug", "==", slug);
-      if (workspaceId) {
-        query = query.where("workspaceId", "==", workspaceId);
-      }
-      const snapshot = await query.limit(1).get();
-      if (!snapshot.empty) {
-        return snapshot.docs[0].data() as ContentItem;
-      }
-      return null;
-    } catch (err) {
-      console.warn("[ContentRepository] findBySlug error:", err);
-      return null;
-    }
+    let query = this.collection().where("slug", "==", slug);
+    if (workspaceId) query = query.where("workspaceId", "==", workspaceId);
+    const snapshot = await query.limit(1).get();
+    if (snapshot.empty) return null;
+    const doc = snapshot.docs[0];
+    return this.hydrateVersions(doc.id, doc.data() as ContentItem);
   }
 
   async upsertBySlug(rawContent: ContentItem): Promise<ContentItem> {
     const content = sanitizeUndefined(rawContent);
     const existing = await this.findBySlug(content.slug, content.workspaceId);
-    let nowIso = new Date().toISOString();
+    const nowIso = new Date().toISOString();
 
-    // Corregir fechas corruptas con año 2001 si aplican
     if (content.createdAt && content.createdAt.startsWith("2001")) {
       content.createdAt = nowIso;
     }
 
-    if (existing) {
-      const rawVersions = [
-        ...(existing.versions || []),
-        {
-          version: (existing.currentVersion || 1) + 1,
-          body: content.canonicalBody || (content as any),
-          changeSummary: "Actualización automática por slug (Fase 6g - No duplicación)",
-          editedByUserId: content.updatedBy || content.createdBy,
-          isAIGenerated: true,
-          timestamp: nowIso
-        }
-      ];
+    const nextVersion = existing ? (existing.currentVersion || 1) + 1 : 1;
+    const version: ContentVersion = {
+      version: nextVersion,
+      body: content.canonicalBody || (content as Record<string, unknown>),
+      changeSummary: existing
+        ? "Actualización automática por slug (versionado desacoplado)"
+        : "Generación inicial",
+      editedByUserId: content.updatedBy || content.createdBy,
+      isAIGenerated: true,
+      timestamp: nowIso
+    };
 
-      // Poda de versiones para no superar el límite de 1MB de Firestore (máximo 5 versiones)
-      const updatedVersions = rawVersions.slice(-5).map((v, idx, arr) => {
-        if (idx < arr.length - 1 && JSON.stringify(v.body || {}).length > 50000) {
-          return { ...v, body: { notice: "Cuerpo de versión intermedia purgado para control de tamaño (<1MB)" } };
-        }
-        return v;
-      });
+    const rootData = sanitizeUndefined({
+      ...(existing || {}),
+      ...content,
+      id: existing?.id || content.id,
+      currentVersion: nextVersion,
+      versions: undefined,
+      updatedAt: nowIso,
+      updatedBy: content.updatedBy || existing?.updatedBy
+    }) as Record<string, unknown>;
 
-      const mergedItem: ContentItem = sanitizeUndefined({
-        ...existing,
-        ...content,
-        id: existing.id, // Mantener ID único existente para evitar duplicados
-        currentVersion: (existing.currentVersion || 1) + 1,
-        versions: updatedVersions,
-        updatedAt: nowIso,
-        updatedBy: content.updatedBy || existing.updatedBy
-      });
+    delete rootData.versions;
 
-      // Limpieza preventiva de base64 si el objeto supera 900KB
-      let finalItem = mergedItem;
-      let serialized = JSON.stringify(finalItem);
-      if (serialized.length > 900000) {
-        const cleanedStr = serialized.replace(/data:image\/[a-zA-Z0-9+.-]+;base64,[a-zA-Z0-9+/=]+/g, "https://storage.googleapis.com/ecomshop-marketing-prod/assets/pruned-base64-image.jpg");
-        finalItem = sanitizeUndefined(JSON.parse(cleanedStr));
-        serialized = JSON.stringify(finalItem);
-      }
+    const rootId = existing?.id || content.id;
+    const rootRef = this.collection().doc(rootId);
+    const versionRef = rootRef.collection("versions").doc(`v-${String(nextVersion).padStart(6, "0")}`);
+    const db = getAdminFirestore();
 
-      if (serialized.length > 1048576) {
-        console.error(`[ContentRepository] ADVERTENCIA: Documento ${existing.id} supera 1MB (${serialized.length} bytes). Omitiendo actualización para no colapsar Firestore.`);
-        return existing;
-      }
-
-      await this.collection().doc(existing.id).set(finalItem, { merge: true });
-      return finalItem;
-    } else {
-      let finalItem = sanitizeUndefined(content);
-      let serialized = JSON.stringify(finalItem);
-      if (serialized.length > 900000) {
-        const cleanedStr = serialized.replace(/data:image\/[a-zA-Z0-9+.-]+;base64,[a-zA-Z0-9+/=]+/g, "https://storage.googleapis.com/ecomshop-marketing-prod/assets/pruned-base64-image.jpg");
-        finalItem = sanitizeUndefined(JSON.parse(cleanedStr));
-        serialized = JSON.stringify(finalItem);
-      }
-
-      if (serialized.length > 1048576) {
-        console.error(`[ContentRepository] ADVERTENCIA: Documento ${content.id} supera 1MB (${serialized.length} bytes). Omitiendo creación para no colapsar Firestore.`);
-        return content;
-      }
-
-      await this.collection().doc(content.id).set(finalItem);
-      return finalItem;
+    let serialized = JSON.stringify(rootData);
+    if (serialized.length > 900000) {
+      const cleanedStr = serialized.replace(
+        /data:image\/[a-zA-Z0-9+.-]+;base64,[a-zA-Z0-9+/=]+/g,
+        "https://storage.googleapis.com/ecomshop-marketing-prod/assets/pruned-base64-image.jpg"
+      );
+      Object.assign(rootData, JSON.parse(cleanedStr));
+      serialized = JSON.stringify(rootData);
     }
+
+    if (serialized.length > 1048576) {
+      throw new Error(`CONTENT_DOCUMENT_TOO_LARGE: Documento ${rootId} supera 1MiB incluso después de limpieza.`);
+    }
+
+    const batch = db.batch();
+    batch.set(rootRef, rootData, { merge: true });
+    batch.set(versionRef, sanitizeUndefined(version));
+    if (existing) {
+      // Elimina el histórico embebido legacy para impedir que el documento vuelva a crecer.
+      batch.update(rootRef, { versions: FieldValue.delete() });
+    }
+    await batch.commit();
+
+    return {
+      ...(rootData as unknown as ContentItem),
+      versions: existing?.versions
+        ? [...existing.versions, version]
+        : [version]
+    };
   }
 
   async save(content: ContentItem): Promise<void> {
