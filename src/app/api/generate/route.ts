@@ -49,7 +49,6 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
 
     // 1. Build the canonical generation context once. This resolves SKU, catalog,
     // Notebook intelligence, evidence map and optional Product IntelligenceCard.
-    const inputData = parsed.data;
     const generationContext = await buildGenerationContext(inputData, {
       includeProductIntelligenceCard: true
     });
