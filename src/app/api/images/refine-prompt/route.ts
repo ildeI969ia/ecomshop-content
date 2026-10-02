@@ -111,15 +111,17 @@ Respond ONLY with valid JSON in this exact structure:
               console.error("[refine-prompt] Warning: Falló el registro de uso de IA:", usageErr);
             }
             return NextResponse.json({
-              originalIdea: trimmedPrompt,
-              improvedPrompt: parsed.improvedPrompt.trim(),
-              cameraDetails: parsed.cameraDetails || "50mm f/2.0, iluminación fotográfica B2B",
-              improvements: Array.isArray(parsed.improvements) ? parsed.improvements : [
-                "Cualificación fotográfica profesional para evitar alucinaciones",
-                "Optimización de iluminación y texturas de hardware de red",
-                "Traducción y enriquecimiento de descriptores técnicos en inglés"
-              ],
-              suggestedAspectRatio: parsed.suggestedAspectRatio || currentAspectRatio,
+              refinement: {
+                originalIdea: trimmedPrompt,
+                improvedPrompt: parsed.improvedPrompt.trim(),
+                cameraDetails: parsed.cameraDetails || "50mm f/2.0, iluminación fotográfica B2B",
+                improvements: Array.isArray(parsed.improvements) ? parsed.improvements : [
+                  "Cualificación fotográfica profesional para evitar alucinaciones",
+                  "Optimización de iluminación y texturas de hardware de red",
+                  "Traducción y enriquecimiento de descriptores técnicos en inglés"
+                ],
+                suggestedAspectRatio: parsed.suggestedAspectRatio || currentAspectRatio,
+              }
             });
           }
         } catch {
@@ -151,16 +153,18 @@ Respond ONLY with valid JSON in this exact structure:
     const fallbackImproved = `Professional photorealistic ${currentAspectRatio} commercial photograph: ${hardwareKeywords}. Inspired by "${trimmedPrompt}". Sharp 50mm f/2.8 focus, clean corporate studio lighting, realistic industrial materials, zero distortion, 8k resolution.`;
 
     return NextResponse.json({
-      originalIdea: trimmedPrompt,
-      improvedPrompt: fallbackImproved,
-      cameraDetails: "50mm f/2.8, iluminación difusa de estudio 5500K y foco nítido",
-      improvements: [
-        "Enriquecimiento de terminología técnica de hardware para evitar deformaciones",
-        "Ajuste de profundidad de campo y luz de estudio corporativo",
-        "Estructuración de descriptores fotográficos en inglés optimizados para Google Imagen 3",
-        "Composición fidedigna para telecomunicaciones B2B"
-      ],
-      suggestedAspectRatio: currentAspectRatio,
+      refinement: {
+        originalIdea: trimmedPrompt,
+        improvedPrompt: fallbackImproved,
+        cameraDetails: "50mm f/2.8, iluminación difusa de estudio 5500K y foco nítido",
+        improvements: [
+          "Enriquecimiento de terminología técnica de hardware para evitar deformaciones",
+          "Ajuste de profundidad de campo y luz de estudio corporativo",
+          "Estructuración de descriptores fotográficos en inglés optimizados para Google Imagen 3",
+          "Composición fidedigna para telecomunicaciones B2B"
+        ],
+        suggestedAspectRatio: currentAspectRatio,
+      }
     });
   } catch (error: any) {
     console.error("[RefinePrompt] Error fatal:", error);
