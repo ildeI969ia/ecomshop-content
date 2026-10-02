@@ -651,7 +651,10 @@ export default function Page() {
                         aspectRatio: imageAspectRatio,
                         baseImage: imageBase,
                         selectedSku,
-                        productContext: catalogProducts.find((product) => product.sku === selectedSku)?.name,
+                        productContext: (() => {
+                          const product = catalogProducts.find((item) => item.sku === selectedSku);
+                          return product ? JSON.stringify(product) : undefined;
+                        })(),
                       })
                     });
                     if (res?.refinement) setPromptRefinement(res.refinement);
@@ -708,7 +711,10 @@ export default function Page() {
         onClose={() => setShowInterrogatorModal(false)}
         currentBaseImage={imageBase}
         selectedSku={selectedSku}
-        productContext={catalogProducts.find((product) => product.sku === selectedSku)?.name}
+        productContext={(() => {
+          const product = catalogProducts.find((item) => item.sku === selectedSku);
+          return product ? JSON.stringify(product) : undefined;
+        })()}
         onApplyPrompt={(newPrompt, newRatio, baseImg) => {
           setImagePrompt(newPrompt);
           setImageAspectRatio(newRatio);
