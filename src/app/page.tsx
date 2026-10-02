@@ -187,7 +187,7 @@ export default function Page() {
       });
       alert(res.message || "Catálogo sincronizado exitosamente con ecomshop.es");
       await fetchCatalog();
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(`Error al sincronizar con ecomshop.es: ${err.message || String(err)}`);
     } finally {
       setIsSyncingCatalog(false);
@@ -240,7 +240,9 @@ export default function Page() {
           category: product ? product.category : "general",
           targetAudience: selectedAngle?.targetAudience || "Instalador B2B",
           productUrl: product ? product.url : `https://ecomshop.es/productos/${sku.toLowerCase()}`,
-          customAngle: selectedAngle?.intent || "ROI",
+          customAngle: selectedAngle?.intent || "ENGINEERING",
+          editorialAngle: selectedAngle || undefined,
+          workspaceId: user?.workspaceId,
           businessGoal: "ALL_OPPORTUNITIES",
           syncWhatsApp: true,
           syncLinkedIn: true,
@@ -260,7 +262,7 @@ export default function Page() {
       clearTimeout(t1);
       clearTimeout(t2);
       setCampaignStage("ERROR");
-      setCampaignErrorMessage(err.message || "Error al generar el paquete de contenido multicanal");
+      setCampaignErrorMessage(err instanceof Error ? err.message : "Error al generar el paquete de contenido multicanal");
     }
   };
 
