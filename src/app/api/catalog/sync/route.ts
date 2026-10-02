@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { getAdminFirestore } from "@/server/config/firebase";
-import { GESIO_CSV_FEED_URL, parseGesioCsvCatalog } from "@/lib/services/gesio-csv-parser";
+import { GESIO_XML_FEED_URL, parseGesioXmlCatalog } from "@/lib/services/gesio-xml-parser";
 import { crawlEcomshopProductUrls, fetchRawProductHtml, parseProductWithGemini } from "@/lib/services/ecomshop-live-crawler";
 import { CatalogProduct } from "@/lib/data/ecomshop-catalog";
 import { sanitizeUndefined } from "@/server/repositories";
@@ -13,16 +13,16 @@ export const POST = withAuthAndPermission("content:create", async (req: NextRequ
   try {
     const body = await req.json().catch(() => ({}));
     const mode = typeof body.mode === "string" ? body.mode : "feed"; // "feed" | "crawl" | "url"
-    const maxItems = typeof body.maxItems === "number" ? Math.min(body.maxItems, 500) : 200;
+    const maxItems = typeof body.maxItems === "number" ? Math.min(body.maxItems, 500) : 300;
     const targetUrl = typeof body.targetUrl === "string" ? body.targetUrl.trim() : null;
 
     const db = getAdminFirestore();
     const productsCollection = db.collection("products");
 
-    // MODALIDAD 1: Sincronización ultrarrápida masiva mediante Feed CSV público oficial de Gesio
+    // MODALIDAD 1: Sincronización ultrarrápida masiva mediante Feed XML público oficial de Gesio
     if (mode === "feed" || !targetUrl) {
-      console.log(`[CatalogSync] Descargando catálogo público completo desde Gesio CSV feed...`);
-      const response = await fetch(GESIO_CSV_FEED_URL, {
+      console.log(`[CatalogSync] Descargando catálogo público completo desde Gesio XML feed...`);
+      const response = await fetch(GESIO_XML_FEED_URL, {
         headers: {
           "User-Agent": "EcomSpain-CatalogEngine/3.0 (+https://marketing.ecomspain.com)"
         },
@@ -30,14 +30,14 @@ export const POST = withAuthAndPermission("content:create", async (req: NextRequ
       });
 
       if (!response.ok) {
-        throw new Error(`Error HTTP al descargar feed Gesio: ${response.status} ${response.statusText}`);
+        throw new Error(`Error HTTP al descargar feed XML Gesio: ${response.status} ${response.statusText}`);
       }
 
-      const csvText = await response.text();
-      const allProducts = parseGesioCsvCatalog(csvText);
+      const xmlText = await response.text();
+      const allProducts = parseGesioXmlCatalog(xmlText);
       const productsToSync = allProducts.slice(0, maxItems);
 
-      console.log(`[CatalogSync] Gesio Feed parseado exitosamente: ${allProducts.length} productos detectados. Guardando ${productsToSync.length} en Firestore...`);
+      console.log(`[CatalogSync] Gesio XML Feed parseado exitosamente: ${allProducts.length} productos detectados. Guardando ${productsToSync.length} en Firestore...`);
 
       // Guardar en lotes (batch writes de Firestore, max 500 ops por batch)
       const batchSize = 400;
@@ -53,7 +53,7 @@ export const POST = withAuthAndPermission("content:create", async (req: NextRequ
             ...sanitizeUndefined(prod),
             updatedAt: new Date().toISOString(),
             syncedBy: user.email,
-            source: "gesio_csv_feed"
+            source: "gesio_xml_feed"
           });
           syncedCount++;
         }
@@ -67,7 +67,7 @@ export const POST = withAuthAndPermission("content:create", async (req: NextRequ
         syncedCount,
         totalFeedCount: allProducts.length,
         syncedBy: user.email,
-        source: "gesio_csv_feed",
+        source: "gesio_xml_feed",
         durationMs: Date.now() - startTime
       });
 

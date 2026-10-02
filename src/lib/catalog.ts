@@ -23,6 +23,7 @@ export interface CatalogDevice {
     | "GATEWAY_SDWAN"
     | "ROUTER_CELLULAR"
     | "TESTER"
+    | "CCTV_CAMERA"
     | "ACCESSORY";
   shortDesc: string;
   recommendedBundle: string;
@@ -60,7 +61,9 @@ export interface CatalogDevice {
 export function catalogProductToCatalogDevice(prod: CatalogProduct): CatalogDevice {
   // 1. Mapeo semántico exhaustivo de categoría según tipo y especificaciones
   let category: CatalogDevice["category"] = "ACCESSORY";
-  if (prod.deviceType === "ACCESS_POINT") {
+  if (prod.deviceType === "CCTV_CAMERA" || prod.category === "cctv") {
+    category = "CCTV_CAMERA";
+  } else if (prod.deviceType === "ACCESS_POINT") {
     const isWifi7 = prod.standards.some(s => s.toLowerCase().includes("wi-fi 7") || s.toLowerCase().includes("802.11be")) ||
       (prod.polymorphicSpecs?.accessPoint?.wirelessStandards.some(s => s.toLowerCase().includes("wi-fi 7") || s.toLowerCase().includes("802.11be")) ?? false);
     category = isWifi7 ? "WIFI_7" : "WIFI_6";

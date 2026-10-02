@@ -54,7 +54,7 @@ import { EditorialAngle } from "@/app/api/editorial/suggest-angles/route";
 
 export type WorkspaceTab = "geo" | "blog" | "mailchimp" | "whatsapp" | "linkedin" | "ecomshop" | "intel" | "quality";
 
-export type ProductFamily = "ALL" | "WIFI" | "SWITCHES" | "GATEWAYS" | "FIBER";
+export type ProductFamily = "ALL" | "WIFI" | "SWITCHES" | "GATEWAYS" | "CCTV" | "FIBER";
 
 interface CampaignWorkspaceProps {
   stage: GenerationStage;
@@ -91,10 +91,11 @@ export function getProductFamily(deviceType: string): ProductFamily {
     case "GATEWAY":
     case "ROUTER_CELLULAR":
       return "GATEWAYS";
+    case "CCTV_CAMERA":
+      return "CCTV";
     case "FIBER_OPTIC":
     case "TESTER":
     case "ACCESSORY":
-    case "CCTV_CAMERA":
       return "FIBER";
     default:
       return "WIFI";
@@ -157,7 +158,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   }, [initialProducts]);
 
   const familyCounts = useMemo(() => {
-    const counts = { ALL: allCatalogDevices.length, WIFI: 0, SWITCHES: 0, GATEWAYS: 0, FIBER: 0 };
+    const counts = { ALL: allCatalogDevices.length, WIFI: 0, SWITCHES: 0, GATEWAYS: 0, CCTV: 0, FIBER: 0 };
     allCatalogDevices.forEach((device) => {
       const fam = getProductFamily(device.type);
       counts[fam] = (counts[fam] || 0) + 1;
@@ -494,6 +495,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
               { id: "WIFI", label: "Wi-Fi & APs", count: familyCounts.WIFI },
               { id: "SWITCHES", label: "Switches PoE", count: familyCounts.SWITCHES },
               { id: "GATEWAYS", label: "Gateways & Celular", count: familyCounts.GATEWAYS },
+              { id: "CCTV", label: "Cámaras IP / CCTV", count: familyCounts.CCTV },
               { id: "FIBER", label: "Fibra & Testers", count: familyCounts.FIBER }
             ].map((fam) => {
               const isActive = selectedFamily === fam.id;
