@@ -10,7 +10,7 @@ export const maxDuration = 60;
 export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
   try {
     const body = await req.json();
-    const { sku, topicTitle, angleSelected, targetAudience = "Instalador B2B" } = body;
+    const { sku, topicTitle, angleSelected, targetAudience } = body;
 
     const budgetCheck = await checkAiBudget(user.uid, user.role, 0.002);
     if (!budgetCheck.allowed) {
@@ -33,7 +33,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       editorialThesis: resolvedTitle,
       topicTitle: resolvedTitle,
       category: product?.category || "general",
-      targetAudience: typeof angleSelected === "object" && angleSelected?.targetAudience ? angleSelected.targetAudience : targetAudience,
+      targetAudience: typeof angleSelected === "object" && angleSelected?.targetAudience ? angleSelected.targetAudience : targetAudience,\n      editorialAngle: typeof angleSelected === "object" ? angleSelected : undefined,
       customNotes: typeof angleSelected === "object" && angleSelected?.hook ? `Ángulo: ${angleSelected.title}. Gancho: ${angleSelected.hook}` : ""
     });
 
