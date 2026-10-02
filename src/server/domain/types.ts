@@ -170,7 +170,7 @@ export function validateCampaignTransition(
   return { valid: true };
 }
 
-export const ContentStatusSchema = z.enum(["DRAFT", "IN_REVIEW", "APPROVED", "SCHEDULED", "PUBLISHED", "ARCHIVED"]);
+export const ContentStatusSchema = z.enum(["DRAFT", "IN_REVIEW", "NEEDS_REVIEW", "APPROVED", "SCHEDULED", "PUBLISHED", "ARCHIVED"]);
 export const ContentChannelSchema = z.enum(["BLOG", "MAILCHIMP", "WHATSAPP", "LINKEDIN", "X_TWITTER", "CASE_STUDY_PDF"]);
 
 export const AIProvenanceSchema = z.object({
