@@ -35,6 +35,27 @@ export const POST = withAuthAndPermission("content:create", async (req: NextRequ
 
       const xmlText = await response.text();
       const allProducts = parseGesioXmlCatalog(xmlText);
+
+      // El feed es Product Truth: un SKU no puede representar dos productos distintos.
+      // Si el feed contiene colisiones, se detiene la sincronización antes de escribir Firestore.
+      const identityBySku = new Map<string, string>();
+      for (const product of allProducts) {
+        const sku = product.sku.trim().toUpperCase();
+        const identity = JSON.stringify({
+          model: product.model.trim().toUpperCase(),
+          brand: product.brand.trim().toUpperCase(),
+          name: product.name.trim(),
+          url: product.url.trim()
+        });
+        const previous = identityBySku.get(sku);
+        if (previous && previous !== identity) {
+          throw new Error(
+            `FEED_PRODUCT_IDENTITY_COLLISION: el SKU ${sku} aparece con identidades distintas en el feed de EcomShop.`
+          );
+        }
+        identityBySku.set(sku, identity);
+      }
+
       const productsToSync = allProducts.slice(0, maxItems);
 
       console.log(`[CatalogSync] Gesio XML Feed parseado exitosamente: ${allProducts.length} productos detectados. Guardando ${productsToSync.length} en Firestore...`);
