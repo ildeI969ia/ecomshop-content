@@ -1,5 +1,5 @@
 import { ContentOutput, GenerateRequest } from "./schema";
-import { findCatalogProduct, type CatalogProduct } from "./data/ecomshop-catalog";
+import { findCatalogProductExact, type CatalogProduct } from "./data/ecomshop-catalog";
 import { getDynamicCatalogProduct } from "./catalog-server";
 import { buildFeedProductIntelligence } from "./services/feed-product-intelligence";
 import { detectProductType, buildProductEvidenceMap } from "./services/product-evidence-map";
@@ -27,7 +27,7 @@ export async function generateB2BContent(req: CanonicalGenerateRequest): Promise
   const feedProduct =
     req.canonicalProduct ||
     (requestedSku ? await getDynamicCatalogProduct(requestedSku) : undefined) ||
-    (requestedSku ? findCatalogProduct(requestedSku) : undefined);
+    (requestedSku ? findCatalogProductExact(requestedSku) : undefined);
 
   if (!feedProduct) {
     throw new Error(
