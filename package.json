@@ -36,7 +36,8 @@
     "test:editorial": "tsx scripts/test-sprint-editorial-quality.ts",
     "test:image-creative": "tsx scripts/test-image-creative-contracts.ts",
     "test:editorial-orchestrator": "tsx scripts/test-editorial-orchestrator.ts",
-    "benchmark:editorial-diversity": "tsx scripts/benchmark-editorial-diversity.ts"
+    "benchmark:editorial-diversity": "tsx scripts/benchmark-editorial-diversity.ts",
+    "test:architecture-execution": "tsx scripts/test-architecture-execution.ts"
   },
   "dependencies": {
     "@google-cloud/firestore": "^9.1.0",
