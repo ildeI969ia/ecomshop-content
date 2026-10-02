@@ -61,7 +61,7 @@ export const EditorialAnglesSelector: React.FC<EditorialAnglesSelectorProps> = (
             if (!selectedAngle && !isFreeTopic && orchestratorAngle) onSelectAngle(orchestratorAngle, false);
           }
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (isMounted) {
           setError("No se pudieron cargar los ángulos sugeridos.");
         }
@@ -87,23 +87,18 @@ export const EditorialAnglesSelector: React.FC<EditorialAnglesSelectorProps> = (
   };
 
   const getAngleIcon = (intent: string) => {
-    if (intent.includes("PROBLEMAS") || intent.includes("INGENIERIA")) {
-      return <Wrench className="w-4 h-4 text-amber-400" />;
-    }
-    if (intent.includes("ROI") || intent.includes("TCO")) {
-      return <Coins className="w-4 h-4 text-emerald-400" />;
-    }
+    if (intent.includes("ARQUITECTURA") || intent.includes("CAPACIDAD")) return <Wrench className="w-4 h-4 text-amber-400" />;
+    if (intent.includes("MEDIO") || intent.includes("CONTINUIDAD")) return <Coins className="w-4 h-4 text-emerald-400" />;
     return <Building2 className="w-4 h-4 text-sky-400" />;
   };
 
   const getAngleBadge = (intent: string) => {
-    if (intent.includes("PROBLEMAS") || intent.includes("INGENIERIA")) {
-      return "Resolución de Problemas / Ingeniería";
-    }
-    if (intent.includes("ROI") || intent.includes("TCO")) {
-      return "Retorno de Inversión & TCO";
-    }
-    return "Caso de Uso Sectorial";
+    if (intent.includes("ARQUITECTURA")) return "Arquitectura / RF";
+    if (intent.includes("CAPACIDAD")) return "Capacidad / Topología";
+    if (intent.includes("MEDIO")) return "Medio físico";
+    if (intent.includes("CONTINUIDAD")) return "Continuidad WAN";
+    if (intent.includes("VIDEOVIGILANCIA")) return "Videovigilancia IP";
+    return "Decisión de ingeniería";
   };
 
   return (
