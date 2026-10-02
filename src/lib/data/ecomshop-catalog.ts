@@ -6788,18 +6788,36 @@ export const ECOMSHOP_FULL_CATALOG: CatalogProduct[] = [
   }
 ];
 
-export function findCatalogProduct(query: string): CatalogProduct | undefined {
+/**
+ * Resolución de identidad estricta.
+ *
+ * Para rutas de generación, inteligencia, Product Truth y persistencia NO se permite
+ * coincidencia parcial: ECS1552, ECS1552P y ECS1552FP son productos distintos.
+ */
+export function findCatalogProductExact(query: string): CatalogProduct | undefined {
   if (!query) return undefined;
   const clean = query.trim().toUpperCase();
-  // 1. Coincidencia exacta primero (prioridad máxima para evitar colisiones entre ECS5512F y ECS5512FP)
-  const exact = ECOMSHOP_FULL_CATALOG.find(p =>
-    p.sku.toUpperCase() === clean ||
-    p.model.toUpperCase() === clean ||
-    p.id.toUpperCase() === clean
+  if (!clean) return undefined;
+
+  return ECOMSHOP_FULL_CATALOG.find((p) =>
+    p.sku.trim().toUpperCase() === clean ||
+    p.model.trim().toUpperCase() === clean ||
+    p.id.trim().toUpperCase() === clean
   );
+}
+
+/**
+ * Resolución flexible para UI/búsquedas humanas.
+ * Las rutas canónicas de generación deben usar findCatalogProductExact().
+ */
+export function findCatalogProduct(query: string): CatalogProduct | undefined {
+  const exact = findCatalogProductExact(query);
   if (exact) return exact;
 
-  // 2. Coincidencia parcial si no hay coincidencia exacta
+  if (!query) return undefined;
+  const clean = query.trim().toUpperCase();
+  if (!clean) return undefined;
+
   return ECOMSHOP_FULL_CATALOG.find(p =>
     p.sku.toUpperCase().includes(clean) ||
     clean.includes(p.sku.toUpperCase()) ||
