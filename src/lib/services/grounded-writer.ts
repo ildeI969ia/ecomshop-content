@@ -6,6 +6,9 @@ import { ECOM_BRAND } from "@/lib/knowledge";
 import { AIExecutionService } from "@/lib/services/ai-execution-service";
 import { validateEditorialQuality } from "@/lib/quality/editorial-quality-gate";
 import type { EditorialDecision } from "@/lib/types/editorial-orchestrator";
+import { detectProductType, buildProductEvidenceMap } from "@/lib/services/product-evidence-map";
+import { generateEditorialAngleCandidates, selectBestEditorialAngle } from "@/lib/services/editorial-angle-engine";
+import { auditEditorialQualityWithCritic } from "@/lib/services/editorial-critic";
 
 export interface GroundedWriterRequest {
   sku: string;
@@ -180,13 +183,13 @@ export class GroundedWriterService {
           selectBestEditorialAngle(angleCandidates);
 
         const criticReport = auditEditorialQualityWithCritic(
-          rawOutput,
+          rawOutput as ContentOutput,
           bestAngle,
           evidenceMap,
           req.targetAudience
         );
         const qualityReport = validateEditorialQuality(
-          rawOutput,
+          rawOutput as ContentOutput,
           req.targetAudience,
           req.sku
         );
