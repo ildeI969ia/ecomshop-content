@@ -110,8 +110,12 @@ export class EditorialOrchestrator {
     const recent=input.workspaceId ? await new ContentRepository().listRecent(100,input.workspaceId) : [];
     const used=recent.map(item=>{ const body=(item.canonicalBody&&typeof item.canonicalBody==='object')?item.canonicalBody as Record<string,unknown>:{}; const t=(body.editorialThesis&&typeof body.editorialThesis==='object')?body.editorialThesis as Record<string,unknown>:{}; const b=(body.blog&&typeof body.blog==='object')?body.blog as Record<string,unknown>:{}; return {title:typeof b.title==='string'?b.title:"",question:typeof t.technicalQuestion==='string'?t.technicalQuestion:"",audience:typeof t.targetProfessional==='string'?t.targetProfessional:""}; });
     const rejected:string[]=[]; const reasons:string[]=[]; let selected=angles[0]; let selectedFound=false;
-    for(const angle of angles){ const collision=used.find(old=>similarity(angle.title,old.title)>=0.72 || similarity(angle.editorialQuestion,old.question)>=0.58); if(!collision){selected=angle; selectedFound=true; break;} rejected.push(angle.id); reasons.push("Colisión con "+(collision?.title||collision?.question)); }
-    if(!selectedFound && angles.length>0) selected=angles[angles.length-1];
+    const requested = input.requestedAngle;
+    const ordered = requested
+      ? [...angles.filter(a => a.id === requested.id || a.title === requested.title), ...angles.filter(a => a.id !== requested.id && a.title !== requested.title)]
+      : angles;
+    for(const angle of ordered){ const collision=used.find(old=>similarity(angle.title,old.title)>=0.72 || similarity(angle.editorialQuestion,old.question)>=0.58); if(!collision){selected=angle; selectedFound=true; break;} rejected.push(angle.id); reasons.push("Colisión con "+(collision?.title||collision?.question)); }
+    if(!selectedFound && ordered.length>0) selected=ordered[ordered.length-1];
     const selectedAudience=audiences.find(a=>a.label===selected.targetAudience)||primary;
     const th=thesis(selected,input.intel,selectedAudience,input.evidenceMap);
     const learnings=[selected.editorialQuestion,"Cómo interpretar la tensión: "+selected.tension+".","Qué evidencia de "+sku+" debe verificarse.","Qué limitación debe comprobar "+selectedAudience.label+".","Cuándo encaja el producto y cuándo conviene otra arquitectura."];
