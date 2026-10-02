@@ -117,3 +117,30 @@ This review does not intentionally change:
 - AI model selection semantics
 
 All changes should preserve these behaviors while reducing coupling and duplication.
+
+
+## Implementation status — Phase 1
+
+The first architecture refactor has been implemented on branch `refactor/architecture-phase-1`:
+
+### Completed
+
+- Added `GenerationContext` in `src/server/services/generation-context.ts`.
+- Product/SKU resolution, catalog resolution, source selection, Notebook Intelligence, Product Evidence Map and Product Type detection now happen once at the application boundary.
+- `generateB2BContent` accepts the canonical context and no longer reconstructs product intelligence/evidence independently.
+- `/api/generate` builds the context once and passes the same context to generation and post-generation validation.
+- Added `AIExecutionService` for model fallback, timeout, JSON normalization and usage metadata.
+- `GroundedWriterService` now delegates model execution policy to `AIExecutionService` and retains editorial validation/grounding responsibilities.
+- Added regression coverage in `scripts/test-architecture-execution.ts`.
+
+### Intentionally deferred
+
+The following changes remain isolated because they require migration/production validation rather than a mechanical refactor:
+
+- atomic AI budget reservation/reconciliation
+- Firestore version/variant document split
+- repository error taxonomy
+- final separation of Writer and Critic responsibilities
+- migration of the legacy batch marketing subsystem
+
+These are not being mixed into Phase 1 because they affect persistence semantics, failure behavior or independent execution paths and therefore require dedicated regression tests and migration plans.
