@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
 import { generateB2BContent } from "@/lib/generator";
-import { findCatalogProduct } from "@/lib/data/ecomshop-catalog";
+import { findCatalogProductExact } from "@/lib/data/ecomshop-catalog";
 import { validateEditorialQuality } from "@/lib/quality/editorial-quality-gate";
 
 export const maxDuration = 60;
@@ -21,7 +21,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     }
 
     const effectiveSku = sku || (angleSelected && typeof angleSelected === "object" ? angleSelected.sku : "");
-    const product = effectiveSku ? findCatalogProduct(effectiveSku) : undefined;
+    const product = effectiveSku ? findCatalogProductExact(effectiveSku) : undefined;
     const resolvedTitle = topicTitle || angleSelected?.title || (product ? `${product.brand} ${product.model}: Solución de Conectividad B2B` : "Análisis Técnico B2B");
 
     // Ejecutar el motor unificado de generación B2B Mandato 2
