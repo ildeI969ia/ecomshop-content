@@ -34,19 +34,20 @@ export const EditorialAnglesSelector: React.FC<EditorialAnglesSelectorProps> = (
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isFreeTopic, setIsFreeTopic] = useState<boolean>(false);
+  const [variationSeed, setVariationSeed] = useState<number>(0);
 
   useEffect(() => {
     let isMounted = true;
     if (!sku) return;
 
-    async function fetchAngles() {
+    async function fetchAngles(seed = variationSeed) {
       setLoading(true);
       setError(null);
       try {
         const res = await fetch("/api/editorial/suggest-angles", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sku, brand, model, category, specs })
+          body: JSON.stringify({ sku, brand, model, category, specs, variationSeed: seed })
         });
         const data = await res.json();
         if (isMounted) {
@@ -70,11 +71,18 @@ export const EditorialAnglesSelector: React.FC<EditorialAnglesSelectorProps> = (
       }
     }
 
-    fetchAngles();
+    fetchAngles(variationSeed);
     return () => {
       isMounted = false;
     };
   }, [sku]);
+
+  const regenerateIdeas = () => {
+    const nextSeed = Date.now();
+    setVariationSeed(nextSeed);
+    setIsFreeTopic(false);
+    void fetchAngles(nextSeed);
+  };
 
   const handleAngleClick = (angle: EditorialAngle) => {
     setIsFreeTopic(false);
@@ -110,7 +118,19 @@ export const EditorialAnglesSelector: React.FC<EditorialAnglesSelectorProps> = (
             Brain de Intención Editorial ({sku})
           </h4>
         </div>
-        <span className="text-[10px] text-slate-400 font-mono">{angles.length} ángulos · Orchestrator editorial</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-slate-400 font-mono">{angles.length} ángulos · Orchestrator editorial</span>
+          <button
+            type="button"
+            onClick={regenerateIdeas}
+            disabled={loading}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-indigo-800 bg-indigo-950/60 text-indigo-300 hover:text-white hover:border-indigo-500 text-[10px] font-semibold disabled:opacity-50"
+            title="Generar una nueva propuesta de campañas para este SKU"
+          >
+            <RefreshCw className={loading ? "w-3 h-3 animate-spin" : "w-3 h-3"} />
+            Nuevas ideas
+          </button>
+        </div>
       </div>
 
       {loading ? (
