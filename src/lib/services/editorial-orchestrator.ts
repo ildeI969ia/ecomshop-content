@@ -1,5 +1,5 @@
 import { ContentRepository } from "@/server/repositories";
-import { EditorialAngle, ProductEvidenceMap, ProductType } from "@/lib/types/editorial-intelligence";
+import { ProductEvidenceMap, ProductType } from "@/lib/types/editorial-intelligence";
 import { EditorialAudienceProfile, EditorialDecision, EditorialHypothesis, EditorialOrchestratorInput } from "@/lib/types/editorial-orchestrator";
 import { EditorialThesis, SectionOutlineItem } from "@/lib/schema";
 
