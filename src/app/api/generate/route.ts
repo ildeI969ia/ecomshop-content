@@ -5,12 +5,11 @@ import { sanitizeHtml } from "@/server/security/sanitizer";
 import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { FinOpsRepository, AuditRepository, ContentRepository, ProductIntelligenceRepository } from "@/server/repositories";
 import { FinOpsRecord, ContentItem, ContentVariant } from "@/server/domain/types";
-import { extractEcomshopProduct } from "@/lib/services/ecomshop-extractor";
-import { buildProductIntelligenceCard } from "@/lib/services/product-intelligence";
 import { verifyAndSanitizeContent } from "@/lib/services/evidence-engine";
 import { ProductIntelligenceCard } from "@/lib/types/product-intelligence";
-import { getCatalogDevice, ECOMSHOP_CATALOG } from "@/lib/catalog";
-import { getDynamicCatalogDevice } from "@/lib/catalog-server";
+import { getDynamicCatalogProduct } from "@/lib/catalog-server";
+import { findCatalogProduct, type CatalogProduct } from "@/lib/data/ecomshop-catalog";
+import { buildFeedProductIntelligence } from "@/lib/services/feed-product-intelligence";
 
 import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
 import { AI_TEXT_MODEL } from "@/lib/ai-config";
@@ -51,72 +50,40 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
 
     const inputData = parsed.data;
 
-    // Detectar si el SKU corresponde a un dispositivo de catálogo (Firestore o local)
-    const targetSku = inputData.sku || inputData.customEquipmentName || (inputData.promotedProductIds && inputData.promotedProductIds[0]) || "";
-    const catalogDevice = (await getDynamicCatalogDevice(targetSku)) ||
-      (inputData.topicTitle ? await getDynamicCatalogDevice(inputData.topicTitle) : undefined) ||
-      (inputData.productUrl ? await getDynamicCatalogDevice(inputData.productUrl) : undefined);
-
-    // 1. Fase de Extracción o Enriquecimiento con ECOMSHOP_CATALOG
-    let intelligenceCard: ProductIntelligenceCard | null = null;
-    let effectiveTitle = inputData.topicTitle || inputData.topic || inputData.editorialThesis || "Solución de Conectividad B2B";
-    let effectiveCategory = inputData.category;
-    let productUrl = inputData.productUrl;
-
-    if (catalogDevice) {
-      if (!effectiveTitle) {
-        effectiveTitle = `${catalogDevice.brand} ${catalogDevice.sku}: ${catalogDevice.name}`;
-      }
-      if (effectiveCategory === "general") {
-        if (catalogDevice.category.startsWith("WIFI")) effectiveCategory = "wifi";
-        else if (catalogDevice.category.startsWith("SWITCH")) effectiveCategory = "switches";
-        else if (catalogDevice.category === "GATEWAY_SDWAN") effectiveCategory = "engenius";
-        else effectiveCategory = "engenius";
-      }
-      if (!productUrl) {
-        productUrl = catalogDevice.productUrl;
-      }
-      if (!inputData.selectedSourceIds || inputData.selectedSourceIds.length === 0) {
-        inputData.selectedSourceIds = [catalogDevice.notebookSourceId, ...(catalogDevice.additionalSourceIds || [])].filter((id): id is string => Boolean(id));
-      }
-      try {
-        const { ProductIntelligenceService } = await import("@/server/services/product-intelligence-service");
-        const intelService = new ProductIntelligenceService();
-        intelligenceCard = await intelService.getOrGenerateCard(catalogDevice.sku);
-      } catch (intelErr) {
-        console.warn("[API Generate] No se pudo obtener tarjeta de inteligencia para catalogDevice:", intelErr);
-      }
-    } else if (productUrl) {
-      try {
-        const rawProduct = await extractEcomshopProduct(productUrl);
-        intelligenceCard = await buildProductIntelligenceCard(rawProduct);
-
-        if (!effectiveTitle) {
-          effectiveTitle = `${rawProduct.brand} ${rawProduct.sku}: Despliegue y Ventajas Técnicas B2B`;
-        }
-        if (effectiveCategory === "general") {
-          const lowerCat = (rawProduct.category || "").toLowerCase();
-          if (lowerCat.includes("wifi") || rawProduct.sku.includes("ECW")) effectiveCategory = "wifi";
-          else if (lowerCat.includes("switch") || rawProduct.sku.includes("ECS")) effectiveCategory = "switches";
-          else if (lowerCat.includes("fibra") || lowerCat.includes("sfp")) effectiveCategory = "fibra";
-          else effectiveCategory = "engenius";
-        }
-      } catch (extErr) {
-        console.warn("[API Generate] Fallo en extracción/intelligence previa (continuando):", extErr);
-      }
+    // La generación canónica sólo puede arrancar con el producto exacto seleccionado.
+    // Prioridad absoluta: feed sincronizado de EcomShop. El catálogo estático es sólo fallback.
+    const targetSku = (inputData.sku || inputData.customEquipmentName || inputData.promotedProductIds?.[0] || "").trim();
+    if (!targetSku) {
+      return NextResponse.json(
+        { error: "PRODUCT_REQUIRED", message: "Selecciona un SKU de EcomShop antes de generar la campaña." },
+        { status: 400 }
+      );
     }
 
-    if (!effectiveTitle) {
-      effectiveTitle = "Solución de Conectividad Profesional EcomShop";
+    const canonicalProduct: CatalogProduct | undefined =
+      (await getDynamicCatalogProduct(targetSku)) || findCatalogProduct(targetSku);
+
+    if (!canonicalProduct) {
+      return NextResponse.json(
+        { error: "PRODUCT_NOT_FOUND", message: `El SKU ${targetSku} no existe en el feed/catálogo de EcomShop.` },
+        { status: 404 }
+      );
     }
 
-    // 2. Generar Borradores Multicanal
+    // Product Truth se deriva directamente del feed. No NotebookLM, no fuentes globales.
+    const feedIntelligence = buildFeedProductIntelligence(canonicalProduct);
+    const intelligenceCard: ProductIntelligenceCard = feedIntelligence.card;
+    const effectiveTitle = inputData.topicTitle || canonicalProduct.name;
+    const effectiveCategory = canonicalProduct.category;
+    const productUrl = canonicalProduct.url;
+
     let content = await generateB2BContent({
       ...inputData,
-      sku: catalogDevice?.sku || inputData.sku,
-      productUrl: productUrl || catalogDevice?.productUrl || "https://ecomshop.es",
+      sku: canonicalProduct.sku,
+      productUrl,
       topicTitle: effectiveTitle,
-      category: effectiveCategory
+      category: effectiveCategory,
+      canonicalProduct
     });
 
     // 3. Auditoría con EvidenceEngine (Podar o corregir claims técnicos erróneos en paralelo)
@@ -175,7 +142,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     const finalEditorialQuality = validateEditorialQuality(
       content,
       inputData.targetAudience || content.editorialThesis?.targetProfessional || "audiencia editorial",
-      inputData.sku || catalogDevice?.sku
+      canonicalProduct.sku
     );
     content.factCheckScore = finalEditorialQuality.score;
     content.status = finalEditorialQuality.passed ? "DRAFT" : "NEEDS_REVIEW";
@@ -191,7 +158,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
 
       const contentItem: ContentItem = {
         id: contentId,
-        campaignId: (inputData as any).campaignId || null,
+        campaignId: inputData.campaignId || null,
         workspaceId: user.workspaceId,
         title: content.blog?.title || content.topicTitle || "Contenido B2B",
         slug: content.blog?.slug || content.topicId,
