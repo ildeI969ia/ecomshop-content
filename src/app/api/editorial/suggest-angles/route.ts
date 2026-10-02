@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
-import { getGenAIClient, getActiveGeminiModel } from "@/lib/genai-client";
-import { findCatalogProduct } from "@/lib/data/ecomshop-catalog";
 import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
+import { ProductIntelligenceService } from "@/server/services/product-intelligence-service";
+import { NotebookIntelligenceService } from "@/lib/services/notebook-intelligence";
+import { detectProductType, buildProductEvidenceMap } from "@/lib/services/product-evidence-map";
+import { EditorialOrchestrator } from "@/lib/services/editorial-orchestrator";
 
 export const maxDuration = 60;
 
@@ -12,140 +14,90 @@ export interface EditorialAngle {
   intent: string;
   hook: string;
   targetAudience: string;
+  editorialQuestion: string;
+  tension: string;
+  readerPromise: string;
+  rationale: string;
+  relevanceScore: number;
+}
+
+function intentFor(type: string): string {
+  if (type === "ACCESS_POINT") return "ARQUITECTURA_WIFI";
+  if (type === "SWITCH") return "CAPACIDAD_Y_TOPOLOGIA";
+  if (type === "DAC" || type === "OPTICAL_TRANSCEIVER" || type === "FIBER_CABLE") return "MEDIO_FISICO";
+  if (type === "ROUTER" || type === "FIREWALL") return "CONTINUIDAD_WAN";
+  if (type === "CAMERA") return "VIDEOVIGILANCIA_IP";
+  return "DECISION_DE_INGENIERIA";
 }
 
 export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest, user) => {
   try {
     const body = await req.json();
-    const { sku, brand: inputBrand, model: inputModel, category: inputCategory, specs: inputSpecs } = body;
+    const cleanSku = typeof body.sku === "string" ? body.sku.trim().toUpperCase() : "";
+    if (!cleanSku) return NextResponse.json({ error: "SKU requerido" }, { status: 400 });
 
     const budgetCheck = await checkAiBudget(user.uid, user.role, 0.001);
     if (!budgetCheck.allowed) {
-      return NextResponse.json(
-        { error: "Presupuesto de IA superado para sugerencia de ángulos editoriales." },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: "Presupuesto de IA superado para inteligencia editorial." }, { status: 429 });
     }
 
-    const cleanSku = (sku || "").trim().toUpperCase();
-    const catalogItem = cleanSku ? findCatalogProduct(cleanSku) : undefined;
-
-    const brand = catalogItem?.brand || inputBrand || "EcomShop";
-    const model = catalogItem?.name || inputModel || cleanSku || "Equipamiento de Redes B2B";
-    const category = catalogItem?.category || inputCategory || "general";
-    const specs = catalogItem?.specs || inputSpecs || catalogItem?.interfaces || [];
-
-    const fallbackAngles: EditorialAngle[] = [
-      {
-        id: "angle-engineering",
-        title: `Ingeniería Avanzada: Optimización y Resolución de Problemas en ${model}`,
-        intent: "RESOLUCION_PROBLEMAS",
-        hook: `Cómo prevenir interferencias y caídas de servicio aprovechando la arquitectura de ${brand} ${model}.`,
-        targetAudience: "Ingenieros de Red, Instaladores IT y MSPs"
-      },
-      {
-        id: "angle-tco",
-        title: `Retorno de Inversión (ROI) y Migración: Auditoría TCO de ${model}`,
-        intent: "ROI_MIGRACION",
-        hook: `Eliminación de licencias anuales recurrentes y amortización garantizada de hardware con ${brand}.`,
-        targetAudience: "Directores de TIC, Responsables de Compras y CFOs"
-      },
-      {
-        id: "angle-case-study",
-        title: `Caso de Uso Sectorial: Despliegue de ${model} en Entornos Exigentes`,
-        intent: "CASO_DE_USO",
-        hook: `Estrategia de alta disponibilidad para entornos corporativos, hospitality y naves logísticas.`,
-        targetAudience: "Arquitectos de Infraestructura y Directores Operativos"
-      }
-    ];
-
-    const ai = getGenAIClient();
-    const activeModel = getActiveGeminiModel();
-
-    const prompt = `
-Eres un Director Editorial de Inteligencia B2B especializado en Telecomunicaciones, Redes e Infraestructura IT.
-Tu misión es investigar las especificaciones reales del siguiente producto y sugerir EXACTAMENTE 3 ángulos editoriales diferenciados e impactantes para artículos técnicos B2B:
-
-DATOS DEL PRODUCTO:
-- SKU: ${cleanSku || "Genérico"}
-- Marca: ${brand}
-- Modelo: ${model}
-- Categoría: ${category}
-- Especificaciones: ${JSON.stringify(specs)}
-
-DEBES GENERAR OBLIGATORIAMENTE 3 ÁNGULOS CON ESTOS ENFOQUES:
-1. ÁNGULO 1: [RESOLUCIÓN DE PROBLEMAS / INGENIERÍA] - Enfocado en resolver un dolor técnico complejo (interferencias RF, caídas de tensión PoE, latencia MLO, failover 4G/Dual-SIM, etc.).
-2. ÁNGULO 2: [RETORNO DE INVERSIÓN Y MIGRACIÓN (TCO)] - Enfocado en ahorro financiero, sustitución de parque obsoleto, 0€ cuotas de licencias y rentabilidad B2B.
-3. ÁNGULO 3: [CASO DE USO SECTORIAL ESPECÍFICO] - Enfocado en una industria concreta (Hospitality/Hoteles, Naves Logísticas, Educación/Campus o Despachos Corporativos).
-
-REGLA CRÍTICA:
-- NUNCA uses como título "Despliegue y Solución B2B con ${cleanSku}". Genera títulos periodísticos, atractivos y técnicos.
-
-Formato JSON de salida requerido (estrictamente una lista de 3 objetos):
-{
-  "angles": [
-    {
-      "id": "angle-engineering",
-      "title": "Título técnico potente sin frases genéricas",
-      "intent": "RESOLUCION_PROBLEMAS",
-      "hook": "Gancho editorial de 1-2 frases",
-      "targetAudience": "Público objetivo"
-    },
-    {
-      "id": "angle-tco",
-      "title": "Título enfocado en ROI y TCO",
-      "intent": "ROI_MIGRACION",
-      "hook": "Gancho enfocado en coste y cuotas cero",
-      "targetAudience": "Público objetivo"
-    },
-    {
-      "id": "angle-case-study",
-      "title": "Título enfocado en el sector de uso específico",
-      "intent": "CASO_DE_USO",
-      "hook": "Gancho del sector",
-      "targetAudience": "Público objetivo"
+    const catalog = new ProductIntelligenceService();
+    const card = await catalog.getOrGenerateCard(cleanSku);
+    if (card.product.sku.toUpperCase() !== cleanSku) {
+      return NextResponse.json({ error: "PRODUCT_TRUTH_MISMATCH", requestedSku: cleanSku, resolvedSku: card.product.sku }, { status: 409 });
     }
-  ]
-}
-`;
+
+    const notebook = new NotebookIntelligenceService();
+    const sourceIds = Array.isArray(body.sourceIds) && body.sourceIds.length > 0
+      ? body.sourceIds.filter((id: unknown): id is string => typeof id === "string")
+      : undefined;
+    const intel = notebook.synthesizeProductIntelligence(cleanSku, sourceIds);
+    const productType = detectProductType(cleanSku, card.product.category, card.technicalSpecs.deviceType);
+    const evidenceMap = buildProductEvidenceMap(cleanSku, intel);
+
+    const orchestrator = new EditorialOrchestrator();
+    const decision = await orchestrator.generate({
+      sku: cleanSku,
+      category: card.product.category,
+      topicTitle: card.product.model,
+      userIntent: typeof body.userIntent === "string" ? body.userIntent : undefined,
+      requestedChannel: typeof body.requestedChannel === "string" ? body.requestedChannel : undefined,
+      preferredAudience: typeof body.preferredAudience === "string" ? body.preferredAudience : undefined,
+      workspaceId: user.workspaceId,
+      intel,
+      evidenceMap,
+      productType
+    });
 
     try {
-      const response = await ai.models.generateContent({
-        model: activeModel,
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json"
-        }
-      });
-
-      const rawText = (response.text || "").replace(/```json/gi, "").replace(/```/g, "").trim();
-      const parsed = JSON.parse(rawText);
-
-      const tokensIn = response.usageMetadata?.promptTokenCount ?? 400;
-      const tokensOut = response.usageMetadata?.candidatesTokenCount ?? 600;
-      await recordAiUsage(user.uid, "suggest_editorial_angles", tokensIn, tokensOut, 0);
-
-      if (parsed.angles && Array.isArray(parsed.angles) && parsed.angles.length >= 3) {
-        return NextResponse.json({
-          success: true,
-          sku: cleanSku,
-          angles: parsed.angles.slice(0, 3)
-        });
-      }
-    } catch (aiErr) {
-      console.warn("[API SuggestAngles] Fallo en Gemini, usando fallback determinista:", aiErr);
+      await recordAiUsage(user.uid, "editorial_orchestration", 0, 0, 0);
+    } catch (usageErr) {
+      console.warn("[SuggestAngles] usage record failed:", usageErr);
     }
+
+    const angles: EditorialAngle[] = decision.angles.map((angle) => ({
+      ...angle,
+      intent: intentFor(decision.productType),
+      hook: angle.readerPromise
+    }));
 
     return NextResponse.json({
       success: true,
       sku: cleanSku,
-      angles: fallbackAngles
+      product: card.product,
+      productType: decision.productType,
+      recommendedAudiences: decision.recommendedAudiences,
+      editorialQuestions: decision.editorialQuestions,
+      angles,
+      selectedAngle: decision.selectedAngle,
+      diversityReport: decision.diversityReport,
+      thesis: decision.thesis,
+      outline: decision.outline,
+      readerLearnings: decision.readerLearnings
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
     console.error("[API SuggestAngles] Error:", err);
-    return NextResponse.json(
-      { error: "Error al generar sugerencias de ángulos editoriales", details: err?.message || String(err) },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: message || "Error al construir la estrategia editorial." }, { status: 500 });
   }
 });
