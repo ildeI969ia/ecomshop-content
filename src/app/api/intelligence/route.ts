@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
-import { ProductIntelligenceService } from "@/server/services/product-intelligence-service";
+import { getDynamicCatalogProduct } from "@/lib/catalog-server";
+import { findCatalogProduct } from "@/lib/data/ecomshop-catalog";
+import { buildFeedProductIntelligence } from "@/lib/services/feed-product-intelligence";
 import { AuditRepository } from "@/server/repositories";
 import { z } from "zod";
 
@@ -19,10 +21,18 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
       );
     }
 
-    const intelService = new ProductIntelligenceService();
-    const card = await intelService.getOrGenerateCard(
-      parsed.data.skuOrModel
-    );
+    const product =
+      (await getDynamicCatalogProduct(parsed.data.skuOrModel)) ||
+      findCatalogProduct(parsed.data.skuOrModel);
+
+    if (!product) {
+      return NextResponse.json(
+        { error: "PRODUCT_NOT_FOUND", requestedSku: parsed.data.skuOrModel },
+        { status: 404 }
+      );
+    }
+
+    const card = buildFeedProductIntelligence(product).card;
 
     try {
       const auditRepo = new AuditRepository();
