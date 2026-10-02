@@ -14,6 +14,7 @@ import { getDynamicCatalogDevice } from "@/lib/catalog-server";
 
 import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
 import { AI_TEXT_MODEL } from "@/lib/ai-config";
+import { validateEditorialQuality } from "@/lib/quality/editorial-quality-gate";
 
 export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
   try {
@@ -170,6 +171,18 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     content = channelFixResult.updatedContent;
     content.channelValidation = channelFixResult.report;
 
+    // Quality Gate final después de EvidenceEngine + channel fixes.
+    const finalEditorialQuality = validateEditorialQuality(
+      content,
+      inputData.targetAudience || content.editorialThesis?.targetProfessional || "audiencia editorial",
+      inputData.sku || catalogDevice?.sku
+    );
+    content.factCheckScore = finalEditorialQuality.score;
+    content.status = finalEditorialQuality.passed ? "DRAFT" : "NEEDS_REVIEW";
+    if (!finalEditorialQuality.passed) {
+      console.warn("[API Generate] Final Editorial Quality Gate bloquea aprobación:", finalEditorialQuality.acceptanceMessage);
+    }
+
     // 5. Persistencia en Firestore (Contents, Variants, ProductIntelligence, FinOps, Audit)
     let contentId = `content-${content.topicId}-${Date.now().toString(36)}`;
     try {
@@ -183,7 +196,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         title: content.blog?.title || content.topicTitle || "Contenido B2B",
         slug: content.blog?.slug || content.topicId,
         category: content.category,
-        status: "DRAFT",
+        status: content.status === "NEEDS_REVIEW" ? "NEEDS_REVIEW" : "DRAFT",
         currentVersion: 1,
         authorId: user.uid,
         versions: [
