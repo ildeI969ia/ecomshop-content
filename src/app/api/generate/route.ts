@@ -77,7 +77,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         productUrl = catalogDevice.productUrl;
       }
       if (!inputData.selectedSourceIds || inputData.selectedSourceIds.length === 0) {
-        inputData.selectedSourceIds = [catalogDevice.notebookSource, "src-4", "src-18"].filter(Boolean);
+        inputData.selectedSourceIds = [catalogDevice.notebookSource, ...(catalogDevice.additionalSourceIds || [])].filter(Boolean);
       }
       try {
         const { ProductIntelligenceService } = await import("@/server/services/product-intelligence-service");
