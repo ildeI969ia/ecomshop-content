@@ -219,7 +219,7 @@ Asegúrate de que el artículo hable EXCLUSIVAMENTE del producto ${req.sku} (${i
     req: GroundedWriterRequest,
     citations: Record<string, { id: string; title: string; type: string; excerpt: string; url?: string }>
   ): ContentOutput {
-    const { intel, sku, targetAudience = "Instalador B2B" } = req;
+    const { intel, sku, targetAudience = req.editorialDecision?.primaryAudience || "Instalador B2B" } = req;
     const cleanSku = (sku || intel.sku || "").trim().toUpperCase();
 
     const isDacOrOptical = cleanSku.includes("DAC") || cleanSku.includes("SFP") || cleanSku.includes("TNB") || cleanSku.includes("FIBRA");
@@ -395,6 +395,29 @@ Asegúrate de que el artículo hable EXCLUSIVAMENTE del producto ${req.sku} (${i
   </div>
 </article>
 `;
+    }
+
+    if (req.editorialDecision) {
+      thesis = req.editorialDecision.thesis;
+      outline = req.editorialDecision.outline;
+      title = req.editorialDecision.selectedAngle.title;
+      metaDescription = req.editorialDecision.selectedAngle.readerPromise;
+      const facts = (req.intel.keyClaims || []).filter(c => c.verified).slice(0, 5);
+      blogHtml = `<article class="ecomshop-b2b-post">
+  <p class="lead">${req.editorialDecision.selectedAngle.readerPromise}</p>
+  <p><strong>Pregunta central:</strong> ${req.editorialDecision.selectedAngle.editorialQuestion}</p>
+  ${req.editorialDecision.outline.map((section, index) => `
+  <section>
+    <h2>${index + 1}. ${section.section}</h2>
+    <p>${section.purpose}</p>
+    <p>${section.argument}</p>
+    ${index === 1 && facts.length > 0 ? `<ul>${facts.map(f => `<li>${f.claim} [${f.sourceId}]</li>`).join("")}</ul>` : ""}
+  </section>`).join("")}
+  <section>
+    <h2>Aprendizajes aplicables</h2>
+    <ul>${req.editorialDecision.readerLearnings.map(item => `<li>${item}</li>`).join("")}</ul>
+  </section>
+</article>`;
     }
 
     const fallbackOutput: ContentOutput = {
