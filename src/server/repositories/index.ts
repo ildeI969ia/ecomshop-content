@@ -140,12 +140,10 @@ export class ContentRepository {
       ...content,
       id: existing?.id || content.id,
       currentVersion: nextVersion,
-      versions: undefined,
+      versions: [],
       updatedAt: nowIso,
       updatedBy: content.updatedBy || existing?.updatedBy
     }) as Record<string, unknown>;
-
-    delete rootData.versions;
 
     const rootId = existing?.id || content.id;
     const rootRef = this.collection().doc(rootId);
