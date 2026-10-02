@@ -6,7 +6,6 @@ import { ProductIntelligenceCard } from "./types/product-intelligence";
 import { getCatalogDevice, CatalogDevice } from "./catalog";
 
 export async function generateB2BContent(req: Partial<GenerateRequest> & { apiKey?: string }): Promise<ContentOutput> {
-  const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!req.apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT));
   const apiKey = req.apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
   // Detección y Grounding enriquecido con ECOMSHOP_CATALOG
@@ -16,16 +15,7 @@ export async function generateB2BContent(req: Partial<GenerateRequest> & { apiKe
     (req.topicTitle ? getCatalogDevice(req.topicTitle) : undefined) ||
     (req.productUrl ? getCatalogDevice(req.productUrl) : undefined);
 
-  // Paso intermedio: Obtener o sintetizar la ProductIntelligenceCard con evidencia
-  let intelligenceCard: ProductIntelligenceCard | null = null;
   const productIdentifier = catalogDevice?.sku || targetSku || req.topicTitle || "Solución de Networking";
-
-  try {
-    const intelService = new ProductIntelligenceService();
-    intelligenceCard = await intelService.getOrGenerateCard(productIdentifier, apiKey);
-  } catch (intelErr) {
-    console.warn("No se pudo obtener ProductIntelligenceCard (continuando):", intelErr);
-  }
 
   // Editorial Orchestrator: una única decisión editorial antes de escribir.
   // No se permite que el endpoint ni el writer inventen la estrategia final.
