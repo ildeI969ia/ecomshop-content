@@ -37,7 +37,8 @@
     "test:image-creative": "tsx scripts/test-image-creative-contracts.ts",
     "test:editorial-orchestrator": "tsx scripts/test-editorial-orchestrator.ts",
     "benchmark:editorial-diversity": "tsx scripts/benchmark-editorial-diversity.ts",
-    "test:architecture-execution": "tsx scripts/test-architecture-execution.ts"
+    "test:architecture-execution": "tsx scripts/test-architecture-execution.ts",
+    "migrate:content-versions": "tsx scripts/migrate-content-versions.ts"
   },
   "dependencies": {
     "@google-cloud/firestore": "^9.1.0",
