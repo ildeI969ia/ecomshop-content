@@ -40,7 +40,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
 
     // Comprobar presupuesto FinOps (estimado ~0.0038€ por imagen)
     const shouldAutoImprove = autoImprove === true && mode !== "curated";
-    const budgetCheck = await checkAiBudget(user.uid, user.role, shouldAutoImprove ? 0.0076 : 0.0038);
+    const budgetCheck = await checkAiBudget(user.uid, user.role, 0.0038);
     if (!budgetCheck.allowed) {
       return NextResponse.json(
         {
@@ -86,7 +86,11 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         };
 
         if (review.shouldRegenerate && review.optimizedPromptInstructions.trim()) {
-          finalPrompt = `${finalPrompt}\n\nVISUAL CORRECTIONS FROM QA:\n${review.optimizedPromptInstructions}`;
+          const secondImageBudget = await checkAiBudget(user.uid, user.role, 0.0038);
+          if (!secondImageBudget.allowed) {
+            qualityReview.detectedProblems.push("Se detectaron mejoras, pero se alcanzó el presupuesto disponible para una segunda generación.");
+          } else {
+            finalPrompt = `${finalPrompt}\n\nVISUAL CORRECTIONS FROM QA:\n${review.optimizedPromptInstructions}`;
           result = await generateImageWithImagen({
             prompt: finalPrompt,
             aspectRatio: aspectRatio || "16:9",
@@ -94,7 +98,8 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
             mode: mode || "ai",
             preservePrompt: true
           });
-          qualityReview.regenerated = true;
+            qualityReview.regenerated = true;
+          }
         }
       } catch (criticError) {
         console.warn("[api/images/generate] Visual critic unavailable; keeping first generation:", criticError);
