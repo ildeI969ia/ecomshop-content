@@ -313,7 +313,10 @@ export default function Page() {
   };
 
   // Generar Imagen con Imagen 3
-  const handleGenerateImage = async (mode: "ai" | "curated") => {
+  const handleGenerateImage = async (
+    mode: "ai" | "curated",
+    overrides?: { prompt?: string; aspectRatio?: "16:9" | "1:1" | "4:3"; baseImage?: string | null }
+  ) => {
     setGeneratingImage(true);
     setImageNotice(null);
     try {
@@ -325,9 +328,9 @@ export default function Page() {
       }>("/api/images/generate", {
         method: "POST",
         body: JSON.stringify({
-          prompt: imagePrompt,
-          aspectRatio: imageAspectRatio,
-          baseImage: imageBase,
+          prompt: overrides?.prompt ?? imagePrompt,
+          aspectRatio: overrides?.aspectRatio ?? imageAspectRatio,
+          baseImage: overrides?.baseImage ?? imageBase,
           mode,
           autoImprove: mode === "ai"
         })
@@ -337,7 +340,7 @@ export default function Page() {
         const newImg: GeneratedImageItem = {
           id: res.assetId || `img-${Date.now()}`,
           url: res.imageUrl,
-          prompt: imagePrompt,
+          prompt: overrides?.prompt ?? imagePrompt,
           createdAt: new Date().toLocaleTimeString("es-ES"),
           sourceType: res.sourceType || "imagen3",
           warning: res.warning
@@ -643,7 +646,13 @@ export default function Page() {
                   try {
                     const res = await apiFetch<{ refinement: PromptRefinementData }>("/api/images/refine-prompt", {
                       method: "POST",
-                      body: JSON.stringify({ prompt: imagePrompt })
+                      body: JSON.stringify({
+                        prompt: imagePrompt,
+                        aspectRatio: imageAspectRatio,
+                        baseImage: imageBase,
+                        selectedSku,
+                        productContext: catalogProducts.find((product) => product.sku === selectedSku)?.name,
+                      })
                     });
                     if (res?.refinement) setPromptRefinement(res.refinement);
                   } catch (e: any) {
@@ -659,7 +668,11 @@ export default function Page() {
                 onApplyAndGenerateRefinedPrompt={(ref) => {
                   setImagePrompt(ref);
                   setPromptRefinement(null);
-                  handleGenerateImage("ai");
+                  void handleGenerateImage("ai", {
+                    prompt: ref,
+                    aspectRatio: imageAspectRatio,
+                    baseImage: imageBase,
+                  });
                 }}
                 onDismissRefinement={() => setPromptRefinement(null)}
                 presetTemplates={PRESET_IMAGE_PROMPTS}
