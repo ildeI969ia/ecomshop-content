@@ -1,4 +1,4 @@
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, type Firestore } from "firebase-admin/firestore";
 import { getAdminFirestore } from "@/server/config/firebase";
 import { calculateUsageCost } from "@/lib/finops";
 
@@ -47,7 +47,7 @@ function getMadridYearMonth(date = new Date()): string {
   return `${parts.find((p) => p.type === "year")?.value}-${parts.find((p) => p.type === "month")?.value}`;
 }
 
-async function resolveLimit(uid: string, role: string, db: FirebaseFirestore.Firestore): Promise<{ config: BudgetConfig; limitEur: number }> {
+async function resolveLimit(uid: string, role: string, db: Firestore): Promise<{ config: BudgetConfig; limitEur: number }> {
   try {
     const snap = await db.collection("ai_budget_config").doc("default").get();
     const config = snap.exists
