@@ -148,7 +148,14 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       }
     } catch (usageErr) {
       console.error("[API Generate] Warning: Falló el registro de uso de IA:", usageErr);
-      // La reserva permanece activa si el registro falló; el catch global intentará liberarla.
+      if (budgetReservationId) {
+        try {
+          await releaseAiBudgetReservation(budgetReservationId);
+        } catch (releaseError) {
+          console.error("[API Generate] No se pudo liberar la reserva tras fallo FinOps:", releaseError);
+        }
+        budgetReservationId = undefined;
+      }
     }
 
     // 5. Persistencia en Firestore (Contents, Variants, ProductIntelligence, FinOps, Audit)
