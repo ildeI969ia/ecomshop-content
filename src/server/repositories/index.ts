@@ -166,6 +166,12 @@ export class ContentRepository {
 
     const batch = db.batch();
     batch.set(rootRef, rootData, { merge: true });
+    if (existing?.versions) {
+      for (const legacyVersion of existing.versions) {
+        const legacyVersionRef = rootRef.collection("versions").doc(`v-${String(legacyVersion.version).padStart(6, "0")}`);
+        batch.set(legacyVersionRef, sanitizeUndefined(legacyVersion));
+      }
+    }
     batch.set(versionRef, sanitizeUndefined(version));
     await batch.commit();
 
