@@ -92,6 +92,7 @@ export interface EditorialOrchestratorInput {
   userIntent?: string;
   requestedChannel?: string;
   preferredAudience?: string;
+  requestedAngle?: { id?: string; title?: string; editorialQuestion?: string; tension?: string; readerPromise?: string; targetAudience?: string };
   workspaceId?: string;
   intel: import("@/lib/services/notebook-intelligence").StructuredProductIntelligence;
   evidenceMap: import("@/lib/types/editorial-intelligence").ProductEvidenceMap;
