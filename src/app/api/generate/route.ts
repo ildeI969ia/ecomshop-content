@@ -8,7 +8,7 @@ import { FinOpsRecord, ContentItem, ContentVariant } from "@/server/domain/types
 import { verifyAndSanitizeContent } from "@/lib/services/evidence-engine";
 import { ProductIntelligenceCard } from "@/lib/types/product-intelligence";
 import { getDynamicCatalogProduct } from "@/lib/catalog-server";
-import { findCatalogProduct, type CatalogProduct } from "@/lib/data/ecomshop-catalog";
+import { findCatalogProductExact, type CatalogProduct } from "@/lib/data/ecomshop-catalog";
 import { buildFeedProductIntelligence } from "@/lib/services/feed-product-intelligence";
 
 import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
@@ -61,7 +61,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     }
 
     const canonicalProduct: CatalogProduct | undefined =
-      (await getDynamicCatalogProduct(targetSku)) || findCatalogProduct(targetSku);
+      (await getDynamicCatalogProduct(targetSku)) || findCatalogProductExact(targetSku);
 
     if (!canonicalProduct) {
       return NextResponse.json(
