@@ -3,6 +3,7 @@ import { EditorialControls } from "@/lib/types/editorial-controls";
 import { StructuredProductIntelligence } from "./notebook-intelligence";
 import { OFFICIAL_NOTEBOOK } from "@/lib/notebooklm";
 import { ECOM_BRAND } from "@/lib/knowledge";
+import { AI_REQUEST_TIMEOUT_MS } from "@/lib/ai-config";
 import { validateEditorialQuality } from "@/lib/quality/editorial-quality-gate";
 import type { EditorialDecision } from "@/lib/types/editorial-orchestrator";
 
@@ -76,7 +77,7 @@ export class GroundedWriterService {
           });
 
           const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error(`Timeout con modelo ${modelToTry} en Vertex AI (75s)`)), 75000)
+            setTimeout(() => reject(new Error(`Timeout con modelo ${modelToTry} en Vertex AI (${AI_REQUEST_TIMEOUT_MS}ms)`)), AI_REQUEST_TIMEOUT_MS)
           );
 
           const res = await Promise.race([generatePromise, timeoutPromise]);
