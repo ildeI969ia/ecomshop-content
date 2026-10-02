@@ -231,6 +231,7 @@ export function validateEditorialQuality(
     audienceCheck: { passed: audiencePassed, audience: requestedAudience, issues: audienceIssues },
     antiTemplateCheck: { passed: antiTemplatePassed, boilerplateFound, issues: antiTemplateIssues },
     valueCheck: { passed: valuePassed, score: valueScore, issues: valueIssues },
+    diversityCheck: { passed: diversityPassed, score: diversityScore, issues: diversityIssues },
     contaminationCheck: contaminationReport,
     acceptanceMessage
   };
