@@ -3,6 +3,8 @@ import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { hasPermission } from "@/server/security/rbac";
 import { ContentRepository, AuditRepository } from "@/server/repositories";
 import { ContentItem } from "@/server/domain/types";
+import { ContentOutputSchema } from "@/lib/schema";
+import { validateEditorialQuality } from "@/lib/quality/editorial-quality-gate";
 
 export const GET = withAuthAndPermission("content:view", async (req: NextRequest, user) => {
   const repo = new ContentRepository();
@@ -189,18 +191,66 @@ export const PATCH = withAuthAndPermission("content:edit", async (req: NextReque
       );
     }
 
-    if (normalizedStatus === "PUBLISHED") {
-      const versionBody = existingContent.versions?.[0]?.body || {};
-      const isFallback =
-        (existingContent as any)?.generator === "catalog-fallback" ||
-        (existingContent as any)?.fallbackUsed === true ||
-        versionBody.generator === "catalog-fallback" ||
-        versionBody.fallbackUsed === true ||
-        versionBody.source === "fallback";
+    const currentStatus = existingContent.status;
+    if (normalizedStatus === "APPROVED" && currentStatus !== "IN_REVIEW") {
+      return NextResponse.json(
+        { error: `Transición inválida: un contenido en ${currentStatus} debe pasar por IN_REVIEW antes de APPROVED.`, code: "INVALID_CONTENT_TRANSITION" },
+        { status: 409 }
+      );
+    }
 
-      if (isFallback && !body.humanApproved) {
+    if (normalizedStatus === "PUBLISHED" && currentStatus !== "APPROVED") {
+      return NextResponse.json(
+        { error: `Transición inválida: un contenido en ${currentStatus} debe estar APPROVED antes de PUBLISHED.`, code: "INVALID_CONTENT_TRANSITION" },
+        { status: 409 }
+      );
+    }
+
+    if (normalizedStatus === "APPROVED" || normalizedStatus === "PUBLISHED") {
+      const versionBody = existingContent.versions?.[0]?.body;
+      const parsedContent = ContentOutputSchema.safeParse(versionBody);
+      if (!parsedContent.success) {
         return NextResponse.json(
-          { error: "No se puede publicar directamente contenido generado en modo catálogo (catalog-fallback) sin aprobación humana explícita." },
+          { error: "QUALITY_GATE_BLOCKED: El contenido persistido no cumple el contrato ContentOutput.", details: parsedContent.error.issues },
+          { status: 409 }
+        );
+      }
+
+      const decision = parsedContent.data.editorialDecision;
+      const selectedAngle =
+        decision && typeof decision.selectedAngle === "object" && decision.selectedAngle !== null
+          ? decision.selectedAngle as Record<string, unknown>
+          : undefined;
+      const requestedAudience =
+        selectedAngle && typeof selectedAngle.targetAudience === "string"
+          ? selectedAngle.targetAudience
+          : "";
+      const requestedSku =
+        decision && typeof decision.productTruthLock === "object" && decision.productTruthLock !== null &&
+        typeof (decision.productTruthLock as Record<string, unknown>).sku === "string"
+          ? String((decision.productTruthLock as Record<string, unknown>).sku)
+          : undefined;
+
+      const qualityReport = validateEditorialQuality(parsedContent.data, requestedAudience, requestedSku);
+      if (!qualityReport.passed) {
+        return NextResponse.json(
+          {
+            error: "QUALITY_GATE_BLOCKED",
+            message: qualityReport.acceptanceMessage,
+            score: qualityReport.score,
+            report: qualityReport
+          },
+          { status: 409 }
+        );
+      }
+
+      const isFallback =
+        parsedContent.data.source === "fallback" ||
+        parsedContent.data.fallbackUsed === true;
+
+      if (normalizedStatus === "PUBLISHED" && isFallback && !body.humanApproved) {
+        return NextResponse.json(
+          { error: "No se puede publicar directamente contenido generado en modo catálogo sin aprobación humana explícita." },
           { status: 400 }
         );
       }
