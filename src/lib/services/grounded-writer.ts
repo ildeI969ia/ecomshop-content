@@ -1,7 +1,6 @@
 import { ContentOutput, ContentOutputSchema, EditorialThesis, SectionOutlineItem } from "@/lib/schema";
 import { EditorialControls } from "@/lib/types/editorial-controls";
 import { StructuredProductIntelligence } from "./notebook-intelligence";
-import { OFFICIAL_NOTEBOOK } from "@/lib/notebooklm";
 import { ECOM_BRAND } from "@/lib/knowledge";
 import { AI_REQUEST_TIMEOUT_MS } from "@/lib/ai-config";
 import { validateEditorialQuality } from "@/lib/quality/editorial-quality-gate";
@@ -28,13 +27,16 @@ export class GroundedWriterService {
   async generateGroundedContent(req: GroundedWriterRequest): Promise<ContentOutput> {
     const { intel, selectedSourceIds = [], editorialControls, editorialDecision } = req;
 
-    // Resolver las fuentes que se usarán para el grounding
-    const allSources = OFFICIAL_NOTEBOOK.sources;
-    const activeSources = allSources.filter((s) =>
-      selectedSourceIds.length > 0 ? selectedSourceIds.includes(s.id) : true
-    );
+    // Grounding exclusivamente desde el feed de EcomShop.
+    // selectedSourceIds se conserva por compatibilidad, pero ya no decide la fuente de verdad.
+    const activeSources = intel.card.evidenceLedger.map((evidence, index) => ({
+      id: evidence.source,
+      title: `Feed EcomShop — ${intel.sku}${index > 0 ? ` #${index + 1}` : ""}`,
+      type: evidence.sourceType,
+      description: evidence.claim,
+      url: evidence.source
+    }));
 
-    // Construir el diccionario de citas para tooltips y Source Drawer
     const citations: Record<string, { id: string; title: string; type: string; excerpt: string; url?: string }> = {};
     activeSources.forEach((s) => {
       citations[s.id] = {
@@ -153,7 +155,7 @@ export class GroundedWriterService {
     return { ...fallback, editorialDecision: req.editorialDecision || undefined };
   }
 
-  private buildSystemInstruction(activeSources: typeof OFFICIAL_NOTEBOOK.sources, audience = "Instalador B2B"): string {
+  private buildSystemInstruction(activeSources: Array<{ id: string; title: string; type: string; description: string; url?: string }>, audience = ""): string {
     const sourcesContext = activeSources
       .map((s) => `[${s.id}] (${s.type.toUpperCase()}) "${s.title}": ${s.description}`)
       .join("\n");
@@ -182,7 +184,7 @@ ADAPTACIÓN ESTRICTA A LA AUDIENCIA SELECCIONADA (${audience}):
 - Jefe de Compras / TCO: TCO a 3-5 años, riesgo de licencias cautivas, disponibilidad e inventario en España (24/48h) y tarifas B2B.
 - Distribuidor / Canal: demanda de mercado B2B, venta cruzada con electrónica prescrita, rotación de catálogo y canal protegido.
 
-FUENTES ACTIVAS DE NOTEBOOKLM PARA CITAS OBLIGATORIAS [src-X]:
+FUENTE ÚNICA DE VERDAD — FEED ECOMSHOP PARA CITAS:
 ${sourcesContext}
 
 REGLA ESTRICTA DE PRECIOS B2B:
@@ -192,7 +194,7 @@ Debes responder SIEMPRE en formato JSON estricto cumpliendo la estructura Conten
 `;
   }
 
-  private buildPrompt(req: GroundedWriterRequest, activeSources: typeof OFFICIAL_NOTEBOOK.sources): string {
+  private buildPrompt(req: GroundedWriterRequest, activeSources: Array<{ id: string; title: string; type: string; description: string; url?: string }>): string {
     const { intel, editorialControls, targetAudience = "Instalador B2B" } = req;
     const tone = editorialControls?.editorialTone || intel.recommendedTone;
     const sector = editorialControls?.targetSector || intel.naturalSector;
