@@ -694,6 +694,8 @@ export default function Page() {
         isOpen={showInterrogatorModal}
         onClose={() => setShowInterrogatorModal(false)}
         currentBaseImage={imageBase}
+        selectedSku={selectedSku}
+        productContext={catalogProducts.find((product) => product.sku === selectedSku)?.name}
         onApplyPrompt={(newPrompt, newRatio, baseImg) => {
           setImagePrompt(newPrompt);
           setImageAspectRatio(newRatio);
