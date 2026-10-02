@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GenerateRequestSchema } from "@/lib/schema";
 import { generateB2BContent } from "@/lib/generator";
-import { buildGenerationContext } from "@/lib/types/generation-context";
+import { buildGenerationContext } from "@/server/services/generation-context";
 import { sanitizeHtml } from "@/server/security/sanitizer";
 import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { FinOpsRepository, AuditRepository, ContentRepository, ProductIntelligenceRepository } from "@/server/repositories";
