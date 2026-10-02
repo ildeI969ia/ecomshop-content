@@ -44,12 +44,8 @@ export async function generateB2BContent(req: Partial<GenerateRequest> & { apiKe
     userIntent: req.customNotes,
     requestedChannel: "multichannel",
     preferredAudience: req.targetAudience,
-    requestedAngle: typeof (req as { editorialAngle?: unknown }).editorialAngle === "object" && (req as { editorialAngle?: unknown }).editorialAngle !== null
-      ? (req as { editorialAngle: { id?: string; title?: string; editorialQuestion?: string; tension?: string; readerPromise?: string; targetAudience?: string } }).editorialAngle
-      : undefined,
-    workspaceId: typeof (req as { workspaceId?: unknown }).workspaceId === "string"
-      ? (req as { workspaceId: string }).workspaceId
-      : undefined,
+    requestedAngle: req.editorialAngle,
+    workspaceId: req.workspaceId,
     intel,
     evidenceMap,
     productType
