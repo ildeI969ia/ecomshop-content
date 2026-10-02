@@ -222,309 +222,132 @@ Asegúrate de que el artículo hable EXCLUSIVAMENTE del producto ${req.sku} (${i
     req: GroundedWriterRequest,
     citations: Record<string, { id: string; title: string; type: string; excerpt: string; url?: string }>
   ): ContentOutput {
-    const { intel, sku, targetAudience = req.editorialDecision?.primaryAudience || "Instalador B2B" } = req;
-    const cleanSku = (sku || intel.sku || "").trim().toUpperCase();
+    const { intel, sku, targetAudience = req.editorialDecision?.primaryAudience || intel.naturalAudience } = req;
+    const productName = `${intel.brand} ${intel.model}`;
+    const technicalSpecs = intel.card.technicalSpecs;
+    const claims = intel.keyClaims.slice(0, 8);
+    const primarySource = intel.card.product.url || "https://www.ecomshop.es";
 
-    const isDacOrOptical = cleanSku.includes("DAC") || cleanSku.includes("SFP") || cleanSku.includes("TNB") || cleanSku.includes("FIBRA");
-    const isSwitch = cleanSku.includes("ECS") || cleanSku.includes("ST3116") || cleanSku.includes("SWITCH");
-    const isCellular = cleanSku.includes("RUT") || cleanSku.includes("TRB");
-    const isAp = !isDacOrOptical && !isSwitch && !isCellular;
+    const thesis: EditorialThesis = req.editorialDecision?.thesis || {
+      problem: `Tomar una decisión técnica correcta para ${productName} sin sobredimensionar ni introducir componentes que no pertenecen al producto seleccionado.`,
+      targetProfessional: targetAudience,
+      businessContext: `Evaluación y despliegue B2B del producto ${productName} a partir de su ficha oficial de EcomShop.`,
+      technicalQuestion: req.editorialDecision?.selectedAngle.editorialQuestion || `¿Qué criterios técnicos permiten decidir si ${productName} encaja en este escenario?`,
+      whyItMatters: "Una decisión basada en datos verificables reduce errores de dimensionamiento y de compra.",
+      centralArgument: `${productName} debe evaluarse exclusivamente con sus características verificadas en EcomShop y con el contexto profesional definido para esta campaña.`,
+      solutionApproach: "Relacionar cada especificación con su implicación práctica antes de tomar la decisión de despliegue.",
+      productRole: `${productName} es el producto objeto de esta campaña y no debe sustituirse por otro SKU.`
+    };
 
-    const primarySourceId = cleanSku.includes("510") ? "src-0" : cleanSku.includes("536") ? "src-1" : "src-8";
+    const outline: SectionOutlineItem[] = req.editorialDecision?.outline?.length
+      ? req.editorialDecision.outline
+      : [
+          { section: "Qué problema hay que resolver", purpose: "Definir el escenario profesional.", argument: thesis.technicalQuestion },
+          { section: "Qué dicen los datos del producto", purpose: "Interpretar las especificaciones verificadas.", argument: technicalSpecs.keyDifferentiators.slice(0, 2).join(" ") || productName },
+          { section: "Cómo evaluar el despliegue", purpose: "Convertir especificaciones en criterios de decisión.", argument: technicalSpecs.ports.join(", ") || "Interfaces verificadas en EcomShop." },
+          { section: `Dónde encaja ${intel.model}`, purpose: "Aplicar los datos al escenario.", argument: `${productName} según su ficha oficial.` }
+        ];
 
-    let thesis: EditorialThesis;
-    let outline: SectionOutlineItem[];
-    let title: string;
-    let metaDescription: string;
-    let blogHtml: string;
+    const specsList = [
+      ...technicalSpecs.ports,
+      ...technicalSpecs.standards,
+      technicalSpecs.powerRequirements,
+      technicalSpecs.management
+    ].filter(Boolean);
 
-    if (isDacOrOptical) {
-      thesis = {
-        problem: "El incremento de coste y consumo térmico en interconexiones de corta distancia (1m-5m) entre switches y servidores en armario rack utilizando transceptores ópticos tradicionales.",
-        targetProfessional: targetAudience,
-        businessContext: "Despliegues de alta densidad a 10Gbps en CPDs y armarios de distribución corporativos que exigen enlaces latencia cero.",
-        technicalQuestion: "¿Cómo interconectar electrónica de red a 10 Gbps reduciendo al mínimo la latencia, la temperatura del rack y el coste de componentes?",
-        whyItMatters: "Utilizar módulos ópticos en enlaces intradominio de rack multiplica ineficientemente el coste por puerto y el consumo energético.",
-        centralArgument: "Los cables de conexión directa en cobre (DAC SFP+) proporcionan latencia cero, consumo eléctrico casi nulo y menor temperatura operativa en enlaces de hasta 3 metros.",
-        solutionApproach: "Adoptar cables DAC 10G SFP+ pasivos de cobre apantallado para interconexión de armarios y servidores.",
-        productRole: `El cable DAC ${intel.model} [src-8] responde exactamente a la demanda de interconexión 10G de alta fiabilidad sin módulos ópticos adicionales.`
-      };
+    const blogTitle = req.editorialDecision?.selectedAngle.title
+      ? `${req.editorialDecision.selectedAngle.title} — ${productName}`
+      : `${productName}: criterios técnicos para una decisión B2B`;
 
-      outline = [
-        { section: "Problema de Interconexión en Rack", purpose: "Analizar costes y latencia en enlaces de corta distancia", argument: "La fibra óptica resulta costosa e innecesaria para distancias inferiores a 5 metros en armario." },
-        { section: "Criterios Técnicos de Cobre DAC", purpose: "Desglosar latencia y disipación térmica", argument: "El cable pasivo DAC 10G consume menos de 0.1W por puerto frente a 1.5W de los transceptores SFP+." },
-        { section: "Topología de Agregación", purpose: "Conexión directa entre switches core y servidores", argument: "Plug-and-play sin necesidad de latiguillos ni conectores LC/SC de fibra." },
-        { section: "Caso del Producto", purpose: "Especificaciones del " + intel.model, argument: "Construcción apantallada de alta fidelidad para 10 Gbps." },
-        { section: "Conclusión y Aprovisionamiento", purpose: "Cierre consultivo B2B", argument: "Disponibilidad inmediata con entrega 24h en ecomshop.es." }
-      ];
-
-      title = `Ingeniería de Interconexión 10G: Ventajas de los Cables DAC SFP+ Frente a Módulos Ópticos en Armario Rack con ${intel.model}`;
-      metaDescription = `Análisis consultivo de latencia, arquitectura de red, escalabilidad, TCO y continuidad para interconexión a 10Gbps con el cable DAC ${intel.model} en entornos B2B.`;
-
-      blogHtml = `
+    const blogHtml = `
 <article class="ecomshop-b2b-post">
-  <p class="lead" style="font-size:16px;line-height:1.7;color:#334155;">
-    En la arquitectura de redes de alta velocidad corporativas, la interconexión entre switches de agregación y servidores dentro del mismo armario rack representa un punto crítico de optimización de infraestructura, seguridad y escalabilidad para el instalador y el técnico en obra. Utilizar transceptores ópticos en tiradas de corta distancia incrementa innecesariamente la latencia, el consumo eléctrico, el coste TCO y el riesgo de incidencias de mantenimiento en el tendido de cableado [src-8], poniendo en riesgo la continuidad de negocio.
-  </p>
-
-  <h2 style="color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;">1. El Desafío Térmico y de Consumo en Enlaces de Agregación 10G y Presupuesto PoE</h2>
-  <p style="color:#334155;font-size:15px;line-height:1.7;">
-    Los transceptores ópticos 10G SFP+ requieren convertir señales eléctricas a fotónicas, disipando hasta 1.5W de potencia por interfaz. En un armario con decenas de enlaces activos, este calor acumulado incrementa la carga del sistema de climatización y empeora la eficiencia energética de la gestión global y del presupuesto PoE. La interconexión directa en cobre (DAC) elimina esta conversión, operando a una fracción del consumo térmico y simplificando el montaje físico en obra.
-  </p>
-
-  <h2 style="color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;">2. Latencia Cero, Canal B2B y Conexión Plug-and-Play sin Limpieza de Fibra</h2>
-  <p style="color:#334155;font-size:15px;line-height:1.7;">
-    A diferencia de la fibra óptica, que requiere la inspección y limpieza de los conectores LC/SC para evitar atenuación por polvo y garantizar la continuidad del servicio, los cables DAC vienen sellados de fábrica con conectores SFP+ en ambos extremos. Esto permite un despliegue inmediato sin herramientas especiales, reduciendo el riesgo de fallos en el cable y optimizando el ciclo de vida del hardware a 3-5 años con disponibilidad inmediata en stock nacional para el canal distribuidor.
-  </p>
-
-  <h2 style="color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;">3. Aplicación de la Solución: El Caso del Cable ${intel.model} (${cleanSku})</h2>
-  <p style="color:#334155;font-size:15px;line-height:1.7;">
-    El <strong>${intel.model}</strong> [src-8] (SKU: ${cleanSku}) ofrece una solución integral para unir switches gestionables y cabeceras de red. Su apantallamiento multinivel garantiza la integridad de la señal frente a interferencias electromagnéticas (EMI) en armarios de alta densidad, protegiendo la arquitectura de red corporativa y la rotación de canal a tarifa distribuidor sin cuotas de software.
-  </p>
-
-  <div class="cta-placement-box" style="background:#f8fafc;border:1px solid #bae6fd;border-left:5px solid #0284c7;border-radius:8px;padding:18px;margin:28px 0;">
-    <h4 style="margin:0 0 6px 0;color:#0369a1;font-size:15px;">🎯 CONDICIONES B2B Y TARIFA DISTRIBUIDOR:</h4>
-    <p style="margin:0 0 12px 0;color:#334155;font-size:13px;">Consultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h.</p>
-    <a href="https://www.ecomshop.es" target="_blank" style="display:inline-block;background:#0284c7;color:#fff;font-size:13px;font-weight:bold;padding:10px 20px;border-radius:6px;text-decoration:none;">Consultar Tarifa Mayorista &rarr;</a>
-  </div>
-</article>
-`;
-    } else if (isSwitch) {
-      thesis = {
-        problem: "El estrangulamiento del tráfico de red corporativo por switches de acceso no gestionados o con presupuestos PoE insuficientes para dispositivos de alta potencia.",
-        targetProfessional: targetAudience,
-        businessContext: "Instalación de flotas de puntos de acceso, cámaras IP y telefonía VoIP que demandan alimentación continua sin paradas de servicio.",
-        technicalQuestion: "¿Cómo asegurar una conmutación robusta con VLANs 802.1Q y presupuestos PoE holgados sin asumir cuotas anuales de software?",
-        whyItMatters: "Un switch de baja calidad colapsa la red troncal y genera caídas aleatorias por exceso de potencia requerida.",
-        centralArgument: "La conmutación gestionable con PoE disipada garantizada y uplinks 10G SFP+ permite absorver picos de datos manteniendo la red dividida por VLANs.",
-        solutionApproach: "Dimensionar el switch evaluando el PoE budget total y la capacidad de conmutación sin bloqueo.",
-        productRole: `El switch ${intel.model} [src-8] proporciona la electrónica de acceso ideal con gestión transparente.`
-      };
-
-      outline = [
-        { section: "Desafío de Conmutación", purpose: "Evaluar cuellos de botella en puertos de acceso", argument: "Las redes modernas exigen alta capacidad por puerto y VLANs." },
-        { section: "Presupuesto PoE y Eficiencia", purpose: "Analizar el consumo de potencia total", argument: "Garantizar potencia 802.3at/bt en todos los puertos activos." },
-        { section: "Topología de Acceso", purpose: "Uplinks troncales de alta velocidad", argument: "Integración con enlaces 10G SFP+ hacia el núcleo." },
-        { section: "Solución de Conmutación", purpose: "Características del " + intel.model, argument: "Gestionabilidad Cloud/Standalone a coste competitivo." },
-        { section: "Garantía B2B", purpose: "Sustitución y entrega 24h", argument: "Respaldo de almacén nacional en España." }
-      ];
-
-      title = `Ingeniería de Conmutación B2B: Criterios de Selección de Switches PoE, Arquitectura de Red y TCO con ${intel.model}`;
-      metaDescription = `Análisis de capacidad de conmutación, presupuesto PoE, arquitectura de red, escalabilidad, TCO a 3-5 años y continuidad con el switch ${intel.model}.`;
-
-      blogHtml = `
-<article class="ecomshop-b2b-post">
-  <p class="lead" style="font-size:16px;line-height:1.7;color:#334155;">
-    En la infraestructura de comunicaciones corporativa, el switch de acceso actúa como la columna vertebral que interconecta todos los puntos finales de red. Seleccionar electrónica sin soporte VLAN o con presupuestos PoE ajustados provoca cuellos de botella e interrupciones en los servicios de datos y telefonía, afectando la arquitectura de red, la seguridad, la gestión, la escalabilidad, el TCO y la continuidad del negocio [src-8].
-  </p>
-
-  <h2 style="color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;">1. Dimensionamiento del Presupuesto PoE, Coste y Balance Térmico en Obra</h2>
-  <p style="color:#334155;font-size:15px;line-height:1.7;">
-    Los dispositivos de última generación demandan entre 15.4W y 30W por puerto en despliegues reales. Es imprescindible auditar la potencia PoE total que la fuente del switch es capaz de disipar simultáneamente sin entrar en sobrecalentamiento ni activar protecciones por bajo voltaje. Evaluar el coste total, el ciclo de vida del hardware, la disponibilidad en stock nacional, el riesgo de licencias obligatorias, la tarifa distribuidor y el aprovisionamiento previene paradas en la instalación.
-  </p>
-
-  <h2 style="color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;">2. Segmentación de Tráfico por VLANs 802.1Q, Canal y Oportunidad B2B</h2>
-  <p style="color:#334155;font-size:15px;line-height:1.7;">
-    Separar el tráfico de la red corporativa, videovigilancia e invitados mediante VLANs previene las tormentas de broadcast y garantiza la seguridad de la infraestructura. Para distribuidores e integradores, la alta demanda de conmutación profesional representa una oportunidad de canal con alta rotación y venta cruzada con electrónica prescrita. Además, disponer de interfaces de agregación 10G SFP+ asegura que el flujo de datos no se sature al conectar la capa de acceso con el core central.
-  </p>
-
-  <h2 style="color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;">3. Aplicación de la Solución: El Caso del Switch ${intel.model} (${cleanSku})</h2>
-  <p style="color:#334155;font-size:15px;line-height:1.7;">
-    El switch <strong>${intel.model}</strong> [src-8] (SKU: ${cleanSku}) destaca por ofrecer densidad de puertos de alta velocidad y un chasis metálico robusto para montaje en armario rack de 19 pulgadas, con gestión unificada y 0€ en cuotas de suscripción de software de por vida, facilitando el mantenimiento preventivo y reduciendo segundas visitas a obra.
-  </p>
-
-  <div class="cta-placement-box" style="background:#f8fafc;border:1px solid #bae6fd;border-left:5px solid #0284c7;border-radius:8px;padding:18px;margin:28px 0;">
-    <h4 style="margin:0 0 6px 0;color:#0369a1;font-size:15px;">🎯 CONDICIONES B2B Y TARIFA DISTRIBUIDOR:</h4>
-    <p style="margin:0 0 12px 0;color:#334155;font-size:13px;">Consultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h.</p>
-    <a href="https://www.ecomshop.es" target="_blank" style="display:inline-block;background:#0284c7;color:#fff;font-size:13px;font-weight:bold;padding:10px 20px;border-radius:6px;text-decoration:none;">Consultar Tarifa Distribuidor &rarr;</a>
-  </div>
-</article>
-`;
-    } else {
-      // AP Wi-Fi 7 / Generativo Estándar
-      thesis = {
-        problem: "El estrangulamiento en despliegues Wi-Fi 7 por infraestructuras cableadas infra dimensionadas y el tiempo invertido en configuraciones complejas en obra.",
-        targetProfessional: targetAudience,
-        businessContext: "Migración masiva de clientes B2B a Wi-Fi 7 exigiendo despliegues rápidos sin retrabajos ni segundas visitas de soporte.",
-        technicalQuestion: "¿Cómo asegurar la máxima tasa de transferencia sin colapsar la electrónica PoE ni gastar horas en aprovisionamiento manual?",
-        whyItMatters: "Las horas dedicadas a resolver caídas de tensión PoE o reconfigurar redes en campo destruyen el margen operativo del instalador.",
-        centralArgument: "Un despliegue Wi-Fi 7 eficiente requiere conmutación Multi-Gigabit balanceada y aprovisionamiento Zero-Touch vía QR antes de fijar el hardware al techo.",
-        solutionApproach: "Auditar la capacidad PoE por puerto (802.3at/bt), validar latiguillos Cat6A y adoptar plataformas Cloud sin controladores locales.",
-        productRole: `El ${intel.model} [${primarySourceId}] aporta interfaces Multi-Gigabit y escaneo QR en 2 minutos, eliminando el 70% del tiempo de instalación.`
-      };
-
-      outline = [
-        { section: "Problema en Obra", purpose: "Analizar cuellos de botella en instalación física", argument: "La velocidad inútil si el puerto ascendente o la potencia PoE fallan." },
-        { section: "Criterios de Infraestructura", purpose: "Definir requisitos de cableado y alimentación", argument: "Evaluación de PoE Budget y latiguillos Multi-Gigabit." },
-        { section: "Topología Prescrita", purpose: "Conmutación recomendada con switches dedicados", argument: "Integración obligatoria con switches Multi-Gigabit." },
-        { section: "Solución de Hardware", purpose: "Introducción consultiva del " + intel.model, argument: "Rendimiento probado con aprovisionamiento QR instantáneo." },
-        { section: "Puesta en Marcha y Garantía", purpose: "Procedimiento de entrega sin incidencias", argument: "Sustitución en 24h para proteger el contrato de mantenimiento." }
-      ];
-
-      title = `Ingeniería de Instalación: Cómo Desplegar Wi-Fi 7 Sin Caídas PoE Ni Horas Extra en Obra`;
-      metaDescription = `Guía práctica de montaje para profesionales B2B: dimensionamiento PoE, conmutación Multi-Gigabit y aprovisionamiento QR con el ${intel.model}.`;
-
-      blogHtml = `
-<article class="ecomshop-b2b-post">
-  <p class="lead" style="font-size:16px;line-height:1.7;color:#334155;">
-    Al ejecutar un proyecto de conectividad inalámbrica de nueva generación, la principal complicación técnica en obra rara vez proviene del propio estándar inalámbrico. El verdadero reto para el instalador y la dirección de sistemas radica en que la infraestructura física subyacente —arquitectura de red, seguridad, gestión centralizada, escalabilidad, coste TCO y continuidad de negocio— sea capaz de soportar la demanda real sin generar cuellos de botella ni caídas de tensión [${primarySourceId}].
-  </p>
-
-  <h2 style="color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;">1. El Cuello de Botella Oculto en el Enlace Ascendente, Alimentación PoE y TCO a 3-5 Años</h2>
-  <p style="color:#334155;font-size:15px;line-height:1.7;">
-    Conectar un punto de acceso de alta velocidad a un switch Gigabit estándar de 1 GbE limita drásticamente el rendimiento agregado de la red. Además, las radios tribanda requieren un presupuesto energético riguroso bajo norma <strong>${intel.card.technicalSpecs.powerRequirements}</strong>. Si la conmutación de acceso no garantiza esa potencia constante por puerto, el dispositivo sufrirá reinicios aleatorios. Auditar el ciclo de vida del hardware, la disponibilidad en stock, el riesgo de licencias cautivas, la tarifa distribuidor y el aprovisionamiento de red reduce costes y visitas de mantenimiento en obra.
-  </p>
-
-  <div class="photo-recommendation-box" style="background:#f8fafc;border:2px dashed #94a3b8;border-radius:10px;padding:16px;margin:24px 0;text-align:center;">
-    <span style="background:#0f172a;color:#fff;font-size:11px;font-weight:bold;padding:4px 10px;border-radius:4px;text-transform:uppercase;display:inline-block;margin-bottom:8px;">📷 FOTO RECOMENDADA #1 (Ubicación: Tras Criterios de Infraestructura)</span>
-    <p style="margin:4px 0;font-size:13px;font-weight:600;color:#1e293b;">Vista del punto de acceso instalado en techo junto al trazado de cableado apantallado Cat6A y punto de acceso PoE</p>
-    <p style="margin:0;font-size:12px;color:#64748b;font-style:italic;">Motivo editorial: Muestra la relación entre la infraestructura física de cableado y la cobertura inalámbrica resultante.</p>
-  </div>
-
-  <h2 style="color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;">2. Criterios de Selección, Canal B2B y Arquitectura de Conmutación Prescrita</h2>
-  <p style="color:#334155;font-size:15px;line-height:1.7;">
-    Para garantizar que la tasa de transferencia de datos fluya sin restricciones hasta el core, la ingeniería de EcomSpain prescribe combinar la cobertura inalámbrica con electrónica de red dedicada. Para el distribuidor y canal, la alta demanda de Wi-Fi 7 abre oportunidades de rotación y venta cruzada con electrónica prescrita. Esta topología aporta puertos de agregación Multi-Gigabit y enlaces troncales de 10G SFP+, eliminando cualquier estrangulamiento en la capa de distribución.
-  </p>
-
-  <h2 style="color:#0f172a;font-size:20px;font-weight:700;margin:32px 0 16px 0;">3. Aplicación de la Solución: El Caso del ${intel.model} (${cleanSku})</h2>
-  <p style="color:#334155;font-size:15px;line-height:1.7;">
-    En este escenario operativo, el <strong>${intel.model}</strong> [${primarySourceId}] (SKU: ${cleanSku}) destaca por integrar interfaces de alta velocidad <strong>${intel.card.technicalSpecs.ports[0] || '2.5GbE PoE+'}</strong> [${primarySourceId}] y un sistema de alta eficiencia térmica. Adicionalmente, su aprovisionamiento en la plataforma Cloud mediante escaneo de código QR permite dar de alta toda la flota en minutos desde el smartphone con 0€ en cuotas de software.
-  </p>
-
-  <div class="cta-placement-box" style="background:#f8fafc;border:1px solid #bae6fd;border-left:5px solid #0284c7;border-radius:8px;padding:18px;margin:28px 0;">
-    <h4 style="margin:0 0 6px 0;color:#0369a1;font-size:15px;">🎯 CONDICIONES MAYORISTAS Y TARIFA B2B:</h4>
-    <p style="margin:0 0 12px 0;color:#334155;font-size:13px;">Consultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h.</p>
-    <a href="https://www.ecomshop.es" target="_blank" style="display:inline-block;background:#0284c7;color:#fff;font-size:13px;font-weight:bold;padding:10px 20px;border-radius:6px;text-decoration:none;">Consultar Tarifa Distribuidor &rarr;</a>
-  </div>
-</article>
-`;
-    }
-
-    if (req.editorialDecision) {
-      thesis = req.editorialDecision.thesis;
-      outline = req.editorialDecision.outline;
-      title = req.editorialDecision.selectedAngle.title;
-      metaDescription = req.editorialDecision.selectedAngle.readerPromise;
-      const facts = (req.intel.keyClaims || []).filter(c => c.verified).slice(0, 5);
-      blogHtml = `<article class="ecomshop-b2b-post">
-  <p class="lead">${req.editorialDecision.selectedAngle.readerPromise}</p>
-  <p><strong>Pregunta central:</strong> ${req.editorialDecision.selectedAngle.editorialQuestion}</p>
-  ${req.editorialDecision.outline.map((section, index) => `
-  <section>
-    <h2>${index + 1}. ${section.section}</h2>
-    <p>${section.purpose}</p>
-    <p>${section.argument}</p>
-    ${index === 1 && facts.length > 0 ? `<ul>${facts.map(f => `<li>${f.claim} [${f.sourceId}]</li>`).join("")}</ul>` : ""}
-  </section>`).join("")}
-  <section>
-    <h2>Aprendizajes aplicables</h2>
-    <ul>${req.editorialDecision.readerLearnings.map(item => `<li>${item}</li>`).join("")}</ul>
-  </section>
+  <p class="lead">${thesis.whyItMatters}</p>
+  <h2>El problema que hay que resolver</h2>
+  <p>${thesis.problem} ${thesis.businessContext}</p>
+  <h2>Qué dicen los datos de ${intel.model}</h2>
+  <p>${technicalSpecs.keyDifferentiators.slice(0, 4).join(" ")} ${technicalSpecs.ports.join(". ")}.</p>
+  <h2>Cómo convertir las especificaciones en una decisión</h2>
+  <p>${thesis.centralArgument} ${thesis.solutionApproach}</p>
+  <ul>${specsList.slice(0, 8).map((spec) => `<li>${spec}</li>`).join("")}</ul>
+  <h2>Aplicación al escenario profesional</h2>
+  <p>Para ${targetAudience}, la decisión debe contrastarse con las necesidades reales de instalación, operación, disponibilidad y mantenimiento. Los datos de esta sección proceden exclusivamente de la ficha de EcomShop de ${intel.sku}.</p>
+  <p><strong>Idea clave:</strong> ${productName} es el producto evaluado; cualquier componente adicional debe tratarse como accesorio o compatibilidad explícita, nunca como sustituto del SKU seleccionado.</p>
 </article>`;
-    }
 
-    const fallbackOutput: ContentOutput = {
-      topicId: `grounded-${cleanSku.toLowerCase()}-${Date.now()}`,
-      topicTitle: req.topicTitle || `${intel.model}: Despliegue y Solución B2B`,
-      category: req.category || intel.card.product.category,
+    const markdown = [
+      `# ${blogTitle}`,
+      "",
+      thesis.problem,
+      "",
+      "## Datos técnicos verificables",
+      ...specsList.slice(0, 8).map((spec) => `- ${spec}`),
+      "",
+      `Fuente: ${primarySource}`
+    ].join("\n");
+
+    return {
+      topicId: `feed-${intel.sku.toLowerCase()}-${Date.now().toString(36)}`,
+      topicTitle: blogTitle,
+      category: intel.card.product.category,
       generatedAt: new Date().toISOString(),
       editorialThesis: thesis,
       outline,
-      source: "fallback",
-      generator: "mandato2-grounded-fallback",
-      fallbackUsed: true,
-      status: "DRAFT",
       blog: {
-        title,
-        metaDescription,
-        slug: `${cleanSku.toLowerCase()}-analisis-tecnico-b2b`,
-        readingTimeMinutes: 6,
-        targetKeywords: [cleanSku, targetAudience, intel.brand, "Networking B2B"],
+        title: blogTitle,
+        metaDescription: `Análisis B2B de ${productName} basado en la ficha oficial de EcomShop.`,
+        slug: `${intel.sku.toLowerCase()}-analisis-b2b`,
+        readingTimeMinutes: 4,
+        targetKeywords: [intel.sku, intel.model, intel.card.product.category],
         htmlContent: blogHtml,
-        cleanPlainTextExcerpt: blogHtml.replace(/<[^>]+>/g, " ").slice(0, 250) + "...",
-        editorialLayout: {
-          targetProfiles: [
-            { profile: targetAudience, keyTakeaway: thesis.centralArgument }
-          ],
-          photoPlacements: [
-            {
-              id: "photo-1",
-              placementAfterHeading: "1. El Desafío Técnico",
-              photoType: "Fotografía macro de interfaces de red",
-              description: `Detalle del puerto ${intel.card.technicalSpecs.ports[0] || 'de red'}`,
-              imagen3Prompt: `Studio tech photography of ${intel.brand} ${intel.model} network hardware, pristine enclosure, 8k resolution`
-            }
-          ]
-        }
+        cleanPlainTextExcerpt: thesis.centralArgument
       },
       mailchimp: {
-        subjectA: `⚡ Solución B2B para ${targetAudience}: ${intel.model}`,
-        subjectB: `Análisis de arquitectura con ${intel.model}`,
-        previewText: `Descubre la solución técnica para ${targetAudience} con stock inmediato en 24h.`,
-        ctaButtonText: "Consultar Tarifa Mayorista B2B",
-        ctaUrl: req.productUrl || `https://www.ecomshop.es/${cleanSku.toLowerCase()}`,
-        newsletterHtml: `<div style="font-family:sans-serif;color:#1e293b;max-width:600px;margin:0 auto;"><h2 style="color:#0f172a;">${intel.model}</h2><p>${thesis.problem}</p><p style="background:#f1f5f9;padding:12px;border-radius:6px;font-size:13px;">Consultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h.</p></div>`,
-        plainText: `${title}\n\n${thesis.problem}\n\nConsultar tarifa distribuidor en ecomshop.es con entrega 24/48h.`
+        subjectA: `${productName}: datos técnicos para decidir`,
+        subjectB: `Ficha B2B de ${intel.sku}`,
+        previewText: `Información verificada de ${productName} desde EcomShop.`,
+        ctaButtonText: "Consultar producto",
+        ctaUrl: primarySource,
+        newsletterHtml: `<p>${thesis.centralArgument}</p><p>${technicalSpecs.keyDifferentiators.slice(0, 3).join(". ")}</p>`,
+        plainText: `${productName} — ${thesis.centralArgument}`
       },
       whatsapp: {
-        headline: `🚀 *Solución B2B | ${intel.model}*`,
-        formattedMessage: `Hola 👋\n\nAnalizamos la respuesta técnica para *${targetAudience}* con el *${intel.model}*:\n\n• *Problema:* ${thesis.problem}\n• *Respuesta de Ingeniería:* ${thesis.centralArgument}\n• *Garantía:* Sustitución en 24h por EcomSpain\n\nTarifa profesional y condiciones por volumen disponibles en ecomshop.es.`,
-        callToAction: "Consultar Tarifa Distribuidor",
-        targetUrl: req.productUrl || `https://www.ecomshop.es/${cleanSku.toLowerCase()}`
+        headline: `${productName}`,
+        formattedMessage: `${productName}\\n\\n${technicalSpecs.keyDifferentiators.slice(0, 3).join("\\n")}\\n\\nFicha: ${primarySource}`,
+        callToAction: "Consultar producto",
+        targetUrl: primarySource
       },
       linkedin: {
-        hook: `¿Cómo resolver el reto de ${thesis.problem.toLowerCase()} en instalaciones profesionales?`,
-        body: `En despliegues de networking B2B, el planteamiento de ingeniería debe priorizar la estabilidad física y el TCO a largo plazo.\n\n${thesis.centralArgument}\n\nClaves de arquitectura:\n• Dispositivo: ${intel.model}\n• Cero cuotas de software recurrentes\n• Soporte preventa y sustitución en 24h`,
-        takeaways: [
-          `Análisis de problema real B2B para ${targetAudience}`,
-          `Propiedad perpetua del hardware sin licencias obligatorias`,
-          `Garantía de sustitución en 24h EcomSpain`
-        ],
-        callToAction: "Solicita tu estudio preventa y tarifa mayorista en ecomshop.es",
-        hashtags: ["#NetworkingB2B", `#${intel.brand.replace(/\s+/g, '')}`, "#EcomShop", "#Telecomunicaciones"],
-        fullPostText: `¿Cómo resolver el reto de ${thesis.problem.toLowerCase()} en instalaciones profesionales?\n\nEn despliegues de networking B2B, el planteamiento de ingeniería debe priorizar la estabilidad física y el TCO a largo plazo.\n\n${thesis.centralArgument}\n\nConsultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h.`
+        hook: `${productName}: qué revisar antes de desplegarlo`,
+        body: `${thesis.centralArgument} ${technicalSpecs.ports.slice(0, 2).join(". ")}.`,
+        takeaways: technicalSpecs.keyDifferentiators.slice(0, 4),
+        callToAction: "Consultar ficha técnica",
+        hashtags: ["#EcomShop", "#NetworkingB2B", `#${intel.sku}`],
+        fullPostText: `${productName}: ${thesis.centralArgument}`
       },
       geo: {
-        title,
-        metaDescription,
+        title: blogTitle,
+        metaDescription: `Ficha técnica B2B de ${productName}.`,
         htmlContent: blogHtml,
         comparativeTableHtml: generateDynamicComparativeTableHtml(intel),
         jsonLd: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "Product",
-          "name": `${intel.brand} ${intel.model}`,
-          "sku": intel.sku,
-          "brand": { "@type": "Brand", "name": intel.brand }
+          name: intel.card.product.model || intel.model,
+          sku: intel.card.product.sku || intel.sku,
+          brand: { "@type": "Brand", name: intel.card.product.brand || intel.brand },
+          url: primarySource
         }, null, 2),
-        markdownContent: `# ${intel.brand} ${intel.model}\n\n${generateDynamicComparativeTableHtml(intel)}`
+        markdownContent: markdown
       },
-      citations: Object.fromEntries(
-        Object.entries(citations || {}).filter(([key, value]) => {
-          const text = (key + " " + JSON.stringify(value)).toUpperCase();
-          return !["ECW510", "ECW536", "ECW526", "ECS2512FP", "ECS1528FP"].some(
-            (other) => other !== cleanSku && text.includes(other)
-          );
-        })
-      ),
-      claims: (intel.keyClaims && intel.keyClaims.length > 0)
-        ? intel.keyClaims.map((kc) => ({
-            text: `${kc.claim}`,
-            sourceId: kc.sourceId
-          }))
-        : (intel.card?.evidenceLedger || []).map((e) => ({
-            text: `${e.claim} (${e.sourceType})`,
-            sourceId: e.source
-          })),
-      factCheckScore: 95
+      citations,
+      claims: claims.map((claim) => ({ text: claim.claim, sourceId: claim.sourceId })),
+      source: "fallback",
+      generator: "GroundedWriterService.feed-only",
+      fallbackUsed: true,
+      fallbackNotice: "Generación determinista basada exclusivamente en el feed de EcomShop."
     };
-
-    const { validateContentGrounding } = require("@/lib/services/claim-validator");
-    const validatedOutput = {
-      ...fallbackOutput,
-      groundingValidation: validateContentGrounding(fallbackOutput)
-    };
-    return validatedOutput;
   }
+
 }
 
 export function generateDynamicComparativeTableHtml(intel: StructuredProductIntelligence): string {
