@@ -111,7 +111,10 @@ export class EditorialOrchestrator {
     const hypotheses=makeHypotheses(input.productType,sku,input.intel.model,primary,input.evidenceMap,input.variationSeed ?? 0);
     const angles=makeAngles(hypotheses,input.preferredAudience);
     const recent=input.workspaceId ? await new ContentRepository().listRecent(100,input.workspaceId) : [];
-    const used=recent.map(item=>{ const body=(item.canonicalBody&&typeof item.canonicalBody==='object')?item.canonicalBody as Record<string,unknown>:{}; const t=(body.editorialThesis&&typeof body.editorialThesis==='object')?body.editorialThesis as Record<string,unknown>:{}; const b=(body.blog&&typeof body.blog==='object')?body.blog as Record<string,unknown>:{}; return {title:typeof b.title==='string'?b.title:"",question:typeof t.technicalQuestion==='string'?t.technicalQuestion:"",audience:typeof t.targetProfessional==='string'?t.targetProfessional:""}; });
+    // Diversity Memory representa publicaciones consolidadas, no borradores en edición.
+    const used=recent
+      .filter(item => item.status === "APPROVED" || item.status === "PUBLISHED")
+      .map(item=>{ const body=(item.canonicalBody&&typeof item.canonicalBody==='object')?item.canonicalBody as Record<string,unknown>:{}; const t=(body.editorialThesis&&typeof body.editorialThesis==='object')?body.editorialThesis as Record<string,unknown>:{}; const b=(body.blog&&typeof body.blog==='object')?body.blog as Record<string,unknown>:{}; return {title:typeof b.title==='string'?b.title:"",question:typeof t.technicalQuestion==='string'?t.technicalQuestion:"",audience:typeof t.targetProfessional==='string'?t.targetProfessional:""}; });
     const rejected:string[]=[]; const reasons:string[]=[]; let selected=angles[0]; let selectedFound=false;
     const requested = input.requestedAngle;
     const ordered = requested
