@@ -25,7 +25,7 @@ export class GroundedWriterService {
    * Genera el paquete de contenido multicanal B2B basado en Tesis Editorial y Grounding NotebookLM
    */
   async generateGroundedContent(req: GroundedWriterRequest): Promise<ContentOutput> {
-    const { intel, selectedSourceIds = [], editorialControls, editorialDecision } = req;
+    const { intel, editorialControls, editorialDecision } = req;
 
     // Grounding exclusivamente desde el feed de EcomShop.
     // selectedSourceIds se conserva por compatibilidad, pero ya no decide la fuente de verdad.
@@ -58,7 +58,7 @@ export class GroundedWriterService {
       const ai = getGenAIClient(req.apiKey);
       const activeModel = getActiveGeminiModel(req.apiKey);
 
-      const prompt = this.buildPrompt(req, activeSources);
+      const prompt = this.buildPrompt(req);
       const systemInstruction = this.buildSystemInstruction(activeSources, req.targetAudience);
 
       const { AI_TEXT_MODEL, AI_FALLBACK_MODEL } = await import("@/lib/ai-config");
@@ -194,7 +194,7 @@ Debes responder SIEMPRE en formato JSON estricto cumpliendo la estructura Conten
 `;
   }
 
-  private buildPrompt(req: GroundedWriterRequest, activeSources: Array<{ id: string; title: string; type: string; description: string; url?: string }>): string {
+  private buildPrompt(req: GroundedWriterRequest): string {
     const { intel, editorialControls, targetAudience = "Instalador B2B" } = req;
     const tone = editorialControls?.editorialTone || intel.recommendedTone;
     const sector = editorialControls?.targetSector || intel.naturalSector;
