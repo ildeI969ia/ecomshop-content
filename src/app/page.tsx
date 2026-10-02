@@ -238,7 +238,7 @@ export default function Page() {
           sku,
           topicTitle: freeTopicTitle || selectedAngle?.title || (product ? `${product.name} - Conectividad B2B Enterprise` : `Solución ${sku}`),
           category: product ? product.category : "general",
-          targetAudience: selectedAngle?.targetAudience || "Instalador B2B",
+          targetAudience: selectedAngle?.targetAudience || undefined,
           productUrl: product ? product.url : `https://ecomshop.es/productos/${sku.toLowerCase()}`,
           customAngle: selectedAngle?.intent || "ENGINEERING",
           editorialAngle: selectedAngle || undefined,
