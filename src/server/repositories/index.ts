@@ -12,6 +12,7 @@ import {
   ProductEntity,
   ProductIntelligenceRecord
 } from "../domain/types";
+import { RepositoryUnavailableError } from "./repository-errors";
 
 export class CampaignRepository {
   private collection = () => getAdminFirestore().collection("campaigns");
@@ -91,36 +92,26 @@ export class ContentRepository {
 
   async listRecent(limitCount = 50, workspaceId?: string): Promise<ContentItem[]> {
     try {
-      let query: any = this.collection();
-      if (workspaceId) {
-        query = query.where("workspaceId", "==", workspaceId);
-      }
+      let query = this.collection();
+      if (workspaceId) query = query.where("workspaceId", "==", workspaceId);
       const snapshot = await query.orderBy("createdAt", "desc").limit(limitCount).get();
       return snapshot.docs.map((d: QueryDocumentSnapshot) => d.data() as ContentItem);
-    } catch (err) {
-      console.warn("[ContentRepository] orderBy createdAt falló, recurriendo a sort en memoria:", err);
-      try {
-        let query: any = this.collection();
-        if (workspaceId) {
-          query = query.where("workspaceId", "==", workspaceId);
-        }
-        const snapshot = await query.limit(limitCount).get();
-        const items = snapshot.docs.map((d: QueryDocumentSnapshot) => d.data() as ContentItem);
-        return items.sort((a: ContentItem, b: ContentItem) => (b.createdAt || "").localeCompare(a.createdAt || ""));
-      } catch (fallbackErr) {
-        console.error("[ContentRepository] Fallback query error:", fallbackErr);
-        return [];
-      }
+    } catch (error) {
+      throw new RepositoryUnavailableError("contents.listRecent", error);
     }
   }
 
   async findBySlug(slug: string, workspaceId?: string): Promise<ContentItem | null> {
-    let query = this.collection().where("slug", "==", slug);
-    if (workspaceId) query = query.where("workspaceId", "==", workspaceId);
-    const snapshot = await query.limit(1).get();
-    if (snapshot.empty) return null;
-    const doc = snapshot.docs[0];
-    return this.hydrateVersions(doc.id, doc.data() as ContentItem);
+    try {
+      let query = this.collection().where("slug", "==", slug);
+      if (workspaceId) query = query.where("workspaceId", "==", workspaceId);
+      const snapshot = await query.limit(1).get();
+      if (snapshot.empty) return null;
+      const doc = snapshot.docs[0];
+      return this.hydrateVersions(doc.id, doc.data() as ContentItem);
+    } catch (error) {
+      throw new RepositoryUnavailableError("contents.findBySlug", error);
+    }
   }
 
   async upsertBySlug(rawContent: ContentItem): Promise<ContentItem> {
