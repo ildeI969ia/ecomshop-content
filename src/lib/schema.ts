@@ -229,7 +229,19 @@ export const GenerateRequestSchema = z.object({
   }).optional(),
 
   // Fuentes Seleccionadas del NotebookLM
-  selectedSourceIds: z.array(z.string()).optional().default([])
+  selectedSourceIds: z.array(z.string()).optional().default([]),
+
+  // Contexto editorial y de persistencia; forma explícita para evitar casts y passthrough implícito.
+  editorialAngle: z.object({
+    id: z.string().optional(),
+    title: z.string().optional(),
+    editorialQuestion: z.string().optional(),
+    tension: z.string().optional(),
+    readerPromise: z.string().optional(),
+    targetAudience: z.string().optional()
+  }).optional(),
+  workspaceId: z.string().optional(),
+  campaignId: z.string().optional()
 }).passthrough();
 
 export type GenerateRequest = z.infer<typeof GenerateRequestSchema>;
