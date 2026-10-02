@@ -85,3 +85,15 @@ export type ImageQualification = z.infer<typeof ImageQualificationSchema>;
 export type ImageIntentAnalysis = z.infer<typeof ImageIntentAnalysisSchema>;
 export type ImagePromptResult = z.infer<typeof ImagePromptResultSchema>;
 export type ImageIntentInput = z.infer<typeof ImageIntentInputSchema>;
+
+export const ImageCriticResultSchema = z.object({
+  productFidelity: z.enum(["pass", "warning", "fail"]),
+  intentMatch: z.enum(["pass", "warning", "fail"]),
+  realism: z.enum(["pass", "warning", "fail"]),
+  composition: z.enum(["pass", "warning", "fail"]),
+  detectedProblems: z.array(z.string()),
+  optimizedPromptInstructions: z.string(),
+  shouldRegenerate: z.boolean(),
+});
+
+export type ImageCriticResult = z.infer<typeof ImageCriticResultSchema>;
