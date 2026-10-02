@@ -35,10 +35,15 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       category: product?.category || "general",
       targetAudience: typeof angleSelected === "object" && angleSelected?.targetAudience ? angleSelected.targetAudience : targetAudience,
       editorialAngle: typeof angleSelected === "object" ? angleSelected : undefined,
+      workspaceId: user.workspaceId,
       customNotes: typeof angleSelected === "object" && angleSelected?.hook ? `Ángulo: ${angleSelected.title}. Gancho: ${angleSelected.hook}` : ""
     });
 
-    const qualityReport = validateEditorialQuality(content, targetAudience);
+    const qualityReport = validateEditorialQuality(
+      content,
+      targetAudience || content.editorialThesis?.targetProfessional || "",
+      effectiveSku
+    );
 
     const geoData = {
       title: content.blog?.title || content.geo?.title || resolvedTitle,
