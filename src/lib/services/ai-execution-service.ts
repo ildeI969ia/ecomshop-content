@@ -60,8 +60,8 @@ export class AIExecutionService {
         );
 
         const rawText = generated.text
-          .replace(/\`\`\`json/gi, "")
-          .replace(/\`\`\`/g, "")
+          .replace(/```json/gi, "")
+          .replace(/```/g, "")
           .trim();
 
         if (!rawText) {
