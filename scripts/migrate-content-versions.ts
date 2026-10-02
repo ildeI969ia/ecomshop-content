@@ -9,44 +9,51 @@ async function migrate(): Promise<void> {
   let scanned = 0;
   let migrated = 0;
   let skipped = 0;
+  let pendingWrites = 0;
+  let batch = db.batch();
 
-  for (let offset = 0; offset < snapshot.docs.length; offset += BATCH_LIMIT) {
-    const batch = db.batch();
-    let writes = 0;
+  const commitBatch = async (): Promise<void> => {
+    if (pendingWrites === 0) return;
+    await batch.commit();
+    batch = db.batch();
+    pendingWrites = 0;
+  };
 
-    for (const doc of snapshot.docs.slice(offset, offset + BATCH_LIMIT)) {
-      scanned += 1;
-      const data = doc.data();
-      const versions = Array.isArray(data.versions)
-        ? (data.versions as ContentVersion[])
-        : [];
+  for (const doc of snapshot.docs) {
+    scanned += 1;
+    const data = doc.data();
+    const versions = Array.isArray(data.versions)
+      ? (data.versions as ContentVersion[])
+      : [];
 
-      if (versions.length === 0) {
-        skipped += 1;
-        continue;
-      }
-
-      for (const version of versions) {
-        const versionRef = doc.ref
-          .collection("versions")
-          .doc(`v-${String(version.version).padStart(6, "0")}`);
-        batch.set(versionRef, version, { merge: true });
-        writes += 1;
-      }
-
-      batch.update(doc.ref, { versions: [] });
-      writes += 1;
-      migrated += 1;
+    if (versions.length === 0) {
+      skipped += 1;
+      continue;
     }
 
-    if (writes > 0) {
-      await batch.commit();
+    // Leave enough headroom below Firestore's 500-operation batch limit.
+    if (pendingWrites + versions.length + 1 > BATCH_LIMIT) {
+      await commitBatch();
     }
 
-    console.log(
-      `[migrate-content-versions] bloque ${Math.floor(offset / BATCH_LIMIT) + 1}: ${writes} escrituras`
-    );
+    for (const version of versions) {
+      const versionRef = doc.ref
+        .collection("versions")
+        .doc(`v-${String(version.version).padStart(6, "0")}`);
+      batch.set(versionRef, version, { merge: true });
+      pendingWrites += 1;
+    }
+
+    batch.update(doc.ref, { versions: [] });
+    pendingWrites += 1;
+    migrated += 1;
+
+    if (pendingWrites >= BATCH_LIMIT) {
+      await commitBatch();
+    }
   }
+
+  await commitBatch();
 
   console.log(
     JSON.stringify({
