@@ -1,7 +1,6 @@
 import { ContentOutput, GenerateRequest } from "./schema";
 import { ECOM_BRAND, PRESET_TOPICS, STAR_PRODUCTS } from "./knowledge";
 import { STRATEGIC_AGENT_SYSTEM_PROMPT } from "./gemini-agent";
-import { ProductIntelligenceService } from "@/server/services/product-intelligence-service";
 import { ProductIntelligenceCard } from "./types/product-intelligence";
 import { getCatalogDevice, CatalogDevice } from "./catalog";
 
