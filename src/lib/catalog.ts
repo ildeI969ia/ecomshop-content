@@ -52,6 +52,7 @@ export interface CatalogDevice {
   keyAdvantages: string[];
   notebookSource: string;
   notebookSourceId?: string;
+  additionalSourceIds?: string[];
 }
 
 /**
@@ -144,7 +145,8 @@ export function catalogProductToCatalogDevice(prod: CatalogProduct): CatalogDevi
     },
     keyAdvantages: prod.keyAdvantages,
     notebookSource: prod.notebookSource.title,
-    notebookSourceId: prod.notebookSource.sourceId
+    notebookSourceId: prod.notebookSource.sourceId,
+    additionalSourceIds: prod.additionalSourceIds || []
   };
 }
 
