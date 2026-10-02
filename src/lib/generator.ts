@@ -1,5 +1,5 @@
 import { ContentOutput, GenerateRequest } from "./schema";
-import { buildGenerationContext, type GenerationContext } from "./types/generation-context";
+import { buildGenerationContext, type GenerationContext } from "@/server/services/generation-context";
 
 export async function generateB2BContent(
   req: Partial<GenerateRequest> & { apiKey?: string },
