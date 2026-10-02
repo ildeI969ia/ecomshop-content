@@ -4,6 +4,7 @@ import { StructuredProductIntelligence } from "./notebook-intelligence";
 import { OFFICIAL_NOTEBOOK } from "@/lib/notebooklm";
 import { ECOM_BRAND } from "@/lib/knowledge";
 import { validateEditorialQuality } from "@/lib/quality/editorial-quality-gate";
+import type { EditorialDecision } from "@/lib/types/editorial-orchestrator";
 
 export interface GroundedWriterRequest {
   sku: string;
@@ -16,6 +17,7 @@ export interface GroundedWriterRequest {
   selectedSourceIds?: string[];
   intel: StructuredProductIntelligence;
   apiKey?: string;
+  editorialDecision?: EditorialDecision;
 }
 
 export class GroundedWriterService {
@@ -23,7 +25,7 @@ export class GroundedWriterService {
    * Genera el paquete de contenido multicanal B2B basado en Tesis Editorial y Grounding NotebookLM
    */
   async generateGroundedContent(req: GroundedWriterRequest): Promise<ContentOutput> {
-    const { intel, selectedSourceIds = [], editorialControls } = req;
+    const { intel, selectedSourceIds = [], editorialControls, editorialDecision } = req;
 
     // Resolver las fuentes que se usarán para el grounding
     const allSources = OFFICIAL_NOTEBOOK.sources;
@@ -119,7 +121,7 @@ export class GroundedWriterService {
           const productType = detectProductType(req.sku, req.category, intel.card?.technicalSpecs?.deviceType);
           const evidenceMap = buildProductEvidenceMap(req.sku, intel);
           const angleCandidates = generateEditorialAngleCandidates(req.sku, productType, req.targetAudience || "Instalador B2B", intel);
-          const bestAngle = selectBestEditorialAngle(angleCandidates);
+          const bestAngle = editorialDecision?.selectedAngle || selectBestEditorialAngle(angleCandidates);
 
           const criticReport = auditEditorialQualityWithCritic(rawOutput as any, bestAngle, evidenceMap, req.targetAudience);
           const qualityReport = validateEditorialQuality(rawOutput as any, req.targetAudience, req.sku);
@@ -207,7 +209,7 @@ Genera el artículo maestro de inteligencia editorial B2B para el producto SOLIC
   * Alimentación: ${intel.card.technicalSpecs.powerRequirements}
   * Gestión: ${intel.card.technicalSpecs.management}
 
-Asegúrate de que el artículo hable EXCLUSIVAMENTE del producto ${req.sku} (${intel.model}) y responda a las necesidades de ${targetAudience}.
+Asegúrate de que el artículo hable EXCLUSIVAMENTE del producto ${req.sku} (${intel.model}) y responda a las necesidades de ${targetAudience}.\n\nDECISIÓN EDITORIAL DEL ORCHESTRATOR (NO REDECIDIR):\n- Ángulo: ${req.editorialDecision?.selectedAngle.title || "No disponible"}\n- Pregunta central: ${req.editorialDecision?.selectedAngle.editorialQuestion || "No disponible"}\n- Tensión: ${req.editorialDecision?.selectedAngle.tension || "No disponible"}\n- Promesa: ${req.editorialDecision?.selectedAngle.readerPromise || "No disponible"}\n- Target primario: ${req.editorialDecision?.primaryAudience || targetAudience}\n- Aprendizajes: ${(req.editorialDecision?.readerLearnings || []).join(" | ")}\n- Tesis: ${JSON.stringify(req.editorialDecision?.thesis || {})}\n- Outline: ${JSON.stringify(req.editorialDecision?.outline || [])}\n\nREGLA: no sustituir el ángulo, target, tesis u outline por una plantilla genérica. La decisión anterior es la fuente de verdad editorial.
 `;
   }
 
