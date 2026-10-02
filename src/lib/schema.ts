@@ -225,7 +225,7 @@ export const GenerateRequestSchema = z.object({
     pitch30s: z.string().optional().default(""),
     commercialObjection: z.string().optional().default(""),
     counterArgument: z.string().optional().default(""),
-    targetSegment: z.string().optional().default("Instalador B2B")
+    targetSegment: z.string().optional().default("")
   }).optional(),
 
   // Fuentes Seleccionadas del NotebookLM
