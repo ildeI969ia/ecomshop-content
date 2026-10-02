@@ -1,25 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
-import { getGenAIClient, getActiveGeminiModel } from "@/lib/genai-client";
-import { resolveBaseImageToData } from "@/lib/image-generator";
-
-interface QuestionOption {
-  id: string;
-  label: string;
-  detail: string;
-}
-
-interface InterviewQuestion {
-  id: string;
-  question: string;
-  options: QuestionOption[];
-}
-
 import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
+import {
+  analyzeImageIntent,
+  compileCreativePrompt,
+  fallbackAnalysis,
+} from "@/lib/services/image-creative-engine";
+import { ImageIntentInputSchema, ImageIntentAnalysisSchema } from "@/lib/types/image-intelligence";
 
 export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest, user) => {
   try {
-    const budgetCheck = await checkAiBudget(user.uid, user.role, 0.001);
+    const body: unknown = await req.json();
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ code: "INVALID_REQUEST", error: "Solicitud inválida." }, { status: 400 });
+    }
+
+    const record = body as Record<string, unknown>;
+    const requestedMode =
+      record.mode === "interrogate" || record.mode === "analyze" || record.mode === "synthesize"
+        ? record.mode
+        : record.action === "start"
+          ? "analyze"
+          : record.action === "synthesize"
+            ? "synthesize"
+            : undefined;
+
+    if (!requestedMode) {
+      return NextResponse.json(
+        { code: "INVALID_MODE", error: "Modo de Director de Arte no válido." },
+        { status: 400 },
+      );
+    }
+
+    const budgetCheck = await checkAiBudget(user.uid, user.role, requestedMode === "synthesize" ? 0.001 : 0.001);
     if (!budgetCheck.allowed) {
       return NextResponse.json(
         {
@@ -28,174 +41,98 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
           limitEur: budgetCheck.limitEur,
           spentEur: budgetCheck.currentSpentEur,
           pct: budgetCheck.pct,
-          resetsAt: "Inicio del próximo mes (Hora de Madrid)"
+          resetsAt: "Inicio del próximo mes (Hora de Madrid)",
         },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
-    const { mode, userIdea, answers, baseImage } = await req.json();
+    if (requestedMode === "analyze" || requestedMode === "interrogate") {
+      const input = ImageIntentInputSchema.parse({
+        userIdea: typeof record.userIdea === "string" ? record.userIdea : "",
+        baseImage: typeof record.baseImage === "string" ? record.baseImage : undefined,
+        selectedSku: typeof record.selectedSku === "string" ? record.selectedSku : undefined,
+        productContext: typeof record.productContext === "string" ? record.productContext : undefined,
+        channel: typeof record.channel === "string" ? record.channel : undefined,
+        audience: typeof record.audience === "string" ? record.audience : undefined,
+        requestedAspectRatio:
+          record.requestedAspectRatio === "1:1" || record.requestedAspectRatio === "4:3"
+            ? record.requestedAspectRatio
+            : "16:9",
+      });
 
-    const baseImageData = await resolveBaseImageToData(baseImage);
-
-    if (mode === "interrogate") {
+      let analysis;
       try {
-        const ai = getGenAIClient();
-        const activeModel = getActiveGeminiModel();
-
-        const promptParts: any[] = [];
-        if (baseImageData?.data) {
-          promptParts.push({
-            inlineData: {
-              mimeType: baseImageData.mimeType,
-              data: baseImageData.data
-            }
-          });
-        }
-
-        promptParts.push({
-          text: `Eres un Director de Arte y Fotógrafo B2B especializado en Telecomunicaciones, Redes Empresariales y Hardware (Switches EnGenius, Routers, Racks, Wi-Fi 7, Fibra Óptica).
-El usuario quiere generar una imagen con esta idea o intención: "${userIdea || "Infraestructura de red profesional"}".
-Genera exactamente 3 preguntas con 3-4 opciones cada una para interrogar al usuario y definir la toma perfecta (por ejemplo: atmósfera y estilo, plano y ángulo, y elemento de hardware o acción).
-Devuelve ÚNICAMENTE un JSON válido con este formato:
-{
-  "questions": [
-    {
-      "id": "ambience",
-      "question": "¿Qué atmósfera y entorno buscas?",
-      "options": [
-        { "id": "opt1", "label": "Centro de Datos Hi-Tech", "detail": "Luces LED cian/azul, suelo técnico, racks impecables" },
-        { "id": "opt2", "label": "Oficina Corporativa Abierta", "detail": "Luz natural, techos acústicos modernos, entorno limpio" }
-      ]
-    }
-  ]
-}`
-        });
-
-        const res = await ai.models.generateContent({
-          model: activeModel,
-          contents: [{ role: "user", parts: promptParts }],
-          config: { responseMimeType: "application/json" }
-        });
-
-        const rawText = res.text?.trim();
-        if (rawText) {
-          const parsed = JSON.parse(rawText);
-          const tokensIn = res.usageMetadata?.promptTokenCount ?? 300;
-          const tokensOut = res.usageMetadata?.candidatesTokenCount ?? 300;
-          try {
-            await recordAiUsage(user.uid, "image_interview", tokensIn, tokensOut, 0);
-          } catch (usageErr) {
-            console.error("[images/interview] Warning: Falló el registro de uso de IA:", usageErr);
-          }
-          return NextResponse.json({ success: true, questions: parsed.questions });
-        }
-      } catch (err: any) {
-        console.warn("Error en Gemini interview interrogation:", err?.message);
+        analysis = await analyzeImageIntent(input);
+      } catch (error) {
+        console.warn("[images/interview] Creative analysis fallback:", error);
+        analysis = fallbackAnalysis(input);
       }
 
-      const defaultQuestions: InterviewQuestion[] = [
-        {
-          id: "scenario",
-          question: "¿En qué entorno o escenario debe ubicarse la imagen?",
-          options: [
-            { id: "rack_dc", label: "Centro de Datos / Rack 42U", detail: "Servidores en hilera, luces LED de actividad, cableado estructurado perfecto" },
-            { id: "corp_office", label: "Oficina Corporativa Minimalista", detail: "Techo acústico, diseño arquitectónico nórdico, luz natural, APs sutiles" },
-            { id: "field_tech", label: "Trabajo de Campo Telecom", detail: "Técnico cualificado fusionando fibra o certificando tomas de red" },
-            { id: "topology_abstract", label: "Composición 3D Tecnológica", detail: "Visualización isométrica abstracta de enlaces de red y cloud" }
-          ]
-        },
-        {
-          id: "shot_type",
-          question: "¿Qué tipo de encuadre o perspectiva fotográfica prefieres?",
-          options: [
-            { id: "macro_ports", label: "Primer Plano Macro / Detalle", detail: "Enfoque crítico en puertos RJ45/SFP+, latiguillos y LEDs brillantes" },
-            { id: "medium_angle", label: "Plano Medio Profesional (Ángulo Holandés)", detail: "Vista diagonal dinámica mostrando profundidad de bastidores" },
-            { id: "wide_room", label: "Plano General / Sala Completa", detail: "Perspectiva amplia de la instalación transmitiendo escala y orden" }
-          ]
-        },
-        {
-          id: "lighting_style",
-          question: "¿Qué iluminación y tono visual debe transmitir?",
-          options: [
-            { id: "cyber_blue", label: "Ciberseguridad y Alta Tecnología", detail: "Contrastes profundos, tonos azul eléctrico, turquesa y violeta" },
-            { id: "clean_enterprise", label: "Editorial Corporativo Limpio", detail: "Blanco puro, luz neutra diurna 5500K, colores naturales sin saturar" },
-            { id: "industrial_warm", label: "Industrial de Precisión", detail: "Luz de trabajo focalizada tipo linterna técnica de precisión" }
-          ]
-        }
-      ];
-
-      return NextResponse.json({ success: true, questions: defaultQuestions });
-    }
-
-    if (mode === "synthesize") {
       try {
-        const ai = getGenAIClient();
-        const activeModel = getActiveGeminiModel();
-
-        const promptParts: any[] = [];
-        if (baseImageData?.data) {
-          promptParts.push({
-            inlineData: {
-              mimeType: baseImageData.mimeType,
-              data: baseImageData.data
-            }
-          });
-        }
-
-        promptParts.push({
-          text: `Eres el Director de Arte de Imagen B2B para Telecomunicaciones.
-La idea original del usuario es: "${userIdea || "Infraestructura de red empresarial"}".
-Las respuestas seleccionadas en el interrogatorio son:
-${JSON.stringify(answers, null, 2)}
-
-Genera un prompt fotográfico hiper-detallado y profesional en INGLÉS optimizado para Google Imagen 3 y Midjourney. Incluye tipo de lente (e.g. 50mm f/1.8, 85mm macro), condiciones de luz de estudio, textura de los materiales (chapa de acero anodizado, conectores dorados), detalles de iluminación de estado y fotorrealismo cinematográfico 8K.
-Devuelve ÚNICAMENTE un JSON:
-{
-  "suggestedPrompt": "...el prompt completo en inglés...",
-  "recommendedAspectRatio": "16:9",
-  "technicalNotes": "Breve resumen en español de los detalles fotográficos aplicados"
-}`
-        });
-
-        const res = await ai.models.generateContent({
-          model: activeModel,
-          contents: [{ role: "user", parts: promptParts }],
-          config: { responseMimeType: "application/json" }
-        });
-
-        const rawText = res.text?.trim();
-        if (rawText) {
-          const parsed = JSON.parse(rawText);
-          const tokensIn = res.usageMetadata?.promptTokenCount ?? 350;
-          const tokensOut = res.usageMetadata?.candidatesTokenCount ?? 250;
-          try {
-            await recordAiUsage(user.uid, "image_interview", tokensIn, tokensOut, 0);
-          } catch (usageErr) {
-            console.error("[images/interview] Warning: Falló el registro de uso de IA:", usageErr);
-          }
-          return NextResponse.json({ success: true, data: parsed });
-        }
-      } catch (err: any) {
-        console.warn("Error en Gemini prompt synthesis:", err?.message);
+        await recordAiUsage(user.uid, "image_interview", 400, 300, 0);
+      } catch (usageErr) {
+        console.warn("[images/interview] Usage record failed:", usageErr);
       }
-
-      const partsSummary = Object.values(answers || {}).join(", ");
-      const synthesized = `High-end enterprise telecommunications infrastructure, professional editorial photography of ${userIdea || "enterprise network switches and fiber cables"}, ${partsSummary || "clean server room, glowing LED indicators, organized patch cords"}, shot on Sony A7R V with 35mm f/1.8 lens, natural corporate studio lighting, ultra-sharp 8k, photorealistic architectural detail.`;
 
       return NextResponse.json({
         success: true,
-        data: {
-          suggestedPrompt: synthesized,
-          recommendedAspectRatio: "16:9",
-          technicalNotes: "Compilado con especificaciones técnicas B2B y lente de 35mm f/1.8."
-        }
+        analysis,
+        recommendation: analysis.recommendation,
+        questions: analysis.qualification.questions,
+        readyForGeneration: analysis.qualification.readyForGeneration,
       });
     }
 
-    return NextResponse.json({ error: "Modo no válido" }, { status: 400 });
-  } catch (error: any) {
-    console.error("Error in /api/images/interview:", error);
-    return NextResponse.json({ error: error.message || "Error en el agente interrogador" }, { status: 500 });
+    const input = ImageIntentInputSchema.parse({
+      userIdea: typeof record.userIdea === "string" ? record.userIdea : "",
+      baseImage: typeof record.baseImage === "string" ? record.baseImage : undefined,
+      selectedSku: typeof record.selectedSku === "string" ? record.selectedSku : undefined,
+      productContext: typeof record.productContext === "string" ? record.productContext : undefined,
+      channel: typeof record.channel === "string" ? record.channel : undefined,
+      audience: typeof record.audience === "string" ? record.audience : undefined,
+      requestedAspectRatio:
+        record.requestedAspectRatio === "1:1" || record.requestedAspectRatio === "4:3"
+          ? record.requestedAspectRatio
+          : "16:9",
+    });
+
+    const analysis = ImageIntentAnalysisSchema.parse(record.analysis);
+    const answers =
+      record.answers && typeof record.answers === "object"
+        ? (record.answers as Record<string, string>)
+        : {};
+
+    let result;
+    try {
+      result = await compileCreativePrompt({ ...input, analysis, answers });
+    } catch (error) {
+      console.warn("[images/interview] Prompt compiler fallback:", error);
+      result = {
+        suggestedPrompt: `Professional photorealistic B2B commercial photograph of ${analysis.detectedProduct || "enterprise networking hardware"} in ${analysis.recommendation.scene}. ${analysis.recommendation.action}. ${analysis.recommendation.composition}. ${analysis.recommendation.lighting}. ${analysis.recommendation.camera}. Preserve the exact physical product, proportions, ports, antennas, LEDs, buttons and branding. No invented hardware, no distorted geometry, no duplicate products.`,
+        recommendedAspectRatio: analysis.recommendation.aspectRatio,
+        technicalNotes: "Prompt compilado con dirección creativa y restricciones de fidelidad de producto.",
+      };
+    }
+
+    try {
+      await recordAiUsage(user.uid, "image_interview", 500, 300, 0);
+    } catch (usageErr) {
+      console.warn("[images/interview] Usage record failed:", usageErr);
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: result,
+      result,
+      analysis,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Error en el Director de Arte IA";
+    console.error("[images/interview] Error:", error);
+    return NextResponse.json(
+      { code: "IMAGE_CREATIVE_PIPELINE_ERROR", error: message },
+      { status: 500 },
+    );
   }
 });
