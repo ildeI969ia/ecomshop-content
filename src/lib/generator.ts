@@ -70,7 +70,7 @@ export async function generateB2BContent(req: Partial<GenerateRequest> & { apiKe
   });
 
   const writer = new GroundedWriterService();
-  return await writer.generateGroundedContent({
+  const generated = await writer.generateGroundedContent({
     sku: canonicalSku,
     topicTitle: req.topicTitle || catalogDevice?.name || intel.model,
     category: req.category || "general",
@@ -83,6 +83,19 @@ export async function generateB2BContent(req: Partial<GenerateRequest> & { apiKe
     editorialDecision,
     apiKey
   });
+
+  const { validateEditorialQuality } = await import("./quality/editorial-quality-gate");
+  const finalQuality = validateEditorialQuality(
+    generated,
+    editorialDecision.selectedAngle.targetAudience,
+    canonicalSku
+  );
+
+  return {
+    ...generated,
+    factCheckScore: finalQuality.score,
+    status: finalQuality.passed ? "DRAFT" : "NEEDS_REVIEW"
+  };
 
   throw new Error("[Generator Error] Ni Vertex AI (ADC / GOOGLE_CLOUD_PROJECT) ni GEMINI_API_KEY están configuradas.");
 }
