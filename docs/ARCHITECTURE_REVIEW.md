@@ -117,3 +117,18 @@ This review does not intentionally change:
 - AI model selection semantics
 
 All changes should preserve these behaviors while reducing coupling and duplication.
+
+
+## Product Truth correction — 2026-10-02
+
+The canonical editorial flow now treats the **EcomShop/GESIO feed** as the product source of truth.
+
+- Generation resolves the selected SKU from the synchronized `products` collection first.
+- The static catalog is fallback-only when the feed does not contain the SKU.
+- Product intelligence is deterministically derived from the selected feed product.
+- NotebookLM is **not part of the canonical generation, angle-selection, intelligence or EvidenceEngine path**.
+- Feed parsing no longer injects a default `ECS2512FP` bundle, PoE, Cloud management or generic Ethernet specifications when those facts are absent from the feed.
+- The editorial writer's comparative table is monoproduct and feed-grounded.
+- JSON-LD is reconstructed from the selected product's Product Truth rather than accepting an AI-generated product identity.
+- Cross-product SKU/model/brand contamination is a hard generation failure and is not persisted.
+- The catalog synchronization UI requests the available feed set instead of limiting itself to the first 35 products.
