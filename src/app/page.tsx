@@ -328,7 +328,8 @@ export default function Page() {
           prompt: imagePrompt,
           aspectRatio: imageAspectRatio,
           baseImage: imageBase,
-          mode
+          mode,
+          autoImprove: mode === "ai"
         })
       });
 
