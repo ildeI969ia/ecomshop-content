@@ -340,20 +340,22 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   // Generador dinámico de JSON-LD para canal GEO y Ficha
   const currentJsonLd = useMemo(() => {
     if (content?.geo?.jsonLd) return content.geo.jsonLd;
+    const canonicalProduct = intelligenceCard?.product.sku.trim().toUpperCase() === selectedSku.trim().toUpperCase()
+      ? intelligenceCard.product
+      : null;
     const schema = {
       "@context": "https://schema.org",
       "@type": "Product",
-      "name": content?.blog?.title || content?.topicTitle || `Equipamiento ${selectedSku}`,
-      "image": `https://ecomshop.es/images/${selectedSku.toLowerCase()}.jpg`,
-      "description": content?.blog?.metaDescription || `Especificaciones técnicas oficiales de ${selectedSku} en EcomShop.es`,
-      "sku": selectedSku,
+      "name": canonicalProduct ? `${canonicalProduct.brand} ${canonicalProduct.model}` : selectedSku,
+      "description": content?.blog?.metaDescription || (canonicalProduct ? `Especificaciones técnicas oficiales de ${canonicalProduct.sku} en EcomShop.es` : ""),
+      "sku": canonicalProduct?.sku || selectedSku,
       "brand": {
         "@type": "Brand",
-        "name": "EcomShop"
+        "name": canonicalProduct?.brand || "EcomShop"
       },
       "offers": {
         "@type": "Offer",
-        "url": `https://ecomshop.es/productos/${selectedSku.toLowerCase()}`,
+        "url": canonicalProduct?.url || `https://ecomshop.es/productos/${selectedSku.toLowerCase()}`,
         "priceCurrency": "EUR",
         "availability": "https://schema.org/InStock"
       }
