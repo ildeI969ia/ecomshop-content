@@ -33,7 +33,8 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       editorialThesis: resolvedTitle,
       topicTitle: resolvedTitle,
       category: product?.category || "general",
-      targetAudience: typeof angleSelected === "object" && angleSelected?.targetAudience ? angleSelected.targetAudience : targetAudience,\n      editorialAngle: typeof angleSelected === "object" ? angleSelected : undefined,
+      targetAudience: typeof angleSelected === "object" && angleSelected?.targetAudience ? angleSelected.targetAudience : targetAudience,
+      editorialAngle: typeof angleSelected === "object" ? angleSelected : undefined,
       customNotes: typeof angleSelected === "object" && angleSelected?.hook ? `Ángulo: ${angleSelected.title}. Gancho: ${angleSelected.hook}` : ""
     });
 
