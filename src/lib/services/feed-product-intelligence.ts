@@ -73,13 +73,9 @@ export function buildFeedProductIntelligence(product: CatalogProduct): Structure
       engineeringPerformance: product.commercialAngles.engineeringPerformance,
       operationsDeployment: product.commercialAngles.operationsDeployment
     },
-    complementaryProducts: product.recommendedBundle?.sku
-      ? [{
-          skuOrCategory: product.recommendedBundle.sku,
-          relationshipType: product.recommendedBundle.relationshipType,
-          reason: product.recommendedBundle.rationale
-        }]
-      : [],
+    // La campaña es monoproducto. Los bundles pueden existir en catálogo,
+    // pero no forman parte del Product Truth editorial ni de la redacción.
+    complementaryProducts: [],
     generatedAt: new Date().toISOString()
   };
 
@@ -111,9 +107,9 @@ export function buildFeedProductIntelligence(product: CatalogProduct): Structure
     recommendedTone,
     recommendedCompetitor: "NONE",
     mandatoryElectronics: {
-      recommendedSwitchSku: product.recommendedBundle?.sku || "",
-      recommendedSwitchName: product.recommendedBundle?.name || "",
-      reason: product.recommendedBundle?.rationale || "",
+      recommendedSwitchSku: "",
+      recommendedSwitchName: "",
+      reason: "",
       portsAndUplink: product.interfaces.join(", ")
     },
     keyClaims: product.specs.slice(0, 12).map((claim) => ({
