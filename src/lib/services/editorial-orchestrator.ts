@@ -3,8 +3,8 @@ import { EditorialAngle, ProductEvidenceMap, ProductType } from "@/lib/types/edi
 import { EditorialAudienceProfile, EditorialDecision, EditorialHypothesis, EditorialOrchestratorInput } from "@/lib/types/editorial-orchestrator";
 import { EditorialThesis, SectionOutlineItem } from "@/lib/schema";
 
-function norm(v: string): string { return v.toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9\\s]/g, " "); }
-function tokenSet(v: string): Set<string> { return new Set(norm(v).split(/\\s+/).filter(t => t.length >= 4)); }
+function norm(v: string): string { return v.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, " "); }
+function tokenSet(v: string): Set<string> { return new Set(norm(v).split(/\s+/).filter(t => t.length >= 4)); }
 function similarity(a: string, b: string): number { const x=tokenSet(a), y=tokenSet(b); if(!x.size || !y.size) return 0; let i=0; for(const t of x) if(y.has(t)) i++; return i/(x.size+y.size-i); }
 function audience(id:string, role:string, label:string, why:string, pain:string[], criteria:string[], questions:string[], objections:string[]): EditorialAudienceProfile { return {id,role,label,whyThisAudience:why,painPoints:pain,buyingCriteria:criteria,technicalQuestions:questions,objections}; }
 
@@ -74,7 +74,7 @@ function makeHypotheses(type: ProductType, sku: string, model: string, audience:
 }
 
 function makeAngles(h: EditorialHypothesis[], preferred?: string): EditorialDecision['angles'] {
-  return h.slice(0,12).map((x,i)=>({ id:"angle-"+x.id, title:x.editorialQuestion.replace(/^¿|\\?$/g,""), editorialQuestion:x.editorialQuestion, tension:x.tension, readerPromise:x.readerPromise, rationale:x.noveltyReason, relevanceScore: preferred && norm(x.targetAudience).includes(norm(preferred)) ? 100-i : 90-i, targetAudience:x.targetAudience }));
+  return h.slice(0,12).map((x,i)=>({ id:"angle-"+x.id, title:x.editorialQuestion.replace(/^¿|\?$/g,""), editorialQuestion:x.editorialQuestion, tension:x.tension, readerPromise:x.readerPromise, rationale:x.noveltyReason, relevanceScore: preferred && norm(x.targetAudience).includes(norm(preferred)) ? 100-i : 90-i, targetAudience:x.targetAudience }));
 }
 
 function thesis(angle: EditorialDecision['selectedAngle'], intel: EditorialOrchestratorInput['intel'], audience: EditorialAudienceProfile, evidence: ProductEvidenceMap): EditorialThesis {
