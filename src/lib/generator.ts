@@ -1,46 +1,60 @@
 import { ContentOutput, GenerateRequest } from "./schema";
-import { getCatalogDevice, CatalogDevice } from "./catalog";
+import { findCatalogProduct, type CatalogProduct } from "./data/ecomshop-catalog";
+import { getDynamicCatalogProduct } from "./catalog-server";
+import { buildFeedProductIntelligence } from "./services/feed-product-intelligence";
+import { detectProductType, buildProductEvidenceMap } from "./services/product-evidence-map";
+import { EditorialOrchestrator } from "./services/editorial-orchestrator";
+import { GroundedWriterService } from "./services/grounded-writer";
+import { validateEditorialQuality } from "./quality/editorial-quality-gate";
 
-export async function generateB2BContent(req: Partial<GenerateRequest> & { apiKey?: string }): Promise<ContentOutput> {
+type CanonicalGenerateRequest = Partial<GenerateRequest> & {
+  apiKey?: string;
+  canonicalProduct?: CatalogProduct;
+};
+
+export async function generateB2BContent(req: CanonicalGenerateRequest): Promise<ContentOutput> {
   const apiKey = req.apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
-  // Detección y Grounding enriquecido con ECOMSHOP_CATALOG
-  const targetSku = req.sku || req.customEquipmentName || (req.promotedProductIds && req.promotedProductIds[0]) || "";
-  const catalogDevice: CatalogDevice | undefined =
-    getCatalogDevice(targetSku) ||
-    (req.topicTitle ? getCatalogDevice(req.topicTitle) : undefined) ||
-    (req.productUrl ? getCatalogDevice(req.productUrl) : undefined);
+  const requestedSku =
+    req.sku ||
+    req.customEquipmentName ||
+    req.promotedProductIds?.[0] ||
+    "";
 
-  const productIdentifier = catalogDevice?.sku || targetSku || req.topicTitle || "Solución de Networking";
+  // FUENTE DE VERDAD ÚNICA:
+  // 1) producto sincronizado desde el feed de EcomShop;
+  // 2) catálogo estático únicamente como fallback si el feed no está disponible.
+  const feedProduct =
+    req.canonicalProduct ||
+    (requestedSku ? await getDynamicCatalogProduct(requestedSku) : undefined) ||
+    (requestedSku ? findCatalogProduct(requestedSku) : undefined);
 
-  // Editorial Orchestrator: una única decisión editorial antes de escribir.
-  // No se permite que el endpoint ni el writer inventen la estrategia final.
-  const effectiveSourceIds: string[] | undefined = (req.selectedSourceIds && req.selectedSourceIds.length > 0)
-    ? req.selectedSourceIds
-    : catalogDevice?.notebookSourceId
-      ? Array.from(new Set([catalogDevice.notebookSourceId, ...(catalogDevice.additionalSourceIds || [])]))
-      : undefined;
+  if (!feedProduct) {
+    throw new Error(
+      `PRODUCT_NOT_FOUND: El SKU ${requestedSku || "(vacío)"} no existe en el feed/catálogo de EcomShop.`
+    );
+  }
 
-  const { NotebookIntelligenceService } = await import("./services/notebook-intelligence");
-  const { detectProductType, buildProductEvidenceMap } = await import("./services/product-evidence-map");
-  const { EditorialOrchestrator } = await import("./services/editorial-orchestrator");
-  const { GroundedWriterService } = await import("./services/grounded-writer");
+  const canonicalSku = feedProduct.sku;
+  const canonicalTitle = feedProduct.name;
+  const canonicalCategory = feedProduct.category;
+  const canonicalProductUrl = feedProduct.url;
 
-  const notebookService = new NotebookIntelligenceService();
-  const intel = notebookService.synthesizeProductIntelligence(productIdentifier, effectiveSourceIds);
-  const canonicalSku = catalogDevice?.sku || intel.sku;
+  // Toda la inteligencia se deriva exclusivamente del producto seleccionado.
+  // NotebookLM no participa en el flujo editorial canónico.
+  const intel = buildFeedProductIntelligence(feedProduct);
   const productType = detectProductType(
     canonicalSku,
-    req.category || catalogDevice?.category || "general",
-    intel.card?.technicalSpecs?.deviceType
+    canonicalCategory,
+    feedProduct.deviceType
   );
   const evidenceMap = buildProductEvidenceMap(canonicalSku, intel);
 
   const orchestrator = new EditorialOrchestrator();
   const editorialDecision = await orchestrator.generate({
     sku: canonicalSku,
-    category: req.category || catalogDevice?.category || "general",
-    topicTitle: req.topicTitle || catalogDevice?.name || intel.model,
+    category: canonicalCategory,
+    topicTitle: req.topicTitle || canonicalTitle,
     userIntent: req.customNotes,
     requestedChannel: "multichannel",
     preferredAudience: req.targetAudience,
@@ -54,19 +68,18 @@ export async function generateB2BContent(req: Partial<GenerateRequest> & { apiKe
   const writer = new GroundedWriterService();
   const generated = await writer.generateGroundedContent({
     sku: canonicalSku,
-    topicTitle: req.topicTitle || catalogDevice?.name || intel.model,
-    category: req.category || "general",
-    productUrl: req.productUrl || catalogDevice?.productUrl,
+    topicTitle: req.topicTitle || canonicalTitle,
+    category: canonicalCategory,
+    productUrl: canonicalProductUrl,
     targetAudience: editorialDecision.selectedAngle.targetAudience,
     customNotes: req.customNotes,
     editorialControls: req.editorialControls,
-    selectedSourceIds: effectiveSourceIds,
+    selectedSourceIds: [],
     intel,
     editorialDecision,
     apiKey
   });
 
-  const { validateEditorialQuality } = await import("./quality/editorial-quality-gate");
   const finalQuality = validateEditorialQuality(
     generated,
     editorialDecision.selectedAngle.targetAudience,
