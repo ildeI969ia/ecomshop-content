@@ -8,11 +8,13 @@ import { FinOpsRepository, AuditRepository, ContentRepository, ProductIntelligen
 import { FinOpsRecord, ContentItem, ContentVariant } from "@/server/domain/types";
 import { verifyAndSanitizeContent } from "@/lib/services/evidence-engine";
 
-import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
+import { recordAiUsage } from "@/server/services/ai-budget";
+import { reserveAiBudget, releaseAiBudgetReservation } from "@/server/services/ai-budget-reservation";
 import { AI_TEXT_MODEL } from "@/lib/ai-config";
 import { validateEditorialQuality } from "@/lib/quality/editorial-quality-gate";
 
 export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
+  let budgetReservationId: string | undefined;
   try {
     const json = await req.json();
     const parsed = GenerateRequestSchema.safeParse(json);
@@ -29,21 +31,22 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       );
     }
 
-    // 0. Comprobar presupuesto FinOps (estimación ~0.0045€ para generación multicanal completa)
-    const budgetCheck = await checkAiBudget(user.uid, user.role, 0.0045);
-    if (!budgetCheck.allowed) {
+    // 0. Reserva atómica de presupuesto FinOps antes de iniciar cualquier trabajo de IA.
+    const budgetReservation = await reserveAiBudget(user.uid, user.role, 0.0045);
+    if (!budgetReservation.allowed || !budgetReservation.reservation) {
       return NextResponse.json(
         {
-          code: "AI_BUDGET_EXCEEDED",
-          error: "Has superado el límite de presupuesto de IA asignado para este mes.",
-          limitEur: budgetCheck.limitEur,
-          spentEur: budgetCheck.currentSpentEur,
-          pct: budgetCheck.pct,
+          code: budgetReservation.code || "AI_BUDGET_EXCEEDED",
+          error: budgetReservation.error || "Has superado el límite de presupuesto de IA asignado para este mes.",
+          limitEur: budgetReservation.limitEur,
+          spentEur: budgetReservation.currentSpentEur,
+          pct: budgetReservation.pct,
           resetsAt: "Inicio del próximo mes (Hora de Madrid)"
         },
-        { status: 429 }
+        { status: budgetReservation.code === "BUDGET_VERIFICATION_UNAVAILABLE" ? 503 : 429 }
       );
     }
+    budgetReservationId = budgetReservation.reservation.reservationId;
 
     const inputData = parsed.data;
 
@@ -131,6 +134,21 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     content.status = finalEditorialQuality.passed ? "DRAFT" : "NEEDS_REVIEW";
     if (!finalEditorialQuality.passed) {
       console.warn("[API Generate] Final Editorial Quality Gate bloquea aprobación:", finalEditorialQuality.acceptanceMessage);
+    }
+
+    // El coste real se registra antes de persistir el contenido para que un fallo de Firestore
+    // no convierta una generación ya ejecutada en consumo FinOps invisible.
+    const tokensIn = content.usageMetadata?.promptTokenCount ?? 1850;
+    const tokensOut = content.usageMetadata?.candidatesTokenCount ?? 3200;
+    try {
+      await recordAiUsage(user.uid, "gemini_generation", tokensIn, tokensOut, 0);
+      if (budgetReservationId) {
+        await releaseAiBudgetReservation(budgetReservationId);
+        budgetReservationId = undefined;
+      }
+    } catch (usageErr) {
+      console.error("[API Generate] Warning: Falló el registro de uso de IA:", usageErr);
+      // La reserva permanece activa si el registro falló; el catch global intentará liberarla.
     }
 
     // 5. Persistencia en Firestore (Contents, Variants, ProductIntelligence, FinOps, Audit)
@@ -252,14 +270,6 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         },
         source: "UI"
       });
-      // Registrar consumo real de IA en ai_usage con fail-safe (try/catch) y usageMetadata real
-      const tokensIn = content.usageMetadata?.promptTokenCount ?? 1850;
-      const tokensOut = content.usageMetadata?.candidatesTokenCount ?? 3200;
-      try {
-        await recordAiUsage(user.uid, "gemini_generation", tokensIn, tokensOut, 0);
-      } catch (usageErr) {
-        console.error("[API Generate] Warning: Falló el registro de uso de IA (recordAiUsage):", usageErr);
-      }
     } catch (persistErr: any) {
       console.error("[API Generate] Fallo en persistencia Firestore:", persistErr);
       return NextResponse.json(
@@ -273,19 +283,24 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       );
     }
 
-    const latestBudget = await checkAiBudget(user.uid, user.role, 0);
-
     return NextResponse.json({
       ...content,
       id: contentId,
       intelligenceCard: intelligenceCard || undefined,
       budget: {
-        spentEur: latestBudget.currentSpentEur,
-        limitEur: latestBudget.limitEur,
-        pct: latestBudget.pct
+        spentEur: budgetReservation.currentSpentEur,
+        limitEur: budgetReservation.limitEur,
+        pct: budgetReservation.pct
       }
     });
   } catch (error: any) {
+    if (budgetReservationId) {
+      try {
+        await releaseAiBudgetReservation(budgetReservationId);
+      } catch (releaseError) {
+        console.error("[API Generate] No se pudo liberar la reserva FinOps:", releaseError);
+      }
+    }
     const errorDetails = {
       message: error?.message || String(error),
       name: error?.name,
