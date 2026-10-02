@@ -219,21 +219,32 @@ export class ContentRepository {
       .set(cleanVariant);
   }
 
+  private async deleteSubcollection(id: string, name: "versions" | "variants"): Promise<void> {
+    const parent = this.collection().doc(id);
+    const snapshot = await parent.collection(name).get();
+    if (snapshot.empty) return;
+
+    const db = getAdminFirestore();
+    const BATCH_LIMIT = 450;
+    for (let i = 0; i < snapshot.docs.length; i += BATCH_LIMIT) {
+      const batch = db.batch();
+      snapshot.docs.slice(i, i + BATCH_LIMIT).forEach((doc) => batch.delete(doc.ref));
+      await batch.commit();
+    }
+  }
+
   async delete(id: string): Promise<void> {
+    await Promise.all([
+      this.deleteSubcollection(id, "versions"),
+      this.deleteSubcollection(id, "variants")
+    ]);
     await this.collection().doc(id).delete();
   }
 
   async deleteBulk(ids: string[]): Promise<void> {
     if (!ids || ids.length === 0) return;
-    const db = getAdminFirestore();
-    const BATCH_LIMIT = 450;
-    for (let i = 0; i < ids.length; i += BATCH_LIMIT) {
-      const chunk = ids.slice(i, i + BATCH_LIMIT);
-      const batch = db.batch();
-      for (const id of chunk) {
-        batch.delete(this.collection().doc(id));
-      }
-      await batch.commit();
+    for (const id of ids) {
+      await this.delete(id);
     }
   }
 }
