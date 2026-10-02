@@ -121,15 +121,29 @@ export default function Page() {
 
   // 2. Cargar ficha de inteligencia técnica al seleccionar SKU
   const loadIntelligenceCard = useCallback(async (sku: string) => {
+    const requestedSku = sku.trim().toUpperCase();
+    setIntelligenceCard(null);
     setLoadingIntelligence(true);
     try {
       const card = await apiFetch<ProductIntelligenceCard>("/api/intelligence", {
         method: "POST",
-        body: JSON.stringify({ skuOrModel: sku })
+        body: JSON.stringify({ skuOrModel: requestedSku })
       });
+
+      const returnedSku = card.product.sku.trim().toUpperCase();
+      if (returnedSku !== requestedSku) {
+        throw new Error(
+          "PRODUCT_IDENTITY_MISMATCH: solicitado " + requestedSku + ", recibido " + returnedSku
+        );
+      }
+
       setIntelligenceCard(card);
     } catch (err) {
-      console.warn("[Intelligence] Error al cargar ficha de inteligencia:", err);
+      setIntelligenceCard(null);
+      console.error("[Intelligence] Bloqueada ficha desalineada:", err);
+      setCampaignErrorMessage(
+        err instanceof Error ? err.message : "La ficha de inteligencia no coincide con el SKU seleccionado."
+      );
     } finally {
       setLoadingIntelligence(false);
     }
@@ -209,8 +223,12 @@ export default function Page() {
 
   // Cargar inteligencia técnica del SKU por defecto
   useEffect(() => {
-    if (user && selectedSku && !intelligenceCard) {
-      loadIntelligenceCard(selectedSku);
+    if (
+      user &&
+      selectedSku &&
+      intelligenceCard?.product.sku.trim().toUpperCase() !== selectedSku.trim().toUpperCase()
+    ) {
+      void loadIntelligenceCard(selectedSku);
     }
   }, [user, selectedSku, intelligenceCard, loadIntelligenceCard]);
 
