@@ -27,6 +27,7 @@ export interface BudgetReservationResult {
 interface BudgetConfig {
   defaultMonthlyLimitEur: number;
   roleLimitsEur: Record<string, number>;
+  monthlyLimitEurByRole?: Record<string, number>;
   userOverrides: Record<string, number>;
   enforcementMode: "block" | "warn_only" | "admin_bypass";
 }
@@ -54,7 +55,7 @@ async function resolveLimit(uid: string, role: string, db: Firestore): Promise<{
       ? { ...DEFAULT_CONFIG, ...(snap.data() as Partial<BudgetConfig>) }
       : DEFAULT_CONFIG;
     const normalizedRole = role.toLowerCase();
-    const roleLimits = config.roleLimitsEur || {};
+    const roleLimits = config.monthlyLimitEurByRole || config.roleLimitsEur || {};
     const limitEur =
       typeof config.userOverrides?.[uid] === "number"
         ? config.userOverrides[uid]
