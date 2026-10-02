@@ -199,10 +199,10 @@ export const GenerateRequestSchema = z.object({
   bundleSku: z.string().optional().default(""),
   topic: z.string().optional().default(""),
   editorialThesis: z.string().optional().default(""),
-  topicTitle: z.string().optional().default("Solución de Conectividad B2B"),
+  topicTitle: z.string().optional().default(""),
   category: z.string().optional().default("general"),
   customNotes: z.string().optional().default(""),
-  targetAudience: z.string().optional().default("Instalador B2B"),
+  targetAudience: z.string().optional().default(""),
   productUrl: z.string().optional().default("https://ecomshop.es"),
   customAngle: z.string().optional().default("ROI"),
   
