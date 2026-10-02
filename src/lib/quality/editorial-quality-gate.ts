@@ -56,22 +56,49 @@ export function checkProductContamination(
   }
 
   const fullText = JSON.stringify(content).toUpperCase();
-  const knownSkus = ["ECW510", "ECW536", "ECW526", "ECS2512FP", "ECS1528FP", "DAC-10G-3M", "RUTX11", "TRB140"];
-  const unrelatedSkus = knownSkus.filter(s => s !== reqSkuClean);
+  const requestedProductTruth =
+    content.editorialDecision &&
+    typeof content.editorialDecision === "object" &&
+    typeof (content.editorialDecision as Record<string, unknown>).productTruthLock === "object" &&
+    (content.editorialDecision as Record<string, unknown>).productTruthLock !== null
+      ? (content.editorialDecision as Record<string, unknown>).productTruthLock as Record<string, unknown>
+      : undefined;
 
-  const detectedUnrelatedSkus: string[] = [];
-  for (const otherSku of unrelatedSkus) {
-    if (fullText.includes(otherSku)) {
-      // Excepción solo si el producto es un switch prescripto para un AP (ej. ECS2512FP para ECW510)
-      const isPrescribedSwitch = (reqSkuClean.startsWith("ECW") && otherSku.startsWith("ECS"));
-      if (!isPrescribedSwitch) {
-        detectedUnrelatedSkus.push(otherSku);
+  const canonicalModel = typeof requestedProductTruth?.model === "string"
+    ? requestedProductTruth.model.toUpperCase()
+    : reqSkuClean;
+
+  // Detecta SKUs/modelos reales y frecuentes del catálogo, incluidos productos
+  // que sólo existen en el feed dinámico y no en ECOMSHOP_FULL_CATALOG.
+  const skuPatterns = [
+    /\\bECW\\d+[A-Z0-9-]*\\b/g,
+    /\\bECS\\d+[A-Z0-9-]*\\b/g,
+    /\\bST\\d{3,6}[A-Z0-9-]*\\b/g,
+    /\\bEAP\\d+[A-Z0-9-]*\\b/g,
+    /\\bRUT[A-Z0-9-]*\\b/g,
+    /\\bTRB[A-Z0-9-]*\\b/g,
+    /\\bDAC[-A-Z0-9]+\\b/g,
+    /\\bSFP[-A-Z0-9]+\\b/g,
+    /\\bPOE\\d+[A-Z0-9-]*\\b/g
+  ];
+
+  const detected = new Set<string>();
+  for (const pattern of skuPatterns) {
+    for (const match of fullText.matchAll(pattern)) {
+      const value = match[0].toUpperCase();
+      if (value !== reqSkuClean && value !== canonicalModel) {
+        detected.add(value);
       }
     }
   }
 
+  const detectedUnrelatedSkus = Array.from(detected);
   const passed = detectedUnrelatedSkus.length === 0;
-  const issues = passed ? [] : [`Contaminación de producto detectada: El contenido solicitado para ${reqSkuClean} menciona erróneamente ${detectedUnrelatedSkus.join(", ")}`].filter(Boolean);
+  const issues = passed
+    ? []
+    : [
+        `Contaminación de producto detectada: la campaña solicita ${reqSkuClean}, pero el contenido contiene otros SKUs/modelos: ${detectedUnrelatedSkus.join(", ")}.`
+      ];
 
   return {
     passed,
@@ -79,6 +106,7 @@ export function checkProductContamination(
     detectedUnrelatedSkus,
     issues
   };
+}
 }
 
 /**
