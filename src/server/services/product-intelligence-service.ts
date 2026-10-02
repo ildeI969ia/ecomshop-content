@@ -1,6 +1,6 @@
 import type { ProductIntelligenceCard } from "@/lib/types/product-intelligence";
 import { getDynamicCatalogProduct } from "@/lib/catalog-server";
-import { findCatalogProduct } from "@/lib/data/ecomshop-catalog";
+import { findCatalogProductExact } from "@/lib/data/ecomshop-catalog";
 import { buildFeedProductIntelligence } from "@/lib/services/feed-product-intelligence";
 
 /**
@@ -15,7 +15,7 @@ export class ProductIntelligenceService {
     const requestedSku = skuOrModel.trim().toUpperCase();
     const product =
       (await getDynamicCatalogProduct(requestedSku)) ||
-      findCatalogProduct(requestedSku);
+      findCatalogProductExact(requestedSku);
 
     if (!product) {
       throw new Error(
