@@ -60,9 +60,10 @@ ACCESSORY:['¿Qué problema de instalación resuelve realmente este accesorio?',
 
 function makeHypotheses(type: ProductType, sku: string, model: string, audience: EditorialAudienceProfile, evidence: ProductEvidenceMap): EditorialHypothesis[] {
   const qs = questions[type] || questions.ACCESSORY;
-  return qs.map((question,index)=>({
+  const offset = audience.id.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) % qs.length;
+  return qs.map((_,index)=>({
     id: type.toLowerCase()+"-hyp-"+(index+1),
-    editorialQuestion: question,
+    editorialQuestion: qs[(index + offset) % qs.length],
     problem: "Resolver esta decisión solo desde la ficha técnica puede provocar retrabajo, sobrecoste o un cuello de botella.",
     tension: index%3===0 ? "capacidad nominal vs capacidad realmente utilizable" : index%3===1 ? "simplicidad inicial vs mantenibilidad" : "coste de adquisición vs riesgo técnico",
     readerPromise: "El lector podrá convertir una especificación verificable de "+model+" en un criterio de decisión aplicable.",
