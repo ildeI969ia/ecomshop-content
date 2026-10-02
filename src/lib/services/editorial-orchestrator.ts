@@ -58,9 +58,11 @@ POWER_SUPPLY:['¿Cómo verificar compatibilidad eléctrica antes de sustituir un
 ACCESSORY:['¿Qué problema de instalación resuelve realmente este accesorio?','¿Qué compatibilidad debe comprobarse?','¿Cómo evitar que un accesorio incompatible bloquee el despliegue?','¿Qué criterio permite elegir entre accesorios equivalentes?','¿Cómo reducir referencias y errores de inventario?','¿Qué impacto tiene en tiempo de instalación?','¿Qué limitación debe conocer el técnico?','¿Cómo documentar su uso dentro de la arquitectura?','¿Cuándo aporta valor y cuándo añade complejidad?','¿Qué validar antes de comprar?']
 };
 
-function makeHypotheses(type: ProductType, sku: string, model: string, audience: EditorialAudienceProfile, evidence: ProductEvidenceMap): EditorialHypothesis[] {
+function makeHypotheses(type: ProductType, sku: string, model: string, audience: EditorialAudienceProfile, evidence: ProductEvidenceMap, variationSeed = 0): EditorialHypothesis[] {
   const qs = questions[type] || questions.ACCESSORY;
-  const offset = audience.id.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) % qs.length;
+  const audienceOffset = audience.id.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) % qs.length;
+  const seedOffset = Math.abs(Math.trunc(variationSeed)) % qs.length;
+  const offset = (audienceOffset + seedOffset) % qs.length;
   return qs.map((_,index)=>({
     id: type.toLowerCase()+"-hyp-"+(index+1),
     editorialQuestion: qs[(index + offset) % qs.length],
@@ -106,7 +108,7 @@ export class EditorialOrchestrator {
     const audiences=audienceStrategy(input.productType);
     const primary=input.preferredAudience ? (audiences.find(a=>norm(a.label).includes(norm(input.preferredAudience||"")))||audiences[0]) : audiences[0];
     const secondary=audiences.find(a=>a.id!==primary.id)||primary;
-    const hypotheses=makeHypotheses(input.productType,sku,input.intel.model,primary,input.evidenceMap);
+    const hypotheses=makeHypotheses(input.productType,sku,input.intel.model,primary,input.evidenceMap,input.variationSeed ?? 0);
     const angles=makeAngles(hypotheses,input.preferredAudience);
     const recent=input.workspaceId ? await new ContentRepository().listRecent(100,input.workspaceId) : [];
     const used=recent.map(item=>{ const body=(item.canonicalBody&&typeof item.canonicalBody==='object')?item.canonicalBody as Record<string,unknown>:{}; const t=(body.editorialThesis&&typeof body.editorialThesis==='object')?body.editorialThesis as Record<string,unknown>:{}; const b=(body.blog&&typeof body.blog==='object')?body.blog as Record<string,unknown>:{}; return {title:typeof b.title==='string'?b.title:"",question:typeof t.technicalQuestion==='string'?t.technicalQuestion:"",audience:typeof t.targetProfessional==='string'?t.targetProfessional:""}; });
