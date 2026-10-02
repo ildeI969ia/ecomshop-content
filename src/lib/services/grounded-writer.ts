@@ -121,7 +121,7 @@ export class GroundedWriterService {
 
           const productType = detectProductType(req.sku, req.category, intel.card?.technicalSpecs?.deviceType);
           const evidenceMap = buildProductEvidenceMap(req.sku, intel);
-          const angleCandidates = generateEditorialAngleCandidates(req.sku, productType, req.targetAudience || "Instalador B2B", intel);
+          const angleCandidates = generateEditorialAngleCandidates(req.sku, productType, req.targetAudience || "", intel);
           const bestAngle = editorialDecision?.selectedAngle || selectBestEditorialAngle(angleCandidates);
 
           const criticReport = auditEditorialQualityWithCritic(rawOutput as any, bestAngle, evidenceMap, req.targetAudience);
@@ -143,7 +143,7 @@ export class GroundedWriterService {
       }
     }
 
-    console.warn(`[GroundedWriter] Usando fallback determinista Mandato 2 para SKU ${req.sku} (Audiencia: ${req.targetAudience || 'Instalador B2B'}).`);
+    console.warn(`[GroundedWriter] Usando fallback determinista Mandato 2 para SKU ${req.sku} (Audiencia: ${req.targetAudience || "sin audiencia explícita"}).`);
     return this.generateGroundedFallback(req, citations);
   }
 
