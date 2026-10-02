@@ -28,6 +28,9 @@ export const EditorialAnglesSelector: React.FC<EditorialAnglesSelectorProps> = (
   specs
 }) => {
   const [angles, setAngles] = useState<EditorialAngle[]>([]);
+  const [recommendedAudiences, setRecommendedAudiences] = useState<Array<{ label: string; whyThisAudience: string }>>([]);
+  const [editorialQuestions, setEditorialQuestions] = useState<string[]>([]);
+  const [selectedByOrchestrator, setSelectedByOrchestrator] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isFreeTopic, setIsFreeTopic] = useState<boolean>(false);
@@ -49,10 +52,13 @@ export const EditorialAnglesSelector: React.FC<EditorialAnglesSelectorProps> = (
         if (isMounted) {
           if (data.angles && Array.isArray(data.angles)) {
             setAngles(data.angles);
-            // Seleccionar por defecto el primer ángulo si ninguno está seleccionado
-            if (!selectedAngle && !isFreeTopic) {
-              onSelectAngle(data.angles[0], false);
-            }
+            setRecommendedAudiences(Array.isArray(data.recommendedAudiences) ? data.recommendedAudiences : []);
+            setEditorialQuestions(Array.isArray(data.editorialQuestions) ? data.editorialQuestions : []);
+            const orchestratorAngle = data.selectedAngle && typeof data.selectedAngle.id === "string"
+              ? data.angles.find((a: EditorialAngle) => a.id === data.selectedAngle.id) || data.angles[0]
+              : data.angles[0];
+            setSelectedByOrchestrator(orchestratorAngle?.id || null);
+            if (!selectedAngle && !isFreeTopic && orchestratorAngle) onSelectAngle(orchestratorAngle, false);
           }
         }
       } catch (err: any) {
@@ -109,7 +115,7 @@ export const EditorialAnglesSelector: React.FC<EditorialAnglesSelectorProps> = (
             Brain de Intención Editorial ({sku})
           </h4>
         </div>
-        <span className="text-[10px] text-slate-400 font-mono">3 Ángulos sugeridos por Gemini</span>
+        <span className="text-[10px] text-slate-400 font-mono">{angles.length} ángulos · Orchestrator editorial</span>
       </div>
 
       {loading ? (
@@ -122,7 +128,26 @@ export const EditorialAnglesSelector: React.FC<EditorialAnglesSelectorProps> = (
           {error}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="space-y-4">
+          {recommendedAudiences.length > 0 && (
+            <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-300 mb-2">Target Persons recomendados</div>
+              <div className="flex flex-wrap gap-2">
+                {recommendedAudiences.map((a) => (
+                  <span key={a.label} title={a.whyThisAudience} className="text-[10px] px-2 py-1 rounded-md bg-slate-800 text-slate-200 border border-slate-700">{a.label}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {editorialQuestions.length > 0 && (
+            <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 mb-2">Preguntas editoriales detectadas</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                {editorialQuestions.slice(0, 12).map((q) => <div key={q} className="text-[11px] text-slate-300">• {q}</div>)}
+              </div>
+            </div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {angles.map((angle) => {
             const isSelected = !isFreeTopic && selectedAngle?.id === angle.id;
 
@@ -143,15 +168,17 @@ export const EditorialAnglesSelector: React.FC<EditorialAnglesSelectorProps> = (
                       <span>{getAngleBadge(angle.intent)}</span>
                     </span>
                     {isSelected && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+                    {selectedByOrchestrator === angle.id && <span className="text-[9px] uppercase font-bold text-indigo-300">seleccionado por IA</span>}
                   </div>
 
                   <h5 className="text-xs font-bold text-white line-clamp-2 leading-snug">
                     {angle.title}
                   </h5>
 
-                  <p className="text-[11px] text-slate-400 line-clamp-3 leading-relaxed">
-                    {angle.hook}
+                  <p className="text-[11px] text-slate-300 line-clamp-3 leading-relaxed">
+                    {angle.editorialQuestion}
                   </p>
+                  <p className="text-[10px] text-slate-500 line-clamp-2">{angle.tension}</p>
                 </div>
 
                 <div className="pt-2 border-t border-slate-800/80 text-[10px] text-slate-500 flex items-center justify-between">
@@ -160,6 +187,8 @@ export const EditorialAnglesSelector: React.FC<EditorialAnglesSelectorProps> = (
               </div>
             );
           })}
+
+          </div>
 
           {/* Opción Tema Libre */}
           <div
