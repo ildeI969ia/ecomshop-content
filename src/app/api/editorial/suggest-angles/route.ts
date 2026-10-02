@@ -66,7 +66,8 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
       workspaceId: user.workspaceId,
       intel,
       evidenceMap,
-      productType
+      productType,
+      variationSeed: typeof body.variationSeed === "number" ? body.variationSeed : 0
     });
 
     try {
