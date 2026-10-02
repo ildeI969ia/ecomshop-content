@@ -37,7 +37,8 @@
     "test:image-creative": "tsx scripts/test-image-creative-contracts.ts",
     "test:editorial-orchestrator": "tsx scripts/test-editorial-orchestrator.ts",
     "benchmark:editorial-diversity": "tsx scripts/benchmark-editorial-diversity.ts",
-    "test:feed-product-truth": "tsx scripts/test-feed-product-truth.ts"
+    "test:feed-product-truth": "tsx scripts/test-feed-product-truth.ts",
+    "test:strict-product-identity": "tsx scripts/test-strict-product-identity.ts"
   },
   "dependencies": {
     "@google-cloud/firestore": "^9.1.0",
