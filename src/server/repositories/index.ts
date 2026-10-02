@@ -126,7 +126,7 @@ export class ContentRepository {
     const nextVersion = existing ? (existing.currentVersion || 1) + 1 : 1;
     const version: ContentVersion = {
       version: nextVersion,
-      body: content.canonicalBody || (content as Record<string, unknown>),
+      body: content.canonicalBody || (content as unknown as Record<string, unknown>),
       changeSummary: existing
         ? "Actualización automática por slug (versionado desacoplado)"
         : "Generación inicial",
