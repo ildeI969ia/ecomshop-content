@@ -92,6 +92,16 @@ export function checkProductContamination(
     }
   }
 
+  const knownBrands = ["ENGENIUS", "STONET", "TELTONIKA", "WI-TEK", "VIVOTEK", "NETIS", "ECOM"];
+  const requestedBrand = typeof requestedProductTruth?.brand === "string"
+    ? requestedProductTruth.brand.toUpperCase()
+    : "";
+  for (const brand of knownBrands) {
+    if (brand !== requestedBrand && brand !== "ECOM" && fullText.includes(brand)) {
+      detected.add(brand);
+    }
+  }
+
   const detectedUnrelatedSkus = Array.from(detected);
   const passed = detectedUnrelatedSkus.length === 0;
   const issues = passed
