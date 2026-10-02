@@ -319,7 +319,7 @@ export default function Page() {
     try {
       const res = await apiFetch<{
         imageUrl: string;
-        id: string;
+        assetId: string;
         sourceType?: string;
         warning?: string;
       }>("/api/images/generate", {
@@ -334,7 +334,7 @@ export default function Page() {
 
       if (res?.imageUrl) {
         const newImg: GeneratedImageItem = {
-          id: res.id || `img-${Date.now()}`,
+          id: res.assetId || `img-${Date.now()}`,
           url: res.imageUrl,
           prompt: imagePrompt,
           createdAt: new Date().toLocaleTimeString("es-ES"),
