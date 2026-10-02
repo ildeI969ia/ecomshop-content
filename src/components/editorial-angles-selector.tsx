@@ -61,7 +61,7 @@ export const EditorialAnglesSelector: React.FC<EditorialAnglesSelectorProps> = (
             if (!selectedAngle && !isFreeTopic && orchestratorAngle) onSelectAngle(orchestratorAngle, false);
           }
         }
-      } catch (err: unknown) {
+      } catch {
         if (isMounted) {
           setError("No se pudieron cargar los ángulos sugeridos.");
         }
