@@ -82,6 +82,4 @@ export async function generateB2BContent(req: Partial<GenerateRequest> & { apiKe
     factCheckScore: finalQuality.score,
     status: finalQuality.passed ? "DRAFT" : "NEEDS_REVIEW"
   };
-
-  throw new Error("[Generator Error] Ni Vertex AI (ADC / GOOGLE_CLOUD_PROJECT) ni GEMINI_API_KEY están configuradas.");
 }
