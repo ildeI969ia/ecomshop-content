@@ -150,6 +150,23 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       console.warn("[API Generate] Final Editorial Quality Gate bloquea aprobación:", finalEditorialQuality.acceptanceMessage);
     }
 
+    // SKU isolation is a hard generation boundary: a campaign for one product
+    // must never be persisted if another product/model appears in the payload.
+    const { checkProductContamination } = await import("@/lib/quality/editorial-quality-gate");
+    const contamination = checkProductContamination(content, canonicalProduct.sku);
+    if (!contamination.passed) {
+      return NextResponse.json(
+        {
+          error: "PRODUCT_CONTAMINATION",
+          message: "La generación fue bloqueada porque contiene referencias a otro producto distinto del SKU seleccionado.",
+          requestedSku: canonicalProduct.sku,
+          detectedUnrelatedSkus: contamination.detectedUnrelatedSkus,
+          issues: contamination.issues
+        },
+        { status: 422 }
+      );
+    }
+
     // 5. Persistencia en Firestore (Contents, Variants, ProductIntelligence, FinOps, Audit)
     let contentId = `content-${content.topicId}-${Date.now().toString(36)}`;
     try {
