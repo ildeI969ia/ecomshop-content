@@ -8,7 +8,7 @@ export function auditEditorialQualityWithCritic(
   content: ContentOutput,
   angle: EditorialAngle,
   evidenceMap: ProductEvidenceMap,
-  targetAudience = "Instalador B2B"
+  targetAudience = ""
 ): EditorialCriticReport {
   const blogHtml = content.blog?.htmlContent || content.geo?.htmlContent || "";
   const plainText = blogHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
