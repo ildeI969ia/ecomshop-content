@@ -8,6 +8,7 @@ export interface EditorialQualityReport {
   audienceCheck: { passed: boolean; audience: string; issues: string[] };
   antiTemplateCheck: { passed: boolean; boilerplateFound: string[]; issues: string[] };
   valueCheck: { passed: boolean; score: number; issues: string[] };
+  diversityCheck: { passed: boolean; score: number; issues: string[] };
   contaminationCheck?: ContaminationReport;
   acceptanceMessage: string;
 }
@@ -200,22 +201,27 @@ export function validateEditorialQuality(
   // 6. PRODUCT CONTAMINATION CHECK
   const contaminationReport = requestedSku ? checkProductContamination(content, requestedSku) : undefined;
   const contaminationPassed = contaminationReport ? contaminationReport.passed : true;
+  const decision = content.editorialDecision && typeof content.editorialDecision === "object" ? content.editorialDecision : undefined;
+  const diversityReport = decision && typeof decision.diversityReport === "object" && decision.diversityReport !== null
+    ? decision.diversityReport as Record<string, unknown>
+    : undefined;
+  const diversityIssues: string[] = [];
+  if (!decision) diversityIssues.push("No existe Editorial Decision del Orchestrator; no se puede demostrar diversidad.");
+  else if (diversityReport?.collisionDetected === true) diversityIssues.push("El Orchestrator no encontró un ángulo libre de colisiones con publicaciones previas.");
+  const diversityPassed = diversityIssues.length === 0;
+  const diversityScore = diversityPassed ? 100 : 0;
+
+
 
   // ACEPTACIÓN FINAL
-  const allPassed = factPassed && editorialPassed && audiencePassed && antiTemplatePassed && valuePassed && contaminationPassed;
-  const score = Math.round(
-    ((factPassed ? 20 : 0) +
-      (editorialPassed ? 25 : 0) +
-      (audiencePassed ? 20 : 0) +
-      (antiTemplatePassed ? 15 : 0) +
-      (valuePassed ? 20 : 0))
-  );
+  const allPassed = factPassed && editorialPassed && audiencePassed && antiTemplatePassed && valuePassed && contaminationPassed && diversityPassed;
+  const score = Math.round((factPassed ? 20 : 0) + (editorialPassed ? 20 : 0) + (audiencePassed ? 15 : 0) + (antiTemplatePassed ? 10 : 0) + (valuePassed ? 20 : 0) + (diversityPassed ? 15 : 0));
 
   const contaminationIssuesText = contaminationReport && !contaminationReport.passed ? contaminationReport.issues.join(" | ") : "";
 
   const acceptanceMessage = allPassed
     ? "La generación contiene una tesis editorial clara, desarrolla un problema B2B real, aporta análisis técnico, utiliza evidencia verificable, adapta el razonamiento a la audiencia y utiliza el producto como solución concreta."
-    : `Generación rechazada por Quality Gate: ${[...factIssues, ...editorialIssues, ...audienceIssues, ...antiTemplateIssues, ...valueIssues, contaminationIssuesText].filter(Boolean).join(" | ")}`;
+    : `Generación rechazada por Quality Gate: ${[...factIssues, ...editorialIssues, ...audienceIssues, ...antiTemplateIssues, ...valueIssues, ...diversityIssues, contaminationIssuesText].filter(Boolean).join(" | ")}`;
 
   return {
     passed: allPassed,
