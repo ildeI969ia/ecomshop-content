@@ -108,6 +108,7 @@ export class GroundedWriterService {
 
           const rawOutput = {
             ...parsed,
+            editorialDecision: editorialDecision || undefined,
             geo: geoObj,
             usageMetadata,
             citations: { ...citations, ...(parsed.citations || {}) }
