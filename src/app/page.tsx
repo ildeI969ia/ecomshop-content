@@ -98,6 +98,7 @@ export default function Page() {
   const [imageNotice, setImageNotice] = useState<string | null>(null);
   const [showInterrogatorModal, setShowInterrogatorModal] = useState(false);
   const [selectedImageForDetail, setSelectedImageForDetail] = useState<ImageDetailItem | null>(null);
+  const [activeContentId, setActiveContentId] = useState<string | null>(null);
   const [promptRefinement, setPromptRefinement] = useState<PromptRefinementData | null>(null);
   const [refiningPrompt, setRefiningPrompt] = useState(false);
 
@@ -231,7 +232,7 @@ export default function Page() {
     }, 3000);
 
     try {
-      const data = await apiFetch<ContentOutput & { intelligenceCard?: ProductIntelligenceCard }>("/api/generate", {
+      const data = await apiFetch<ContentOutput & { id?: string; intelligenceCard?: ProductIntelligenceCard }>("/api/generate", {
         method: "POST",
         body: JSON.stringify({
           sku,
@@ -251,6 +252,7 @@ export default function Page() {
 
       setCampaignStage("COMPLETED");
       setCampaignContent(data);
+      setActiveContentId(data.id || null);
       if (data.intelligenceCard) {
         setIntelligenceCard(data.intelligenceCard);
       }
@@ -616,8 +618,15 @@ export default function Page() {
                 onRefreshDatabase={loadDatabaseAssets}
                 loadingDatabaseAssets={loadingDatabaseAssets}
                 onOpenLightbox={(img) => setSelectedImageForDetail(img)}
-                onDeleteImage={(id) => {
-                  setGalleryImages((prev) => prev.filter((i) => i.id !== id));
+                onDeleteImage={async (id) => {
+                  try {
+                    await apiFetch(`/api/assets?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+                    setGalleryImages((prev) => prev.filter((i) => i.id !== id));
+                    setImageNotice("Imagen eliminada definitivamente de Firestore y Cloud Storage.");
+                  } catch (err: unknown) {
+                    const message = err instanceof Error ? err.message : String(err);
+                    setImageNotice(`Error eliminando imagen: ${message}`);
+                  }
                 }}
                 onApplyToCampaignBlog={(img) => {
                   setActiveSection("workspace");
@@ -735,17 +744,62 @@ export default function Page() {
             setSelectedImageForDetail(null);
             setActiveSection("images");
           }}
-          onDelete={(id) => {
-            setGalleryImages((prev) => prev.filter((i) => i.id !== id));
-            setSelectedImageForDetail(null);
+          onDelete={async (id) => {
+            try {
+              await apiFetch(`/api/assets?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+              setGalleryImages((prev) => prev.filter((i) => i.id !== id));
+              setSelectedImageForDetail(null);
+              setImageNotice("Imagen eliminada definitivamente de Firestore y Cloud Storage.");
+            } catch (err: unknown) {
+              const message = err instanceof Error ? err.message : String(err);
+              setImageNotice(`Error eliminando imagen: ${message}`);
+            }
           }}
-          onInsertIntoArticle={() => {
-            setSelectedImageForDetail(null);
-            setActiveSection("workspace");
+          onInsertIntoArticle={async (img, mode) => {
+            if (!activeContentId) {
+              setImageNotice("No hay un artículo generado activo. Genera el contenido multicanal primero para poder insertar la imagen.");
+              return;
+            }
+            try {
+              await apiFetch("/api/images/actions", {
+                method: "POST",
+                body: JSON.stringify({
+                  action: "insert_article",
+                  assetId: img.id,
+                  contentId: activeContentId,
+                  mode
+                })
+              });
+              setSelectedImageForDetail(null);
+              setActiveSection("workspace");
+              setImageNotice(`Imagen conectada al artículo como ${mode === "hero" ? "Hero" : "cuerpo"}.`);
+            } catch (err: unknown) {
+              const message = err instanceof Error ? err.message : String(err);
+              setImageNotice(`Error conectando la imagen al artículo: ${message}`);
+            }
           }}
-          onReuseInCampaign={() => {
-            setSelectedImageForDetail(null);
-            setActiveSection("workspace");
+          onReuseInCampaign={async (img, channel) => {
+            if (!activeContentId) {
+              setImageNotice("No hay un contenido/campaña activo. Genera el contenido multicanal primero para poder reutilizar la imagen.");
+              return;
+            }
+            try {
+              await apiFetch("/api/images/actions", {
+                method: "POST",
+                body: JSON.stringify({
+                  action: "reuse_campaign",
+                  assetId: img.id,
+                  contentId: activeContentId,
+                  channel
+                })
+              });
+              setSelectedImageForDetail(null);
+              setActiveSection("workspace");
+              setImageNotice(`Imagen conectada a ${channel === "linkedin" ? "LinkedIn" : "Newsletter Mailchimp"}.`);
+            } catch (err: unknown) {
+              const message = err instanceof Error ? err.message : String(err);
+              setImageNotice(`Error conectando la imagen a campaña: ${message}`);
+            }
           }}
         />
       )}
