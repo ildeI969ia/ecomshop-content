@@ -86,7 +86,7 @@ export function checkProductContamination(
  */
 export function validateEditorialQuality(
   content: ContentOutput,
-  requestedAudience = "Instalador B2B",
+  requestedAudience = "",
   requestedSku?: string
 ): EditorialQualityReport {
   const factIssues: string[] = [];
@@ -141,7 +141,16 @@ export function validateEditorialQuality(
 
   // 3. AUDIENCE CHECK
   const lowerText = plainText.toLowerCase();
-  const targetAudienceClean = requestedAudience.toLowerCase();
+  const decisionAudience =
+    content.editorialDecision &&
+    typeof content.editorialDecision === "object" &&
+    typeof (content.editorialDecision as Record<string, unknown>).selectedAngle === "object" &&
+    (content.editorialDecision as Record<string, unknown>).selectedAngle !== null &&
+    typeof ((content.editorialDecision as Record<string, unknown>).selectedAngle as Record<string, unknown>).targetAudience === "string"
+      ? String(((content.editorialDecision as Record<string, unknown>).selectedAngle as Record<string, unknown>).targetAudience)
+      : "";
+  const effectiveAudience = requestedAudience.trim() || decisionAudience.trim();
+  const targetAudienceClean = effectiveAudience.toLowerCase();
 
   let requiredAudienceKeywords: string[] = [];
   if (targetAudienceClean.includes("instalad") || targetAudienceClean.includes("téc")) {
@@ -154,9 +163,12 @@ export function validateEditorialQuality(
     requiredAudienceKeywords = ["demanda", "rotaci", "venta cruzada", "canal", "oportunidad", "distribuidor"];
   }
 
+  if (!effectiveAudience) {
+    audienceIssues.push("No existe una audiencia editorial explícita; la generación no puede pasar el Quality Gate.");
+  }
   const missingKeywords = requiredAudienceKeywords.filter(kw => !lowerText.includes(kw));
   if (missingKeywords.length > 3) {
-    audienceIssues.push(`El lenguaje no está suficientemente adaptado a la audiencia ${requestedAudience}. Faltan conceptos clave: ${missingKeywords.join(", ")}`);
+    audienceIssues.push(`El lenguaje no está suficientemente adaptado a la audiencia ${effectiveAudience}. Faltan conceptos clave: ${missingKeywords.join(", ")}`);
   }
   const audiencePassed = audienceIssues.length === 0;
 
@@ -228,7 +240,7 @@ export function validateEditorialQuality(
     score,
     factCheck: { passed: factPassed, issues: factIssues },
     editorialCheck: { passed: editorialPassed, thesisPresent, issues: editorialIssues },
-    audienceCheck: { passed: audiencePassed, audience: requestedAudience, issues: audienceIssues },
+    audienceCheck: { passed: audiencePassed, audience: effectiveAudience, issues: audienceIssues },
     antiTemplateCheck: { passed: antiTemplatePassed, boilerplateFound, issues: antiTemplateIssues },
     valueCheck: { passed: valuePassed, score: valueScore, issues: valueIssues },
     diversityCheck: { passed: diversityPassed, score: diversityScore, issues: diversityIssues },
