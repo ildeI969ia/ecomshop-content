@@ -3,9 +3,12 @@ import { EditorialControls } from "@/lib/types/editorial-controls";
 import { StructuredProductIntelligence } from "./notebook-intelligence";
 import { OFFICIAL_NOTEBOOK } from "@/lib/notebooklm";
 import { ECOM_BRAND } from "@/lib/knowledge";
-import { AI_REQUEST_TIMEOUT_MS } from "@/lib/ai-config";
+import { AIExecutionService } from "@/lib/services/ai-execution-service";
 import { validateEditorialQuality } from "@/lib/quality/editorial-quality-gate";
 import type { EditorialDecision } from "@/lib/types/editorial-orchestrator";
+import { detectProductType, buildProductEvidenceMap } from "@/lib/services/product-evidence-map";
+import { generateEditorialAngleCandidates, selectBestEditorialAngle } from "@/lib/services/editorial-angle-engine";
+import { auditEditorialQualityWithCritic } from "@/lib/services/editorial-critic";
 
 export interface GroundedWriterRequest {
   sku: string;
@@ -49,98 +52,166 @@ export class GroundedWriterService {
     const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!req.apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT));
     const key = req.apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
-    let lastModelError: any = null;
-
     if (key || isVertex) {
       const { getGenAIClient, getActiveGeminiModel } = await import("@/lib/genai-client");
       const ai = getGenAIClient(req.apiKey);
       const activeModel = getActiveGeminiModel(req.apiKey);
 
       const prompt = this.buildPrompt(req, activeSources);
-      const systemInstruction = this.buildSystemInstruction(activeSources, req.targetAudience);
+      const systemInstruction = this.buildSystemInstruction(
+        activeSources,
+        req.targetAudience
+      );
 
       const { AI_TEXT_MODEL, AI_FALLBACK_MODEL } = await import("@/lib/ai-config");
       const candidateModels = [activeModel, AI_TEXT_MODEL, AI_FALLBACK_MODEL]
         .filter((m, i, arr) => Boolean(m) && arr.indexOf(m) === i);
 
-      for (const modelToTry of candidateModels) {
-        try {
-          const generatePromise = ai.models.generateContent({
-            model: modelToTry,
-            contents: prompt,
-            config: {
-              systemInstruction,
-              temperature: 0.5,
-              maxOutputTokens: 8192,
-              responseMimeType: "application/json"
-            }
-          });
+      try {
+        const execution = await new AIExecutionService().generateJson({
+          models: candidateModels,
+          generate: async (model) => {
+            const res = await ai.models.generateContent({
+              model,
+              contents: prompt,
+              config: {
+                systemInstruction,
+                temperature: 0.5,
+                maxOutputTokens: 8192,
+                responseMimeType: "application/json"
+              }
+            });
 
-          const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error(`Timeout con modelo ${modelToTry} en Vertex AI (${AI_REQUEST_TIMEOUT_MS}ms)`)), AI_REQUEST_TIMEOUT_MS)
-          );
-
-          const res = await Promise.race([generatePromise, timeoutPromise]);
-          let rawText = (res as any).text || "{}";
-          rawText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
-
-          const parsed = JSON.parse(rawText);
-          const usageMetadata = (res as any).usageMetadata ? {
-            promptTokenCount: (res as any).usageMetadata.promptTokenCount,
-            candidatesTokenCount: (res as any).usageMetadata.candidatesTokenCount,
-            totalTokenCount: (res as any).usageMetadata.totalTokenCount
-          } : undefined;
-
-          const comparativeTableHtml = generateDynamicComparativeTableHtml(intel);
-          const geoObj = {
-            title: parsed.geo?.title || parsed.blog?.title || `${intel.brand} ${intel.model}: Despliegue B2B`,
-            metaDescription: parsed.geo?.metaDescription || parsed.blog?.metaDescription || `Análisis técnico de ${intel.brand} ${intel.model}.`,
-            htmlContent: parsed.geo?.htmlContent || parsed.blog?.htmlContent || "",
-            comparativeTableHtml: parsed.geo?.comparativeTableHtml || comparativeTableHtml,
-            jsonLd: parsed.geo?.jsonLd || JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Product",
-              "name": `${intel.brand} ${intel.model}`,
-              "sku": intel.sku,
-              "brand": { "@type": "Brand", "name": intel.brand }
-            }, null, 2),
-            markdownContent: parsed.geo?.markdownContent || `# ${intel.brand} ${intel.model}\n\n${comparativeTableHtml}`
-          };
-
-          const rawOutput = {
-            ...parsed,
-            editorialDecision: editorialDecision || undefined,
-            geo: geoObj,
-            usageMetadata,
-            citations: { ...citations, ...(parsed.citations || {}) }
-          };
-
-          // Integrar Editorial Critic, Product Evidence Map y Angle Engine
-          const { detectProductType, buildProductEvidenceMap } = await import("@/lib/services/product-evidence-map");
-          const { generateEditorialAngleCandidates, selectBestEditorialAngle } = await import("@/lib/services/editorial-angle-engine");
-          const { auditEditorialQualityWithCritic } = await import("@/lib/services/editorial-critic");
-
-          const productType = detectProductType(req.sku, req.category, intel.card?.technicalSpecs?.deviceType);
-          const evidenceMap = buildProductEvidenceMap(req.sku, intel);
-          const angleCandidates = generateEditorialAngleCandidates(req.sku, productType, req.targetAudience || "", intel);
-          const bestAngle = editorialDecision?.selectedAngle || selectBestEditorialAngle(angleCandidates);
-
-          const criticReport = auditEditorialQualityWithCritic(rawOutput as any, bestAngle, evidenceMap, req.targetAudience);
-          const qualityReport = validateEditorialQuality(rawOutput as any, req.targetAudience, req.sku);
-
-          const validated = ContentOutputSchema.safeParse(rawOutput);
-          if (validated.success) {
             return {
-              ...validated.data,
-              source: "ai",
-              status: (qualityReport.passed && criticReport.publishability >= 8) ? "DRAFT" : "NEEDS_REVIEW",
-              factCheckScore: qualityReport.score
+              text: res.text || "{}",
+              usageMetadata: res.usageMetadata
+                ? {
+                    promptTokenCount: res.usageMetadata.promptTokenCount,
+                    candidatesTokenCount: res.usageMetadata.candidatesTokenCount,
+                    totalTokenCount: res.usageMetadata.totalTokenCount
+                  }
+                : undefined
             };
           }
-        } catch (modelErr) {
-          lastModelError = modelErr;
-          console.error(`[GroundedWriter] Fallo con ${modelToTry} en Vertex AI:`, modelErr);
+        });
+
+        const parsed = execution.parsed;
+        const usageMetadata = execution.usageMetadata;
+        const comparativeTableHtml = generateDynamicComparativeTableHtml(intel);
+        const parsedRecord =
+          typeof parsed === "object" && parsed !== null
+            ? (parsed as Record<string, unknown>)
+            : {};
+
+        const parsedGeo =
+          typeof parsedRecord.geo === "object" && parsedRecord.geo !== null
+            ? (parsedRecord.geo as Record<string, unknown>)
+            : {};
+        const parsedBlog =
+          typeof parsedRecord.blog === "object" && parsedRecord.blog !== null
+            ? (parsedRecord.blog as Record<string, unknown>)
+            : {};
+
+        const geoObj = {
+          title:
+            typeof parsedGeo.title === "string"
+              ? parsedGeo.title
+              : typeof parsedBlog.title === "string"
+                ? parsedBlog.title
+                : `${intel.brand} ${intel.model}: Despliegue B2B`,
+          metaDescription:
+            typeof parsedGeo.metaDescription === "string"
+              ? parsedGeo.metaDescription
+              : typeof parsedBlog.metaDescription === "string"
+                ? parsedBlog.metaDescription
+                : `Análisis técnico de ${intel.brand} ${intel.model}.`,
+          htmlContent:
+            typeof parsedGeo.htmlContent === "string"
+              ? parsedGeo.htmlContent
+              : typeof parsedBlog.htmlContent === "string"
+                ? parsedBlog.htmlContent
+                : "",
+          comparativeTableHtml:
+            typeof parsedGeo.comparativeTableHtml === "string"
+              ? parsedGeo.comparativeTableHtml
+              : comparativeTableHtml,
+          jsonLd:
+            typeof parsedGeo.jsonLd === "string"
+              ? parsedGeo.jsonLd
+              : JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "Product",
+                  name: `${intel.brand} ${intel.model}`,
+                  sku: intel.sku,
+                  brand: { "@type": "Brand", name: intel.brand }
+                }, null, 2),
+          markdownContent:
+            typeof parsedGeo.markdownContent === "string"
+              ? parsedGeo.markdownContent
+              : `# ${intel.brand} ${intel.model}\\n\\n${comparativeTableHtml}`
+        };
+
+        const rawOutput = {
+          ...parsedRecord,
+          editorialDecision: editorialDecision || undefined,
+          geo: geoObj,
+          usageMetadata,
+          fallbackUsed: execution.fallbackUsed,
+          generator: "GroundedWriterService",
+          citations: {
+            ...citations,
+            ...(typeof parsedRecord.citations === "object" && parsedRecord.citations !== null
+              ? parsedRecord.citations
+              : {})
+          }
+        };
+
+        const productType = detectProductType(
+          req.sku,
+          req.category,
+          intel.card?.technicalSpecs?.deviceType
+        );
+        const evidenceMap = buildProductEvidenceMap(req.sku, intel);
+        const angleCandidates = generateEditorialAngleCandidates(
+          req.sku,
+          productType,
+          req.targetAudience || "",
+          intel
+        );
+        const bestAngle =
+          editorialDecision?.selectedAngle ||
+          selectBestEditorialAngle(angleCandidates);
+
+        const criticReport = auditEditorialQualityWithCritic(
+          rawOutput as ContentOutput,
+          bestAngle,
+          evidenceMap,
+          req.targetAudience
+        );
+        const qualityReport = validateEditorialQuality(
+          rawOutput as ContentOutput,
+          req.targetAudience,
+          req.sku
+        );
+
+        const validated = ContentOutputSchema.safeParse(rawOutput);
+        if (validated.success) {
+          return {
+            ...validated.data,
+            source: "ai",
+            status:
+              qualityReport.passed && criticReport.publishability >= 8
+                ? "DRAFT"
+                : "NEEDS_REVIEW",
+            factCheckScore: qualityReport.score
+          };
         }
+
+        throw new Error(
+          `AI_OUTPUT_SCHEMA_INVALID: ${validated.error.message}`
+        );
+      } catch (error) {
+        console.error("[GroundedWriter] Fallo en ejecución IA:", error);
       }
     }
 
@@ -153,7 +224,7 @@ export class GroundedWriterService {
     return { ...fallback, editorialDecision: req.editorialDecision || undefined };
   }
 
-  private buildSystemInstruction(activeSources: typeof OFFICIAL_NOTEBOOK.sources, audience = "Instalador B2B"): string {
+  private buildSystemInstruction(activeSources: typeof OFFICIAL_NOTEBOOK.sources, audience = ""): string {
     const sourcesContext = activeSources
       .map((s) => `[${s.id}] (${s.type.toUpperCase()}) "${s.title}": ${s.description}`)
       .join("\n");
@@ -193,7 +264,7 @@ Debes responder SIEMPRE en formato JSON estricto cumpliendo la estructura Conten
   }
 
   private buildPrompt(req: GroundedWriterRequest, activeSources: typeof OFFICIAL_NOTEBOOK.sources): string {
-    const { intel, editorialControls, targetAudience = "Instalador B2B" } = req;
+    const { intel, editorialControls, targetAudience = "" } = req;
     const tone = editorialControls?.editorialTone || intel.recommendedTone;
     const sector = editorialControls?.targetSector || intel.naturalSector;
 
@@ -220,7 +291,7 @@ Asegúrate de que el artículo hable EXCLUSIVAMENTE del producto ${req.sku} (${i
     req: GroundedWriterRequest,
     citations: Record<string, { id: string; title: string; type: string; excerpt: string; url?: string }>
   ): ContentOutput {
-    const { intel, sku, targetAudience = req.editorialDecision?.primaryAudience || "Instalador B2B" } = req;
+    const { intel, sku, targetAudience = req.editorialDecision?.primaryAudience || "" } = req;
     const cleanSku = (sku || intel.sku || "").trim().toUpperCase();
 
     const isDacOrOptical = cleanSku.includes("DAC") || cleanSku.includes("SFP") || cleanSku.includes("TNB") || cleanSku.includes("FIBRA");

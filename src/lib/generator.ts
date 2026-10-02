@@ -1,76 +1,72 @@
 import { ContentOutput, GenerateRequest } from "./schema";
-import { getCatalogDevice, CatalogDevice } from "./catalog";
+import { buildGenerationContext, type GenerationContext } from "@/server/services/generation-context";
 
-export async function generateB2BContent(req: Partial<GenerateRequest> & { apiKey?: string }): Promise<ContentOutput> {
-  const apiKey = req.apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+export async function generateB2BContent(
+  req: Partial<GenerateRequest> & { apiKey?: string },
+  context?: GenerationContext
+): Promise<ContentOutput> {
+  const generationContext =
+    context ||
+    (await buildGenerationContext(req, {
+      includeProductIntelligenceCard: false,
+      apiKey: req.apiKey
+    }));
 
-  // Detección y Grounding enriquecido con ECOMSHOP_CATALOG
-  const targetSku = req.sku || req.customEquipmentName || (req.promotedProductIds && req.promotedProductIds[0]) || "";
-  const catalogDevice: CatalogDevice | undefined =
-    getCatalogDevice(targetSku) ||
-    (req.topicTitle ? getCatalogDevice(req.topicTitle) : undefined) ||
-    (req.productUrl ? getCatalogDevice(req.productUrl) : undefined);
-
-  const productIdentifier = catalogDevice?.sku || targetSku || req.topicTitle || "Solución de Networking";
-
-  // Editorial Orchestrator: una única decisión editorial antes de escribir.
-  // No se permite que el endpoint ni el writer inventen la estrategia final.
-  const effectiveSourceIds: string[] | undefined = (req.selectedSourceIds && req.selectedSourceIds.length > 0)
-    ? req.selectedSourceIds
-    : catalogDevice?.notebookSourceId
-      ? Array.from(new Set([catalogDevice.notebookSourceId, ...(catalogDevice.additionalSourceIds || [])]))
-      : undefined;
-
-  const { NotebookIntelligenceService } = await import("./services/notebook-intelligence");
-  const { detectProductType, buildProductEvidenceMap } = await import("./services/product-evidence-map");
   const { EditorialOrchestrator } = await import("./services/editorial-orchestrator");
   const { GroundedWriterService } = await import("./services/grounded-writer");
 
-  const notebookService = new NotebookIntelligenceService();
-  const intel = notebookService.synthesizeProductIntelligence(productIdentifier, effectiveSourceIds);
-  const canonicalSku = catalogDevice?.sku || intel.sku;
-  const productType = detectProductType(
-    canonicalSku,
-    req.category || catalogDevice?.category || "general",
-    intel.card?.technicalSpecs?.deviceType
-  );
-  const evidenceMap = buildProductEvidenceMap(canonicalSku, intel);
-
+  // The context is the single source of product identity, evidence and sources.
+  // From this point onward no component is allowed to re-resolve the SKU.
   const orchestrator = new EditorialOrchestrator();
   const editorialDecision = await orchestrator.generate({
-    sku: canonicalSku,
-    category: req.category || catalogDevice?.category || "general",
-    topicTitle: req.topicTitle || catalogDevice?.name || intel.model,
+    sku: generationContext.canonicalSku,
+    category: req.category || generationContext.effectiveCategory || "general",
+    topicTitle:
+      req.topicTitle ||
+      generationContext.effectiveTitle ||
+      generationContext.catalogDevice?.name ||
+      generationContext.intel.model,
     userIntent: req.customNotes,
     requestedChannel: "multichannel",
     preferredAudience: req.targetAudience,
     requestedAngle: req.editorialAngle,
     workspaceId: req.workspaceId,
-    intel,
-    evidenceMap,
-    productType
+    intel: generationContext.intel,
+    evidenceMap: generationContext.evidenceMap,
+    productType: generationContext.productType
   });
 
   const writer = new GroundedWriterService();
   const generated = await writer.generateGroundedContent({
-    sku: canonicalSku,
-    topicTitle: req.topicTitle || catalogDevice?.name || intel.model,
-    category: req.category || "general",
-    productUrl: req.productUrl || catalogDevice?.productUrl,
+    sku: generationContext.canonicalSku,
+    topicTitle:
+      req.topicTitle ||
+      generationContext.effectiveTitle ||
+      generationContext.catalogDevice?.name ||
+      generationContext.intel.model,
+    category: req.category || generationContext.effectiveCategory || "general",
+    productUrl:
+      req.productUrl ||
+      generationContext.productUrl ||
+      generationContext.catalogDevice?.productUrl,
     targetAudience: editorialDecision.selectedAngle.targetAudience,
     customNotes: req.customNotes,
     editorialControls: req.editorialControls,
-    selectedSourceIds: effectiveSourceIds,
-    intel,
+    selectedSourceIds:
+      generationContext.sourceIds ||
+      (generationContext.catalogDevice?.notebookSourceId
+        ? [generationContext.catalogDevice.notebookSourceId]
+        : undefined),
+    intel: generationContext.intel,
     editorialDecision,
-    apiKey
+    apiKey: req.apiKey
   });
 
   const { validateEditorialQuality } = await import("./quality/editorial-quality-gate");
   const finalQuality = validateEditorialQuality(
     generated,
     editorialDecision.selectedAngle.targetAudience,
-    canonicalSku
+    generationContext.canonicalSku
   );
 
   return {

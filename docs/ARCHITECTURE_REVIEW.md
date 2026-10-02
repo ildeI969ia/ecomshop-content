@@ -117,3 +117,51 @@ This review does not intentionally change:
 - AI model selection semantics
 
 All changes should preserve these behaviors while reducing coupling and duplication.
+
+
+## Implementation status — Phase 1
+
+The first architecture refactor has been implemented on branch `refactor/architecture-phase-1`:
+
+### Completed
+
+- Added `GenerationContext` in `src/server/services/generation-context.ts`.
+- Product/SKU resolution, catalog resolution, source selection, Notebook Intelligence, Product Evidence Map and Product Type detection now happen once at the application boundary.
+- `generateB2BContent` accepts the canonical context and no longer reconstructs product intelligence/evidence independently.
+- `/api/generate` builds the context once and passes the same context to generation and post-generation validation.
+- Added `AIExecutionService` for model fallback, timeout, JSON normalization and usage metadata.
+- `GroundedWriterService` now delegates model execution policy to `AIExecutionService` and retains editorial validation/grounding responsibilities.
+- Added regression coverage in `scripts/test-architecture-execution.ts`.
+
+### Intentionally deferred
+
+The following changes remain isolated because they require migration/production validation rather than a mechanical refactor:
+
+- atomic AI budget reservation/reconciliation
+- Firestore version/variant document split
+- repository error taxonomy
+- final separation of Writer and Critic responsibilities
+- migration of the legacy batch marketing subsystem
+
+These are not being mixed into Phase 1 because they affect persistence semantics, failure behavior or independent execution paths and therefore require dedicated regression tests and migration plans.
+
+
+## Implementation status — Phase 2
+
+The following production-safety refactors are now implemented on this branch:
+
+- **Atomic AI budget reservation:** `reserveAiBudget()` reserves `committed + reserved` budget inside a Firestore transaction before the primary generation path starts. Failed generation releases the reservation.
+- **Content version decoupling:** `ContentRepository` stores version bodies under `contents/{contentId}/versions/{versionId}`. Existing embedded `versions[]` are migrated on the first rewrite; the root document retains only a lightweight empty marker.
+- **Variant persistence remains isolated:** channel variants continue under `contents/{contentId}/variants/*`.
+- **Repository error taxonomy:** `RepositoryUnavailableError` replaces silent `[]`/`null` degradation for the hardened content listing/slug paths.
+- **AI execution policy:** the Antigravity TypeScript provider now delegates fallback, timeout and JSON normalization to `AIExecutionService`, eliminating a second implementation of those mechanics.
+- **Primary generation accounting:** the canonical `/api/generate` path records AI usage before content persistence so a Firestore failure cannot make an already-executed AI request invisible to FinOps.
+- **Content deletion:** version and variant subcollections are deleted with the parent content record.
+
+## Remaining deliberate boundary
+
+The legacy batch marketing subsystem (`src/server/orchestrator/marketing-pipeline.ts` and its API routes) remains a separate execution product. It is not merged into the canonical editorial path because its contract and batch semantics are different. Migrating it should be a dedicated project with equivalence tests, not a silent architectural rewrite.
+
+## Verification status
+
+The branch has not been locally built or executed in this environment. GitHub source updates have been inspected, but no claim is made that `typecheck`, `build`, Firestore integration tests or Cloud Build currently pass. The next gate is CI/Cloud Build validation before merge.
