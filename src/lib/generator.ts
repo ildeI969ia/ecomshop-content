@@ -27,37 +27,59 @@ export async function generateB2BContent(req: Partial<GenerateRequest> & { apiKe
     console.warn("No se pudo obtener ProductIntelligenceCard (continuando):", intelErr);
   }
 
-  // Fuentes efectivas: Priorizar fuentes del usuario o inyectar la fuente oficial del catálogo
+  // Editorial Orchestrator: una única decisión editorial antes de escribir.
+  // No se permite que el endpoint ni el writer inventen la estrategia final.
   const effectiveSourceIds: string[] | undefined = (req.selectedSourceIds && req.selectedSourceIds.length > 0)
     ? req.selectedSourceIds
     : catalogDevice?.notebookSourceId
       ? [catalogDevice.notebookSourceId, "src-4", "src-18"]
       : undefined;
 
-  // Integración prioritaria de GroundedWriterService con NotebookLM
-  if (effectiveSourceIds && effectiveSourceIds.length > 0) {
-    const { GroundedWriterService } = await import("./services/grounded-writer");
-    const { NotebookIntelligenceService } = await import("./services/notebook-intelligence");
-    const intelService = new NotebookIntelligenceService();
-    const intel = intelService.synthesizeProductIntelligence(productIdentifier, effectiveSourceIds);
-    const writer = new GroundedWriterService();
-    return await writer.generateGroundedContent({
-      sku: catalogDevice?.sku || intel.sku,
-      topicTitle: req.topicTitle || catalogDevice?.name || intel.model,
-      category: req.category || "general",
-      productUrl: req.productUrl || catalogDevice?.productUrl,
-      targetAudience: req.targetAudience,
-      customNotes: req.customNotes,
-      editorialControls: req.editorialControls,
-      selectedSourceIds: effectiveSourceIds,
-      intel,
-      apiKey
-    });
-  }
+  const { NotebookIntelligenceService } = await import("./services/notebook-intelligence");
+  const { detectProductType, buildProductEvidenceMap } = await import("./services/product-evidence-map");
+  const { EditorialOrchestrator } = await import("./services/editorial-orchestrator");
+  const { GroundedWriterService } = await import("./services/grounded-writer");
 
-  if (apiKey || isVertex) {
-    return await generateWithGeminiAPI(req, apiKey, intelligenceCard, catalogDevice);
-  }
+  const notebookService = new NotebookIntelligenceService();
+  const intel = notebookService.synthesizeProductIntelligence(productIdentifier, effectiveSourceIds);
+  const canonicalSku = catalogDevice?.sku || intel.sku;
+  const productType = detectProductType(
+    canonicalSku,
+    req.category || catalogDevice?.category || "general",
+    intel.card?.technicalSpecs?.deviceType
+  );
+  const evidenceMap = buildProductEvidenceMap(canonicalSku, intel);
+
+  const orchestrator = new EditorialOrchestrator();
+  const editorialDecision = await orchestrator.generate({
+    sku: canonicalSku,
+    category: req.category || catalogDevice?.category || "general",
+    topicTitle: req.topicTitle || catalogDevice?.name || intel.model,
+    userIntent: req.customNotes,
+    requestedChannel: "multichannel",
+    preferredAudience: req.targetAudience,
+    workspaceId: typeof (req as { workspaceId?: unknown }).workspaceId === "string"
+      ? (req as { workspaceId: string }).workspaceId
+      : undefined,
+    intel,
+    evidenceMap,
+    productType
+  });
+
+  const writer = new GroundedWriterService();
+  return await writer.generateGroundedContent({
+    sku: canonicalSku,
+    topicTitle: req.topicTitle || catalogDevice?.name || intel.model,
+    category: req.category || "general",
+    productUrl: req.productUrl || catalogDevice?.productUrl,
+    targetAudience: editorialDecision.selectedAngle.targetAudience,
+    customNotes: req.customNotes,
+    editorialControls: req.editorialControls,
+    selectedSourceIds: effectiveSourceIds,
+    intel,
+    editorialDecision,
+    apiKey
+  });
 
   throw new Error("[Generator Error] Ni Vertex AI (ADC / GOOGLE_CLOUD_PROJECT) ni GEMINI_API_KEY están configuradas.");
 }
