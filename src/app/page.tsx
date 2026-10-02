@@ -107,7 +107,7 @@ export default function Page() {
     setLoadingRadar(true);
     try {
       const data = await apiFetch<{ opportunities: ProductOpportunityRecord[] }>(
-        `/api/opportunities?limit=6&goal=${encodeURIComponent(goal)}`
+        `/api/opportunities?limit=6&goal=${encodeURIComponent(goal)}&shuffle=${Date.now()}`
       );
       if (data?.opportunities) {
         setRadarOpportunities(data.opportunities);
