@@ -74,7 +74,7 @@ export async function buildGenerationContext(
     req.topicTitle ||
     req.topic ||
     req.editorialThesis ||
-    "";
+    "Solución de Conectividad B2B";
   let effectiveCategory = req.category || "general";
   let productUrl = req.productUrl;
 
