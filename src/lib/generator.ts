@@ -18,7 +18,7 @@ export async function generateB2BContent(req: Partial<GenerateRequest> & { apiKe
   const effectiveSourceIds: string[] | undefined = (req.selectedSourceIds && req.selectedSourceIds.length > 0)
     ? req.selectedSourceIds
     : catalogDevice?.notebookSourceId
-      ? [catalogDevice.notebookSourceId, "src-4", "src-18"]
+      ? Array.from(new Set([catalogDevice.notebookSourceId, ...(catalogDevice.additionalSourceIds || [])]))
       : undefined;
 
   const { NotebookIntelligenceService } = await import("./services/notebook-intelligence");
