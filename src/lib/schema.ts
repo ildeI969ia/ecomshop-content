@@ -180,6 +180,8 @@ export const ContentOutputSchema = z.object({
   }).optional(),
 
   // Metadatos reales de consumo de tokens Gemini
+  editorialDecision: z.record(z.unknown()).optional(),
+
   usageMetadata: z.object({
     promptTokenCount: z.number().optional(),
     candidatesTokenCount: z.number().optional(),
