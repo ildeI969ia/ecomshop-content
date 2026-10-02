@@ -196,7 +196,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         title: content.blog?.title || content.topicTitle || "Contenido B2B",
         slug: content.blog?.slug || content.topicId,
         category: content.category,
-        status: content.status === "NEEDS_REVIEW" ? "NEEDS_REVIEW" : "DRAFT",
+        status: content.status === "NEEDS_REVIEW" ? "IN_REVIEW" : "DRAFT",
         currentVersion: 1,
         authorId: user.uid,
         versions: [
