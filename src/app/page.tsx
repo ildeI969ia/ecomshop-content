@@ -183,7 +183,7 @@ export default function Page() {
     try {
       const res = await apiFetch<{ success: boolean; count: number; message: string }>("/api/catalog/sync", {
         method: "POST",
-        body: JSON.stringify({ maxItems: 35 })
+        body: JSON.stringify({ maxItems: 500, mode: "feed" })
       });
       alert(res.message || "Catálogo sincronizado exitosamente con ecomshop.es");
       await fetchCatalog();
