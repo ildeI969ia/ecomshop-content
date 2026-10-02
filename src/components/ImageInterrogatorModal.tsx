@@ -29,6 +29,8 @@ interface ImageInterrogatorModalProps {
     baseImage?: string,
   ) => void;
   currentBaseImage?: string | null;
+  selectedSku?: string;
+  productContext?: string;
 }
 
 type Step = "idea" | "analysis" | "questions" | "result";
@@ -67,6 +69,8 @@ export function ImageInterrogatorModal({
   onClose,
   onApplyPrompt,
   currentBaseImage,
+  selectedSku,
+  productContext,
 }: ImageInterrogatorModalProps) {
   const [step, setStep] = useState<Step>("idea");
   const [userIdea, setUserIdea] = useState("");
@@ -118,6 +122,9 @@ export function ImageInterrogatorModal({
         userIdea: userIdea.trim(),
         baseImage: baseImage || undefined,
         requestedAspectRatio: "16:9",
+        selectedSku,
+        productContext,
+        channel: "B2B marketing",
       });
 
       const parsedAnalysis = data.analysis as ImageIntentAnalysis;
@@ -155,6 +162,9 @@ export function ImageInterrogatorModal({
         answers,
         analysis,
         requestedAspectRatio: analysis.recommendation.aspectRatio,
+        selectedSku,
+        productContext,
+        channel: "B2B marketing",
       });
 
       const result = (data.data || data.result) as PromptResult;
