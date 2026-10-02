@@ -148,7 +148,8 @@ export class GroundedWriterService {
   }
 
   private generateGroundedFallback(req: GroundedWriterRequest, citations: Record<string, any>): ContentOutput {
-    return this.buildDeterministicGroundedContent(req, citations);
+    const fallback = this.buildDeterministicGroundedContent(req, citations);
+    return { ...fallback, editorialDecision: req.editorialDecision || undefined };
   }
 
   private buildSystemInstruction(activeSources: typeof OFFICIAL_NOTEBOOK.sources, audience = "Instalador B2B"): string {
