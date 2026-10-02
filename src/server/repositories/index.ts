@@ -1,5 +1,5 @@
 import { getAdminFirestore } from "../config/firebase";
-import { FieldValue, type QueryDocumentSnapshot } from "firebase-admin/firestore";
+import { type QueryDocumentSnapshot } from "firebase-admin/firestore";
 import {
   Campaign,
   ContentItem,
@@ -167,10 +167,6 @@ export class ContentRepository {
     const batch = db.batch();
     batch.set(rootRef, rootData, { merge: true });
     batch.set(versionRef, sanitizeUndefined(version));
-    if (existing) {
-      // Elimina el histórico embebido legacy para impedir que el documento vuelva a crecer.
-      batch.update(rootRef, { versions: FieldValue.delete() });
-    }
     await batch.commit();
 
     return {
