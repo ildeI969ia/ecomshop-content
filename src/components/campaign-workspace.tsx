@@ -553,6 +553,21 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                           {family}
                         </Badge>
                       </div>
+
+                      {/* Imagen oficial del producto desde Gesio feed */}
+                      {device.imageUrl && (
+                        <div className="w-full h-28 rounded-lg overflow-hidden bg-white/5 border border-slate-800 relative group flex items-center justify-center p-1">
+                          <img
+                            src={device.imageUrl}
+                            alt={device.name}
+                            className="max-h-full max-w-full object-contain filter drop-shadow transition-transform duration-300 group-hover:scale-105"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
+
                       <div>
                         <span className="text-[9px] font-bold text-slate-500 uppercase">{device.brand}</span>
                         <h4 className="text-xs font-bold text-white line-clamp-1 leading-snug">{device.name}</h4>
@@ -575,6 +590,18 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                         <Eye className="w-3 h-3" />
                         <span>{isSelected ? "Activo" : "Seleccionar"}</span>
                       </button>
+
+                      {device.productUrl && (
+                        <a
+                          href={device.productUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-indigo-400 rounded-lg text-[11px] transition border border-slate-700"
+                          title="Ver ficha oficial verificada en ecomshop.es"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
 
                       {onLaunchWithSku && (
                         <button

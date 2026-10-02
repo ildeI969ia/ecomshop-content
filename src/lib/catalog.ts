@@ -27,6 +27,7 @@ export interface CatalogDevice {
   shortDesc: string;
   recommendedBundle: string;
   productUrl: string;
+  imageUrl?: string;
   specs: {
     // Específico para APs
     wirelessStandards?: string[];
@@ -121,6 +122,7 @@ export function catalogProductToCatalogDevice(prod: CatalogProduct): CatalogDevi
     shortDesc: prod.description.length > 120 ? `${prod.description.slice(0, 117)}...` : prod.description,
     recommendedBundle,
     productUrl: prod.url,
+    imageUrl: prod.imageUrl,
     specs: {
       wirelessStandards,
       bands,
