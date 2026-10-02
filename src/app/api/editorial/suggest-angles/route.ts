@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { getDynamicCatalogProduct } from "@/lib/catalog-server";
-import { findCatalogProduct } from "@/lib/data/ecomshop-catalog";
+import { findCatalogProductExact } from "@/lib/data/ecomshop-catalog";
 import { buildFeedProductIntelligence } from "@/lib/services/feed-product-intelligence";
 import { detectProductType, buildProductEvidenceMap } from "@/lib/services/product-evidence-map";
 import { EditorialOrchestrator } from "@/lib/services/editorial-orchestrator";
@@ -36,7 +36,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
     const cleanSku = typeof body.sku === "string" ? body.sku.trim().toUpperCase() : "";
     if (!cleanSku) return NextResponse.json({ error: "SKU requerido" }, { status: 400 });
 
-    const product = (await getDynamicCatalogProduct(cleanSku)) || findCatalogProduct(cleanSku);
+    const product = (await getDynamicCatalogProduct(cleanSku)) || findCatalogProductExact(cleanSku);
     if (!product) {
       return NextResponse.json(
         { error: "PRODUCT_NOT_FOUND", requestedSku: cleanSku },
