@@ -1,5 +1,5 @@
-import { getAdminFirestore } from "@/server/config/firebase";
-import type { ContentVersion } from "@/server/domain/types";
+import { getAdminFirestore } from "../src/server/config/firebase";
+import type { ContentVersion } from "../src/server/domain/types";
 
 const BATCH_LIMIT = 400;
 
