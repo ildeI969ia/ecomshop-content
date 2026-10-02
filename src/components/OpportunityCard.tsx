@@ -487,7 +487,7 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
           ) : (
             <>
               <Sparkles className="w-4 h-4 text-indigo-200" />
-              <span>🚀 Lanzar Campaña</span>
+              <span>💡 Crear ideas de campaña</span>
             </>
           )}
         </button>
