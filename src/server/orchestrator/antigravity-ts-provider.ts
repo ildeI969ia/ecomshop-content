@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { AgentExecutionManifest, AgentExecutionResult } from "./types";
 import { IAgentProvider } from "./agent-provider";
 import { AI_TEXT_MODEL, AI_FALLBACK_MODEL, VERTEX_LOCATION } from "@/lib/ai-config";
+import { AIExecutionService } from "@/lib/services/ai-execution-service";
 
 export interface AntigravityTsProviderOptions {
   timeoutMs?: number;
@@ -10,16 +11,17 @@ export interface AntigravityTsProviderOptions {
 }
 
 /**
- * Proveedor 100% nativo en TypeScript para la ejecución de agentes usando Gemini 2.5 Flash
- * vía el SDK oficial `@google/genai` con soporte dual (API Key / Vertex AI ADC).
+ * Proveedor TypeScript para el plano de ejecución de agentes.
+ * La política transversal de fallback, timeout y parsing JSON vive en
+ * AIExecutionService; este adaptador sólo conoce el SDK de Google.
  */
 export class AntigravityTsProvider implements IAgentProvider {
-  private timeoutMs: number;
-  private model: string;
-  private apiKey?: string;
+  private readonly timeoutMs?: number;
+  private readonly model: string;
+  private readonly apiKey?: string;
 
   constructor(options: AntigravityTsProviderOptions = {}) {
-    this.timeoutMs = options.timeoutMs ?? 90000; // 90 segundos por defecto para estabilización de IA
+    this.timeoutMs = options.timeoutMs;
     this.model = options.model || AI_TEXT_MODEL;
     this.apiKey = options.apiKey;
   }
@@ -36,166 +38,137 @@ export class AntigravityTsProvider implements IAgentProvider {
       return new GoogleGenAI({
         vertexai: false,
         apiKey,
-        httpOptions: {
-          headers: {
-            "x-goog-api-key": apiKey
-          }
-        }
+        httpOptions: { headers: { "x-goog-api-key": apiKey } }
       });
     }
-
-    // Fallback a Vertex AI nativo (Application Default Credentials en Cloud Run)
-    const location = VERTEX_LOCATION;
 
     return new GoogleGenAI({
       vertexai: true,
       project: process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || "ecomshop-marketing-prod",
-      location
+      location: VERTEX_LOCATION
     });
   }
 
   public async execute(manifest: AgentExecutionManifest): Promise<AgentExecutionResult> {
     const { taskId, prompt } = manifest;
-
-    const systemInstruction = `Eres un agente de marketing técnico de EcomShop. Tu rol es ${manifest.agentRole}. Produce respuestas estructuradas sin inventar especificaciones no verificadas.`;
-
-    const client = this.getClient();
-
-    const generateWithModel = async (modelName: string) => {
-      const timeoutSec = Math.round(this.timeoutMs / 1000);
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error(`TIMEOUT_EXCEEDED: La generación de la IA excedió el límite de ${timeoutSec}s`)), this.timeoutMs);
-      });
-
-      const generationPromise = client.models.generateContent({
-        model: modelName,
-        contents: prompt,
-        config: {
-          systemInstruction,
-          temperature: 0.7,
-          maxOutputTokens: 8192,
-          responseMimeType: "application/json"
-        }
-      });
-
-      return await Promise.race([generationPromise, timeoutPromise]) as any;
-    };
+    const systemInstruction =
+      `Eres un agente de marketing técnico de EcomShop. Tu rol es ${manifest.agentRole}. Produce respuestas estructuradas sin inventar especificaciones no verificadas.`;
 
     try {
-      const initialModel = (this.model || AI_TEXT_MODEL).replace(/-001$/, "");
-      const candidateModels = Array.from(new Set([
-        initialModel,
-        AI_TEXT_MODEL,
-        AI_FALLBACK_MODEL
-      ])).filter(Boolean);
+      const client = this.getClient();
+      const initialModel = this.model.replace(/-001$/, "");
+      const candidateModels = Array.from(
+        new Set([initialModel, AI_TEXT_MODEL, AI_FALLBACK_MODEL].filter(Boolean))
+      );
 
-      let response: any;
-      let lastError: any;
-      let usedModel = candidateModels[0];
-      let fallbackUsed = false;
+      const execution = await new AIExecutionService().generateJson({
+        models: candidateModels,
+        timeoutMs: this.timeoutMs,
+        generate: async (model) => {
+          const response = await client.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+              systemInstruction,
+              temperature: 0.7,
+              maxOutputTokens: 8192,
+              responseMimeType: "application/json"
+            }
+          });
 
-      for (let i = 0; i < candidateModels.length; i++) {
-        const modelName = candidateModels[i];
-        try {
-          response = await generateWithModel(modelName);
-          if (response?.text) {
-            usedModel = modelName;
-            fallbackUsed = i > 0;
-            break;
-          }
-        } catch (err: any) {
-          console.warn(`[AntigravityTsProvider] Modelo ${modelName} falló en Vertex AI (${err?.message || err}). Probando siguiente...`);
-          lastError = err;
+          const rawMeta = response.usageMetadata;
+          return {
+            text: response.text || "",
+            usageMetadata: rawMeta
+              ? {
+                  promptTokenCount: rawMeta.promptTokenCount,
+                  candidatesTokenCount: rawMeta.candidatesTokenCount,
+                  totalTokenCount: rawMeta.totalTokenCount,
+                  thoughtsTokenCount: rawMeta.thoughtsTokenCount,
+                  cachedContentTokenCount: rawMeta.cachedContentTokenCount
+                }
+              : undefined
+          };
         }
-      }
+      });
 
-      if (!response?.text) {
-        throw lastError || new Error("EMPTY_AI_RESPONSE: Ningún modelo de IA pudo responder.");
-      }
-
-      const responseText = response.text || "";
-      if (!responseText) {
-        throw new Error("EMPTY_AI_RESPONSE: El modelo de IA devolvió una respuesta vacía");
-      }
-
-      // Extraer metadatos de consumo reales de Vertex AI / Gemini
-      const rawMeta = response.usageMetadata || {};
-      const usageMetadata = {
-        promptTokenCount: typeof rawMeta.promptTokenCount === "number" ? rawMeta.promptTokenCount : null,
-        candidatesTokenCount: typeof rawMeta.candidatesTokenCount === "number" ? rawMeta.candidatesTokenCount : null,
-        totalTokenCount: typeof rawMeta.totalTokenCount === "number" ? rawMeta.totalTokenCount : null,
-        thoughtsTokenCount: typeof rawMeta.thoughtsTokenCount === "number" ? rawMeta.thoughtsTokenCount : (typeof rawMeta.candidatesTokensDetails?.[0]?.tokens === "number" ? rawMeta.candidatesTokensDetails[0].tokens : null),
-        cachedContentTokenCount: typeof rawMeta.cachedContentTokenCount === "number" ? rawMeta.cachedContentTokenCount : null,
-      };
-
-      // Registrar evento de consumo FinOps en ai_usage / ai_usage_project_summary
+      const usageMetadata = execution.usageMetadata;
       try {
         const { recordAiUsage } = await import("@/server/services/ai-budget");
-        const projectId = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || "ecomshop-marketing-prod";
-        const workspaceId = (manifest.payload as any)?.workspaceId || "default-ecomspain";
-        const sku = (manifest.payload as any)?.sku || "UNKNOWN_SKU";
+        const projectId =
+          process.env.GOOGLE_CLOUD_PROJECT ||
+          process.env.GCP_PROJECT ||
+          "ecomshop-marketing-prod";
+        const workspaceId =
+          typeof manifest.payload?.workspaceId === "string"
+            ? manifest.payload.workspaceId
+            : "default-ecomspain";
+        const sku =
+          typeof manifest.payload?.sku === "string"
+            ? manifest.payload.sku
+            : "UNKNOWN_SKU";
 
         await recordAiUsage(
           "system-orchestrator",
           "gemini_generation",
-          usageMetadata.promptTokenCount ?? 0,
-          usageMetadata.candidatesTokenCount ?? 0,
+          usageMetadata?.promptTokenCount ?? 0,
+          usageMetadata?.candidatesTokenCount ?? 0,
           0,
           { email: "orchestrator@ecomspain.com", displayName: "Antigravity Orchestrator" },
-          usedModel,
+          execution.model,
           {
             projectId,
             workspaceId,
             runId: manifest.runId,
             taskId,
             sku,
-            actualModel: usedModel,
-            fallbackUsed,
+            actualModel: execution.model,
+            fallbackUsed: execution.fallbackUsed,
             usageMetadata
           }
         );
-      } catch (finopsErr) {
-        console.warn("[AntigravityTsProvider] Evento FinOps no pudo registrarse:", finopsErr);
+      } catch (finopsError) {
+        console.warn("[AntigravityTsProvider] Evento FinOps no pudo registrarse:", finopsError);
       }
 
       return {
         taskId,
         exitCode: 0,
-        stdout: responseText,
+        stdout: execution.rawText,
         stderr: "",
         timedOut: false,
         filesChanged: manifest.filesAllowed.length > 0 ? [manifest.filesAllowed[0]] : [],
         summary: `Agente TypeScript completó exitosamente la tarea ${taskId}`,
-        actualModel: usedModel,
-        fallbackUsed,
+        actualModel: execution.model,
+        fallbackUsed: execution.fallbackUsed,
         usageMetadata
       };
-    } catch (err: any) {
-      let errorMessage = err?.message || String(err);
-
-      if (
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const normalizedMessage =
         errorMessage.includes("403") ||
         errorMessage.includes("PERMISSION_DENIED") ||
         errorMessage.includes("unregistered callers") ||
         errorMessage.includes("API key not valid")
-      ) {
-        errorMessage = "API Key de Gemini no configurada en las variables de entorno de Cloud Run";
-      }
+          ? "API Key de Gemini no configurada en las variables de entorno de Cloud Run"
+          : errorMessage;
 
-      console.error(`[AntigravityTsProvider Error] Tarea ${taskId} falló sin contingencia genérica:`, errorMessage);
+      console.error(
+        `[AntigravityTsProvider Error] Tarea ${taskId} falló sin contingencia genérica:`,
+        normalizedMessage
+      );
 
       return {
         taskId,
         exitCode: 1,
         stdout: "",
-        stderr: `[AntigravityTsProviderError]: ${errorMessage}`,
-        timedOut: errorMessage.includes("TIMEOUT_EXCEEDED"),
+        stderr: `[AntigravityTsProviderError]: ${normalizedMessage}`,
+        timedOut: normalizedMessage.includes("Timeout"),
         filesChanged: [],
-        summary: `Fallo en la ejecución del agente TypeScript para la tarea ${taskId}: ${errorMessage}`
+        summary: `Fallo en la ejecución del agente TypeScript para la tarea ${taskId}: ${normalizedMessage}`
       };
     }
   }
 }
 
-// Exportar alias para compatibilidad retroactiva
 export const AntigravityPythonSdkProvider = AntigravityTsProvider;
