@@ -97,4 +97,6 @@ export interface EditorialOrchestratorInput {
   intel: import("@/lib/services/notebook-intelligence").StructuredProductIntelligence;
   evidenceMap: import("@/lib/types/editorial-intelligence").ProductEvidenceMap;
   productType: ProductType;
+  /** Seed de variación solicitado por el usuario para obtener una nueva propuesta editorial sin alterar Product Truth. */
+  variationSeed?: number;
 }
