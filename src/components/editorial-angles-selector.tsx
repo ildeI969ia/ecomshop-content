@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Sparkles, Wrench, Coins, Building2, Edit3, RefreshCw, CheckCircle2 } from "lucide-react";
 import { EditorialAngle } from "@/app/api/editorial/suggest-angles/route";
 
@@ -36,46 +36,37 @@ export const EditorialAnglesSelector: React.FC<EditorialAnglesSelectorProps> = (
   const [isFreeTopic, setIsFreeTopic] = useState<boolean>(false);
   const [variationSeed, setVariationSeed] = useState<number>(0);
 
-  useEffect(() => {
-    let isMounted = true;
-    if (!sku) return;
-
-    async function fetchAngles(seed = variationSeed) {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch("/api/editorial/suggest-angles", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sku, brand, model, category, specs, variationSeed: seed })
-        });
-        const data = await res.json();
-        if (isMounted) {
-          if (data.angles && Array.isArray(data.angles)) {
-            setAngles(data.angles);
-            setRecommendedAudiences(Array.isArray(data.recommendedAudiences) ? data.recommendedAudiences : []);
-            setEditorialQuestions(Array.isArray(data.editorialQuestions) ? data.editorialQuestions : []);
-            const orchestratorAngle = data.selectedAngle && typeof data.selectedAngle.id === "string"
-              ? data.angles.find((a: EditorialAngle) => a.id === data.selectedAngle.id) || data.angles[0]
-              : data.angles[0];
-            setSelectedByOrchestrator(orchestratorAngle?.id || null);
-            if (!selectedAngle && !isFreeTopic && orchestratorAngle) onSelectAngle(orchestratorAngle, false);
-          }
-        }
-      } catch {
-        if (isMounted) {
-          setError("No se pudieron cargar los ángulos sugeridos.");
-        }
-      } finally {
-        if (isMounted) setLoading(false);
+  const fetchAngles = useCallback(async (seed = variationSeed) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/editorial/suggest-angles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sku, brand, model, category, specs, variationSeed: seed })
+      });
+      const data = await res.json();
+      if (data.angles && Array.isArray(data.angles)) {
+        setAngles(data.angles);
+        setRecommendedAudiences(Array.isArray(data.recommendedAudiences) ? data.recommendedAudiences : []);
+        setEditorialQuestions(Array.isArray(data.editorialQuestions) ? data.editorialQuestions : []);
+        const orchestratorAngle = data.selectedAngle && typeof data.selectedAngle.id === "string"
+          ? data.angles.find((a: EditorialAngle) => a.id === data.selectedAngle.id) || data.angles[0]
+          : data.angles[0];
+        setSelectedByOrchestrator(orchestratorAngle?.id || null);
+        if (!selectedAngle && !isFreeTopic && orchestratorAngle) onSelectAngle(orchestratorAngle, false);
       }
+    } catch {
+      setError("No se pudieron cargar los ángulos sugeridos.");
+    } finally {
+      setLoading(false);
     }
+  }, [sku, brand, model, category, specs, variationSeed, selectedAngle, isFreeTopic, onSelectAngle]);
 
-    fetchAngles(variationSeed);
-    return () => {
-      isMounted = false;
-    };
-  }, [sku]);
+  useEffect(() => {
+    if (!sku) return;
+    void fetchAngles(variationSeed);
+  }, [sku, fetchAngles, variationSeed]);
 
   const regenerateIdeas = () => {
     const nextSeed = Date.now();
