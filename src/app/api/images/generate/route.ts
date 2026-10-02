@@ -91,7 +91,8 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
             prompt: finalPrompt,
             aspectRatio: aspectRatio || "16:9",
             baseImage,
-            mode: mode || "ai"
+            mode: mode || "ai",
+            preservePrompt: true
           });
           qualityReview.regenerated = true;
         }
