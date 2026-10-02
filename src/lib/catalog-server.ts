@@ -26,3 +26,24 @@ export async function getDynamicCatalogDevice(sku: string): Promise<CatalogDevic
   }
   return getCatalogDevice(sku);
 }
+
+/**
+ * Devuelve el producto completo sincronizado desde el feed de EcomShop.
+ * Es la fuente primaria para generación: no cae a NotebookLM.
+ */
+export async function getDynamicCatalogProduct(sku: string): Promise<CatalogProduct | undefined> {
+  if (!sku) return undefined;
+  try {
+    const db = getAdminFirestore();
+    const cleanSku = sku.trim().toUpperCase();
+    const docSnap = await db.collection("products").doc(cleanSku.toLowerCase()).get();
+    if (docSnap.exists) return docSnap.data() as CatalogProduct;
+
+    const querySnap = await db.collection("products").where("sku", "==", cleanSku).limit(1).get();
+    if (!querySnap.empty) return querySnap.docs[0].data() as CatalogProduct;
+  } catch (error) {
+    console.warn("[CatalogServer] No se pudo leer el producto del feed sincronizado:", error);
+  }
+
+  return undefined;
+}
