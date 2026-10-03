@@ -28,6 +28,19 @@ const PROHIBITED_OPENING_PATTERNS = [
   /ficha\s+técnica/i
 ];
 
+const PROMPT_LEAK_PATTERNS = [
+  /editorial\\s+decision/i,
+  /editorial\\s+brief/i,
+  /reader\\s+learnings/i,
+  /reader\\s+promise/i,
+  /seg[uú]n\\s+el\\s+outline/i,
+  /la\\s+tensi[oó]n\\s+es/i,
+  /la\\s+tesis\\s+es/i,
+  /el\\s+lector\\s+debe/i,
+  /qué\\s+hay\\s+que\\s+entender\\s+antes\\s+de\\s+elegir/i,
+  /criterios\\s+t[eé]cnicos\\s+que\\s+cambian\\s+la\\s+decisi[oó]n/i
+];
+
 const BOILERPLATE_CLICHES = [
   "en el mundo actual",
   "en un entorno cada vez más",
@@ -131,6 +144,7 @@ export function validateEditorialQuality(
   const audienceIssues: string[] = [];
   const antiTemplateIssues: string[] = [];
   const boilerplateFound: string[] = [];
+  const promptLeakIssues: string[] = [];
   const valueIssues: string[] = [];
 
   const blogHtml = content.blog?.htmlContent || content.geo?.htmlContent || "";
@@ -222,6 +236,27 @@ export function validateEditorialQuality(
     if (lowerText.includes(cliche)) {
       boilerplateFound.push(cliche);
     }
+  }
+
+  const allEditorialOutputs = [
+    content.blog?.htmlContent || "",
+    content.geo?.htmlContent || "",
+    content.mailchimp?.newsletterHtml || "",
+    content.mailchimp?.plainText || "",
+    content.whatsapp?.formattedMessage || "",
+    content.linkedin?.fullPostText || "",
+    content.ecomshop?.argumentario || "",
+    content.ecomshop?.cmsHtml || ""
+  ].join("\\n");
+
+  for (const pattern of PROMPT_LEAK_PATTERNS) {
+    if (pattern.test(allEditorialOutputs)) {
+      promptLeakIssues.push(`Se detectó lenguaje interno del sistema en contenido editorial: ${pattern.source}`);
+    }
+  }
+
+  if (promptLeakIssues.length > 0) {
+    antiTemplateIssues.push(...promptLeakIssues);
   }
 
   if (boilerplateFound.length > 3) {
