@@ -237,15 +237,53 @@ export function validateEditorialQuality(
   const hasTechnicalConcepts = /multi-gigabit|poe|vlan|roaming|mlo|4096-qam|uplink|sfp\+|latencia|ancho de banda|presupuesto|chasis|dac|latiguillo|fibra/i.test(textWithoutProduct);
 
   let valueScore = 100;
+
+  // El artículo debe seguir siendo útil después de retirar la capa comercial/producto.
   if (!hasTechnicalConcepts) {
-    valueScore -= 40;
+    valueScore -= 35;
     valueIssues.push("Al eliminar el producto no se observan conceptos técnicos de ingeniería independientes.");
   }
-  if (valueWordCount < 300) {
+  if (valueWordCount < 700) {
     valueScore -= 30;
-    valueIssues.push("El contenido es demasiado breve para aportar valor consultivo independiente.");
+    valueIssues.push("El artículo es demasiado breve para desarrollar análisis, criterios de decisión y aplicación profesional.");
   }
 
+  const h2Count = (blogHtml.match(/<h2\b/gi) || []).length;
+  if (h2Count < 5) {
+    valueScore -= 15;
+    valueIssues.push("La estructura editorial no desarrolla suficientes bloques de análisis.");
+  }
+
+  const hasDecisionCriteria =
+    /criterios|cómo elegir|cómo evaluar|qué comprobar|qué revisar|dimensionar|validar/i.test(plainText);
+  if (!hasDecisionCriteria) {
+    valueScore -= 15;
+    valueIssues.push("Faltan criterios explícitos que permitan al lector tomar una decisión profesional.");
+  }
+
+  const hasLimitations =
+    /limitaciones|cuándo encaja|cuándo no|antes del despliegue|debe comprobarse|no se debe asumir/i.test(plainText);
+  if (!hasLimitations) {
+    valueScore -= 15;
+    valueIssues.push("Falta una sección de límites, condiciones o verificaciones antes del despliegue.");
+  }
+
+  const hasReaderQuestion =
+    /\?|pregunta central|decisión profesional/i.test(plainText) ||
+    Boolean(thesis?.technicalQuestion);
+  if (!hasReaderQuestion) {
+    valueScore -= 15;
+    valueIssues.push("El artículo no demuestra que esté respondiendo a una pregunta o decisión concreta del lector.");
+  }
+
+  const hasConclusion =
+    /<h2[^>]*>[^<]*(conclusión|decisión profesional|decisión final|qué hacer)[^<]*<\/h2>/i.test(blogHtml);
+  if (!hasConclusion) {
+    valueScore -= 10;
+    valueIssues.push("Falta una conclusión editorial que responda a la pregunta inicial.");
+  }
+
+  valueScore = Math.max(0, valueScore);
   const valuePassed = valueScore >= 70;
 
   // 6. PRODUCT CONTAMINATION CHECK
