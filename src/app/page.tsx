@@ -176,7 +176,7 @@ export default function Page() {
   const fetchCatalog = useCallback(async () => {
     setLoadingCatalog(true);
     try {
-      const res = await apiFetch<{ products?: CatalogProduct[]; lastSync?: any }>("/api/catalog/products?limit=100");
+      const res = await apiFetch<{ products?: CatalogProduct[]; lastSync?: any }>("/api/catalog/products?limit=500");
       if (res?.products && Array.isArray(res.products) && res.products.length > 0) {
         setCatalogProducts(res.products);
       }
@@ -447,7 +447,7 @@ export default function Page() {
                       Plataforma Multicanal de Marketing B2B — EcomShop
                     </h1>
                     <p className="text-sm text-slate-300 max-w-3xl leading-relaxed">
-                      Generación y orquestación unificada para todo el catálogo oficial ({ECOMSHOP_FULL_CATALOG.length} dispositivos).
+                      Generación y orquestación unificada para todo el catálogo oficial ({catalogProducts.length} dispositivos).
                       Activos auditados para Prensa/Blog GEO, LinkedIn, WhatsApp Broadcast y Fichas de Producto ecomshop.es con grounding en Vertex AI y Firebase.
                     </p>
                   </div>
@@ -467,7 +467,7 @@ export default function Page() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-slate-800/80">
                   <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
                     <span className="text-[10px] font-mono text-slate-400 uppercase block">Catálogo Canónico</span>
-                    <span className="text-xl font-bold text-white mt-1 block">{ECOMSHOP_FULL_CATALOG.length} SKUs</span>
+                    <span className="text-xl font-bold text-white mt-1 block">{catalogProducts.length} SKUs</span>
                   </div>
                   <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
                     <span className="text-[10px] font-mono text-slate-400 uppercase block">Canales Simultáneos</span>

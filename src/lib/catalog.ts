@@ -139,13 +139,13 @@ export function catalogProductToCatalogDevice(prod: CatalogProduct): CatalogDevi
       throughput,
       wanPorts,
       vpnFeatures,
-      interfaces: prod.interfaces,
-      powerSource: prod.powerRequirements,
-      management: `${prod.managementMode} EnGenius Cloud`
+      interfaces: prod.interfaces || [],
+      powerSource: prod.powerRequirements || "No especificado",
+      management: `${prod.managementMode || "Cloud"} EnGenius Cloud`
     },
-    keyAdvantages: prod.keyAdvantages,
-    notebookSource: prod.notebookSource.title,
-    notebookSourceId: prod.notebookSource.sourceId,
+    keyAdvantages: prod.keyAdvantages || [],
+    notebookSource: prod.notebookSource?.title || `Ficha Oficial ${prod.sku}`,
+    notebookSourceId: prod.notebookSource?.sourceId || `gesio-xml-${prod.id}`,
     additionalSourceIds: prod.additionalSourceIds || []
   };
 }

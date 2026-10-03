@@ -117,7 +117,6 @@ export function checkProductContamination(
     issues
   };
 }
-}
 
 /**
  * Audit del Motor Editorial B2B (Mandato 2 + Mandato Urgente)

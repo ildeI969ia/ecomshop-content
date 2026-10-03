@@ -11,10 +11,10 @@ export const GET = withAuthAndPermission("content:view", async (req: NextRequest
     const { searchParams } = new URL(req.url);
     const query = (searchParams.get("q") || "").toLowerCase().trim();
     const family = (searchParams.get("family") || "ALL").toUpperCase().trim();
-    const limitCount = parseInt(searchParams.get("limit") || "100", 10);
+    const limitCount = parseInt(searchParams.get("limit") || "500", 10);
 
     const db = getAdminFirestore();
-    const snapshot = await db.collection("products").limit(limitCount).get();
+    const snapshot = await db.collection("products").limit(Math.min(limitCount, 1000)).get();
 
     let products: CatalogProduct[] = [];
 
@@ -29,7 +29,7 @@ export const GET = withAuthAndPermission("content:view", async (req: NextRequest
           const aligned = Boolean(productSku) && productSku === docSku;
           if (!aligned) {
             console.error("[CatalogProducts] PRODUCT_IDENTITY_MISMATCH", {
-              documentId: doc.id,
+              documentId: docId,
               storedSku: productSku
             });
             return false;

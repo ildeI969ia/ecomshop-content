@@ -175,7 +175,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
 
       const contentItem: ContentItem = {
         id: contentId,
-        campaignId: inputData.campaignId || null,
+        campaignId: inputData.campaignId || undefined,
         workspaceId: user.workspaceId,
         title: content.blog?.title || content.topicTitle || "Contenido B2B",
         slug: content.blog?.slug || content.topicId,

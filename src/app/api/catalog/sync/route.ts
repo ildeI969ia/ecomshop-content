@@ -94,7 +94,7 @@ export const POST = withAuthAndPermission("content:create", async (req: NextRequ
 
       return NextResponse.json({
         success: true,
-        message: `Sincronización masiva completada: ${syncedCount} de ${allProducts.length} productos procesados desde el feed CSV público de Gesio`,
+        message: `Sincronización masiva completada: ${syncedCount} de ${allProducts.length} productos procesados desde el feed XML público de Gesio`,
         count: syncedCount,
         totalFeedCount: allProducts.length,
         durationMs: Date.now() - startTime
