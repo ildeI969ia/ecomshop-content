@@ -746,7 +746,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
               )}
               <Badge variant="neutral" size="xs">
                 <BookOpen className="w-3 h-3 text-indigo-400" />
-                NotebookLM Grounded
+                EcomShop Feed Grounded
               </Badge>
             </div>
 
