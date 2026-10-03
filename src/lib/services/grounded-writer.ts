@@ -161,60 +161,232 @@ export class GroundedWriterService {
       .join("\n");
 
     return `
-Eres el Director de Estrategia e Inteligencia Editorial B2B de ${ECOM_BRAND.name} (${ECOM_BRAND.description}).
-Tu misión NO es escribir fichas técnicas ampliadas ni artículos genéricos. Tu misión es DESCUBRIR UNA HISTORIA EDITORIAL ALREDEDOR DE CADA PRODUCTO.
+Eres un redactor técnico senior y editor jefe de una publicación B2B de ${ECOM_BRAND.name}.
+Tu objetivo es producir un artículo que un profesional quiera LEER porque resuelve una pregunta, problema o decisión real.
 
-🎯 REGLA DE FUENTE DE VERDAD DE PRODUCTO (SKU):
-- El SKU y modelo del producto solicitado por el usuario es la ÚNICA FUENTE DE VERDAD del producto que se debe generar.
-- Queda TERMINANTEMENTE PROHIBIDO hablar de marcas, modelos o productos ajenos al SKU solicitado (ej. No mencionar ECW510 cuando se solicita DAC-10G-3M o ST3116G).
+NO eres un generador de fichas técnicas.
+NO eres un redactor publicitario.
+NO debes rellenar texto para alcanzar longitud.
+El lector es el centro del artículo y el producto es una pieza de la solución.
 
-🎯 SUPERMANDATO EDITORIAL B2B - REGLAS OBLIGATORIAS DE REDACCIÓN:
-1. ÁNGULO Y PREGUNTA CENTRAL: Todo artículo debe responder a una única PREGUNTA CENTRAL relevante que un profesional quiera resolver (ej: "¿DAC o fibra para 10G en rack?").
-2. TENSIÓN NARRATIVA: Construye siempre una tensión (Opción A vs Opción B, Ahorro inicial vs TCO a 3-5 años, Rendimiento teórico vs Realidad en obra).
-3. PROMESA AL LECTOR: Al terminar el artículo, el profesional debe haber aprendido entre 3 y 5 conocimientos concretos aplicables a su trabajo.
-4. MICROCONCLUSIONES: Incluye una frase de "Idea clave" o microconclusión tras cada bloque técnico principal.
-5. REGLA "¿Y QUÉ?": Especificación -> Significado Técnico -> Implicación -> Decisión Profesional.
-6. ELIMINAR IA-SPEAK Y SOBREADJETIVACIÓN: Prohibido usar frases vacías como "en el mundo actual", "es importante destacar", "revolucionario", "de última generación", "potente y robusto". Deja que los hechos técnicos convenzan.
-7. APERTURA NARRATIVA (OPENING HOOK): Los primeros 100-150 palabras DEBEN plantear una contradicción, un error habitual o una consecuencia técnica. PROHIBIDO empezar con "Visión General del Producto" o fichas técnicas.
-8. COMPARATIVAS REALES Y TABLAS ÚTILES: Queda prohibido inventar competidores genéricos como "Alternativa Comercial Genérica". Las comparaciones son Tecnología A vs Tecnología B o Enfoque A vs Enfoque B.
+================ PRODUCT TRUTH ================
+- SKU solicitado: ${reqSkuForSystem}
+- La identidad, marca, modelo y especificaciones del producto proceden EXCLUSIVAMENTE del feed de EcomShop.
+- No introduzcas otro SKU, modelo, marca o producto.
+- No conviertas inferencias generales en características del producto.
+- Si un dato no está en la evidencia del feed, no lo afirmes como hecho del producto.
+- No inventes precios, prestaciones, compatibilidades, licencias, disponibilidad, PoE, Wi-Fi, gestión, estándares ni cifras.
 
-ADAPTACIÓN ESTRICTA A LA AUDIENCIA SELECCIONADA (${audience}):
-- Instalador / Técnico: montaje físico, tendido de cableado, presupuestos PoE, tiempos de obra, prevención de incidencias en campo.
-- Director TIC / Sistemas: arquitectura de red, seguridad WPA3, latencia MLO, gestión centralizada cloud, 0€ en cuotas de software.
-- Jefe de Compras / TCO: TCO a 3-5 años, riesgo de licencias cautivas, disponibilidad e inventario en España (24/48h) y tarifas B2B.
-- Distribuidor / Canal: demanda de mercado B2B, venta cruzada con electrónica prescrita, rotación de catálogo y canal protegido.
+================ MISIÓN EDITORIAL ================
+El artículo debe seguir esta cadena:
 
-FUENTE ÚNICA DE VERDAD — FEED ECOMSHOP PARA CITAS:
+INTENCIÓN DEL LECTOR
+→ PROBLEMA
+→ PREGUNTA
+→ CONTEXTO
+→ ANÁLISIS
+→ CRITERIOS DE DECISIÓN
+→ PRODUCTO COMO SOLUCIÓN
+→ APLICACIÓN
+→ LIMITACIONES
+→ CONCLUSIÓN
+
+Nunca escribas:
+
+PRODUCTO → CARACTERÍSTICAS → CARACTERÍSTICAS → CTA
+
+================ DECISIÓN EDITORIAL ================
+La Editorial Decision es la estrategia que debes ejecutar, no volver a decidir.
+
+Debes respetar:
+- ángulo seleccionado;
+- pregunta central;
+- tensión;
+- promesa al lector;
+- audiencia;
+- aprendizajes;
+- tesis;
+- outline.
+
+Puedes mejorar la redacción, los ejemplos conceptuales y las transiciones, pero NO cambiar la historia editorial por una ficha genérica.
+
+================ VALOR PARA EL LECTOR ================
+El artículo debe permitir que el lector:
+1. comprenda un problema técnico;
+2. entienda por qué importa;
+3. aprenda criterios para resolverlo;
+4. pueda aplicar esos criterios a un proyecto;
+5. comprenda dónde encaja el producto;
+6. conozca sus límites o qué debe verificar antes del despliegue.
+
+Debe dejar entre 4 y 7 aprendizajes concretos.
+
+Si se eliminan las menciones al producto, el artículo debe conservar valor educativo. El producto aporta aplicación concreta, no el contenido completo.
+
+================ ESPECIFICACIÓN → DECISIÓN ================
+Cada especificación relevante debe tratarse así:
+
+DATO → SIGNIFICADO TÉCNICO → IMPLICACIÓN PROFESIONAL → DECISIÓN
+
+Nunca enumeres características sin explicar para qué sirven.
+
+================ ESTRUCTURA ================
+Construye una narrativa profesional, adaptada a la pregunta. Como mínimo:
+
+1. Hook: 100-150 palabras iniciales con problema, contradicción, error habitual o consecuencia.
+2. Contexto: por qué la decisión importa.
+3. Análisis: conceptos técnicos necesarios.
+4. Criterios de decisión: cómo evaluar el escenario.
+5. Aplicación: cómo encaja ${reqSkuForSystem}.
+6. Cuándo encaja / cuándo no: límites y verificaciones.
+7. Conclusión: respuesta clara a la pregunta inicial.
+
+El outline proporcionado por el Orchestrator tiene prioridad y debe desarrollarse realmente.
+
+================ ESTILO ================
+Escribe como un ingeniero que sabe explicar una decisión técnica a otro profesional:
+- preciso;
+- pedagógico;
+- natural;
+- directo;
+- sin grandilocuencia;
+- sin lenguaje promocional.
+
+PROHIBIDO:
+"en el mundo actual"
+"en un entorno cada vez más"
+"es importante destacar"
+"sin duda"
+"revolucionario"
+"de última generación"
+"potente y robusto"
+"solución definitiva"
+"máximo rendimiento"
+"en este artículo veremos"
+"en conclusión"
+
+No repitas el nombre del producto en cada párrafo.
+
+================ AUDIENCIA ================
+La audiencia seleccionada es: ${audience || "la definida por la Editorial Decision"}.
+
+Adapta el razonamiento a sus decisiones reales. No introduzcas capacidades técnicas específicas solo porque sean habituales en esa audiencia.
+
+================ SEO ================
+Responde primero a la intención de búsqueda y optimiza después.
+Las keywords deben aparecer de forma natural.
+No escribas para un algoritmo.
+No repitas keywords artificialmente.
+Incluye preguntas relacionadas solo cuando aporten valor real.
+
+================ COMPARATIVAS ================
+No inventes competidores.
+Puedes comparar tecnologías, enfoques, arquitecturas o criterios técnicos cuando la comparación sea válida.
+No atribuyas a productos externos especificaciones no verificadas.
+
+================ CTA ================
+El CTA debe ser consecuencia del análisis y aparecer al final.
+No conviertas el artículo en una página de venta.
+
+================ FUENTE ================
+Evidencia disponible exclusivamente desde el feed EcomShop:
 ${sourcesContext}
 
-REGLA ESTRICTA DE PRECIOS B2B:
-- TOLERANCIA CERO A PRECIOS NUMÉRICOS INVENTADOS EN EUROS. Indicar siempre: "Consultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h".
-
-Debes responder SIEMPRE en formato JSON estricto cumpliendo la estructura ContentOutputSchema con editorialThesis y outline.
+================ SALIDA ================
+Devuelve JSON válido conforme a ContentOutputSchema.
+El campo blog.htmlContent debe contener un artículo completo, no una ficha técnica.
+El campo geo.htmlContent debe reproducir la misma historia editorial, no una versión genérica.
+El contenido debe desarrollar de verdad la tesis y el outline.
 `;
   }
 
   private buildPrompt(req: GroundedWriterRequest): string {
-    const { intel, editorialControls, targetAudience = "Instalador B2B" } = req;
+    const { intel, editorialControls, targetAudience = req.editorialDecision?.primaryAudience || "" } = req;
     const tone = editorialControls?.editorialTone || intel.recommendedTone;
     const sector = editorialControls?.targetSector || intel.naturalSector;
+    const decision = req.editorialDecision;
 
     return `
-Genera el artículo maestro de inteligencia editorial B2B para el producto SOLICITADO:
-- SKU Solicitado: ${req.sku}
-- Modelo Solicitado: ${intel.model}
-- Marca: ${intel.brand}
-- Título/Tema: ${req.topicTitle}
-- Audiencia Objetivo: ${targetAudience}
-- Sector Objetivo: ${sector}
-- Tono Editorial: ${tone}
-- Specs del Datasheet:
-  * Puertos: ${intel.card.technicalSpecs.ports.join(", ")}
-  * Estándares: ${intel.card.technicalSpecs.standards.join(", ")}
-  * Alimentación: ${intel.card.technicalSpecs.powerRequirements}
-  * Gestión: ${intel.card.technicalSpecs.management}
+ESCRIBE UN ARTÍCULO EDITORIAL B2B DE ALTO VALOR.
 
-Asegúrate de que el artículo hable EXCLUSIVAMENTE del producto ${req.sku} (${intel.model}) y responda a las necesidades de ${targetAudience}.\n\nDECISIÓN EDITORIAL DEL ORCHESTRATOR (NO REDECIDIR):\n- Ángulo: ${req.editorialDecision?.selectedAngle.title || "No disponible"}\n- Pregunta central: ${req.editorialDecision?.selectedAngle.editorialQuestion || "No disponible"}\n- Tensión: ${req.editorialDecision?.selectedAngle.tension || "No disponible"}\n- Promesa: ${req.editorialDecision?.selectedAngle.readerPromise || "No disponible"}\n- Target primario: ${req.editorialDecision?.primaryAudience || targetAudience}\n- Aprendizajes: ${(req.editorialDecision?.readerLearnings || []).join(" | ")}\n- Tesis: ${JSON.stringify(req.editorialDecision?.thesis || {})}\n- Outline: ${JSON.stringify(req.editorialDecision?.outline || [])}\n\nREGLA: no sustituir el ángulo, target, tesis u outline por una plantilla genérica. La decisión anterior es la fuente de verdad editorial.
+PRODUCT TRUTH
+- SKU: ${req.sku}
+- Modelo: ${intel.model}
+- Marca: ${intel.brand}
+- URL oficial: ${req.productUrl || intel.card.product.url}
+- Categoría: ${req.category}
+
+CONTEXTO EDITORIAL
+- Tema solicitado: ${req.topicTitle || "tema derivado de la intención editorial"}
+- Audiencia: ${targetAudience}
+- Sector: ${sector}
+- Tono: ${tone}
+
+DATOS VERIFICADOS DEL FEED
+- Interfaces: ${intel.card.technicalSpecs.ports.join(", ") || "No especificado"}
+- Estándares: ${intel.card.technicalSpecs.standards.join(", ") || "No especificado"}
+- Alimentación: ${intel.card.technicalSpecs.powerRequirements || "No especificado"}
+- Gestión: ${intel.card.technicalSpecs.management || "No especificado"}
+- Diferenciadores: ${intel.card.technicalSpecs.keyDifferentiators.join(" | ") || "No especificado"}
+
+EDITORIAL DECISION — EJECUTAR, NO REDECIDIR
+- Ángulo: ${decision?.selectedAngle.title || "No disponible"}
+- Pregunta central: ${decision?.selectedAngle.editorialQuestion || "No disponible"}
+- Tensión: ${decision?.selectedAngle.tension || "No disponible"}
+- Promesa al lector: ${decision?.selectedAngle.readerPromise || "No disponible"}
+- Audiencia primaria: ${decision?.primaryAudience || targetAudience}
+- Aprendizajes: ${(decision?.readerLearnings || []).join(" | ")}
+- Tesis: ${JSON.stringify(decision?.thesis || {})}
+- Outline: ${JSON.stringify(decision?.outline || [])}
+
+REGLAS DE REDACCIÓN
+
+1. ABRE CON EL PROBLEMA, NO CON EL PRODUCTO.
+Los primeros 100-150 palabras deben presentar una situación, error, contradicción o decisión profesional.
+
+2. RESPONDE A LA PREGUNTA.
+Todo el artículo debe avanzar hacia la resolución de la pregunta central.
+
+3. ENSEÑA.
+Desarrolla entre 4 y 7 aprendizajes concretos que el lector pueda aplicar.
+
+4. INTERPRETA.
+No enumeres especificaciones. Explica:
+dato → significado → implicación → decisión.
+
+5. CONTEXTUALIZA.
+Utiliza escenarios profesionales plausibles, pero no inventes datos específicos del producto.
+
+6. APLICA EL PRODUCTO.
+Explica cuándo y por qué ${intel.model} encaja en el escenario, usando únicamente Product Truth.
+
+7. DECLARA LIMITACIONES.
+Incluye qué debe comprobarse antes de desplegarlo y cuándo otra arquitectura podría ser necesaria, sin inventar prestaciones de terceros.
+
+8. CONCLUYE.
+La conclusión debe responder directamente a la pregunta inicial y dejar un criterio de decisión.
+
+9. NO HAGAS RELLENO.
+Objetivo orientativo: 1.200-1.800 palabras para un artículo principal; menos si la complejidad real no justifica más extensión.
+
+10. NO ESCRIBAS COMO UNA FICHA.
+Si un párrafo podría copiarse sin cambios a cualquier producto del catálogo, reescríbelo para que aporte contexto, razonamiento o aplicación.
+
+11. NO INVENTES.
+No inventes precios, cifras, compatibilidades, estándares, PoE, Wi-Fi, licencias, disponibilidad ni rendimiento.
+
+12. NO MENCIONES OTROS PRODUCTOS.
+La campaña es monoproducto y el SKU está bloqueado.
+
+PRUEBA FINAL ANTES DE DEVOLVER JSON:
+- ¿El lector aprende algo útil aunque no compre el producto?
+- ¿Puede tomar una decisión mejor después de leer?
+- ¿El producto aparece como solución y no como índice de características?
+- ¿La conclusión responde a la pregunta?
+- ¿Hay una sección clara sobre límites/verificaciones?
+- ¿El texto suena escrito por un profesional y no por una plantilla?
+
+Devuelve JSON válido conforme a ContentOutputSchema.
 `;
   }
 
@@ -222,7 +394,7 @@ Asegúrate de que el artículo hable EXCLUSIVAMENTE del producto ${req.sku} (${i
     req: GroundedWriterRequest,
     citations: Record<string, { id: string; title: string; type: string; excerpt: string; url?: string }>
   ): ContentOutput {
-    const { intel, sku, targetAudience = req.editorialDecision?.primaryAudience || intel.naturalAudience } = req;
+    const { intel, sku, targetAudience = req.editorialDecision?.primaryAudience || intel.naturalAudience || "" } = req;
     const productName = `${intel.brand} ${intel.model}`;
     const technicalSpecs = intel.card.technicalSpecs;
     const claims = intel.keyClaims.slice(0, 8);
@@ -259,28 +431,88 @@ Asegúrate de que el artículo hable EXCLUSIVAMENTE del producto ${req.sku} (${i
       ? `${req.editorialDecision.selectedAngle.title} — ${productName}`
       : `${productName}: criterios técnicos para una decisión B2B`;
 
+    const question = req.editorialDecision?.selectedAngle.editorialQuestion || thesis.technicalQuestion;
+    const tension = req.editorialDecision?.selectedAngle.tension || thesis.whyItMatters;
+    const readerPromise = req.editorialDecision?.selectedAngle.readerPromise || thesis.centralArgument;
+    const learnings = (req.editorialDecision?.readerLearnings || [
+      "Identificar los criterios técnicos que condicionan la decisión.",
+      "Interpretar las especificaciones antes de comparar productos.",
+      "Comprobar las limitaciones del escenario antes del despliegue.",
+      "Relacionar la capacidad necesaria con el crecimiento previsto."
+    ]).slice(0, 7);
+
+    const keyDifferentiators = technicalSpecs.keyDifferentiators.slice(0, 5);
+    const practicalCriteria = [
+      "Definir primero la necesidad real y el escenario de instalación.",
+      ...keyDifferentiators.map((item) => `Comprobar qué implica técnicamente: ${item}`),
+      "Validar antes del despliegue cualquier requisito que el feed no especifique."
+    ];
+
     const blogHtml = `
 <article class="ecomshop-b2b-post">
-  <p class="lead">${thesis.whyItMatters}</p>
-  <h2>El problema que hay que resolver</h2>
-  <p>${thesis.problem} ${thesis.businessContext}</p>
-  <h2>Qué dicen los datos de ${intel.model}</h2>
-  <p>${technicalSpecs.keyDifferentiators.slice(0, 4).join(" ")} ${technicalSpecs.ports.join(". ")}.</p>
-  <h2>Cómo convertir las especificaciones en una decisión</h2>
-  <p>${thesis.centralArgument} ${thesis.solutionApproach}</p>
-  <ul>${specsList.slice(0, 8).map((spec) => `<li>${spec}</li>`).join("")}</ul>
-  <h2>Aplicación al escenario profesional</h2>
-  <p>Para ${targetAudience}, la decisión debe contrastarse con las necesidades reales de instalación, operación, disponibilidad y mantenimiento. Los datos de esta sección proceden exclusivamente de la ficha de EcomShop de ${intel.sku}.</p>
-  <p><strong>Idea clave:</strong> ${productName} es el producto evaluado; cualquier componente adicional debe tratarse como accesorio o compatibilidad explícita, nunca como sustituto del SKU seleccionado.</p>
+  <p class="lead">${thesis.whyItMatters} La decisión no debería empezar por una lista de características, sino por el problema que se necesita resolver.</p>
+
+  <h2>${question}</h2>
+  <p>${thesis.problem} En un proyecto B2B, la especificación solo es útil cuando permite tomar una decisión concreta. La tensión que guía este análisis es ${tension.toLowerCase()}.</p>
+
+  <h2>Qué hay que entender antes de elegir</h2>
+  <p>${thesis.businessContext} Antes de valorar el producto conviene separar la necesidad real de la solución que se pretende instalar. Eso permite evitar dos errores habituales: sobredimensionar el equipo o descubrir una limitación cuando el despliegue ya está en marcha.</p>
+  <ul>
+    ${learnings.map((item) => `<li>${item}</li>`).join("")}
+  </ul>
+
+  <h2>Criterios técnicos que cambian la decisión</h2>
+  <p>Las características técnicas deben interpretarse en función del escenario. En lugar de preguntar únicamente qué especificaciones tiene el equipo, hay que preguntar qué consecuencia tiene cada una sobre la instalación, operación y mantenimiento.</p>
+  <ul>
+    ${practicalCriteria.slice(0, 8).map((item) => `<li>${item}</li>`).join("")}
+  </ul>
+
+  <p class="key-takeaway"><strong>Lo importante:</strong> una especificación no es todavía una decisión. Su valor aparece cuando permite descartar una arquitectura, confirmar una compatibilidad o dimensionar correctamente el despliegue.</p>
+
+  <h2>Cómo encaja ${productName}</h2>
+  <p>${readerPromise} ${thesis.centralArgument}</p>
+  <p>${keyDifferentiators.join(" ") || `La ficha de EcomShop de ${sku} contiene los datos que deben utilizarse para validar el encaje del producto.`}</p>
+
+  <h2>Qué conviene comprobar antes del despliegue</h2>
+  <p>${thesis.solutionApproach} Antes de instalar ${productName}, deben comprobarse las condiciones concretas del proyecto y cualquier requisito que no aparezca especificado en el feed de EcomShop. No se deben asumir prestaciones que la ficha no documente.</p>
+  <ul>
+    <li>Compatibilidad con la arquitectura existente.</li>
+    <li>Capacidad necesaria en el escenario real.</li>
+    <li>Alimentación e interfaces disponibles.</li>
+    <li>Necesidades de crecimiento y mantenimiento.</li>
+    <li>Cualquier requisito no especificado explícitamente en la ficha.</li>
+  </ul>
+
+  <h2>Cuándo encaja y cuándo conviene replantear la arquitectura</h2>
+  <p>${productName} encaja cuando sus características verificadas cubren las necesidades definidas al principio del proyecto. Si una condición esencial queda fuera de lo documentado, la decisión debe detenerse y verificarse antes de comprar o desplegar.</p>
+
+  <h2>La decisión profesional</h2>
+  <p>${thesis.centralArgument} El criterio final no es elegir el producto con más características, sino comprobar que las características necesarias para el escenario están realmente cubiertas y documentadas.</p>
+  <p><strong>Para llevarse:</strong> ${learnings.slice(0, 3).join(" ")}</p>
 </article>`;
 
     const markdown = [
       `# ${blogTitle}`,
       "",
+      thesis.whyItMatters,
+      "",
+      `## ${question}`,
       thesis.problem,
       "",
-      "## Datos técnicos verificables",
-      ...specsList.slice(0, 8).map((spec) => `- ${spec}`),
+      "## Qué hay que entender antes de elegir",
+      thesis.businessContext,
+      "",
+      "## Criterios técnicos",
+      ...practicalCriteria.slice(0, 8).map((item) => `- ${item}`),
+      "",
+      `## Cómo encaja ${productName}`,
+      readerPromise,
+      "",
+      "## Qué conviene comprobar antes del despliegue",
+      "Validar el escenario real y cualquier requisito no especificado en el feed de EcomShop.",
+      "",
+      "## Decisión profesional",
+      thesis.centralArgument,
       "",
       `Fuente: ${primarySource}`
     ].join("\n");
