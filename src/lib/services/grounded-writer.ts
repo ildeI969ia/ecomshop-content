@@ -137,7 +137,15 @@ export class GroundedWriterService {
           const criticReport = auditEditorialQualityWithCritic(rawOutput as any, bestAngle, evidenceMap, req.targetAudience);
           const qualityReport = validateEditorialQuality(rawOutput as any, req.targetAudience, req.sku);
 
-          const validated = ContentOutputSchema.safeParse(rawOutput);
+          const hydratedOutput = this.hydrateAiOutput(rawOutput as Record<string, unknown>, req, intel, citations, editorialDecision);
+          const hydratedBlogHtml =
+            hydratedOutput.blog && typeof hydratedOutput.blog === "object"
+              ? String((hydratedOutput.blog as Record<string, unknown>).htmlContent || "")
+              : "";
+          if (hydratedBlogHtml.replace(/<[^>]+>/g, " ").replace(/\\s+/g, " ").trim().length < 800) {
+            throw new Error("[GroundedWriter] El modelo no produjo un artículo suficientemente desarrollado.");
+          }
+          const validated = ContentOutputSchema.safeParse(hydratedOutput);
           if (validated.success) {
             return {
               ...validated.data,
@@ -146,6 +154,14 @@ export class GroundedWriterService {
               factCheckScore: qualityReport.score
             };
           }
+
+          console.error(
+            "[GroundedWriter] La respuesta de IA no cumple ContentOutputSchema; se intentará el siguiente modelo.",
+            validated.error.issues.map((issue) => ({
+              path: issue.path.join("."),
+              message: issue.message
+            }))
+          );
         } catch (modelErr) {
           lastModelError = modelErr;
           console.error(`[GroundedWriter] Fallo con ${modelToTry} en Vertex AI:`, modelErr);
@@ -155,6 +171,134 @@ export class GroundedWriterService {
 
     console.warn(`[GroundedWriter] Usando fallback determinista Mandato 2 para SKU ${req.sku} (Audiencia: ${req.targetAudience || "sin audiencia explícita"}).`);
     return this.generateGroundedFallback(req, citations);
+  }
+
+  /**
+   * Normaliza una respuesta parcial del modelo.
+   *
+   * El modelo es responsable de redactar el artículo; no se le obliga a gastar
+   * tokens repitiendo seis estructuras omnicanal completas. Los canales ausentes
+   * se derivan del artículo ya redactado y del Product Truth, nunca de plantillas
+   * técnicas inventadas. Esto evita que un blog válido termine en fallback sólo
+   * porque falte un campo secundario del JSON.
+   */
+  private hydrateAiOutput(
+    raw: Record<string, unknown>,
+    req: GroundedWriterRequest,
+    intel: StructuredProductIntelligence,
+    citations: Record<string, { id: string; title: string; type: string; excerpt: string; url?: string }>,
+    editorialDecision?: EditorialDecision
+  ): Record<string, unknown> {
+    const rawBlog = raw.blog && typeof raw.blog === "object"
+      ? raw.blog as Record<string, unknown>
+      : {};
+    const rawGeo = raw.geo && typeof raw.geo === "object"
+      ? raw.geo as Record<string, unknown>
+      : {};
+
+    const blogTitle = typeof rawBlog.title === "string" && rawBlog.title.trim()
+      ? rawBlog.title.trim()
+      : editorialDecision?.selectedAngle.title || req.topicTitle || `${intel.brand} ${intel.model}`;
+
+    const blogMeta = typeof rawBlog.metaDescription === "string" && rawBlog.metaDescription.trim()
+      ? rawBlog.metaDescription.trim()
+      : `Análisis B2B de ${intel.brand} ${intel.model} basado en información verificable del feed de EcomShop.`;
+
+    const blogHtml = typeof rawBlog.htmlContent === "string" ? rawBlog.htmlContent.trim() : "";
+    const productUrl = req.productUrl || intel.card.product.url || "https://www.ecomshop.es";
+    const slug = typeof rawBlog.slug === "string" && rawBlog.slug.trim()
+      ? rawBlog.slug.trim()
+      : `${intel.sku.toLowerCase()}-analisis-b2b`;
+    const plainExcerpt = typeof rawBlog.cleanPlainTextExcerpt === "string" && rawBlog.cleanPlainTextExcerpt.trim()
+      ? rawBlog.cleanPlainTextExcerpt.trim()
+      : blogHtml.replace(/<[^>]+>/g, " ").replace(/\\s+/g, " ").trim().slice(0, 420);
+
+    const existingGeoHtml = typeof rawGeo.htmlContent === "string" && rawGeo.htmlContent.trim()
+      ? rawGeo.htmlContent.trim()
+      : blogHtml;
+
+    const safeStringArray = (value: unknown): string[] =>
+      Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0) : [];
+
+    const keywords = safeStringArray(rawBlog.targetKeywords);
+    const differentiators = intel.card.technicalSpecs.keyDifferentiators.slice(0, 3);
+
+    const mailchimp = raw.mailchimp && typeof raw.mailchimp === "object"
+      ? raw.mailchimp as Record<string, unknown>
+      : {
+          subjectA: blogTitle,
+          subjectB: `${intel.model}: análisis técnico B2B`,
+          previewText: blogMeta.slice(0, 90),
+          ctaButtonText: "Consultar producto",
+          ctaUrl: productUrl,
+          newsletterHtml: `<p>${blogMeta}</p><p>${plainExcerpt}</p><p><a href="${productUrl}">Consultar ficha del producto</a></p>`,
+          plainText: `${blogMeta}\\n\\n${plainExcerpt}\\n\\n${productUrl}`
+        };
+
+    const whatsapp = raw.whatsapp && typeof raw.whatsapp === "object"
+      ? raw.whatsapp as Record<string, unknown>
+      : {
+          headline: blogTitle,
+          formattedMessage: `*${blogTitle}*\\n\\n${plainExcerpt}\\n\\nFicha: ${productUrl}`,
+          callToAction: "Consultar producto",
+          targetUrl: productUrl
+        };
+
+    const linkedin = raw.linkedin && typeof raw.linkedin === "object"
+      ? raw.linkedin as Record<string, unknown>
+      : {
+          hook: blogTitle,
+          body: `${blogMeta}\\n\\n${plainExcerpt}`,
+          takeaways: differentiators,
+          callToAction: "Consultar la ficha técnica",
+          hashtags: ["#EcomShop", "#NetworkingB2B"],
+          fullPostText: `${blogTitle}\\n\\n${plainExcerpt}\\n\\n${productUrl}`
+        };
+
+    const hydrated = {
+      ...raw,
+      topicId: typeof raw.topicId === "string" && raw.topicId ? raw.topicId : `ai-${intel.sku.toLowerCase()}-${Date.now().toString(36)}`,
+      topicTitle: typeof raw.topicTitle === "string" && raw.topicTitle ? raw.topicTitle : blogTitle,
+      category: typeof raw.category === "string" && raw.category ? raw.category : intel.card.product.category,
+      generatedAt: typeof raw.generatedAt === "string" && raw.generatedAt ? raw.generatedAt : new Date().toISOString(),
+      editorialThesis: raw.editorialThesis || editorialDecision?.thesis,
+      outline: Array.isArray(raw.outline) && raw.outline.length >= 4 ? raw.outline : editorialDecision?.outline,
+      blog: {
+        ...rawBlog,
+        title: blogTitle,
+        metaDescription: blogMeta,
+        slug,
+        readingTimeMinutes: typeof rawBlog.readingTimeMinutes === "number" ? rawBlog.readingTimeMinutes : Math.max(3, Math.ceil(plainExcerpt.split(/\\s+/).filter(Boolean).length / 220)),
+        targetKeywords: keywords.length ? keywords : [intel.sku, intel.model, intel.card.product.category],
+        htmlContent: blogHtml,
+        cleanPlainTextExcerpt: plainExcerpt
+      },
+      mailchimp,
+      whatsapp,
+      linkedin,
+      geo: {
+        ...rawGeo,
+        title: typeof rawGeo.title === "string" && rawGeo.title ? rawGeo.title : blogTitle,
+        metaDescription: typeof rawGeo.metaDescription === "string" && rawGeo.metaDescription ? rawGeo.metaDescription : blogMeta,
+        htmlContent: existingGeoHtml,
+        comparativeTableHtml: typeof rawGeo.comparativeTableHtml === "string" ? rawGeo.comparativeTableHtml : generateDynamicComparativeTableHtml(intel),
+        jsonLd: typeof rawGeo.jsonLd === "string" && rawGeo.jsonLd ? rawGeo.jsonLd : JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: intel.card.product.model || intel.model,
+          sku: intel.card.product.sku || intel.sku,
+          brand: { "@type": "Brand", name: intel.card.product.brand || intel.brand },
+          url: productUrl
+        }, null, 2),
+        markdownContent: typeof rawGeo.markdownContent === "string" && rawGeo.markdownContent
+          ? rawGeo.markdownContent
+          : `# ${blogTitle}\\n\\n${plainExcerpt}`
+      },
+      editorialDecision: editorialDecision || raw.editorialDecision,
+      citations: { ...citations, ...(raw.citations && typeof raw.citations === "object" ? raw.citations : {}) }
+    };
+
+    return hydrated;
   }
 
   private generateGroundedFallback(req: GroundedWriterRequest, citations: Record<string, any>): ContentOutput {
