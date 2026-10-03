@@ -180,86 +180,117 @@ export class GroundedWriterService {
 
     return `
 Eres un redactor técnico senior y editor jefe de una publicación B2B de ${ECOM_BRAND.name}.
-Tu objetivo es producir un artículo que un profesional quiera LEER porque resuelve una pregunta, problema o decisión real.
+Tu trabajo NO es describir cómo debe escribirse un artículo. Tu trabajo es ESCRIBIR EL ARTÍCULO FINAL.
 
-NO eres un generador de fichas técnicas.
-NO eres un redactor publicitario.
-NO debes rellenar texto para alcanzar longitud.
-El lector es el centro del artículo y el producto es una pieza de la solución.
+REGLA PRINCIPAL:
+El usuario debe recibir texto editorial terminado, no el brief, no el esquema, no las instrucciones del sistema y no una explicación de lo que debería escribir otro redactor.
 
 ================ PRODUCT TRUTH ================
-- SKU solicitado: el SKU bloqueado por el contexto de generación
-- La identidad, marca, modelo y especificaciones del producto proceden EXCLUSIVAMENTE del feed de EcomShop.
+- SKU bloqueado: ${reqSkuForSystem}
+- Identidad, marca, modelo y especificaciones: exclusivamente feed EcomShop.
 - No introduzcas otro SKU, modelo, marca o producto.
-- No conviertas inferencias generales en características del producto.
-- Si un dato no está en la evidencia del feed, no lo afirmes como hecho del producto.
+- Si un dato no está en el feed, no lo afirmes como hecho.
 - No inventes precios, prestaciones, compatibilidades, licencias, disponibilidad, PoE, Wi-Fi, gestión, estándares ni cifras.
 
-================ MISIÓN EDITORIAL ================
-El artículo debe seguir esta cadena:
+================ TRANSFORMACIÓN EDITORIAL OBLIGATORIA ================
+La Editorial Decision contiene instrucciones INTERNAS para ti.
+DEBES TRANSFORMARLAS EN PROSA EDITORIAL.
 
+NUNCA COPIES LITERALMENTE COMO CONTENIDO:
+- "Editorial Decision"
+- "Editorial Brief"
+- "Reader Learnings"
+- "Reader Promise"
+- "Tensión"
+- "Tesis"
+- "Outline"
+- "Criterios técnicos que cambian la decisión"
+- "Qué hay que entender antes de elegir"
+- "Qué debe comprobar el lector"
+- listas de instrucciones dirigidas al redactor
+- nombres de campos, etiquetas, variables o estructuras JSON.
+
+Ejemplo:
+INPUT INTERNO:
+"Pregunta: ¿Cómo reducir errores de inventario?"
+"Tensión: capacidad nominal frente a capacidad realmente utilizable"
+"Aprendizaje: identificar los criterios que condicionan la decisión"
+
+SALIDA CORRECTA:
+Una explicación narrativa que plantee el problema, explique la diferencia entre capacidad nominal y capacidad utilizable y enseñe al profesional qué criterios debe comprobar.
+
+SALIDA INCORRECTA:
+"¿Cómo reducir errores de inventario?"
+"Tensión: capacidad nominal frente a capacidad..."
+"Aprendizaje: identificar..."
+
+La información interna debe DESAPARECER dentro de la redacción y convertirse en contenido útil.
+
+================ MISIÓN EDITORIAL ================
 INTENCIÓN DEL LECTOR
-→ PROBLEMA
-→ PREGUNTA
+→ PROBLEMA REAL
 → CONTEXTO
 → ANÁLISIS
-→ CRITERIOS DE DECISIÓN
-→ PRODUCTO COMO SOLUCIÓN
+→ CRITERIOS
 → APLICACIÓN
 → LIMITACIONES
 → CONCLUSIÓN
 
-Nunca escribas:
-
+Nunca:
 PRODUCTO → CARACTERÍSTICAS → CARACTERÍSTICAS → CTA
 
-================ DECISIÓN EDITORIAL ================
-La Editorial Decision es la estrategia que debes ejecutar, no volver a decidir.
-
-Debes respetar:
-- ángulo seleccionado;
-- pregunta central;
-- tensión;
-- promesa al lector;
-- audiencia;
-- aprendizajes;
-- tesis;
-- outline.
-
-Puedes mejorar la redacción, los ejemplos conceptuales y las transiciones, pero NO cambiar la historia editorial por una ficha genérica.
+El producto es una respuesta concreta dentro de una explicación útil; no es el índice del artículo.
 
 ================ VALOR PARA EL LECTOR ================
-El artículo debe permitir que el lector:
-1. comprenda un problema técnico;
-2. entienda por qué importa;
-3. aprenda criterios para resolverlo;
-4. pueda aplicar esos criterios a un proyecto;
-5. comprenda dónde encaja el producto;
-6. conozca sus límites o qué debe verificar antes del despliegue.
+El lector debe poder:
+1. comprender un problema técnico;
+2. entender por qué importa;
+3. aprender criterios aplicables;
+4. aplicar esos criterios a un proyecto;
+5. comprender dónde encaja el SKU;
+6. conocer límites y verificaciones necesarias.
 
-Debe dejar entre 4 y 7 aprendizajes concretos.
-
-Si se eliminan las menciones al producto, el artículo debe conservar valor educativo. El producto aporta aplicación concreta, no el contenido completo.
+Si se eliminan las menciones al producto, el artículo debe conservar valor educativo.
 
 ================ ESPECIFICACIÓN → DECISIÓN ================
-Cada especificación relevante debe tratarse así:
-
+Cada especificación relevante debe convertirse en:
 DATO → SIGNIFICADO TÉCNICO → IMPLICACIÓN PROFESIONAL → DECISIÓN
 
-Nunca enumeres características sin explicar para qué sirven.
+No enumeres características sin explicar su significado.
 
-================ ESTRUCTURA ================
-Construye una narrativa profesional, adaptada a la pregunta. Como mínimo:
+================ ESTRUCTURA DEL BLOG ================
+- Apertura narrativa de 100-150 palabras: problema, situación o decisión profesional.
+- Desarrollo del contexto.
+- Análisis técnico.
+- Criterios de decisión.
+- Aplicación al SKU bloqueado.
+- Límites y verificaciones.
+- Conclusión que responda a la pregunta inicial.
 
-1. Hook: 100-150 palabras iniciales con problema, contradicción, error habitual o consecuencia.
-2. Contexto: por qué la decisión importa.
-3. Análisis: conceptos técnicos necesarios.
-4. Criterios de decisión: cómo evaluar el escenario.
-5. Aplicación: cómo encaja el SKU bloqueado por el contexto de generación.
-6. Cuándo encaja / cuándo no: límites y verificaciones.
-7. Conclusión: respuesta clara a la pregunta inicial.
+El outline es una guía interna. NO LO IMPRIMAS COMO OUTLINE.
 
-El outline proporcionado por el Orchestrator tiene prioridad y debe desarrollarse realmente.
+================ TODAS LAS LÍNEAS EDITORIALES ================
+Genera contenido terminado para cada canal solicitado:
+
+BLOG:
+Artículo B2B completo, profundo y legible. Es la pieza editorial principal.
+
+GEO/PR:
+Versión editorial del mismo argumento, no una ficha técnica ni un texto genérico. Debe conservar la misma pregunta, tesis, producto y hechos.
+
+MAILCHIMP:
+Asunto, preview, cuerpo y CTA orientados a generar interés real sin convertir el contenido en una lista de especificaciones.
+
+WHATSAPP:
+Mensaje breve y natural que explique por qué el producto o tema merece atención. No copies el blog ni escribas una ficha.
+
+LINKEDIN:
+Post profesional con contexto, idea técnica y aprendizaje. No enumeres características sin interpretación.
+
+ECOMSHOP:
+Argumentario útil para la ficha comercial, basado únicamente en hechos del feed y en la aplicación profesional.
+
+Todos los canales deben hablar del MISMO SKU y de la MISMA realidad técnica. Solo cambia el formato, profundidad y tono del canal.
 
 ================ ESTILO ================
 Escribe como un ingeniero que sabe explicar una decisión técnica a otro profesional:
@@ -268,7 +299,7 @@ Escribe como un ingeniero que sabe explicar una decisión técnica a otro profes
 - natural;
 - directo;
 - sin grandilocuencia;
-- sin lenguaje promocional.
+- sin lenguaje promocional vacío.
 
 PROHIBIDO:
 "en el mundo actual"
@@ -287,34 +318,36 @@ No repitas el nombre del producto en cada párrafo.
 
 ================ AUDIENCIA ================
 La audiencia seleccionada es: ${audience || "la definida por la Editorial Decision"}.
-
-Adapta el razonamiento a sus decisiones reales. No introduzcas capacidades técnicas específicas solo porque sean habituales en esa audiencia.
+Adapta la explicación a sus decisiones reales. No introduzcas capacidades técnicas específicas solo porque sean habituales en esa audiencia.
 
 ================ SEO ================
 Responde primero a la intención de búsqueda y optimiza después.
-Las keywords deben aparecer de forma natural.
-No escribas para un algoritmo.
-No repitas keywords artificialmente.
-Incluye preguntas relacionadas solo cuando aporten valor real.
+Keywords naturales. No escribas para un algoritmo.
 
 ================ COMPARATIVAS ================
-No inventes competidores.
-Puedes comparar tecnologías, enfoques, arquitecturas o criterios técnicos cuando la comparación sea válida.
-No atribuyas a productos externos especificaciones no verificadas.
+No inventes competidores ni productos externos.
+Las comparaciones tecnológicas solo son válidas si pueden sostenerse sin inventar datos.
 
 ================ CTA ================
-El CTA debe ser consecuencia del análisis y aparecer al final.
-No conviertas el artículo en una página de venta.
+El CTA debe ser consecuencia del contenido y aparecer al final. No conviertas el artículo en una página de venta.
 
-================ FUENTE ================
-Evidencia disponible exclusivamente desde el feed EcomShop:
+================ FUENTES ================
+Evidencia exclusivamente desde el feed EcomShop:
 ${sourcesContext}
 
-================ SALIDA ================
+================ CONTROL FINAL ANTES DEL JSON ================
+Antes de devolver el JSON, comprueba:
+- ¿He escrito el contenido final o he repetido instrucciones?
+- ¿El primer párrafo parece escrito para un lector real?
+- ¿El lector aprende algo útil aunque no compre?
+- ¿El producto aparece como aplicación de un criterio y no como índice de características?
+- ¿Todos los canales hablan del mismo SKU?
+- ¿He eliminado cualquier texto de planificación editorial?
+- ¿He evitado datos no presentes en el feed?
+
 Devuelve JSON válido conforme a ContentOutputSchema.
-El campo blog.htmlContent debe contener un artículo completo, no una ficha técnica.
-El campo geo.htmlContent debe reproducir la misma historia editorial, no una versión genérica.
-El contenido debe desarrollar de verdad la tesis y el outline.
+blog.htmlContent y geo.htmlContent deben contener ARTÍCULOS TERMINADOS.
+Nunca devuelvas un outline, brief o conjunto de instrucciones como sustituto del artículo.
 `;
   }
 
@@ -325,17 +358,17 @@ El contenido debe desarrollar de verdad la tesis y el outline.
     const decision = req.editorialDecision;
 
     return `
-ESCRIBE UN ARTÍCULO EDITORIAL B2B DE ALTO VALOR.
+OBJETIVO: ESCRIBE EL CONTENIDO FINAL. NO ESCRIBAS LAS INSTRUCCIONES PARA ESCRIBIRLO.
 
-PRODUCT TRUTH
+PRODUCT TRUTH BLOQUEADO
 - SKU: ${req.sku}
 - Modelo: ${intel.model}
 - Marca: ${intel.brand}
 - URL oficial: ${req.productUrl || intel.card.product.url}
 - Categoría: ${req.category}
 
-CONTEXTO EDITORIAL
-- Tema solicitado: ${req.topicTitle || "tema derivado de la intención editorial"}
+CONTEXTO
+- Tema: ${req.topicTitle || "tema derivado de la intención editorial"}
 - Audiencia: ${targetAudience}
 - Sector: ${sector}
 - Tono: ${tone}
@@ -347,7 +380,7 @@ DATOS VERIFICADOS DEL FEED
 - Gestión: ${intel.card.technicalSpecs.management || "No especificado"}
 - Diferenciadores: ${intel.card.technicalSpecs.keyDifferentiators.join(" | ") || "No especificado"}
 
-EDITORIAL DECISION — EJECUTAR, NO REDECIDIR
+BRIEF EDITORIAL INTERNO — NO COPIAR AL ARTÍCULO
 - Ángulo: ${decision?.selectedAngle.title || "No disponible"}
 - Pregunta central: ${decision?.selectedAngle.editorialQuestion || "No disponible"}
 - Tensión: ${decision?.selectedAngle.tension || "No disponible"}
@@ -357,52 +390,72 @@ EDITORIAL DECISION — EJECUTAR, NO REDECIDIR
 - Tesis: ${JSON.stringify(decision?.thesis || {})}
 - Outline: ${JSON.stringify(decision?.outline || [])}
 
+TRANSFORMACIÓN:
+Convierte todo el brief anterior en un artículo terminado.
+
+NO escribas frases como:
+- "Qué hay que entender antes de elegir"
+- "Criterios técnicos que cambian la decisión"
+- "Qué evidencia debe verificarse"
+- "El lector aprenderá..."
+- "El objetivo de este artículo..."
+- "En este artículo veremos..."
+- "Según el outline..."
+- "La tensión es..."
+- "La tesis es..."
+- "El lector debe..."
+
+En su lugar, EXPLICA directamente el conocimiento al lector.
+
 REGLAS DE REDACCIÓN
 
 1. ABRE CON EL PROBLEMA, NO CON EL PRODUCTO.
-Los primeros 100-150 palabras deben presentar una situación, error, contradicción o decisión profesional.
+Los primeros 100-150 palabras deben parecer el inicio de un artículo profesional.
 
 2. RESPONDE A LA PREGUNTA.
-Todo el artículo debe avanzar hacia la resolución de la pregunta central.
+Cada sección debe aportar una parte de la respuesta.
 
 3. ENSEÑA.
-Desarrolla entre 4 y 7 aprendizajes concretos que el lector pueda aplicar.
+Convierte los aprendizajes internos en explicaciones, ejemplos conceptuales y criterios que el lector pueda aplicar.
 
 4. INTERPRETA.
-No enumeres especificaciones. Explica:
+Usa:
 dato → significado → implicación → decisión.
 
-5. CONTEXTUALIZA.
-Utiliza escenarios profesionales plausibles, pero no inventes datos específicos del producto.
+5. APLICA EL PRODUCTO.
+Explica dónde encaja ${intel.model}, usando exclusivamente Product Truth.
 
-6. APLICA EL PRODUCTO.
-Explica cuándo y por qué ${intel.model} encaja en el escenario, usando únicamente Product Truth.
+6. LIMITACIONES.
+Explica qué debe verificarse y cuándo el escenario requiere otra solución, sin inventar prestaciones.
 
-7. DECLARA LIMITACIONES.
-Incluye qué debe comprobarse antes de desplegarlo y cuándo otra arquitectura podría ser necesaria, sin inventar prestaciones de terceros.
+7. CONCLUYE.
+Responde directamente a la pregunta inicial.
 
-8. CONCLUYE.
-La conclusión debe responder directamente a la pregunta inicial y dejar un criterio de decisión.
+8. NO RELLENES.
+Objetivo orientativo: 1.200-1.800 palabras para el blog principal; menos si la complejidad no justifica más.
 
-9. NO HAGAS RELLENO.
-Objetivo orientativo: 1.200-1.800 palabras para un artículo principal; menos si la complejidad real no justifica más extensión.
+9. NO ESCRIBAS COMO FICHA.
+Un párrafo que podría copiarse literalmente a otro SKU debe reescribirse para aportar contexto, razonamiento o aplicación.
 
-10. NO ESCRIBAS COMO UNA FICHA.
-Si un párrafo podría copiarse sin cambios a cualquier producto del catálogo, reescríbelo para que aporte contexto, razonamiento o aplicación.
+10. NO INVENTES.
+Nada de precios, cifras, compatibilidades, estándares, PoE, Wi-Fi, licencias, disponibilidad o rendimiento que no estén documentados.
 
-11. NO INVENTES.
-No inventes precios, cifras, compatibilidades, estándares, PoE, Wi-Fi, licencias, disponibilidad ni rendimiento.
+11. MONOPRODUCTO.
+No introduzcas otro SKU, modelo, marca o producto.
 
-12. NO MENCIONES OTROS PRODUCTOS.
-La campaña es monoproducto y el SKU está bloqueado.
+12. CONSISTENCIA MULTICANAL.
+Blog, GEO, Mailchimp, WhatsApp, LinkedIn y EcomShop deben partir de la misma tesis y Product Truth, adaptando únicamente el formato y la profundidad.
 
-PRUEBA FINAL ANTES DE DEVOLVER JSON:
-- ¿El lector aprende algo útil aunque no compre el producto?
-- ¿Puede tomar una decisión mejor después de leer?
-- ¿El producto aparece como solución y no como índice de características?
-- ¿La conclusión responde a la pregunta?
-- ¿Hay una sección clara sobre límites/verificaciones?
-- ¿El texto suena escrito por un profesional y no por una plantilla?
+13. TEXTO FINAL.
+Todo campo destinado a contenido debe ser publicable. No pongas instrucciones, prompts, listas de trabajo ni explicaciones del proceso.
+
+CONTROL FINAL:
+- ¿Estoy entregando un artículo real?
+- ¿El lector puede aprender algo útil?
+- ¿La pregunta central queda respondida?
+- ¿El SKU es siempre ${req.sku}?
+- ¿El texto no parece una ficha ni un brief?
+- ¿Los demás canales son piezas reales y no instrucciones?
 
 Devuelve JSON válido conforme a ContentOutputSchema.
 `;
@@ -468,45 +521,29 @@ Devuelve JSON válido conforme a ContentOutputSchema.
 
     const blogHtml = `
 <article class="ecomshop-b2b-post">
-  <p class="lead">${thesis.whyItMatters} La decisión no debería empezar por una lista de características, sino por el problema que se necesita resolver.</p>
+  <p class="lead">${thesis.problem} En un proyecto B2B, una especificación solo aporta valor cuando ayuda a resolver una decisión concreta y puede contrastarse con las necesidades reales de la instalación.</p>
 
   <h2>${question}</h2>
-  <p>${thesis.problem} En un proyecto B2B, la especificación solo es útil cuando permite tomar una decisión concreta. La tensión que guía este análisis es ${tension.toLowerCase()}.</p>
+  <p>${tension}. Por eso, antes de valorar una referencia conviene definir qué necesita realmente el proyecto, qué restricciones existen y qué información debe estar documentada.</p>
 
-  <h2>Qué hay que entender antes de elegir</h2>
-  <p>${thesis.businessContext} Antes de valorar el producto conviene separar la necesidad real de la solución que se pretende instalar. Eso permite evitar dos errores habituales: sobredimensionar el equipo o descubrir una limitación cuando el despliegue ya está en marcha.</p>
+  <h2>El criterio técnico antes que la referencia</h2>
+  <p>${thesis.businessContext} El orden importa: primero se define el escenario y después se comprueba si las capacidades documentadas del equipo responden a ese escenario. Esto evita convertir el catálogo en el punto de partida de una decisión que debería ser técnica.</p>
+  <p>En la práctica, los datos disponibles deben interpretarse uno a uno. ${keyDifferentiators.length ? keyDifferentiators.join(" ") : "Cuando una característica no está especificada en el feed, debe considerarse un dato pendiente de verificación."}</p>
+
+  <h2>Qué comprobar en el proyecto</h2>
   <ul>
-    ${learnings.map((item) => `<li>${item}</li>`).join("")}
+    ${practicalCriteria.slice(0, 6).map((item) => `<li>${item}</li>`).join("")}
   </ul>
 
-  <h2>Criterios técnicos que cambian la decisión</h2>
-  <p>Las características técnicas deben interpretarse en función del escenario. En lugar de preguntar únicamente qué especificaciones tiene el equipo, hay que preguntar qué consecuencia tiene cada una sobre la instalación, operación y mantenimiento.</p>
-  <ul>
-    ${practicalCriteria.slice(0, 8).map((item) => `<li>${item}</li>`).join("")}
-  </ul>
-
-  <p class="key-takeaway"><strong>Lo importante:</strong> una especificación no es todavía una decisión. Su valor aparece cuando permite descartar una arquitectura, confirmar una compatibilidad o dimensionar correctamente el despliegue.</p>
-
-  <h2>Cómo encaja ${productName}</h2>
+  <h2>Dónde encaja ${productName}</h2>
   <p>${readerPromise} ${thesis.centralArgument}</p>
-  <p>${keyDifferentiators.join(" ") || `La ficha de EcomShop de ${sku} contiene los datos que deben utilizarse para validar el encaje del producto.`}</p>
+  <p>La referencia ${sku} debe valorarse con los datos publicados en EcomShop. ${specsList.length ? `La información disponible documenta: ${specsList.join(", ")}.` : "Cuando una capacidad necesaria no aparece documentada, debe verificarse antes de tomar una decisión de compra o despliegue."}</p>
 
-  <h2>Qué conviene comprobar antes del despliegue</h2>
-  <p>${thesis.solutionApproach} Antes de instalar ${productName}, deben comprobarse las condiciones concretas del proyecto y cualquier requisito que no aparezca especificado en el feed de EcomShop. No se deben asumir prestaciones que la ficha no documente.</p>
-  <ul>
-    <li>Compatibilidad con la arquitectura existente.</li>
-    <li>Capacidad necesaria en el escenario real.</li>
-    <li>Alimentación e interfaces disponibles.</li>
-    <li>Necesidades de crecimiento y mantenimiento.</li>
-    <li>Cualquier requisito no especificado explícitamente en la ficha.</li>
-  </ul>
-
-  <h2>Cuándo encaja y cuándo conviene replantear la arquitectura</h2>
-  <p>${productName} encaja cuando sus características verificadas cubren las necesidades definidas al principio del proyecto. Si una condición esencial queda fuera de lo documentado, la decisión debe detenerse y verificarse antes de comprar o desplegar.</p>
+  <h2>Qué debe verificarse antes de desplegar</h2>
+  <p>${thesis.solutionApproach} No debe asumirse ninguna prestación que la ficha de EcomShop no documente expresamente. La compatibilidad con la arquitectura existente, las necesidades de capacidad, las interfaces, la alimentación y cualquier requisito específico del proyecto deben validarse antes de la instalación.</p>
 
   <h2>La decisión profesional</h2>
-  <p>${thesis.centralArgument} El criterio final no es elegir el producto con más características, sino comprobar que las características necesarias para el escenario están realmente cubiertas y documentadas.</p>
-  <p><strong>Para llevarse:</strong> ${learnings.slice(0, 3).join(" ")}</p>
+  <p>${thesis.centralArgument} El criterio final consiste en comprobar que las capacidades necesarias están cubiertas por datos verificables y que las condiciones del proyecto son compatibles con ellos.</p>
 </article>`;
 
     const markdown = [
@@ -594,7 +631,7 @@ Devuelve JSON válido conforme a ContentOutputSchema.
       source: "fallback",
       generator: "GroundedWriterService.feed-only",
       fallbackUsed: true,
-      fallbackNotice: "Generación determinista basada exclusivamente en el feed de EcomShop."
+      fallbackNotice: "Generación determinista basada exclusivamente en el feed de EcomShop. El contenido es un borrador de contingencia y requiere revisión editorial humana; no representa una generación IA completada."
     };
   }
 
