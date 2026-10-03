@@ -73,7 +73,7 @@ export class GroundedWriterService {
             config: {
               systemInstruction,
               temperature: 0.5,
-              maxOutputTokens: 8192,
+              maxOutputTokens: 12288,
               responseMimeType: "application/json"
             }
           });
@@ -170,7 +170,13 @@ export class GroundedWriterService {
       }
     }
 
-    console.warn(`[GroundedWriter] Usando fallback determinista Mandato 2 para SKU ${req.sku} (Audiencia: ${req.targetAudience || "sin audiencia explícita"}).`);
+    const allowEditorialFallback = process.env.ALLOW_EDITORIAL_FALLBACK === "true";
+    if (!allowEditorialFallback) {
+      const reason = lastModelError instanceof Error ? lastModelError.message : "El motor editorial IA no devolvió una respuesta publicable.";
+      throw new Error(`EDITORIAL_AI_GENERATION_FAILED: ${reason}`);
+    }
+
+    console.warn(`[GroundedWriter] Fallback determinista explícitamente habilitado para SKU ${req.sku} (Audiencia: ${req.targetAudience || "sin audiencia explícita"}).`);
     return this.generateGroundedFallback(req, citations);
   }
 
