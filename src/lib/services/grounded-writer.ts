@@ -122,6 +122,15 @@ export class GroundedWriterService {
           const { buildProductEvidenceMap } = await import("@/lib/services/product-evidence-map");
           const { auditEditorialQualityWithCritic } = await import("@/lib/services/editorial-critic");
 
+          const hydratedOutput = this.hydrateAiOutput(rawOutput as Record<string, unknown>, req, intel, citations, editorialDecision);
+          const hydratedBlogHtml =
+            hydratedOutput.blog && typeof hydratedOutput.blog === "object"
+              ? String((hydratedOutput.blog as Record<string, unknown>).htmlContent || "")
+              : "";
+          if (hydratedBlogHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().length < 800) {
+            throw new Error("[GroundedWriter] El modelo no produjo un artículo suficientemente desarrollado.");
+          }
+
           const evidenceMap = buildProductEvidenceMap(req.sku, intel);
           const bestAngle = editorialDecision?.selectedAngle || {
             id: "fallback-angle",
@@ -223,37 +232,35 @@ export class GroundedWriterService {
     const keywords = safeStringArray(rawBlog.targetKeywords);
     const differentiators = intel.card.technicalSpecs.keyDifferentiators.slice(0, 3);
 
-    const mailchimp = raw.mailchimp && typeof raw.mailchimp === "object"
-      ? raw.mailchimp as Record<string, unknown>
-      : {
-          subjectA: blogTitle,
-          subjectB: `${intel.model}: análisis técnico B2B`,
-          previewText: blogMeta.slice(0, 90),
-          ctaButtonText: "Consultar producto",
-          ctaUrl: productUrl,
-          newsletterHtml: `<p>${blogMeta}</p><p>${plainExcerpt}</p><p><a href="${productUrl}">Consultar ficha del producto</a></p>`,
-          plainText: `${blogMeta}\\n\\n${plainExcerpt}\\n\\n${productUrl}`
-        };
+    const rawMailchimp = raw.mailchimp && typeof raw.mailchimp === "object" ? raw.mailchimp as Record<string, unknown> : {};
+    const rawWhatsapp = raw.whatsapp && typeof raw.whatsapp === "object" ? raw.whatsapp as Record<string, unknown> : {};
+    const rawLinkedin = raw.linkedin && typeof raw.linkedin === "object" ? raw.linkedin as Record<string, unknown> : {};
 
-    const whatsapp = raw.whatsapp && typeof raw.whatsapp === "object"
-      ? raw.whatsapp as Record<string, unknown>
-      : {
-          headline: blogTitle,
-          formattedMessage: `*${blogTitle}*\\n\\n${plainExcerpt}\\n\\nFicha: ${productUrl}`,
-          callToAction: "Consultar producto",
-          targetUrl: productUrl
-        };
+    const mailchimp = {
+      subjectA: typeof rawMailchimp.subjectA === "string" && rawMailchimp.subjectA ? rawMailchimp.subjectA : blogTitle,
+      subjectB: typeof rawMailchimp.subjectB === "string" && rawMailchimp.subjectB ? rawMailchimp.subjectB : `${intel.model}: análisis técnico B2B`,
+      previewText: typeof rawMailchimp.previewText === "string" && rawMailchimp.previewText ? rawMailchimp.previewText.slice(0, 90) : blogMeta.slice(0, 90),
+      ctaButtonText: typeof rawMailchimp.ctaButtonText === "string" && rawMailchimp.ctaButtonText ? rawMailchimp.ctaButtonText : "Consultar producto",
+      ctaUrl: typeof rawMailchimp.ctaUrl === "string" && rawMailchimp.ctaUrl ? rawMailchimp.ctaUrl : productUrl,
+      newsletterHtml: typeof rawMailchimp.newsletterHtml === "string" && rawMailchimp.newsletterHtml ? rawMailchimp.newsletterHtml : `<p>${blogMeta}</p><p>${plainExcerpt}</p><p><a href="${productUrl}">Consultar ficha del producto</a></p>`,
+      plainText: typeof rawMailchimp.plainText === "string" && rawMailchimp.plainText ? rawMailchimp.plainText : `${blogMeta}\\n\\n${plainExcerpt}\\n\\n${productUrl}`
+    };
 
-    const linkedin = raw.linkedin && typeof raw.linkedin === "object"
-      ? raw.linkedin as Record<string, unknown>
-      : {
-          hook: blogTitle,
-          body: `${blogMeta}\\n\\n${plainExcerpt}`,
-          takeaways: differentiators,
-          callToAction: "Consultar la ficha técnica",
-          hashtags: ["#EcomShop", "#NetworkingB2B"],
-          fullPostText: `${blogTitle}\\n\\n${plainExcerpt}\\n\\n${productUrl}`
-        };
+    const whatsapp = {
+      headline: typeof rawWhatsapp.headline === "string" && rawWhatsapp.headline ? rawWhatsapp.headline : blogTitle,
+      formattedMessage: typeof rawWhatsapp.formattedMessage === "string" && rawWhatsapp.formattedMessage ? rawWhatsapp.formattedMessage : `*${blogTitle}*\\n\\n${plainExcerpt}\\n\\nFicha: ${productUrl}`,
+      callToAction: typeof rawWhatsapp.callToAction === "string" && rawWhatsapp.callToAction ? rawWhatsapp.callToAction : "Consultar producto",
+      targetUrl: typeof rawWhatsapp.targetUrl === "string" && rawWhatsapp.targetUrl ? rawWhatsapp.targetUrl : productUrl
+    };
+
+    const linkedin = {
+      hook: typeof rawLinkedin.hook === "string" && rawLinkedin.hook ? rawLinkedin.hook : blogTitle,
+      body: typeof rawLinkedin.body === "string" && rawLinkedin.body ? rawLinkedin.body : `${blogMeta}\\n\\n${plainExcerpt}`,
+      takeaways: safeStringArray(rawLinkedin.takeaways).length ? safeStringArray(rawLinkedin.takeaways) : differentiators,
+      callToAction: typeof rawLinkedin.callToAction === "string" && rawLinkedin.callToAction ? rawLinkedin.callToAction : "Consultar la ficha técnica",
+      hashtags: safeStringArray(rawLinkedin.hashtags).length ? safeStringArray(rawLinkedin.hashtags) : ["#EcomShop", "#NetworkingB2B"],
+      fullPostText: typeof rawLinkedin.fullPostText === "string" && rawLinkedin.fullPostText ? rawLinkedin.fullPostText : `${blogTitle}\\n\\n${plainExcerpt}\\n\\n${productUrl}`
+    };
 
     const hydrated = {
       ...raw,
