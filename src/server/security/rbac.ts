@@ -34,7 +34,7 @@ export const VALID_ROLES: UserRole[] = [
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ADMIN: [
     "campaign:create", "campaign:edit", "campaign:delete", "campaign:view",
-    "content:create", "content:edit", "content:approve", "content:publish", "content:delete", "content:view",
+    "content:create", "content:edit", "content:approve", "content:publish", "content:delete", "content:view", "asset:delete",
     "ai:execute", "finops:view", "finops:manage", "users:manage", "audit:view", "admin"
   ],
   EDITOR: [
@@ -59,7 +59,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ],
   DESIGNER: [
     "campaign:view",
-    "content:create", "content:edit", "content:view",
+    "content:create", "content:edit", "content:view", "asset:delete",
     "ai:execute"
   ],
   SALES: [
