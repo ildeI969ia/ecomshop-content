@@ -170,7 +170,7 @@ NO debes rellenar texto para alcanzar longitud.
 El lector es el centro del artículo y el producto es una pieza de la solución.
 
 ================ PRODUCT TRUTH ================
-- SKU solicitado: ${reqSkuForSystem}
+- SKU solicitado: el SKU bloqueado por el contexto de generación
 - La identidad, marca, modelo y especificaciones del producto proceden EXCLUSIVAMENTE del feed de EcomShop.
 - No introduzcas otro SKU, modelo, marca o producto.
 - No conviertas inferencias generales en características del producto.
