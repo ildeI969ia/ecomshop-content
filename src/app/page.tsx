@@ -648,7 +648,24 @@ export default function Page() {
                   setSelectedImageIds((prev) => (sel ? [...prev, id] : prev.filter((item) => item !== id)));
                 }}
                 onSelectAll={(all) => setSelectedImageIds(all ? galleryImages.map((i) => i.id) : [])}
-                onClearAll={() => setSelectedImageIds([])}
+                onClearAll={async () => {
+                  try {
+                    const result = await apiFetch<{ success: boolean; deletedIds?: string[] }>("/api/assets?clearAll=true", {
+                      method: "DELETE"
+                    });
+                    const deletedIds = new Set(result.deletedIds || []);
+                    setGalleryImages((prev) => prev.filter((img) => !deletedIds.has(img.id)));
+                    setSelectedImageIds([]);
+                    setImageNotice(
+                      deletedIds.size > 0
+                        ? `Se han eliminado ${deletedIds.size} imágenes de Firestore y Cloud Storage.`
+                        : "No había imágenes gestionables para eliminar."
+                    );
+                  } catch (err: unknown) {
+                    const message = err instanceof Error ? err.message : String(err);
+                    setImageNotice(`Error vaciando la galería: ${message}`);
+                  }
+                }}
                 onRefreshDatabase={loadDatabaseAssets}
                 loadingDatabaseAssets={loadingDatabaseAssets}
                 onOpenLightbox={(img) => setSelectedImageForDetail(img)}
