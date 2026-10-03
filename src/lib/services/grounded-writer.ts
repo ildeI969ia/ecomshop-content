@@ -243,7 +243,7 @@ Construye una narrativa profesional, adaptada a la pregunta. Como mínimo:
 2. Contexto: por qué la decisión importa.
 3. Análisis: conceptos técnicos necesarios.
 4. Criterios de decisión: cómo evaluar el escenario.
-5. Aplicación: cómo encaja ${reqSkuForSystem}.
+5. Aplicación: cómo encaja el SKU bloqueado por el contexto de generación.
 6. Cuándo encaja / cuándo no: límites y verificaciones.
 7. Conclusión: respuesta clara a la pregunta inicial.
 
