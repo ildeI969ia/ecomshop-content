@@ -143,17 +143,9 @@ export class GroundedWriterService {
             targetAudience: editorialDecision?.primaryAudience || req.targetAudience || ""
           };
 
-          const criticReport = auditEditorialQualityWithCritic(rawOutput as any, bestAngle, evidenceMap, req.targetAudience);
-          const qualityReport = validateEditorialQuality(rawOutput as any, req.targetAudience, req.sku);
+          const criticReport = auditEditorialQualityWithCritic(hydratedOutput as any, bestAngle, evidenceMap, req.targetAudience);
+          const qualityReport = validateEditorialQuality(hydratedOutput as any, req.targetAudience, req.sku);
 
-          const hydratedOutput = this.hydrateAiOutput(rawOutput as Record<string, unknown>, req, intel, citations, editorialDecision);
-          const hydratedBlogHtml =
-            hydratedOutput.blog && typeof hydratedOutput.blog === "object"
-              ? String((hydratedOutput.blog as Record<string, unknown>).htmlContent || "")
-              : "";
-          if (hydratedBlogHtml.replace(/<[^>]+>/g, " ").replace(/\\s+/g, " ").trim().length < 800) {
-            throw new Error("[GroundedWriter] El modelo no produjo un artículo suficientemente desarrollado.");
-          }
           const validated = ContentOutputSchema.safeParse(hydratedOutput);
           if (validated.success) {
             return {
