@@ -38,7 +38,8 @@
     "test:editorial-orchestrator": "tsx scripts/test-editorial-orchestrator.ts",
     "benchmark:editorial-diversity": "tsx scripts/benchmark-editorial-diversity.ts",
     "test:feed-product-truth": "tsx scripts/test-feed-product-truth.ts",
-    "test:strict-product-identity": "tsx scripts/test-strict-product-identity.ts"
+    "test:strict-product-identity": "tsx scripts/test-strict-product-identity.ts",
+    "test:editorial-reader-value": "tsx scripts/test-editorial-reader-value.ts"
   },
   "dependencies": {
     "@google-cloud/firestore": "^9.1.0",
