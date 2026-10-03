@@ -59,7 +59,7 @@ export class GroundedWriterService {
       const activeModel = getActiveGeminiModel(req.apiKey);
 
       const prompt = this.buildPrompt(req);
-      const systemInstruction = this.buildSystemInstruction(activeSources, req.targetAudience);
+      const systemInstruction = this.buildSystemInstruction(activeSources, req.targetAudience, req.sku);
 
       const { AI_TEXT_MODEL, AI_FALLBACK_MODEL } = await import("@/lib/ai-config");
       const candidateModels = [activeModel, AI_TEXT_MODEL, AI_FALLBACK_MODEL]
@@ -168,7 +168,12 @@ export class GroundedWriterService {
     };
   }
 
-  private buildSystemInstruction(activeSources: Array<{ id: string; title: string; type: string; description: string; url?: string }>, audience = ""): string {
+  private buildSystemInstruction(
+    activeSources: Array<{ id: string; title: string; type: string; description: string; url?: string }>,
+    audience = "",
+    sku = ""
+  ): string {
+    const reqSkuForSystem = sku ? sku.trim().toUpperCase() : "el producto";
     const sourcesContext = activeSources
       .map((s) => `[${s.id}] (${s.type.toUpperCase()}) "${s.title}": ${s.description}`)
       .join("\n");
