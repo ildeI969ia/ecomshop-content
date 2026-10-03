@@ -117,15 +117,22 @@ export class GroundedWriterService {
             citations: { ...citations, ...(parsed.citations || {}) }
           };
 
-          // Integrar Editorial Critic, Product Evidence Map y Angle Engine
-          const { detectProductType, buildProductEvidenceMap } = await import("@/lib/services/product-evidence-map");
-          const { generateEditorialAngleCandidates, selectBestEditorialAngle } = await import("@/lib/services/editorial-angle-engine");
+          // El Writer ejecuta la Editorial Decision; no vuelve a consultar motores
+          // legacy de ángulos que puedan introducir contexto ajeno al feed.
+          const { buildProductEvidenceMap } = await import("@/lib/services/product-evidence-map");
           const { auditEditorialQualityWithCritic } = await import("@/lib/services/editorial-critic");
 
-          const productType = detectProductType(req.sku, req.category, intel.card?.technicalSpecs?.deviceType);
           const evidenceMap = buildProductEvidenceMap(req.sku, intel);
-          const angleCandidates = generateEditorialAngleCandidates(req.sku, productType, req.targetAudience || "", intel);
-          const bestAngle = editorialDecision?.selectedAngle || selectBestEditorialAngle(angleCandidates);
+          const bestAngle = editorialDecision?.selectedAngle || {
+            id: "fallback-angle",
+            title: editorialDecision?.thesis?.technicalQuestion || req.topicTitle || req.sku,
+            editorialQuestion: editorialDecision?.thesis?.technicalQuestion || req.topicTitle || "¿Qué decisión profesional debe resolver este artículo?",
+            tension: editorialDecision?.thesis?.whyItMatters || "necesidad profesional frente a especificaciones aisladas",
+            readerPromise: editorialDecision?.thesis?.centralArgument || "El lector podrá convertir los datos verificables en un criterio de decisión.",
+            rationale: "Ángulo derivado de la Editorial Decision; sin consulta a motores legacy.",
+            relevanceScore: 100,
+            targetAudience: editorialDecision?.primaryAudience || req.targetAudience || ""
+          };
 
           const criticReport = auditEditorialQualityWithCritic(rawOutput as any, bestAngle, evidenceMap, req.targetAudience);
           const qualityReport = validateEditorialQuality(rawOutput as any, req.targetAudience, req.sku);
