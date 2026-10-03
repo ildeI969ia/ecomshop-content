@@ -29,16 +29,16 @@ const PROHIBITED_OPENING_PATTERNS = [
 ];
 
 const PROMPT_LEAK_PATTERNS = [
-  /editorial\\s+decision/i,
-  /editorial\\s+brief/i,
-  /reader\\s+learnings/i,
-  /reader\\s+promise/i,
-  /seg[uú]n\\s+el\\s+outline/i,
-  /la\\s+tensi[oó]n\\s+es/i,
-  /la\\s+tesis\\s+es/i,
-  /el\\s+lector\\s+debe/i,
-  /qué\\s+hay\\s+que\\s+entender\\s+antes\\s+de\\s+elegir/i,
-  /criterios\\s+t[eé]cnicos\\s+que\\s+cambian\\s+la\\s+decisi[oó]n/i
+  /editorial\s+decision/i,
+  /editorial\s+brief/i,
+  /reader\s+learnings/i,
+  /reader\s+promise/i,
+  /seg[uú]n\s+el\s+outline/i,
+  /la\s+tensi[oó]n\s+es/i,
+  /la\s+tesis\s+es/i,
+  /el\s+lector\s+debe/i,
+  /qué\s+hay\s+que\s+entender\s+antes\s+de\s+elegir/i,
+  /criterios\s+t[eé]cnicos\s+que\s+cambian\s+la\s+decisi[oó]n/i
 ];
 
 const BOILERPLATE_CLICHES = [
@@ -247,7 +247,7 @@ export function validateEditorialQuality(
     content.linkedin?.fullPostText || "",
     content.ecomshop?.argumentario || "",
     content.ecomshop?.cmsHtml || ""
-  ].join("\\n");
+  ].join("\n");
 
   for (const pattern of PROMPT_LEAK_PATTERNS) {
     if (pattern.test(allEditorialOutputs)) {
