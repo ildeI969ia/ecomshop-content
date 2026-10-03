@@ -152,7 +152,13 @@ export class GroundedWriterService {
 
   private generateGroundedFallback(req: GroundedWriterRequest, citations: Record<string, any>): ContentOutput {
     const fallback = this.buildDeterministicGroundedContent(req, citations);
-    return { ...fallback, editorialDecision: req.editorialDecision || undefined };
+    return {
+      ...fallback,
+      editorialDecision: req.editorialDecision || undefined,
+      status: "NEEDS_REVIEW",
+      fallbackUsed: true,
+      fallbackNotice: "Fallback determinista: requiere revisión editorial humana antes de aprobación."
+    };
   }
 
   private buildSystemInstruction(activeSources: Array<{ id: string; title: string; type: string; description: string; url?: string }>, audience = ""): string {
