@@ -340,20 +340,22 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   // Generador dinámico de JSON-LD para canal GEO y Ficha
   const currentJsonLd = useMemo(() => {
     if (content?.geo?.jsonLd) return content.geo.jsonLd;
+    const canonicalProduct = intelligenceCard?.product.sku.trim().toUpperCase() === selectedSku.trim().toUpperCase()
+      ? intelligenceCard.product
+      : null;
     const schema = {
       "@context": "https://schema.org",
       "@type": "Product",
-      "name": content?.blog?.title || content?.topicTitle || `Equipamiento ${selectedSku}`,
-      "image": `https://ecomshop.es/images/${selectedSku.toLowerCase()}.jpg`,
-      "description": content?.blog?.metaDescription || `Especificaciones técnicas oficiales de ${selectedSku} en EcomShop.es`,
-      "sku": selectedSku,
+      "name": canonicalProduct ? `${canonicalProduct.brand} ${canonicalProduct.model}` : selectedSku,
+      "description": content?.blog?.metaDescription || (canonicalProduct ? `Especificaciones técnicas oficiales de ${canonicalProduct.sku} en EcomShop.es` : ""),
+      "sku": canonicalProduct?.sku || selectedSku,
       "brand": {
         "@type": "Brand",
-        "name": "EcomShop"
+        "name": canonicalProduct?.brand || "EcomShop"
       },
       "offers": {
         "@type": "Offer",
-        "url": `https://ecomshop.es/productos/${selectedSku.toLowerCase()}`,
+        "url": canonicalProduct?.url || `https://ecomshop.es/productos/${selectedSku.toLowerCase()}`,
         "priceCurrency": "EUR",
         "availability": "https://schema.org/InStock"
       }
@@ -435,7 +437,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
               Panel Editorial Multicanal & Selector de Equipamiento
             </h2>
             <p className="text-xs text-slate-400 max-w-2xl">
-              Genera activos validados para Prensa / Blog GEO, LinkedIn B2B, WhatsApp y Ficha ecomshop.es con exportación 1-clic y grounding técnico de EcomShop.
+              Genera activos validados para Prensa / Blog GEO, LinkedIn B2B, WhatsApp y Ficha ecomshop.es con exportación 1-clic y datos técnicos del feed de EcomShop.
             </p>
           </div>
 
@@ -630,7 +632,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                Ficha de Inteligencia NotebookLM {selectedSku ? `(${selectedSku})` : ""}
+                Ficha de Inteligencia EcomShop {selectedSku ? `(${selectedSku})` : ""}
               </h3>
             </div>
             <span className="text-[11px] font-mono text-emerald-400 bg-emerald-950/70 border border-emerald-800/60 px-2 py-0.5 rounded-full">
@@ -643,7 +645,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
               <div className="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
               <p className="text-xs font-mono">Sintetizando especificaciones técnicas de {selectedSku}...</p>
             </div>
-          ) : intelligenceCard ? (
+          ) : intelligenceCard?.product.sku.trim().toUpperCase() === selectedSku.trim().toUpperCase() ? (
             <div className="space-y-4">
               <EditorialAnglesSelector
                 sku={selectedSku || intelligenceCard.product.sku}
@@ -664,8 +666,8 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
               />
             </div>
           ) : (
-            <div className="p-8 text-center text-slate-400 bg-slate-950/40 rounded-xl border border-slate-800 text-xs">
-              Selecciona una oportunidad a la izquierda o haz clic en un SKU para ver la ficha de ingeniería y grounding oficial.
+            <div className="p-8 text-center text-amber-300 bg-amber-950/20 rounded-xl border border-amber-800/50 text-xs">
+              La ficha de inteligencia está desalineada con el SKU seleccionado. Se ha bloqueado su uso hasta cargar la identidad exacta.
             </div>
           )}
         </div>
@@ -693,7 +695,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
               {opportunity?.actionTitle || `Orquestando campaña para ${opportunity?.sku || selectedSku}`}
             </h2>
             <p className="text-xs text-slate-400">
-              Procesando los 4 hitos: scraping de producto, contrastación contra fuentes NotebookLM, redacción omnicanal y fact-checking.
+              Procesando los 4 hitos: scraping de producto, validación contra el feed de EcomShop, redacción omnicanal y fact-checking.
             </p>
           </div>
           {onReset && (
@@ -744,7 +746,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
               )}
               <Badge variant="neutral" size="xs">
                 <BookOpen className="w-3 h-3 text-indigo-400" />
-                NotebookLM Grounded
+                EcomShop Feed Grounded
               </Badge>
             </div>
 

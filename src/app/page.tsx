@@ -121,15 +121,29 @@ export default function Page() {
 
   // 2. Cargar ficha de inteligencia técnica al seleccionar SKU
   const loadIntelligenceCard = useCallback(async (sku: string) => {
+    const requestedSku = sku.trim().toUpperCase();
+    setIntelligenceCard(null);
     setLoadingIntelligence(true);
     try {
       const card = await apiFetch<ProductIntelligenceCard>("/api/intelligence", {
         method: "POST",
-        body: JSON.stringify({ skuOrModel: sku })
+        body: JSON.stringify({ skuOrModel: requestedSku })
       });
+
+      const returnedSku = card.product.sku.trim().toUpperCase();
+      if (returnedSku !== requestedSku) {
+        throw new Error(
+          "PRODUCT_IDENTITY_MISMATCH: solicitado " + requestedSku + ", recibido " + returnedSku
+        );
+      }
+
       setIntelligenceCard(card);
     } catch (err) {
-      console.warn("[Intelligence] Error al cargar ficha de inteligencia:", err);
+      setIntelligenceCard(null);
+      console.error("[Intelligence] Bloqueada ficha desalineada:", err);
+      setCampaignErrorMessage(
+        err instanceof Error ? err.message : "La ficha de inteligencia no coincide con el SKU seleccionado."
+      );
     } finally {
       setLoadingIntelligence(false);
     }
@@ -162,7 +176,7 @@ export default function Page() {
   const fetchCatalog = useCallback(async () => {
     setLoadingCatalog(true);
     try {
-      const res = await apiFetch<{ products?: CatalogProduct[]; lastSync?: any }>("/api/catalog/products?limit=100");
+      const res = await apiFetch<{ products?: CatalogProduct[]; lastSync?: any }>("/api/catalog/products?limit=500");
       if (res?.products && Array.isArray(res.products) && res.products.length > 0) {
         setCatalogProducts(res.products);
       }
@@ -183,7 +197,7 @@ export default function Page() {
     try {
       const res = await apiFetch<{ success: boolean; count: number; message: string }>("/api/catalog/sync", {
         method: "POST",
-        body: JSON.stringify({ maxItems: 35 })
+        body: JSON.stringify({ maxItems: 500, mode: "feed" })
       });
       alert(res.message || "Catálogo sincronizado exitosamente con ecomshop.es");
       await fetchCatalog();
@@ -209,8 +223,12 @@ export default function Page() {
 
   // Cargar inteligencia técnica del SKU por defecto
   useEffect(() => {
-    if (user && selectedSku && !intelligenceCard) {
-      loadIntelligenceCard(selectedSku);
+    if (
+      user &&
+      selectedSku &&
+      intelligenceCard?.product.sku.trim().toUpperCase() !== selectedSku.trim().toUpperCase()
+    ) {
+      void loadIntelligenceCard(selectedSku);
     }
   }, [user, selectedSku, intelligenceCard, loadIntelligenceCard]);
 
@@ -429,7 +447,7 @@ export default function Page() {
                       Plataforma Multicanal de Marketing B2B — EcomShop
                     </h1>
                     <p className="text-sm text-slate-300 max-w-3xl leading-relaxed">
-                      Generación y orquestación unificada para todo el catálogo oficial ({ECOMSHOP_FULL_CATALOG.length} dispositivos).
+                      Generación y orquestación unificada para todo el catálogo oficial ({catalogProducts.length} dispositivos).
                       Activos auditados para Prensa/Blog GEO, LinkedIn, WhatsApp Broadcast y Fichas de Producto ecomshop.es con grounding en Vertex AI y Firebase.
                     </p>
                   </div>
@@ -449,7 +467,7 @@ export default function Page() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-slate-800/80">
                   <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
                     <span className="text-[10px] font-mono text-slate-400 uppercase block">Catálogo Canónico</span>
-                    <span className="text-xl font-bold text-white mt-1 block">{ECOMSHOP_FULL_CATALOG.length} SKUs</span>
+                    <span className="text-xl font-bold text-white mt-1 block">{catalogProducts.length} SKUs</span>
                   </div>
                   <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
                     <span className="text-[10px] font-mono text-slate-400 uppercase block">Canales Simultáneos</span>
@@ -630,7 +648,24 @@ export default function Page() {
                   setSelectedImageIds((prev) => (sel ? [...prev, id] : prev.filter((item) => item !== id)));
                 }}
                 onSelectAll={(all) => setSelectedImageIds(all ? galleryImages.map((i) => i.id) : [])}
-                onClearAll={() => setSelectedImageIds([])}
+                onClearAll={async () => {
+                  try {
+                    const result = await apiFetch<{ success: boolean; deletedIds?: string[] }>("/api/assets?clearAll=true", {
+                      method: "DELETE"
+                    });
+                    const deletedIds = new Set(result.deletedIds || []);
+                    setGalleryImages((prev) => prev.filter((img) => !deletedIds.has(img.id)));
+                    setSelectedImageIds([]);
+                    setImageNotice(
+                      deletedIds.size > 0
+                        ? `Se han eliminado ${deletedIds.size} imágenes de Firestore y Cloud Storage.`
+                        : "No había imágenes gestionables para eliminar."
+                    );
+                  } catch (err: unknown) {
+                    const message = err instanceof Error ? err.message : String(err);
+                    setImageNotice(`Error vaciando la galería: ${message}`);
+                  }
+                }}
                 onRefreshDatabase={loadDatabaseAssets}
                 loadingDatabaseAssets={loadingDatabaseAssets}
                 onOpenLightbox={(img) => setSelectedImageForDetail(img)}

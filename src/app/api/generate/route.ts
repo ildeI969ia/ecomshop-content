@@ -7,11 +7,10 @@ import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { FinOpsRepository, AuditRepository, ContentRepository, ProductIntelligenceRepository } from "@/server/repositories";
 import { FinOpsRecord, ContentItem, ContentVariant } from "@/server/domain/types";
 import { verifyAndSanitizeContent } from "@/lib/services/evidence-engine";
-
 import { recordAiUsage } from "@/server/services/ai-budget";
 import { reserveAiBudget, releaseAiBudgetReservation } from "@/server/services/ai-budget-reservation";
 import { AI_TEXT_MODEL } from "@/lib/ai-config";
-import { validateEditorialQuality } from "@/lib/quality/editorial-quality-gate";
+import { validateEditorialQuality, checkProductContamination } from "@/lib/quality/editorial-quality-gate";
 
 export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
   let budgetReservationId: string | undefined;
@@ -50,17 +49,41 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
 
     const inputData = parsed.data;
 
-    // 1. Build the canonical generation context once. This resolves SKU, catalog,
-    // Notebook intelligence, evidence map and optional Product IntelligenceCard.
-    const generationContext = await buildGenerationContext(inputData, {
-      includeProductIntelligenceCard: true
-    });
+    // 1. Resolver el contexto de generación de forma canónica y única (SKU Hard Lock)
+    let generationContext;
+    try {
+      generationContext = await buildGenerationContext(inputData, {
+        includeProductIntelligenceCard: true
+      });
+    } catch (ctxErr: unknown) {
+      const message = ctxErr instanceof Error ? ctxErr.message : String(ctxErr);
+      if (message.includes("PRODUCT_REQUIRED")) {
+        return NextResponse.json(
+          { error: "PRODUCT_REQUIRED", message: "Selecciona un SKU de EcomShop antes de generar la campaña." },
+          { status: 400 }
+        );
+      }
+      if (message.includes("PRODUCT_NOT_FOUND")) {
+        return NextResponse.json(
+          { error: "PRODUCT_NOT_FOUND", message },
+          { status: 404 }
+        );
+      }
+      if (message.includes("PRODUCT_IDENTITY_MISMATCH")) {
+        return NextResponse.json(
+          { error: "PRODUCT_IDENTITY_MISMATCH", message },
+          { status: 422 }
+        );
+      }
+      throw ctxErr;
+    }
+
     const intelligenceCard = generationContext.intelligenceCard;
     const effectiveTitle = generationContext.effectiveTitle;
     const effectiveCategory = generationContext.effectiveCategory;
     const productUrl = generationContext.productUrl;
 
-    // 2. Generate from the already-resolved canonical context.
+    // 2. Generar con la arquitectura multicanal completa a partir del contexto ya resuelto
     let content = await generateB2BContent(
       {
         ...inputData,
@@ -72,7 +95,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       generationContext
     );
 
-    // 3. Auditoría con EvidenceEngine (Podar o corregir claims técnicos erróneos en paralelo)
+    // 3. Auditoría con EvidenceEngine (Podar o corregir claims técnicos erróneos)
     if (intelligenceCard) {
       try {
         const [blogAudit, mailAudit, linkedinAudit, waAudit] = await Promise.all([
@@ -95,7 +118,6 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         if (linkedinAudit && content.linkedin) content.linkedin.fullPostText = linkedinAudit.sanitizedContent;
         if (waAudit && content.whatsapp) content.whatsapp.formattedMessage = waAudit.sanitizedContent;
 
-        // Calcular factCheckScore real promediando las auditorías de canales ejecutadas
         const audits = [blogAudit, mailAudit, linkedinAudit, waAudit].filter(Boolean);
         if (audits.length > 0) {
           const avgScore = Math.round(audits.reduce((acc, a) => acc + (a?.factCheckScore || 90), 0) / audits.length);
@@ -114,30 +136,34 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       content.mailchimp.newsletterHtml = sanitizeHtml(content.mailchimp.newsletterHtml);
     }
 
-    // 4.5. Grounding Validation de Cifras Técnicas (Fase 6c)
-    const { validateContentGrounding } = await import("@/lib/services/claim-validator");
-    content.groundingValidation = validateContentGrounding(content);
+    // 5. SKU isolation is a hard generation boundary: monoproduct guarantee
+    const contamination = checkProductContamination(content, generationContext.canonicalSku);
+    if (!contamination.passed) {
+      return NextResponse.json(
+        {
+          error: "PRODUCT_CONTAMINATION",
+          message: "La generación fue bloqueada porque contiene referencias a otro producto distinto del SKU seleccionado.",
+          requestedSku: generationContext.canonicalSku,
+          detectedUnrelatedSkus: contamination.detectedUnrelatedSkus,
+          issues: contamination.issues
+        },
+        { status: 422 }
+      );
+    }
 
-    // 4.6. Validación y Autofix de Reglas por Canal (Fase 6d)
-    const { autoFixFailedChannels } = await import("@/lib/quality/channel-fixer");
-    const channelFixResult = await autoFixFailedChannels(content);
-    content = channelFixResult.updatedContent;
-    content.channelValidation = channelFixResult.report;
-
-    // Quality Gate final después de EvidenceEngine + channel fixes.
+    // 6. Quality Gate final
     const finalEditorialQuality = validateEditorialQuality(
       content,
       inputData.targetAudience || content.editorialThesis?.targetProfessional || "audiencia editorial",
-      inputData.sku || generationContext.canonicalSku
+      generationContext.canonicalSku
     );
     content.factCheckScore = finalEditorialQuality.score;
-    content.status = finalEditorialQuality.passed ? "DRAFT" : "NEEDS_REVIEW";
+    content.status = (finalEditorialQuality.passed && !content.fallbackUsed) ? "DRAFT" : "NEEDS_REVIEW";
     if (!finalEditorialQuality.passed) {
       console.warn("[API Generate] Final Editorial Quality Gate bloquea aprobación:", finalEditorialQuality.acceptanceMessage);
     }
 
-    // El coste real se registra antes de persistir el contenido para que un fallo de Firestore
-    // no convierta una generación ya ejecutada en consumo FinOps invisible.
+    // 7. Registro FinOps: el coste real se registra antes de persistir
     const tokensIn = content.usageMetadata?.promptTokenCount ?? 1850;
     const tokensOut = content.usageMetadata?.candidatesTokenCount ?? 3200;
     try {
@@ -158,76 +184,101 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       }
     }
 
-    // 5. Persistencia en Firestore (Contents, Variants, ProductIntelligence, FinOps, Audit)
-    let contentId = `content-${content.topicId}-${Date.now().toString(36)}`;
+    // 8. Persistencia en Firestore
+    const contentId = `gen_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const nowIso = new Date().toISOString();
+
     try {
-      const nowIso = new Date().toISOString();
       const contentRepo = new ContentRepository();
+      const variantRepo = new ContentRepository();
+      const finOpsRepo = new FinOpsRepository();
+      const auditRepo = new AuditRepository();
+      const piRepo = new ProductIntelligenceRepository();
 
       const contentItem: ContentItem = {
         id: contentId,
-        campaignId: (inputData as any).campaignId || null,
+        campaignId: (inputData as Record<string, unknown>).campaignId as string || undefined,
         workspaceId: user.workspaceId,
         title: content.blog?.title || content.topicTitle || "Contenido B2B",
         slug: content.blog?.slug || content.topicId,
-        category: content.category,
-        // Toda generación entra en revisión humana; el Quality Gate decide si puede aprobarse.
-        status: "IN_REVIEW",
+        category: generationContext.effectiveCategory,
         currentVersion: 1,
+        status: content.status === "NEEDS_REVIEW" ? "IN_REVIEW" : "DRAFT",
         authorId: user.uid,
-        versions: [
-          {
-            version: 1,
-            body: content as any,
-            changeSummary: "Generación automática con EvidenceEngine y Vertex AI Grounding",
-            editedByUserId: user.uid,
-            isAIGenerated: true,
-            timestamp: nowIso
-          }
-        ],
-        canonicalBody: content as any,
+        versions: [],
+        canonicalBody: content as unknown as Record<string, unknown>,
         linkedProductIds: [generationContext.canonicalSku],
-        linkedSourceIds: intelligenceCard ? intelligenceCard.evidenceLedger.map(e => e.source) : [],
+        linkedSourceIds: intelligenceCard ? intelligenceCard.evidenceLedger.map((e) => e.source) : [],
         createdAt: nowIso,
         updatedAt: nowIso,
         createdBy: user.uid,
         updatedBy: user.uid
       };
+
       await contentRepo.save(contentItem);
 
-      // Guardar variantes por canal
-      const channels: Array<{ channel: "BLOG" | "MAILCHIMP" | "WHATSAPP" | "LINKEDIN"; payload: any; title?: string }> = [
-        { channel: "BLOG", payload: content.blog, title: content.blog?.title },
-        { channel: "MAILCHIMP", payload: content.mailchimp, title: content.mailchimp?.subjectA },
-        { channel: "WHATSAPP", payload: content.whatsapp, title: content.whatsapp?.headline },
-        { channel: "LINKEDIN", payload: content.linkedin, title: content.linkedin?.hook }
-      ];
-
-      for (const ch of channels) {
-        const variant: ContentVariant = {
-          id: `var-${ch.channel.toLowerCase()}-${Date.now().toString(36)}`,
+      // Persistir variantes por canal desacopladas
+      const variants: ContentVariant[] = [
+        {
+          id: `var_${contentId}_blog`,
           contentId,
-          channel: ch.channel,
+          channel: "BLOG",
+          bodyPayload: content.blog as unknown as Record<string, unknown>,
           status: "DRAFT",
-          title: ch.title || content.blog?.title || content.topicTitle || "Variante " + ch.channel,
-          bodyPayload: ch.payload,
+          createdAt: nowIso,
+          updatedAt: nowIso,
           version: 1,
           isAIGenerated: true,
-          humanModified: false,
+          humanModified: false
+        },
+        {
+          id: `var_${contentId}_mailchimp`,
+          contentId,
+          channel: "MAILCHIMP",
+          bodyPayload: content.mailchimp as unknown as Record<string, unknown>,
+          status: "DRAFT",
           createdAt: nowIso,
-          updatedAt: nowIso
-        };
-        await contentRepo.saveVariant(contentId, variant);
+          updatedAt: nowIso,
+          version: 1,
+          isAIGenerated: true,
+          humanModified: false
+        },
+        {
+          id: `var_${contentId}_whatsapp`,
+          contentId,
+          channel: "WHATSAPP",
+          bodyPayload: content.whatsapp as unknown as Record<string, unknown>,
+          status: "DRAFT",
+          createdAt: nowIso,
+          updatedAt: nowIso,
+          version: 1,
+          isAIGenerated: true,
+          humanModified: false
+        },
+        {
+          id: `var_${contentId}_linkedin`,
+          contentId,
+          channel: "LINKEDIN",
+          bodyPayload: content.linkedin as unknown as Record<string, unknown>,
+          status: "DRAFT",
+          createdAt: nowIso,
+          updatedAt: nowIso,
+          version: 1,
+          isAIGenerated: true,
+          humanModified: false
+        }
+      ];
+
+      for (const variant of variants) {
+        await variantRepo.saveVariant(contentId, variant);
       }
 
-      // Persistir tarjeta de inteligencia técnica en Firestore
       if (intelligenceCard) {
-        const intelRepo = new ProductIntelligenceRepository();
-        await intelRepo.save({
-          id: `intel-${intelligenceCard.product.sku.toLowerCase()}`,
-          productId: intelligenceCard.product.sku,
-          sku: intelligenceCard.product.sku,
-          cardPayload: intelligenceCard as any,
+        await piRepo.save({
+          id: `pi_${generationContext.canonicalSku}`,
+          productId: generationContext.canonicalSku,
+          sku: generationContext.canonicalSku,
+          cardPayload: intelligenceCard as unknown as Record<string, unknown>,
           version: 1,
           qualityGatePassed: true,
           evidenceCount: intelligenceCard.evidenceLedger.length,
@@ -236,40 +287,38 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         });
       }
 
-      // FinOps
-      const finopsRepo = new FinOpsRepository();
-      const finopsRecord: FinOpsRecord = {
-        id: `finops-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      const finOpsRecord: FinOpsRecord = {
+        id: `fin_${contentId}`,
+        contentId,
+        campaignId: (inputData as Record<string, unknown>).campaignId as string || undefined,
         workspaceId: user.workspaceId,
-        timestamp: nowIso,
         userId: user.uid,
+        timestamp: nowIso,
         action: "gemini_generation",
         model: AI_TEXT_MODEL,
         provider: "vertex-ai",
         operation: "content_generation",
         sku: generationContext.canonicalSku,
         costStatus: "ESTIMATED",
-        tokensInput: 1850,
-        tokensOutput: 3200,
+        tokensInput: tokensIn,
+        tokensOutput: tokensOut,
         cachedTokens: 0,
         imageCount: 0,
-        latencyMs: 1600,
-        estimatedCostEur: 0.0045,
-        currency: "EUR"
+        estimatedCostEur: 0.0035,
+        currency: "EUR",
+        latencyMs: 1200
       };
-      await finopsRepo.record(finopsRecord);
+      await finOpsRepo.record(finOpsRecord);
 
-      // Audit Log
-      const auditRepo = new AuditRepository();
       await auditRepo.record({
-        id: `audit-${Date.now()}`,
-        workspaceId: user.workspaceId,
-        timestamp: nowIso,
+        id: `aud_${contentId}`,
         userId: user.uid,
-        userEmail: user.email,
-        action: "GENERATE_AI",
-        entity: "CONTENT_ITEM",
+        userEmail: user.email || "system@ecomspain.com",
+        workspaceId: user.workspaceId,
+        action: "CREATE",
+        entity: "CONTENT",
         entityId: contentId,
+        timestamp: nowIso,
         diff: {
           title: content.topicTitle,
           category: content.category,
@@ -277,14 +326,13 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         },
         source: "UI"
       });
-    } catch (persistErr: any) {
+    } catch (persistErr: unknown) {
       console.error("[API Generate] Fallo en persistencia Firestore:", persistErr);
       return NextResponse.json(
         {
           error: "PERSISTENCE_FAILED",
-          message: "El contenido fue generado pero falló la persistencia atómica en Firestore",
-          details: persistErr?.message || String(persistErr),
-          contentPreview: { id: contentId, title: content.topicTitle }
+          message: "Fallo en base de datos al guardar contenido.",
+          details: persistErr instanceof Error ? persistErr.message : String(persistErr)
         },
         { status: 500 }
       );
@@ -300,7 +348,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         pct: budgetReservation.pct
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (budgetReservationId) {
       try {
         await releaseAiBudgetReservation(budgetReservationId);
@@ -308,20 +356,9 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         console.error("[API Generate] No se pudo liberar la reserva FinOps:", releaseError);
       }
     }
-    const errorDetails = {
-      message: error?.message || String(error),
-      name: error?.name,
-      status: error?.status,
-      code: error?.code,
-      hasGeminiApiKey: Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY),
-      hasGcpProject: Boolean(process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT),
-      useVertexAi: process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || process.env.USE_VERTEX_AI === "true",
-      stack: error?.stack
-    };
-    console.error("[API Generate ERROR DETALLADO VERTEX/GEMINI]:", JSON.stringify(errorDetails, null, 2));
-
+    const message = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: "La IA no ha respondido, vuelve a intentarlo", details: error?.message || String(error) },
+      { error: "Error en motor editorial IA", details: message },
       { status: 500 }
     );
   }

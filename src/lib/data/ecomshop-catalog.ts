@@ -2883,6 +2883,129 @@ export const ECOMSHOP_FULL_CATALOG: CatalogProduct[] = [
     isEcomshopOwnProduct: true
   },
   {
+    id: "ecs1552",
+    sku: "ECS1552",
+    model: "ECS1552",
+    name: "EnGenius ECS1552 Switch Cloud 48 Puertos GbE sin PoE",
+    brand: "EnGenius",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "EnGenius ECS1552 Switch Cloud 48 Puertos GbE no-PoE con 4 uplinks 10G SFP+ para distribución y alta densidad.",
+    url: "https://www.ecomshop.es/engenius-ecs1552",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 599,
+    wholesalePriceEur: 420,
+    stockStatus: "IN_STOCK",
+    specs: ["48 puertos GbE RJ45 no-PoE", "4 uplinks 10G SFP+"],
+    interfaces: ["48x GbE RJ45", "4x 10G SFP+ Slots"],
+    powerRequirements: "100-240V AC",
+    poeType: "NONE",
+    powerConsumptionWatts: 50,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EnGenius ECS1552 Switch Cloud 48 Puertos GbE certificado por EcomSpain",
+      "Distribución de alta densidad con bajo consumo energético sin PoE"
+    ],
+    antiHallucinationNotes: [
+      "Modelo sin PoE; no alimenta puntos de acceso ni teléfonos IP sin inyector externo."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ecs1552",
+      title: "Ficha Técnica Oficial EnGenius ECS1552",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ecs1552",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ECS1552",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Excelente retorno de inversión en puestos de usuario sin requerimiento PoE.",
+      engineeringPerformance: "Conmutación wire-speed 176 Gbps con uplinks 10G dedicados.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
+    id: "ecs1552p",
+    sku: "ECS1552P",
+    model: "ECS1552P",
+    name: "EnGenius ECS1552P Switch Cloud 48 Puertos GbE PoE+ (410W)",
+    brand: "EnGenius",
+    deviceType: "SWITCH",
+    category: "switches",
+    description: "EnGenius ECS1552P Switch Cloud 48 Puertos GbE PoE+ con presupuesto de 410W y 4 uplinks 10G SFP+.",
+    url: "https://www.ecomshop.es/engenius-ecs1552p",
+    imageUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80",
+    priceEur: 799,
+    wholesalePriceEur: 580,
+    stockStatus: "IN_STOCK",
+    specs: ["48 puertos GbE PoE+ (410W budget)", "4 uplinks 10G SFP+"],
+    interfaces: ["48x GbE RJ45 PoE+ (802.3at)", "4x 10G SFP+ Slots"],
+    powerRequirements: "100-240V AC",
+    poeType: "802.3at",
+    poeBudgetWatts: 410,
+    powerConsumptionWatts: 500,
+    managementMode: "Cloud",
+    standards: ["IEEE 802.3", "RoHS", "CE Certified"],
+    keyAdvantages: [
+      "EnGenius ECS1552P Switch Cloud 48 Puertos GbE PoE+ (410W) certificado por EcomSpain",
+      "Presupuesto PoE equilibrado para telefonía IP y puntos de acceso estándar"
+    ],
+    antiHallucinationNotes: [
+      "Presupuesto de 410W; para instalaciones de alta potencia simultánea evaluar el modelo ECS1552FP de 740W."
+    ],
+    recommendedBundle: {
+      sku: "SFP-10G-SR-KIT",
+      name: "Kit Transceptores 10G SFP+ & Latiguillos OM4",
+      relationshipType: "ACCESSORY",
+      rationale: "Accesorios e interconexión recomendados para este equipo."
+    },
+    notebookSource: {
+      sourceId: "src-ext-ecs1552p",
+      title: "Ficha Técnica Oficial EnGenius ECS1552P",
+      type: "datasheet",
+      url: "https://www.ecomshop.es/engenius-ecs1552p",
+      rationale: "Documentación oficial del producto en el catálogo EcomShop."
+    },
+    additionalSourceIds: ["src-18", "src-20"],
+    actionTitle: "Despliegue y Solución B2B con ECS1552P",
+    targetSegment: "Empresas, Instaladores IT y Telecomunicaciones",
+    defaultAngle: "ROI",
+    commercialAngles: {
+      executiveRoi: "Coste por puerto optimizado con PoE integrado para oficina estándar.",
+      engineeringPerformance: "Capacidad de conmutación 176 Gbps sin bloqueos.",
+      operationsDeployment: "Entrega rápida y soporte técnico preventa en España."
+    },
+    sectorAffinity: { ENTERPRISE_OFFICE: 25, LOGISTICS_INDUSTRY: 20 },
+    businessGoalAffinity: {
+      ALL_OPPORTUNITIES: 25,
+      WIFI7_MULTIGIG_EXPANSION: 20,
+      HOSPITALITY_SOLUTIONS: 15,
+      SWITCHING_POE_BACKBONE: 20,
+      STOCK_CLEARANCE_PROMO: 10
+    },
+    lifecycleStatus: "HOMOLOGATED",
+    isEcomshopOwnProduct: true
+  },
+  {
     id: "ecs1552fp",
     sku: "ECS1552FP",
     model: "ECS1552FP",
@@ -6788,18 +6911,36 @@ export const ECOMSHOP_FULL_CATALOG: CatalogProduct[] = [
   }
 ];
 
-export function findCatalogProduct(query: string): CatalogProduct | undefined {
+/**
+ * Resolución de identidad estricta.
+ *
+ * Para rutas de generación, inteligencia, Product Truth y persistencia NO se permite
+ * coincidencia parcial: ECS1552, ECS1552P y ECS1552FP son productos distintos.
+ */
+export function findCatalogProductExact(query: string): CatalogProduct | undefined {
   if (!query) return undefined;
   const clean = query.trim().toUpperCase();
-  // 1. Coincidencia exacta primero (prioridad máxima para evitar colisiones entre ECS5512F y ECS5512FP)
-  const exact = ECOMSHOP_FULL_CATALOG.find(p =>
-    p.sku.toUpperCase() === clean ||
-    p.model.toUpperCase() === clean ||
-    p.id.toUpperCase() === clean
+  if (!clean) return undefined;
+
+  return ECOMSHOP_FULL_CATALOG.find((p) =>
+    p.sku.trim().toUpperCase() === clean ||
+    p.model.trim().toUpperCase() === clean ||
+    p.id.trim().toUpperCase() === clean
   );
+}
+
+/**
+ * Resolución flexible para UI/búsquedas humanas.
+ * Las rutas canónicas de generación deben usar findCatalogProductExact().
+ */
+export function findCatalogProduct(query: string): CatalogProduct | undefined {
+  const exact = findCatalogProductExact(query);
   if (exact) return exact;
 
-  // 2. Coincidencia parcial si no hay coincidencia exacta
+  if (!query) return undefined;
+  const clean = query.trim().toUpperCase();
+  if (!clean) return undefined;
+
   return ECOMSHOP_FULL_CATALOG.find(p =>
     p.sku.toUpperCase().includes(clean) ||
     clean.includes(p.sku.toUpperCase()) ||

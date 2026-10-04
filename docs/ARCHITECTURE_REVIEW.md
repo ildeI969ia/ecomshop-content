@@ -119,6 +119,7 @@ This review does not intentionally change:
 All changes should preserve these behaviors while reducing coupling and duplication.
 
 
+<<<<<<< HEAD
 ## Implementation status — Phase 1
 
 The first architecture refactor has been implemented on branch `refactor/architecture-phase-1`:
@@ -158,10 +159,21 @@ The following production-safety refactors are now implemented on this branch:
 - **Primary generation accounting:** the canonical `/api/generate` path records AI usage before content persistence so a Firestore failure cannot make an already-executed AI request invisible to FinOps.
 - **Content deletion:** version and variant subcollections are deleted with the parent content record.
 
+## Product Truth correction — Canonical Feed Grounding
+
+The canonical editorial flow treats the **EcomShop/GESIO feed** as the product source of truth:
+
+- Generation resolves the selected SKU from the synchronized `products` collection first.
+- The static catalog is fallback-only when the feed does not contain the SKU.
+- Product intelligence is deterministically derived from the selected feed product.
+- NotebookLM is **not part of the canonical generation, angle-selection, intelligence or EvidenceEngine path**.
+- Feed parsing no longer injects a default `ECS2512FP` bundle, PoE, Cloud management or generic Ethernet specifications when those facts are absent from the feed.
+- The editorial writer's comparative table is monoproduct and feed-grounded.
+- JSON-LD is reconstructed from the selected product's Product Truth rather than accepting an AI-generated product identity.
+- Cross-product SKU/model/brand contamination is a hard generation failure and is not persisted.
+- The catalog synchronization UI requests the available feed set instead of limiting itself to the first 35 products.
+
 ## Remaining deliberate boundary
 
 The legacy batch marketing subsystem (`src/server/orchestrator/marketing-pipeline.ts` and its API routes) remains a separate execution product. It is not merged into the canonical editorial path because its contract and batch semantics are different. Migrating it should be a dedicated project with equivalence tests, not a silent architectural rewrite.
 
-## Verification status
-
-The branch has not been locally built or executed in this environment. GitHub source updates have been inspected, but no claim is made that `typecheck`, `build`, Firestore integration tests or Cloud Build currently pass. The next gate is CI/Cloud Build validation before merge.

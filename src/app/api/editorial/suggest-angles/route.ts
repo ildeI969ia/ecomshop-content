@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
-import { checkAiBudget, recordAiUsage } from "@/server/services/ai-budget";
-import { ProductIntelligenceService } from "@/server/services/product-intelligence-service";
-import { NotebookIntelligenceService } from "@/lib/services/notebook-intelligence";
+import { getDynamicCatalogProduct } from "@/lib/catalog-server";
+import { findCatalogProductExact } from "@/lib/data/ecomshop-catalog";
+import { buildFeedProductIntelligence } from "@/lib/services/feed-product-intelligence";
 import { detectProductType, buildProductEvidenceMap } from "@/lib/services/product-evidence-map";
 import { EditorialOrchestrator } from "@/lib/services/editorial-orchestrator";
 
@@ -36,46 +36,33 @@ export const POST = withAuthAndPermission("ai:execute", async (req: NextRequest,
     const cleanSku = typeof body.sku === "string" ? body.sku.trim().toUpperCase() : "";
     if (!cleanSku) return NextResponse.json({ error: "SKU requerido" }, { status: 400 });
 
-    const budgetCheck = await checkAiBudget(user.uid, user.role, 0.001);
-    if (!budgetCheck.allowed) {
-      return NextResponse.json({ error: "Presupuesto de IA superado para inteligencia editorial." }, { status: 429 });
+    const product = (await getDynamicCatalogProduct(cleanSku)) || findCatalogProductExact(cleanSku);
+    if (!product) {
+      return NextResponse.json(
+        { error: "PRODUCT_NOT_FOUND", requestedSku: cleanSku },
+        { status: 404 }
+      );
     }
 
-    const catalog = new ProductIntelligenceService();
-    const card = await catalog.getOrGenerateCard(cleanSku);
-    if (card.product.sku.toUpperCase() !== cleanSku) {
-      return NextResponse.json({ error: "PRODUCT_TRUTH_MISMATCH", requestedSku: cleanSku, resolvedSku: card.product.sku }, { status: 409 });
-    }
-
-    const notebook = new NotebookIntelligenceService();
-    const sourceIds = Array.isArray(body.sourceIds) && body.sourceIds.length > 0
-      ? body.sourceIds.filter((id: unknown): id is string => typeof id === "string")
-      : undefined;
-    const intel = notebook.synthesizeProductIntelligence(cleanSku, sourceIds);
-    const productType = detectProductType(cleanSku, card.product.category, card.technicalSpecs.deviceType);
-    const evidenceMap = buildProductEvidenceMap(cleanSku, intel);
+    const feedIntelligence = buildFeedProductIntelligence(product);
+    const card = feedIntelligence.card;
+    const productType = detectProductType(cleanSku, product.category, product.deviceType);
+    const evidenceMap = buildProductEvidenceMap(cleanSku, feedIntelligence);
 
     const orchestrator = new EditorialOrchestrator();
     const decision = await orchestrator.generate({
       sku: cleanSku,
-      category: card.product.category,
-      topicTitle: card.product.model,
+      category: product.category,
+      topicTitle: product.name,
       userIntent: typeof body.userIntent === "string" ? body.userIntent : undefined,
       requestedChannel: typeof body.requestedChannel === "string" ? body.requestedChannel : undefined,
       preferredAudience: typeof body.preferredAudience === "string" ? body.preferredAudience : undefined,
       workspaceId: user.workspaceId,
-      intel,
+      intel: feedIntelligence,
       evidenceMap,
       productType,
       variationSeed: typeof body.variationSeed === "number" ? body.variationSeed : 0
     });
-
-    try {
-      await recordAiUsage(user.uid, "editorial_orchestration", 0, 0, 0);
-    } catch (usageErr) {
-      console.warn("[SuggestAngles] usage record failed:", usageErr);
-    }
-
     const angles: EditorialAngle[] = decision.angles.map((angle) => ({
       ...angle,
       intent: intentFor(decision.productType),

@@ -98,6 +98,16 @@ export function parseGesioXmlCatalog(xmlText: string): CatalogProduct[] {
       specs.push(`Producto oficial ${brand} (${categoryRaw})`);
     }
 
+    const descriptionStandards = Array.from(
+      description.matchAll(/(?:IEEE\\s*)?802\\.\\d+[A-Za-z0-9./-]*/gi)
+    ).map((m) => m[0].trim());
+
+    const interfaces = Array.from(
+      description.matchAll(/\\b\\d+\\s*(?:x|puertos?)?\\s*(?:RJ45|Ethernet|GbE|Gigabit|SFP\\+?|QSFP28)\\b/gi)
+    ).map((m) => m[0].trim());
+
+    const feedUrl = productUrl || `https://www.ecomshop.es/productos/${id}`;
+
     const product: CatalogProduct = {
       id,
       sku,
@@ -106,57 +116,48 @@ export function parseGesioXmlCatalog(xmlText: string): CatalogProduct[] {
       brand,
       deviceType,
       category,
-      description: description || `Producto profesional ${name} de la categoría ${categoryRaw} disponible en ecomshop.es.`,
-      url: productUrl || `https://www.ecomshop.es/productos/${id}`,
+      description: description || `Ficha de producto ${name} publicada en ecomshop.es.`,
+      url: feedUrl,
       imageUrl,
       priceEur,
       wholesalePriceEur: priceEur,
       stockStatus,
       specs,
-      interfaces: ["Ethernet Gigabit RJ-45", "Alimentación PoE / DC"],
-      powerRequirements: "Power-over-Ethernet (PoE) / DC",
-      poeType: "802.3at",
-      powerConsumptionWatts: 15,
-      managementMode: "Cloud",
-      standards: ["IEEE 802.3af/at"],
-      keyAdvantages: [
-        `Categoría oficial ecomshop.es: ${categoryRaw}`,
-        "Disponibilidad con envío directo 24/48h",
-        "Soporte directo oficial ecomspain.com sin costes de licenciamiento"
-      ],
+      interfaces: interfaces.length > 0 ? interfaces : ["No especificado en el feed"],
+      powerRequirements: /poe/i.test(description) ? "PoE (detalle en descripción del feed)" : "No especificado en el feed",
+      poeType: /802\\.3bt/i.test(description) ? "802.3bt" : /802\\.3at/i.test(description) ? "802.3at" : /802\\.3af/i.test(description) ? "802.3af" : "NONE",
+      powerConsumptionWatts: 0,
+      managementMode: /cloud/i.test(description) ? "Cloud" : "Standalone",
+      standards: descriptionStandards.length > 0 ? Array.from(new Set(descriptionStandards)) : ["No especificado en el feed"],
+      keyAdvantages: specs.slice(0, 5),
       recommendedBundle: {
-        sku: "ECS2512FP",
-        name: "Switch EnGenius Cloud PoE++ Multi-Gigabit",
-        relationshipType: "REQUIRES_POE_SWITCH",
-        rationale: "Alimentación PoE optimizada y conectividad sin caídas"
+        sku: "",
+        name: "",
+        relationshipType: "ACCESSORY",
+        rationale: "El feed no prescribe un bundle; no se introduce ningún producto adicional."
       },
       notebookSource: {
         sourceId: `gesio-xml-${id}`,
-        title: `Feed XML Gesio - ${sku} (${categoryRaw})`,
+        title: `Feed EcomShop/Gesio — ${sku}`,
         type: "url",
-        url: productUrl,
-        rationale: "Sincronizado directamente desde el feed XML oficial de Gesio Mercamania"
+        url: feedUrl,
+        rationale: "Producto sincronizado directamente desde el feed XML oficial de EcomShop/Gesio."
       },
-      actionTitle: `Disponibilidad y Ficha ${sku} en ecomshop.es`,
-      targetSegment: "Integradores de Telecomunicaciones, Seguridad IP e IT Corporativo",
-      defaultAngle: "ROI",
+      actionTitle: `Ficha ${sku} — EcomShop`,
+      targetSegment: "Profesionales de networking y canal B2B",
+      defaultAngle: "PERFORMANCE",
       commercialAngles: {
-        executiveRoi: "Optimización de presupuestos de infraestructura IT y rápida amortización.",
-        engineeringPerformance: "Rendimiento probado de nivel profesional y alta estabilidad.",
-        operationsDeployment: "Despliegue ágil y compatibilidad completa con estándares corporativos."
+        executiveRoi: "Evaluar el coste y la disponibilidad del producto según la ficha oficial.",
+        engineeringPerformance: "Evaluar el rendimiento únicamente con las especificaciones publicadas en el feed.",
+        operationsDeployment: "Evaluar instalación y operación según las características publicadas en EcomShop."
       },
-      sectorAffinity: {
-        "Videovigilancia & CCTV": 0.95,
-        "Hospitality & Hoteles": 0.85,
-        "Logística & Naves Industriales": 0.9,
-        "Oficinas Corporativas": 0.9
-      },
+      sectorAffinity: {},
       businessGoalAffinity: {
         ALL_OPPORTUNITIES: 1.0,
-        LIQUIDATE_STOCK: 0.7,
-        PROMOTE_NEW_ARRIVALS: 0.9,
-        DEFEND_MARGIN: 0.85,
-        PENETRATE_VERTICAL: 0.9
+        LIQUIDATE_STOCK: 0.5,
+        PROMOTE_NEW_ARRIVALS: 0.5,
+        DEFEND_MARGIN: 0.5,
+        PENETRATE_VERTICAL: 0.5
       }
     };
 

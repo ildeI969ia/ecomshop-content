@@ -11,16 +11,34 @@ export const GET = withAuthAndPermission("content:view", async (req: NextRequest
     const { searchParams } = new URL(req.url);
     const query = (searchParams.get("q") || "").toLowerCase().trim();
     const family = (searchParams.get("family") || "ALL").toUpperCase().trim();
-    const limitCount = parseInt(searchParams.get("limit") || "100", 10);
+    const limitCount = parseInt(searchParams.get("limit") || "500", 10);
 
     const db = getAdminFirestore();
-    const snapshot = await db.collection("products").limit(limitCount).get();
+    const snapshot = await db.collection("products").limit(Math.min(limitCount, 1000)).get();
 
     let products: CatalogProduct[] = [];
 
     // Si Firestore contiene productos sincronizados dinámicamente, usarlos como fuente primaria
     if (!snapshot.empty) {
-      products = snapshot.docs.map((doc) => doc.data() as CatalogProduct);
+      const seenSkus = new Set<string>();
+      products = snapshot.docs
+        .map((doc) => ({ docId: doc.id, product: doc.data() as CatalogProduct }))
+        .filter(({ docId, product }) => {
+          const docSku = docId.trim().toUpperCase();
+          const productSku = typeof product.sku === "string" ? product.sku.trim().toUpperCase() : "";
+          const aligned = Boolean(productSku) && productSku === docSku;
+          if (!aligned) {
+            console.error("[CatalogProducts] PRODUCT_IDENTITY_MISMATCH", {
+              documentId: docId,
+              storedSku: productSku
+            });
+            return false;
+          }
+          if (seenSkus.has(productSku)) return false;
+          seenSkus.add(productSku);
+          return true;
+        })
+        .map(({ product }) => product);
     } else {
       // Fallback inicial con inicialización perezosa: guardar el catálogo canónico inicial en Firestore
       products = ECOMSHOP_FULL_CATALOG;

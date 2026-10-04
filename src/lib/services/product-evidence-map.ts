@@ -41,7 +41,6 @@ export function buildProductEvidenceMap(
   // Mapear specs verificadas
   if (intel.card?.technicalSpecs?.ports?.length) {
     verifiedFacts.push(`Puertos: ${intel.card.technicalSpecs.ports.join(", ")}`);
-    technicalImplications.push("Permite tasa de transferencia directa sin estrangulamiento de velocidad.");
   }
   if (intel.card?.technicalSpecs?.standards?.length) {
     verifiedFacts.push(`Estándares: ${intel.card.technicalSpecs.standards.join(", ")}`);
@@ -50,9 +49,8 @@ export function buildProductEvidenceMap(
     verifiedFacts.push(`Alimentación: ${intel.card.technicalSpecs.powerRequirements}`);
   }
 
-  // Hechos comerciales verificados de EcomSpain
-  commercialFacts.push("Garantía oficial y soporte preventa directo de ingeniería EcomSpain.");
-  commercialFacts.push("Consultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h.");
+  // Hechos comerciales: únicamente los que están presentes en la ficha del feed.
+  commercialFacts.push(...intel.card.technicalSpecs.keyDifferentiators);
 
   // Prohibiciones de invención (Claims Not Allowed)
   claimsNotAllowed.push("No afirmar márgenes de beneficio o porcentajes de rentabilidad comercial no documentados.");

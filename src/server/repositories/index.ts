@@ -1,5 +1,5 @@
 import { getAdminFirestore } from "../config/firebase";
-import { type QueryDocumentSnapshot } from "firebase-admin/firestore";
+import { type QueryDocumentSnapshot, type Query, type CollectionReference, type DocumentData } from "firebase-admin/firestore";
 import {
   Campaign,
   ContentItem,
@@ -52,8 +52,8 @@ export function sanitizeUndefined<T>(obj: T): T {
   if (Array.isArray(obj)) {
     return obj.map(sanitizeUndefined) as unknown as T;
   }
-  const clean: any = {};
-  for (const [key, value] of Object.entries(obj as any)) {
+  const clean: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
     if (value === undefined) {
       clean[key] = null;
     } else if (value !== null && typeof value === "object") {
@@ -62,7 +62,7 @@ export function sanitizeUndefined<T>(obj: T): T {
       clean[key] = value;
     }
   }
-  return clean;
+  return clean as unknown as T;
 }
 
 export class ContentRepository {
@@ -92,7 +92,7 @@ export class ContentRepository {
 
   async listRecent(limitCount = 50, workspaceId?: string): Promise<ContentItem[]> {
     try {
-      let query = this.collection();
+      let query: Query<DocumentData> = this.collection();
       if (workspaceId) query = query.where("workspaceId", "==", workspaceId);
       const snapshot = await query.orderBy("createdAt", "desc").limit(limitCount).get();
       return snapshot.docs.map((d: QueryDocumentSnapshot) => d.data() as ContentItem);
@@ -103,7 +103,7 @@ export class ContentRepository {
 
   async findBySlug(slug: string, workspaceId?: string): Promise<ContentItem | null> {
     try {
-      let query = this.collection().where("slug", "==", slug);
+      let query: Query<DocumentData> = this.collection().where("slug", "==", slug);
       if (workspaceId) query = query.where("workspaceId", "==", workspaceId);
       const snapshot = await query.limit(1).get();
       if (snapshot.empty) return null;

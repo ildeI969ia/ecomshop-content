@@ -1,3 +1,6 @@
+process.env.NODE_ENV = "test";
+process.env.ALLOW_EDITORIAL_FALLBACK = "true";
+
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { generateB2BContent } from "../src/lib/generator";

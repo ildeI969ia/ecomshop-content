@@ -1,11 +1,9 @@
 import { ProductIntelligenceCard } from "../types/product-intelligence";
 import { aiClient, getGenAIClient, getActiveGeminiModel } from "../genai-client";
-import { NotebookGroundingService } from "./notebook-grounding";
-import { findCatalogProduct } from "../catalog";
 
 export interface EvidenceAuditResult {
   sanitizedContent: string;
-  factCheckScore: number | null; // 0 - 100 or null if unavailable
+  factCheckScore: number | null;
   unverifiedClaims: string[];
   passedQualityGate: boolean;
   status: "PASS" | "WARN" | "BLOCKED";
@@ -19,9 +17,9 @@ export interface EvidenceAuditResult {
 }
 
 /**
- * EvidenceEngine: Audita borradores de marketing contra la ProductIntelligenceCard, el EvidenceLedger,
- * el catálogo oficial ECOMSHOP_CATALOG y el Master Notebook de EcomShop (podando afirmaciones técnicas
- * incorrectas de puertos, PoE, Wi-Fi en gateways, etc.)
+ * Audita contenido exclusivamente contra ProductIntelligenceCard.
+ * ProductIntelligenceCard procede del feed de EcomShop en el flujo canónico.
+ * No consulta NotebookLM ni catálogos globales durante la auditoría.
  */
 export async function verifyAndSanitizeContent(
   draft: string,
@@ -30,54 +28,61 @@ export async function verifyAndSanitizeContent(
   apiKeyOverride?: string
 ): Promise<EvidenceAuditResult> {
   const client = apiKeyOverride ? getGenAIClient(apiKeyOverride) : aiClient;
+  const primaryEvidence = card.evidenceLedger[0];
 
-  // Consultar catálogo oficial y notebookSource verificado
-  const catalogItem = findCatalogProduct(card.product.sku || card.product.model);
-  const notebookService = new NotebookGroundingService();
-  const notebookData = await notebookService.queryNotebookContext(
-    `${card.product.brand} ${card.product.model} ${card.technicalSpecs.standards.join(" ")}`
-  );
-
-  const officialCitation = catalogItem?.notebookCitation ? {
-    sourceId: catalogItem.notebookCitation.sourceId,
-    title: catalogItem.notebookCitation.title,
-    type: catalogItem.notebookCitation.type,
-    url: catalogItem.notebookCitation.url
-  } : undefined;
+  const officialCitation = primaryEvidence
+    ? {
+        sourceId: primaryEvidence.source,
+        title: `Feed EcomShop — ${card.product.sku}`,
+        type: primaryEvidence.sourceType,
+        url: primaryEvidence.source
+      }
+    : undefined;
 
   const prompt = `
 Actúa como Inspector de Calidad de Ingeniería y Fact-Checker para EcomSpain B2B.
-Tu tarea es auditar rigurosamente el siguiente borrador de marketing para el canal '${channel}' contrastándolo contra los datos técnicos verificados de la ProductIntelligenceCard, el catálogo oficial ECOMSHOP_CATALOG y el Master Notebook de EcomShop.
 
-PRODUCT INTELLIGENCE CARD (VERDAD ABSOLUTA):
-- Marca y Modelo: ${card.product.brand} ${card.product.model} (SKU: ${card.product.sku})
+Audita el borrador del canal "${channel}" EXCLUSIVAMENTE contra esta ProductIntelligenceCard,
+que representa la ficha del producto seleccionado en el feed de EcomShop.
+
+PRODUCT TRUTH:
+- Marca: ${card.product.brand}
+- Modelo: ${card.product.model}
+- SKU: ${card.product.sku}
+- Categoría: ${card.product.category}
 - Estándares: ${card.technicalSpecs.standards.join(", ")}
-- Puertos Físicos: ${card.technicalSpecs.ports.join(", ")}
-- Alimentación y PoE: ${card.technicalSpecs.powerRequirements}
-- Tipo de Gestión: ${card.technicalSpecs.management}
+- Puertos: ${card.technicalSpecs.ports.join(", ")}
+- Alimentación: ${card.technicalSpecs.powerRequirements}
+- Gestión: ${card.technicalSpecs.management}
 - Diferenciadores: ${card.technicalSpecs.keyDifferentiators.join(" | ")}
-${catalogItem?.antiHallucinationNotes && catalogItem.antiHallucinationNotes.length > 0 ? `
-NORMAS ANTI-ALUCINACIÓN OBLIGATORIAS (CATÁLOGO OFICIAL):
-${catalogItem.antiHallucinationNotes.map(n => `- ${n}`).join("\n")}
-` : ""}
-${catalogItem?.notebookCitation ? `- Fuente Documental Oficial: [${catalogItem.notebookCitation.type.toUpperCase()}] ${catalogItem.notebookCitation.title} (${catalogItem.notebookCitation.url || "EcomShop"})` : ""}
-- Ledger de Evidencias:
-${card.evidenceLedger.map(e => `  * ${e.claim} [${e.sourceType}]`).join("\n")}`;
 
-  const fullPrompt = `${prompt}\n\nCORPUS OFICIAL DEL NOTEBOOK ECOMSHOP:\n${notebookData.groundingSummary}\n\nBORRADOR A AUDITAR (${channel.toUpperCase()}):\n"""
+EVIDENCIA DEL FEED:
+${card.evidenceLedger.map((e) => `- ${e.claim} [${e.sourceType}] ${e.source}`).join("\n")}
+
+REGLAS:
+1. No introduzcas ningún SKU, modelo, marca o especificación que no pertenezca al producto seleccionado.
+2. No sustituyas el producto seleccionado por otro producto del catálogo.
+3. No inventes puertos, estándares, potencia, gestión, rendimiento, precios o funcionalidades.
+4. Si el borrador contiene un dato no respaldado por la tarjeta, elimínalo o corrígelo usando únicamente datos de la tarjeta.
+5. Conserva el formato HTML/texto del borrador.
+6. Calcula factCheckScore de 0 a 100.
+7. Lista en unverifiedClaims las afirmaciones corregidas o eliminadas.
+
+Devuelve ÚNICAMENTE JSON:
+{
+  "sanitizedContent": "...",
+  "factCheckScore": 95,
+  "unverifiedClaims": []
+}
+`;
+
+  const fullPrompt = `${prompt}
+
+BORRADOR A AUDITAR:
+"""
 ${draft}
 """
-\nREGLAS DE SANITIZACIÓN TÉCNICA:\n1. HARDWARE BLACKLIST ESTRICTA: Queda TERMINANTEMENTE PROHIBIDO cualquier mención a "EnGenius Fit", "FitController", "FitXpress" o controladores locales obsoletos. Sustitúyelos inmediatamente por "EnGenius Cloud".
-2. GATEWAYS SIN WI-FI: Si el equipo es un gateway (ej. ESG510 o ESG610) y el borrador afirma o insinúa que tiene "Wi-Fi integrado", "antena Wi-Fi" o que "emite señal inalámbrica", CORRÍGELO inmediatamente recalcando que es un gateway cableado que requiere APs EnGenius ECW para dar Wi-Fi.
-3. POE Y ENERGÍA: Si es un AP Wi-Fi 7 de alta potencia como el ECW536, verifica que no afirme que funciona al 100% con PoE de 15W. Requiere PoE++ 802.3bt.
-4. PUERTOS FÍSICOS: Si el borrador menciona especificaciones inventadas o exageradas (ejemplo: puertos 10G en equipos de 2.5G), corrígelo para que coincida con la ficha técnica.
-5. Conserva el formato, estilos y estructura HTML o de texto del borrador.
-6. Calcula un factCheckScore (0 a 100) en base a la veracidad inicial del borrador.
-7. Lista cualquier unverifiedClaims que tuviste que corregir o eliminar.
-\nResponde ÚNICAMENTE en formato JSON con la siguiente estructura:\n{\n  "sanitizedContent": "Texto o HTML corregido",
-  "factCheckScore": 95,
-  "unverifiedClaims": ["afirmación corregida 1", "afirmación corregida 2"]
-}\n`;
+`;
 
   try {
     const generatePromise = client.models.generateContent({
@@ -90,18 +95,18 @@ ${draft}
     });
 
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("[EvidenceEngine] Timeout excedido en auditoria (25s)")), 25000)
+      setTimeout(() => reject(new Error("[EvidenceEngine] Timeout excedido en auditoría (25s)")), 25000)
     );
 
     const res = await Promise.race([generatePromise, timeoutPromise]);
-
-    const raw = res.text || "{}";
-    const cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
-    const parsed = JSON.parse(cleaned);
+    const raw = (res.text || "{}").replace(/```json/gi, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(raw);
 
     const factCheckScore = typeof parsed.factCheckScore === "number" ? parsed.factCheckScore : null;
-    const sanitizedContent = parsed.sanitizedContent || draft;
-    const unverifiedClaims = Array.isArray(parsed.unverifiedClaims) ? parsed.unverifiedClaims : [];
+    const sanitizedContent = typeof parsed.sanitizedContent === "string" ? parsed.sanitizedContent : draft;
+    const unverifiedClaims = Array.isArray(parsed.unverifiedClaims)
+      ? parsed.unverifiedClaims.filter((v: unknown): v is string => typeof v === "string")
+      : [];
 
     const passed = factCheckScore !== null && factCheckScore >= 75;
 
@@ -115,7 +120,7 @@ ${draft}
       officialCitation
     };
   } catch (err) {
-    console.warn("[EvidenceEngine] Fallo en auditoría automática de Gemini, aplicando reglas deterministas fail-safe:", err);
+    console.warn("[EvidenceEngine] Fallo en auditoría automática; usando validación determinista:", err);
     return {
       ...deterministicAuditFallback(draft, card),
       officialCitation
@@ -123,51 +128,49 @@ ${draft}
   }
 }
 
-function deterministicAuditFallback(draft: string, card: ProductIntelligenceCard): Omit<EvidenceAuditResult, "officialCitation"> {
+function deterministicAuditFallback(
+  draft: string,
+  card: ProductIntelligenceCard
+): Omit<EvidenceAuditResult, "officialCitation"> {
   let sanitized = draft;
   const unverified: string[] = [];
   const cleanSku = card.product.sku.toUpperCase();
 
-  // Regla 1: Gateway cableado sin Wi-Fi (ESG510 / ESG610)
-  if (cleanSku === "ESG510" || cleanSku === "ESG610" || card.product.category === "gateways") {
+  if (card.technicalSpecs.isCableOnly === true || card.technicalSpecs.hasWifiRadios === false) {
     if (/wi-fi\s+integrado|wifi\s+integrado|antenas?\s+wi-fi|emite\s+wi-fi/i.test(sanitized)) {
-      sanitized = sanitized.replace(/wi-fi\s+integrado|wifi\s+integrado|antenas?\s+wi-fi/gi, "conectividad cableada de seguridad (gateway sin Wi-Fi integrado)");
-      unverified.push(`Eliminación de afirmación falsa: El gateway ${cleanSku} no cuenta con Wi-Fi integrado; se complementa con APs EnGenius ECW.`);
+      sanitized = sanitized.replace(
+        /wi-fi\s+integrado|wifi\s+integrado|antenas?\s+wi-fi|emite\s+wi-fi/gi,
+        `conectividad no inalámbrica según la ficha de ${card.product.model}`
+      );
+      unverified.push(`El borrador atribuía radios Wi-Fi a ${card.product.model}, dato no presente en el feed.`);
     }
   }
 
-  // Regla 2: AP ECW536 requiere PoE++ 802.3bt
-  if (cleanSku === "ECW536") {
-    if (/poe\s+est[aá]ndar\s+802\.3af|poe\s+de\s+15w/i.test(sanitized)) {
-      sanitized = sanitized.replace(/poe\s+est[aá]ndar\s+802\.3af|poe\s+de\s+15w/gi, "PoE++ 802.3bt (33W máx)");
-      unverified.push("Corrección de alimentación: ECW536 requiere conmutación PoE++ 802.3bt para operar sus 3 bandas a máxima potencia.");
+  if (card.technicalSpecs.powerRequirements && /poe/i.test(card.technicalSpecs.powerRequirements)) {
+    if (/poe\s+est[aá]ndar\s+802\.3af|poe\s+de\s+15w/i.test(sanitized) &&
+        !/802\.3af|802\.3at|802\.3bt/i.test(card.technicalSpecs.powerRequirements)) {
+      sanitized = sanitized.replace(
+        /poe\s+est[aá]ndar\s+802\.3af|poe\s+de\s+15w/gi,
+        card.technicalSpecs.powerRequirements
+      );
+      unverified.push(`Corrección de alimentación de ${card.product.model} según el feed.`);
     }
   }
 
-  // Regla 3: Si no tiene 10G y el texto dice 10G, revisar
-  const has10G = card.technicalSpecs.ports.some(p => p.toLowerCase().includes("10g"));
+  const has10G = card.technicalSpecs.ports.some((p) => /10\s*g/i.test(p));
   if (!has10G && /\b10\s*gbps\b|\b10gbe\b|\b10g\b/i.test(sanitized)) {
-    sanitized = sanitized.replace(/\b10\s*Gbps\b|\b10GbE\b|\b10G\b/gi, card.technicalSpecs.ports[0] || "Multi-Gigabit");
-    unverified.push("Sustitución de mención 10G no presente en la ficha técnica por puertos reales.");
+    sanitized = sanitized.replace(/\b10\s*Gbps\b|\b10GbE\b|\b10G\b/gi, card.technicalSpecs.ports[0] || "la interfaz publicada en EcomShop");
+    unverified.push(`Se eliminó una capacidad 10G no respaldada para ${cleanSku}.`);
   }
 
-  // Regla 4: Blacklist controladores obsoletos Fit
-  if (/engenius\s+fit|fitcontroller|fitxpress/i.test(sanitized)) {
-    sanitized = sanitized.replace(/engenius\s+fit|fitcontroller|fitxpress/gi, "EnGenius Cloud");
-    unverified.push("Sustitución de controlador local obsoleto por la plataforma oficial EnGenius Cloud.");
-  }
-
-  // Si hubo correcciones técnicas necesarias, no se puede marcar 100 ni PASS ciego
-  const hasCorrections = unverified.length > 0;
-  const score = hasCorrections ? Math.max(50, 85 - unverified.length * 10) : 95;
-  const passed = score >= 75 && !unverified.some(u => u.includes("falsa") || u.includes("Alucinación"));
+  const score = unverified.length === 0 ? 95 : Math.max(50, 90 - unverified.length * 10);
 
   return {
     sanitizedContent: sanitized,
     factCheckScore: score,
     unverifiedClaims: unverified,
-    passedQualityGate: passed,
-    status: passed ? "PASS" : "BLOCKED",
-    reason: passed ? undefined : "UNVERIFIED_CLAIMS_IN_CONTENT"
+    passedQualityGate: score >= 75,
+    status: score >= 75 ? "PASS" : "BLOCKED",
+    reason: score >= 75 ? undefined : "UNVERIFIED_CLAIMS_IN_CONTENT"
   };
 }

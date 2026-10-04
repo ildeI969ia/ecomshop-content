@@ -12,6 +12,7 @@ export type Permission =
   | "content:publish"
   | "content:delete"
   | "content:view"
+  | "asset:delete"
   | "ai:execute"
   | "finops:view"
   | "finops:manage"
@@ -33,22 +34,22 @@ export const VALID_ROLES: UserRole[] = [
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ADMIN: [
     "campaign:create", "campaign:edit", "campaign:delete", "campaign:view",
-    "content:create", "content:edit", "content:approve", "content:publish", "content:delete", "content:view",
+    "content:create", "content:edit", "content:approve", "content:publish", "content:delete", "content:view", "asset:delete",
     "ai:execute", "finops:view", "finops:manage", "users:manage", "audit:view", "admin"
   ],
   EDITOR: [
     "campaign:view",
-    "content:create", "content:edit", "content:approve", "content:view",
+    "content:create", "content:edit", "content:approve", "content:view", "asset:delete",
     "ai:execute", "finops:view"
   ],
   MARKETING_MANAGER: [
     "campaign:create", "campaign:edit", "campaign:delete", "campaign:view",
-    "content:create", "content:edit", "content:approve", "content:publish", "content:view",
+    "content:create", "content:edit", "content:approve", "content:publish", "content:view", "asset:delete",
     "ai:execute", "finops:view", "audit:view"
   ],
   CONTENT_MANAGER: [
     "campaign:view",
-    "content:create", "content:edit", "content:approve", "content:view",
+    "content:create", "content:edit", "content:approve", "content:view", "asset:delete",
     "ai:execute", "finops:view"
   ],
   PRODUCT_MANAGER: [
@@ -58,7 +59,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ],
   DESIGNER: [
     "campaign:view",
-    "content:create", "content:edit", "content:view",
+    "content:create", "content:edit", "content:view", "asset:delete",
     "ai:execute"
   ],
   SALES: [
@@ -115,7 +116,7 @@ export const WHITELISTED_ROUTES = [
 
 export const ROUTE_PERMISSIONS: Record<string, Record<string, Permission>> = {
   "/api/advisor/scenarios": { GET: "ai:execute", POST: "ai:execute" },
-  "/api/assets": { GET: "content:view", POST: "content:create", DELETE: "content:delete" },
+  "/api/assets": { GET: "content:view", POST: "content:create", DELETE: "asset:delete" },
   "/api/auth/logout": { POST: "content:view" },
   "/api/auth/me": { GET: "content:view" },
   "/api/campaigns": { GET: "campaign:view", POST: "campaign:create" },

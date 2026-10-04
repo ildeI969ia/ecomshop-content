@@ -51,7 +51,7 @@ export const EvidenceAuditDrawer: React.FC<EvidenceAuditDrawerProps> = ({
               </span>
               <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                 <BookOpen className="w-2.5 h-2.5 text-indigo-400" />
-                EcomShop NotebookLM Grounded
+                EcomShop EcomShop Feed Grounded
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">

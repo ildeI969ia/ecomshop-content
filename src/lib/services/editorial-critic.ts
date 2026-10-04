@@ -20,40 +20,51 @@ export function auditEditorialQualityWithCritic(
   let boringStart: string | undefined = undefined;
   let boringReason: string | undefined = undefined;
 
-  // 1. EVALUAR APRENDIZAJES CONCRETOS DEL LECTOR (Test "¿Qué he aprendido?")
-  const readerLearnings: string[] = [];
-  if (lowerText.includes("dac") || lowerText.includes("sfp+")) {
-    readerLearnings.push("Criterios de elección física entre cable directo de cobre DAC y transceptores ópticos en armarios rack.");
-    readerLearnings.push("Impacto del consumo térmico por puerto (1.5W en fibra vs <0.1W en cobre pasivo).");
-    readerLearnings.push("Procedimiento de inspección y eliminación de atenuación por polvo en conectores LC.");
-    readerLearnings.push("Verificación de compatibilidad e integridad de señal apantallada frente a interferencias EMI.");
-  } else if (lowerText.includes("poe") || lowerText.includes("wi-fi") || lowerText.includes("wifi")) {
-    readerLearnings.push("Dimensionamiento del presupuesto de potencia PoE+ por puerto (802.3at) para evitar reinicios en radios.");
-    readerLearnings.push("Importancia de los enlaces de agregación Multi-Gigabit para eliminar cuellos de botella ascendentes.");
-    readerLearnings.push("Aprovisionamiento Zero-Touch vía código QR para acelerar tiempos de entrega en obra.");
-    readerLearnings.push("Modelos de gobernanza cloud sin cuotas de licenciamiento anuales.");
-  } else {
-    readerLearnings.push("Criterios de conmutación gestionable L2+ y segmentación de tráfico por VLANs 802.1Q.");
-    readerLearnings.push("Evaluación del TCO a 3-5 años y prevención de cuellos de botella en la red corporativa.");
-    readerLearnings.push("Garantía de disponibilidad y sustitución en 24h por almacenamiento nacional en España.");
-  }
+  // 1. VALOR PARA EL LECTOR: no introducir aprendizajes técnicos hardcoded.
+  // Los aprendizajes deben proceder de la Editorial Decision y del contenido generado.
+  const decision = content.editorialDecision && typeof content.editorialDecision === "object"
+    ? content.editorialDecision as Record<string, unknown>
+    : undefined;
+  const decisionLearnings = Array.isArray(decision?.readerLearnings)
+    ? decision.readerLearnings.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
 
-  // 2. DETECCIÓN DE PÁRRAFOS GENÉRICOS O INVENTADOS (Unsupported Claims & AI-Speak)
+  const readerLearnings = decisionLearnings.slice(0, 7);
+  const h2Titles = Array.from(blogHtml.matchAll(/<h2[^>]*>(.*?)<\/h2>/gi))
+    .map((match) => match[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+  // 2. DETECCIÓN DE AFIRMACIONES NO AUTORIZADAS Y LENGUAJE DE RELLENO.
   for (const notAllowed of evidenceMap.claimsNotAllowed) {
     if (notAllowed.includes("precios numéricos") && /\b[1-9]\d*\s*(?:€|euros)\b/i.test(plainText)) {
       unsupportedClaims.push("Se detectaron precios numéricos en euros no autorizados.");
     }
-    if (notAllowed.includes("márgenes") && (lowerText.includes("margen del 30%") || lowerText.includes("rentabilidad del"))) {
+    if (notAllowed.includes("márgenes") && /(margen del\s+\d+%|rentabilidad del\s+\d+)/i.test(plainText)) {
       unsupportedClaims.push("Se detectaron afirmaciones de márgenes comerciales inventados.");
     }
   }
 
-  // Comprobar competidores imaginarios
+  const forbiddenBoilerplate = [
+    "en el mundo actual",
+    "en un entorno cada vez más",
+    "es importante destacar",
+    "sin duda",
+    "revolucionario",
+    "de última generación",
+    "solución definitiva",
+    "potente y robusto"
+  ];
+  for (const phrase of forbiddenBoilerplate) {
+    if (lowerText.includes(phrase)) {
+      genericParagraphs.push(`Lenguaje editorial genérico detectado: "${phrase}".`);
+    }
+  }
+
   if (/alternativa\s+comercial\s+genérica|producto\s+genérico|competencia\s+tradicional/i.test(blogHtml)) {
     unsupportedClaims.push("Queda prohibido crear competidores imaginarios genéricos en comparativas.");
   }
 
-  // 3. DETECCIÓN DE SECCIONES ABURRIDAS (Boring Sections / Fichas Técnicas)
+  // 3. DETECCIÓN DE SECCIONES ABURRIDAS / FICHA TÉCNICA.
   const sections = blogHtml.split(/<h2[^>]*>/i).slice(1);
   sections.forEach((sec, idx) => {
     const secText = sec.replace(/<[^>]+>/g, " ").trim().toLowerCase();
@@ -69,24 +80,43 @@ export function auditEditorialQualityWithCritic(
     }
   });
 
-  // 4. PUNTUACIONES OBJETIVAS DE CALIDAD EDITORIAL
+  // 4. EVALUACIÓN EDITORIAL REAL, NO PUNTUACIONES FIJAS.
   const hasThesis = Boolean(content.editorialThesis?.problem && content.editorialThesis?.technicalQuestion);
   const hasPromise = Boolean(angle.readerPromise);
-  const hasLearnings = readerLearnings.length >= 3;
+  const hasQuestion = Boolean(
+    content.editorialThesis?.technicalQuestion ||
+    angle.editorialQuestion ||
+    /\?/.test(plainText)
+  );
+  const hasAnalysis = h2Titles.length >= 5 && /criterios|análisis|evaluar|dimensionar|decisión/i.test(lowerText);
+  const hasApplication = /cómo encaja|aplicación|producto|despliegue/i.test(lowerText);
+  const hasLimitations = /limitaciones|cuándo encaja|cuándo no|debe comprobarse|antes del despliegue/i.test(lowerText);
+  const hasConclusion = /decisión profesional|conclusión|decisión final/i.test(lowerText);
+  const sufficientLength = plainText.split(/\s+/).filter(Boolean).length >= 700;
   const noUnsupported = unsupportedClaims.length === 0;
+  const natural = genericParagraphs.length <= 1;
 
-  const interest = hasPromise && hasThesis ? 9 : 6;
-  const originality = 9;
-  const technicalDepth = hasLearnings ? 9 : 6;
-  const audienceRelevance = lowerText.includes(targetAudience.toLowerCase().slice(0, 5)) ? 9 : 7;
-  const specificity = 9;
-  const narrativeQuality = 9;
-  const naturalness = 9;
+  const interest = Math.min(10, (hasQuestion ? 3 : 0) + (hasAnalysis ? 2 : 0) + (hasApplication ? 2 : 0) + (hasLimitations ? 2 : 0) + (hasConclusion ? 1 : 0));
+  const originality = Math.max(0, Math.min(10, 10 - Math.min(6, genericParagraphs.length)));
+  const technicalDepth = Math.min(10, (hasAnalysis ? 4 : 0) + (readerLearnings.length >= 4 ? 2 : readerLearnings.length >= 2 ? 1 : 0) + (sufficientLength ? 2 : 0) + (hasLimitations ? 2 : 0));
+  const audienceRelevance = targetAudience.trim() && lowerText.includes(targetAudience.toLowerCase().slice(0, Math.min(6, targetAudience.length)).trim()) ? 9 : 7;
+  const specificity = Math.min(10, (hasThesis ? 3 : 0) + (hasQuestion ? 2 : 0) + (hasApplication ? 3 : 0) + (noUnsupported ? 2 : 0));
+  const narrativeQuality = Math.min(10, (hasQuestion ? 2 : 0) + (hasAnalysis ? 2 : 0) + (hasApplication ? 2 : 0) + (hasLimitations ? 2 : 0) + (hasConclusion ? 2 : 0));
+  const naturalness = natural ? 9 : 5;
   const evidenceQuality = noUnsupported ? 10 : 5;
-  const commercialSubtlety = 9;
+  const commercialSubtlety = /<h2[^>]*>[^<]*(comprar|precio|oferta|promoción)[^<]*<\/h2>/i.test(blogHtml) ? 5 : 9;
 
-  const publishability = (interest >= 8 && technicalDepth >= 8 && noUnsupported && boringSections.length === 0) ? 9 : 6;
-  const rewriteRequired = publishability < 8 || unsupportedClaims.length > 0 || boringSections.length > 0;
+  const publishability = (
+    interest >= 8 &&
+    technicalDepth >= 8 &&
+    specificity >= 8 &&
+    narrativeQuality >= 8 &&
+    natural &&
+    noUnsupported &&
+    boringSections.length === 0
+  ) ? 9 : 6;
+
+  const rewriteRequired = publishability < 8 || unsupportedClaims.length > 0 || boringSections.length > 0 || !sufficientLength;
 
   return {
     interest,
