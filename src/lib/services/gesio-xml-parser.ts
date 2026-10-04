@@ -11,32 +11,106 @@ export const GESIO_CSV_FEED_URL =
  * Deducción precisa de DeviceType a partir de la jerarquía completa de categorías de Gesio
  */
 export function determineDeviceTypeFromGesioCategory(name: string, category: string, brand: string): DeviceType {
-  const text = `${name} ${category} ${brand}`.toLowerCase();
-  
-  if (text.includes("cámaras ip") || text.includes("camara") || text.includes("cctv") || text.includes("videosupervisión") || text.includes("nvrs") || text.includes("domo") || text.includes("bullet")) {
-    return "CCTV_CAMERA";
-  }
-  if (text.includes("switch") || text.includes("conmutador") || text.includes("poe")) {
-    return "SWITCH";
-  }
-  if (text.includes("router") || text.includes("celular") || text.includes("5g") || text.includes("4g") || text.includes("lte")) {
-    return "ROUTER_CELLULAR";
-  }
-  if (text.includes("gateway") || text.includes("pasarela") || text.includes("sd-wan")) {
-    return "GATEWAY";
-  }
-  if (text.includes("fibra") || text.includes("transceiver") || text.includes("sfp") || text.includes("óptica")) {
-    return "FIBER_OPTIC";
-  }
-  if (text.includes("tester") || text.includes("probador")) {
-    return "TESTER";
-  }
-  if (text.includes("cpe") || text.includes("ptp") || text.includes("antena") || text.includes("enlace")) {
-    return "CPE_PTP";
-  }
-  if (text.includes("accesor") || text.includes("soporte") || text.includes("inyector") || text.includes("cable")) {
+  const text = name.toLowerCase();
+  const cat = category.toLowerCase();
+  const b = brand.toLowerCase();
+  const combined = `${text} ${cat} ${b}`;
+
+  // 1. Inyectores y accesorios explícitos (evitar que un inyector PoE sea clasificado como AP o switch)
+  if (
+    text.includes("inyector") ||
+    text.includes("soporte móvil") ||
+    text.includes("soporte de") ||
+    (cat.includes("accesor") && !text.includes("switch") && !text.includes("ap "))
+  ) {
     return "ACCESSORY";
   }
+
+  // 2. Cámaras y CCTV
+  if (
+    combined.includes("cámaras ip") ||
+    combined.includes("camara") ||
+    combined.includes("cctv") ||
+    combined.includes("videosupervisión") ||
+    combined.includes("nvrs") ||
+    combined.includes("domo") ||
+    combined.includes("bullet")
+  ) {
+    return "CCTV_CAMERA";
+  }
+
+  // 3. PRIORIDAD ABSOLUTA: Puntos de Acceso Wi-Fi / APs / Wall-Plate (incluso con switch o PoE integrado)
+  const isApExplicit =
+    text.includes("punto de acceso") ||
+    /\bap\b/i.test(text) ||
+    text.includes("ap interior") ||
+    text.includes("ap exterior") ||
+    text.includes("ap/") ||
+    text.includes("in-wall") ||
+    text.includes("wall-plate") ||
+    text.includes("access point") ||
+    /^(ecw|ews|eap)/i.test(name.trim());
+
+  if (isApExplicit) {
+    return "ACCESS_POINT";
+  }
+
+  // 4. Radioenlaces PTP / PTMP / CPEs broadband
+  if (
+    text.includes("cpe") ||
+    text.includes("ptp") ||
+    text.includes("ptmp") ||
+    text.includes("antena") ||
+    text.includes("bridge broadband")
+  ) {
+    return "CPE_PTP";
+  }
+
+  // 5. Routers celulares (4G / 5G / LTE)
+  if (
+    combined.includes("router") ||
+    combined.includes("celular") ||
+    combined.includes("5g") ||
+    combined.includes("4g") ||
+    combined.includes("lte")
+  ) {
+    return "ROUTER_CELLULAR";
+  }
+
+  // 6. Gateways y Firewalls SD-WAN
+  if (combined.includes("gateway") || combined.includes("pasarela") || combined.includes("sd-wan")) {
+    return "GATEWAY";
+  }
+
+  // 7. Switches (debe ser explícitamente switch o conmutador, NO simplemente la palabra poe)
+  if (text.includes("switch") || text.includes("conmutador") || cat.includes("switch") || cat.includes("conmutador")) {
+    return "SWITCH";
+  }
+
+  // 8. Fibra óptica y transceptores
+  if (
+    combined.includes("fibra") ||
+    combined.includes("transceiver") ||
+    combined.includes("sfp") ||
+    combined.includes("óptica")
+  ) {
+    return "FIBER_OPTIC";
+  }
+
+  // 9. Testers
+  if (combined.includes("tester") || combined.includes("probador")) {
+    return "TESTER";
+  }
+
+  // 10. Accesorios y cableado
+  if (combined.includes("accesor") || combined.includes("cable") || combined.includes("latiguillo")) {
+    return "ACCESSORY";
+  }
+
+  if (combined.includes("wifi") || combined.includes("wi-fi")) {
+    return "ACCESS_POINT";
+  }
+
   return "ACCESS_POINT";
 }
 
@@ -46,6 +120,20 @@ export function determineDeviceTypeFromGesioCategory(name: string, category: str
 export function normalizeCategoryFromGesio(category: string, name: string): CatalogProduct["category"] {
   const cat = category.toLowerCase();
   const n = name.toLowerCase();
+
+  // Prioridad absoluta a Wi-Fi / AP
+  if (
+    n.includes("punto de acceso") ||
+    /\bap\b/i.test(n) ||
+    n.includes("ap interior") ||
+    n.includes("ap exterior") ||
+    n.includes("in-wall") ||
+    n.includes("wall-plate") ||
+    n.includes("access point") ||
+    /^(ecw|ews|eap)/i.test(name.trim())
+  ) {
+    return "wifi";
+  }
 
   if (cat.includes("videosupervisión") || cat.includes("cámaras") || cat.includes("nvrs") || n.includes("cámara") || n.includes("nvr")) return "cctv";
   if (cat.includes("switch") || n.includes("switch")) return "switches";

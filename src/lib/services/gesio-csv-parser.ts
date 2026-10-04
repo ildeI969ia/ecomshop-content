@@ -56,31 +56,106 @@ export function parseCsvRows(csvText: string): string[][] {
  * Deducción de DeviceType a partir de la categoría y nombre del producto Gesio
  */
 export function determineDeviceType(name: string, category: string, brand: string): DeviceType {
-  const text = `${name} ${category} ${brand}`.toLowerCase();
-  if (text.includes("cámara") || text.includes("camara") || text.includes("cctv") || text.includes("videosupervisión")) {
-    return "CCTV_CAMERA";
-  }
-  if (text.includes("switch") || text.includes("conmutador")) {
-    return "SWITCH";
-  }
-  if (text.includes("router") || text.includes("celular") || text.includes("5g") || text.includes("4g") || text.includes("lte")) {
-    return "ROUTER_CELLULAR";
-  }
-  if (text.includes("gateway") || text.includes("pasarela")) {
-    return "GATEWAY";
-  }
-  if (text.includes("fibra") || text.includes("transceiver") || text.includes("sfp")) {
-    return "FIBER_OPTIC";
-  }
-  if (text.includes("tester") || text.includes("probador")) {
-    return "TESTER";
-  }
-  if (text.includes("cpe") || text.includes("ptp") || text.includes("antena")) {
-    return "CPE_PTP";
-  }
-  if (text.includes("accesor") || text.includes("soporte") || text.includes("inyector")) {
+  const text = name.toLowerCase();
+  const cat = category.toLowerCase();
+  const b = brand.toLowerCase();
+  const combined = `${text} ${cat} ${b}`;
+
+  // 1. Inyectores y soportes
+  if (
+    text.includes("inyector") ||
+    text.includes("soporte móvil") ||
+    text.includes("soporte de") ||
+    (cat.includes("accesor") && !text.includes("switch") && !text.includes("ap "))
+  ) {
     return "ACCESSORY";
   }
+
+  // 2. Cámaras y CCTV
+  if (
+    combined.includes("cámaras ip") ||
+    combined.includes("camara") ||
+    combined.includes("cctv") ||
+    combined.includes("videosupervisión") ||
+    combined.includes("nvrs") ||
+    combined.includes("domo") ||
+    combined.includes("bullet")
+  ) {
+    return "CCTV_CAMERA";
+  }
+
+  // 3. PRIORIDAD ABSOLUTA: Puntos de Acceso Wi-Fi / APs / Wall-Plate
+  const isApExplicit =
+    text.includes("punto de acceso") ||
+    /\bap\b/i.test(text) ||
+    text.includes("ap interior") ||
+    text.includes("ap exterior") ||
+    text.includes("ap/") ||
+    text.includes("in-wall") ||
+    text.includes("wall-plate") ||
+    text.includes("access point") ||
+    /^(ecw|ews|eap)/i.test(name.trim());
+
+  if (isApExplicit) {
+    return "ACCESS_POINT";
+  }
+
+  // 4. Radioenlaces PTP / PTMP / CPEs broadband
+  if (
+    text.includes("cpe") ||
+    text.includes("ptp") ||
+    text.includes("ptmp") ||
+    text.includes("antena") ||
+    text.includes("bridge broadband")
+  ) {
+    return "CPE_PTP";
+  }
+
+  // 5. Routers celulares (4G / 5G / LTE)
+  if (
+    combined.includes("router") ||
+    combined.includes("celular") ||
+    combined.includes("5g") ||
+    combined.includes("4g") ||
+    combined.includes("lte")
+  ) {
+    return "ROUTER_CELLULAR";
+  }
+
+  // 6. Gateways y Firewalls SD-WAN
+  if (combined.includes("gateway") || combined.includes("pasarela") || combined.includes("sd-wan")) {
+    return "GATEWAY";
+  }
+
+  // 7. Switches
+  if (text.includes("switch") || text.includes("conmutador") || cat.includes("switch") || cat.includes("conmutador")) {
+    return "SWITCH";
+  }
+
+  // 8. Fibra óptica y transceptores
+  if (
+    combined.includes("fibra") ||
+    combined.includes("transceiver") ||
+    combined.includes("sfp") ||
+    combined.includes("óptica")
+  ) {
+    return "FIBER_OPTIC";
+  }
+
+  // 9. Testers
+  if (combined.includes("tester") || combined.includes("probador")) {
+    return "TESTER";
+  }
+
+  // 10. Accesorios
+  if (combined.includes("accesor") || combined.includes("cable") || combined.includes("latiguillo")) {
+    return "ACCESSORY";
+  }
+
+  if (combined.includes("wifi") || combined.includes("wi-fi")) {
+    return "ACCESS_POINT";
+  }
+
   return "ACCESS_POINT";
 }
 
@@ -90,6 +165,20 @@ export function determineDeviceType(name: string, category: string, brand: strin
 export function normalizeCategory(category: string, name: string): CatalogProduct["category"] {
   const cat = category.toLowerCase();
   const n = name.toLowerCase();
+
+  // Prioridad absoluta a Wi-Fi / AP
+  if (
+    n.includes("punto de acceso") ||
+    /\bap\b/i.test(n) ||
+    n.includes("ap interior") ||
+    n.includes("ap exterior") ||
+    n.includes("in-wall") ||
+    n.includes("wall-plate") ||
+    n.includes("access point") ||
+    /^(ecw|ews|eap)/i.test(name.trim())
+  ) {
+    return "wifi";
+  }
 
   if (cat.includes("cámaras") || cat.includes("camara") || n.includes("cámara")) return "cctv";
   if (cat.includes("switch") || n.includes("switch")) return "switches";
