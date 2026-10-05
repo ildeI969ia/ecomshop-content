@@ -91,7 +91,33 @@ export function checkProductContamination(
     return { passed: true, requestedSku: "", detectedUnrelatedSkus: [], issues: [] };
   }
 
-  const fullText = JSON.stringify(content).toUpperCase();
+  // Extraer exclusivamente el texto de los canales públicos y visibles para el cliente final
+  const userFacingTextParts = [
+    content.topicTitle,
+    content.blog?.title,
+    content.blog?.metaDescription,
+    content.blog?.htmlContent,
+    content.blog?.cleanPlainTextExcerpt,
+    content.linkedin?.hook,
+    content.linkedin?.body,
+    content.linkedin?.fullPostText,
+    content.whatsapp?.headline,
+    content.whatsapp?.formattedMessage,
+    content.mailchimp?.subjectA,
+    content.mailchimp?.subjectB,
+    content.mailchimp?.previewText,
+    content.mailchimp?.plainText,
+    content.mailchimp?.newsletterHtml,
+    content.geo?.title,
+    content.geo?.metaDescription,
+    content.geo?.htmlContent,
+    content.geo?.markdownContent,
+    content.ecomshop?.title,
+    content.ecomshop?.argumentario,
+    content.ecomshop?.cmsHtml
+  ];
+  const fullText = userFacingTextParts.filter(Boolean).join(" ").toUpperCase();
+
   const requestedProductTruth =
     content.editorialDecision &&
     typeof content.editorialDecision === "object" &&
@@ -104,23 +130,32 @@ export function checkProductContamination(
     ? requestedProductTruth.model.toUpperCase()
     : reqSkuClean;
 
-  const skuPatterns = [
+  // Whitelist de SKUs legítimos en el contexto del producto (incluyendo accesorios de bundle recomendados)
+  const allowedSkus = new Set<string>([reqSkuClean, canonicalModel]);
+  const bundleSku = typeof requestedProductTruth?.recommendedBundle === "object" &&
+    requestedProductTruth.recommendedBundle !== null &&
+    typeof (requestedProductTruth.recommendedBundle as Record<string, unknown>).sku === "string"
+      ? String((requestedProductTruth.recommendedBundle as Record<string, unknown>).sku).toUpperCase()
+      : undefined;
+  if (bundleSku) {
+    allowedSkus.add(bundleSku);
+  }
+
+  // Patrones de familias completas de hardware/dispositivos principales
+  const deviceSkuPatterns = [
     /\bECW\d+[A-Z0-9-]*\b/g,
     /\bECS\d+[A-Z0-9-]*\b/g,
     /\bST\d{3,6}[A-Z0-9-]*\b/g,
     /\bEAP\d+[A-Z0-9-]*\b/g,
     /\bRUT[A-Z0-9-]*\b/g,
-    /\bTRB[A-Z0-9-]*\b/g,
-    /\bDAC[-A-Z0-9]+\b/g,
-    /\bSFP[-A-Z0-9]+\b/g,
-    /\bPOE\d+[A-Z0-9-]*\b/g
+    /\bTRB[A-Z0-9-]*\b/g
   ];
 
   const detected = new Set<string>();
-  for (const pattern of skuPatterns) {
+  for (const pattern of deviceSkuPatterns) {
     for (const match of fullText.matchAll(pattern)) {
       const value = match[0].toUpperCase();
-      if (value !== reqSkuClean && value !== canonicalModel) {
+      if (!allowedSkus.has(value) && value !== reqSkuClean && value !== canonicalModel) {
         detected.add(value);
       }
     }

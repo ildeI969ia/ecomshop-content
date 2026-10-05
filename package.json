@@ -42,7 +42,8 @@
     "test:feed-product-truth": "tsx scripts/test-feed-product-truth.ts",
     "test:strict-product-identity": "tsx scripts/test-strict-product-identity.ts",
     "test:editorial-reader-value": "tsx scripts/test-editorial-reader-value.ts",
-    "test:editorial-multichannel-e2e": "tsx scripts/test-editorial-multichannel-e2e.ts"
+    "test:editorial-multichannel-e2e": "tsx scripts/test-editorial-multichannel-e2e.ts",
+    "generate:b2b": "tsx scripts/generate-b2b.ts"
   },
   "dependencies": {
     "@google-cloud/firestore": "^9.1.0",
