@@ -84,7 +84,7 @@ export class GroundedWriterService {
         const ai = getGenAIClient(req.apiKey);
         const activeModel = getActiveGeminiModel(req.apiKey);
         const { AI_TEXT_MODEL, AI_FALLBACK_MODEL, normalizeVertexModelName } = await import("@/lib/ai-config");
-        const rawModels = [activeModel, AI_TEXT_MODEL, AI_FALLBACK_MODEL, "gemini-1.5-flash"];
+        const rawModels = [activeModel, AI_TEXT_MODEL, AI_FALLBACK_MODEL, "gemini-3.1-flash-lite"];
         const candidateModels = rawModels
           .filter((m): m is string => Boolean(m))
           .map((m) => normalizeVertexModelName(m))
@@ -188,7 +188,7 @@ export class GroundedWriterService {
 
         console.error("[GroundedWriter] Validación de schema fallida tras generación IA:", validated.error);
       } catch (aiError) {
-        console.error("[GroundedWriter] Error en generación IA multicanal:", aiError);
+        console.error("[GroundedWriter] Error en generación IA multicanal:", aiError);\n        const detail = aiError instanceof Error ? aiError.message : String(aiError);\n        throw new Error(`EDITORIAL_AI_GENERATION_FAILED: ${detail}`);
       }
     }
 
