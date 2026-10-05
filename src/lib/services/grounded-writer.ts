@@ -83,9 +83,12 @@ export class GroundedWriterService {
         const { getGenAIClient, getActiveGeminiModel } = await import("@/lib/genai-client");
         const ai = getGenAIClient(req.apiKey);
         const activeModel = getActiveGeminiModel(req.apiKey);
-        const { AI_TEXT_MODEL, AI_FALLBACK_MODEL } = await import("@/lib/ai-config");
-        const candidateModels = [activeModel, AI_TEXT_MODEL, AI_FALLBACK_MODEL]
-          .filter((m, i, arr): m is string => Boolean(m) && arr.indexOf(m) === i);
+        const { AI_TEXT_MODEL, AI_FALLBACK_MODEL, normalizeVertexModelName } = await import("@/lib/ai-config");
+        const rawModels = [activeModel, AI_TEXT_MODEL, AI_FALLBACK_MODEL, "gemini-1.5-flash"];
+        const candidateModels = rawModels
+          .filter((m): m is string => Boolean(m))
+          .map((m) => normalizeVertexModelName(m))
+          .filter((m, i, arr) => arr.indexOf(m) === i);
 
         const prompt = this.buildPrompt(req, strategies);
         const systemInstruction = this.buildSystemInstruction(editorialDecision.primaryAudience, sku);
