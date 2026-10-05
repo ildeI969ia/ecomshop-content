@@ -153,7 +153,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       return NextResponse.json(
         {
           error: "PRODUCT_CONTAMINATION",
-          message: "La generación fue bloqueada porque contiene referencias a otro producto distinto del SKU seleccionado.",
+          message: `La generación fue bloqueada porque contiene referencias a otro producto distinto del SKU seleccionado (${contamination.detectedUnrelatedSkus.join(", ")}).`,
           requestedSku: generationContext.canonicalSku,
           detectedUnrelatedSkus: contamination.detectedUnrelatedSkus,
           issues: contamination.issues
