@@ -188,7 +188,9 @@ export class GroundedWriterService {
 
         console.error("[GroundedWriter] Validación de schema fallida tras generación IA:", validated.error);
       } catch (aiError) {
-        console.error("[GroundedWriter] Error en generación IA multicanal:", aiError);\n        const detail = aiError instanceof Error ? aiError.message : String(aiError);\n        throw new Error(`EDITORIAL_AI_GENERATION_FAILED: ${detail}`);
+        console.error("[GroundedWriter] Error en generación IA multicanal:", aiError);
+        const detail = aiError instanceof Error ? aiError.message : String(aiError);
+        throw new Error(`EDITORIAL_AI_GENERATION_FAILED: ${detail}`);
       }
     }
 
@@ -344,11 +346,17 @@ REGLAS OBLIGATORIAS:
         takeaways: ["Verificar requisitos de arquitectura", "Validar alimentación y puertos"],
         callToAction: "Debate en comentarios",
         hashtags: ["#NetworkingB2B", `#${sku}`],
-        fullPostText: `${title}\n\n${dummyThesis.centralArgument}`
+        fullPostText: `${title}
+
+${dummyThesis.centralArgument}`
       },
       whatsapp: {
         headline: `${brand} ${sku}`,
-        formattedMessage: `*${title}*\n\n${dummyThesis.centralArgument}\n\nFicha: https://ecomshop.es`,
+        formattedMessage: `*${title}*
+
+${dummyThesis.centralArgument}
+
+Ficha: https://ecomshop.es`,
         callToAction: "Consultar ficha",
         targetUrl: "https://ecomshop.es"
       },
