@@ -10,6 +10,7 @@ import {
   AlertCircle,
   RefreshCw
 } from "lucide-react";
+import { GenerationLiveFeed } from "./generation-live-feed";
 
 export type GenerationStage = 
   | "IDLE" 
@@ -276,6 +277,8 @@ export const CampaignStepper: React.FC<CampaignStepperProps> = ({
           );
         })}
       </div>
+
+      <GenerationLiveFeed stage={currentStage} />
 
       {currentStage === "ERROR" && (
         <div className="mt-4 p-3 rounded-lg bg-rose-950/80 border border-rose-800 text-rose-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs" aria-live="assertive">
