@@ -75,7 +75,8 @@ export class GroundedWriterService {
     const strategies = planner.planStrategies(genContext, editorialDecision);
 
     // 2. Ejecución con IA si está disponible
-    const isVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || (!req.apiKey && Boolean(process.env.GOOGLE_CLOUD_PROJECT));
+    const { isVertexEnabled } = await import("@/lib/genai-client");
+    const isVertex = !req.apiKey && isVertexEnabled();
     const key = req.apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
     if (key || isVertex) {
@@ -87,9 +88,8 @@ export class GroundedWriterService {
         const rawModels = [
           activeModel,
           AI_TEXT_MODEL,
-          "gemini-1.5-flash-002",
-          "gemini-1.5-flash",
-          "gemini-2.0-flash",
+          AI_TEXT_MODEL,
+          "gemini-2.0-flash-001",
           AI_FALLBACK_MODEL
         ];
         const candidateModels = rawModels

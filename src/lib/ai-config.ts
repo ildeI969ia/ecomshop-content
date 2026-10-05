@@ -24,7 +24,7 @@ export const AI_REQUEST_TIMEOUT_MS = Number(process.env.AI_REQUEST_TIMEOUT_MS ||
  * En Vertex AI publisher models, "gemini-2.0-flash" requiere el sufijo de versión (ej. "-001").
  */
 export function normalizeVertexModelName(modelName: string): string {
-  if (modelName === "gemini-2.5-flash") return "gemini-1.5-flash-002";
+  if (modelName === "gemini-2.0-flash") return "gemini-2.0-flash-001";
   return modelName;
 }
 
