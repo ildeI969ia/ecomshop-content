@@ -60,6 +60,7 @@ interface CampaignStepperProps {
   onSelectAudience?: (audience: TargetAudienceType) => void;
   selectedAngle?: any;
   onSelectAngle?: (angle: any, isFreeTopic?: boolean) => void;
+  failedStage?: GenerationStage;
 }
 
 interface StepDef {
@@ -109,9 +110,18 @@ export const CampaignStepper: React.FC<CampaignStepperProps> = ({
   activeSku,
   activeAngle,
   selectedAudience,
-  onSelectAudience
+  onSelectAudience,
+  failedStage
 }) => {
   const [isRetrying, setIsRetrying] = React.useState(false);
+  const lastActiveStageRef = React.useRef<GenerationStage>("FACT_CHECKING");
+
+  // Mantener el último paso de procesamiento activo para reflejar exactamente dónde ocurrió el error
+  React.useEffect(() => {
+    if (currentStage !== "ERROR" && currentStage !== "IDLE" && currentStage !== "COMPLETED") {
+      lastActiveStageRef.current = currentStage;
+    }
+  }, [currentStage]);
 
   // Restablecer el estado de retry cuando cambie el stage
   React.useEffect(() => {
@@ -139,7 +149,12 @@ export const CampaignStepper: React.FC<CampaignStepperProps> = ({
     "COMPLETED"
   ];
 
-  const currentIdx = stageOrder.indexOf(currentStage === "ERROR" ? "FACT_CHECKING" : currentStage);
+  // Resolver dinámicamente la etapa fallida en lugar de forzar ciegamente FACT_CHECKING
+  const resolvedStage = currentStage === "ERROR"
+    ? (failedStage || lastActiveStageRef.current || "FACT_CHECKING")
+    : currentStage;
+
+  const currentIdx = stageOrder.indexOf(resolvedStage);
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg text-white mb-6">
@@ -182,7 +197,8 @@ export const CampaignStepper: React.FC<CampaignStepperProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         {STEPS.map((step, idx) => {
           const Icon = step.icon;
-          const isCompleted = currentStage === "COMPLETED" || (currentStage !== "ERROR" && currentIdx > idx);
+          // Las etapas anteriores a la que falló conservan su estado completado con checkmark verde
+          const isCompleted = currentStage === "COMPLETED" || currentIdx > idx;
           const isCurrent = (currentStage === step.key) || (currentStage === "ERROR" && currentIdx === idx);
 
           return (
