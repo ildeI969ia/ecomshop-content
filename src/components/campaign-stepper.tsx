@@ -114,7 +114,7 @@ export const CampaignStepper: React.FC<CampaignStepperProps> = ({
   failedStage
 }) => {
   const [isRetrying, setIsRetrying] = React.useState(false);
-  const lastActiveStageRef = React.useRef<GenerationStage>("FACT_CHECKING");
+  const lastActiveStageRef = React.useRef<GenerationStage>("EXTRACTING");
 
   // Mantener el último paso de procesamiento activo para reflejar exactamente dónde ocurrió el error
   React.useEffect(() => {
@@ -151,7 +151,7 @@ export const CampaignStepper: React.FC<CampaignStepperProps> = ({
 
   // Resolver dinámicamente la etapa fallida en lugar de forzar ciegamente FACT_CHECKING
   const resolvedStage = currentStage === "ERROR"
-    ? (failedStage || lastActiveStageRef.current || "FACT_CHECKING")
+    ? (failedStage || lastActiveStageRef.current || "EXTRACTING")
     : currentStage;
 
   const currentIdx = stageOrder.indexOf(resolvedStage);
