@@ -346,9 +346,12 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         {
           error: "PERSISTENCE_FAILED",
           message: "Fallo en base de datos al guardar contenido.",
-          details: persistErr instanceof Error ? persistErr.message : String(persistErr)
+          details: persistErr instanceof Error ? persistErr.message : String(persistErr),
+          code: "PERSISTENCE_FAILED",
+          stage: "FIRESTORE_PERSISTENCE",
+          requestId
         },
-        { status: 500 }
+        { status: 500, headers: { "x-request-id": requestId } }
       );
     }
 
@@ -373,9 +376,15 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       }
     }
     const message = error instanceof Error ? error.message : String(error);
+    logger.error("Generation request failed", { requestId, stage: pipelineStage, error: message });
     return NextResponse.json(
-      logger.error("Generation request failed", { requestId, stage: pipelineStage, error: message });
-    { error: "Error en motor editorial IA", details: message, code: "GENERATION_PIPELINE_FAILED", stage: pipelineStage, requestId },
+      {
+        error: "Error en motor editorial IA",
+        details: message,
+        code: "GENERATION_PIPELINE_FAILED",
+        stage: pipelineStage,
+        requestId
+      },
       { status: 500, headers: { "x-request-id": requestId } }
     );
   }
