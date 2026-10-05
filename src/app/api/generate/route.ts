@@ -366,7 +366,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         limitEur: budgetReservation.limitEur,
         pct: budgetReservation.pct
       }
-    });
+    }, { headers: { "x-request-id": requestId } });
   } catch (error: unknown) {
     if (budgetReservationId) {
       try {
