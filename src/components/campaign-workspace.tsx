@@ -62,6 +62,7 @@ interface CampaignWorkspaceProps {
   content: ContentOutput | null;
   intelligenceCard: ProductIntelligenceCard | null;
   errorMessage?: string | null;
+  failedStage?: GenerationStage;
   onRetry?: () => void;
   onReset?: () => void;
   onOpenImageStudio?: (prompt: string) => void;
@@ -108,6 +109,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   content: initialContent,
   intelligenceCard,
   errorMessage,
+  failedStage,
   onRetry,
   onReset,
   onOpenImageStudio,
@@ -714,6 +716,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
           <CampaignStepper
             currentStage={stage}
             errorMessage={errorMessage}
+            failedStage={failedStage}
             onRetry={onRetry}
             activeSku={opportunity?.sku || selectedSku}
             activeAngle={opportunity?.recommendedAngle}
@@ -845,6 +848,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
         <CampaignStepper
           currentStage={stage}
           errorMessage={errorMessage}
+          failedStage={failedStage}
           onRetry={onRetry}
           activeSku={opportunity?.sku || selectedSku}
           activeAngle={opportunity?.recommendedAngle}
