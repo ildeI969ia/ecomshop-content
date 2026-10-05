@@ -24,7 +24,7 @@ export class GoogleGenAIProvider implements AIProvider {
       });
     } catch (err) {
       console.warn(`[GoogleGenAIProvider] Error con modelo principal ${primaryModel}, reintentando con fallback...`, err);
-      const fallbackModel = process.env.GEMINI_FALLBACK_MODEL || "gemini-2.0-flash";
+      const fallbackModel = process.env.GEMINI_FALLBACK_MODEL === "gemini-2.0-flash" ? "gemini-2.0-flash-001" : (process.env.GEMINI_FALLBACK_MODEL || "gemini-1.5-flash");
       usedModel = fallbackModel;
       response = await ai.models.generateContent({
         model: fallbackModel,
