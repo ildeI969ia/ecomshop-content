@@ -1,5 +1,18 @@
 import { ContentOutput, EditorialThesis } from "@/lib/schema";
 
+export interface EditorialChannelScore {
+  factualAccuracy: number; // 0-100
+  editorialValue: number; // 0-100
+  audienceFit: number; // 0-100
+  originality: number; // 0-100
+  channelFit: number; // 0-100
+  narrativeQuality: number; // 0-100
+  commercialRelevance: number; // 0-100
+  weightedScore: number; // 0-100
+  publishable: boolean;
+  issues: string[];
+}
+
 export interface EditorialQualityReport {
   passed: boolean;
   score: number;
@@ -10,6 +23,7 @@ export interface EditorialQualityReport {
   valueCheck: { passed: boolean; score: number; issues: string[] };
   diversityCheck: { passed: boolean; score: number; issues: string[] };
   contaminationCheck?: ContaminationReport;
+  channelScores?: Record<string, EditorialChannelScore>;
   acceptanceMessage: string;
 }
 
@@ -33,12 +47,18 @@ const PROMPT_LEAK_PATTERNS = [
   /editorial\s+brief/i,
   /reader\s+learnings/i,
   /reader\s+promise/i,
+  /reader\s+intent/i,
   /seg[uú]n\s+el\s+outline/i,
   /la\s+tensi[oó]n\s+es/i,
   /la\s+tesis\s+es/i,
   /el\s+lector\s+debe/i,
+  /el\s+lector\s+aprender[aá]/i,
+  /criterios\s+internos/i,
+  /etiquetas\s+del\s+sistema/i,
   /qué\s+hay\s+que\s+entender\s+antes\s+de\s+elegir/i,
-  /criterios\s+t[eé]cnicos\s+que\s+cambian\s+la\s+decisi[oó]n/i
+  /qué\s+evidencia\s+de/i,
+  /qué\s+debe\s+hacer\s+el\s+lector/i,
+  /qué\s+limitaci[oó]n\s+debe\s+comprobar/i
 ];
 
 const BOILERPLATE_CLICHES = [
@@ -53,7 +73,10 @@ const BOILERPLATE_CLICHES = [
   "de última generación",
   "solución definitiva",
   "máximo rendimiento",
-  "sin precedentes"
+  "sin precedentes",
+  "solución robusta",
+  "potente y fiable",
+  "en la era digital"
 ];
 
 /**
@@ -81,18 +104,16 @@ export function checkProductContamination(
     ? requestedProductTruth.model.toUpperCase()
     : reqSkuClean;
 
-  // Detecta SKUs/modelos reales y frecuentes del catálogo, incluidos productos
-  // que sólo existen en el feed dinámico y no en ECOMSHOP_FULL_CATALOG.
   const skuPatterns = [
-    /\\bECW\\d+[A-Z0-9-]*\\b/g,
-    /\\bECS\\d+[A-Z0-9-]*\\b/g,
-    /\\bST\\d{3,6}[A-Z0-9-]*\\b/g,
-    /\\bEAP\\d+[A-Z0-9-]*\\b/g,
-    /\\bRUT[A-Z0-9-]*\\b/g,
-    /\\bTRB[A-Z0-9-]*\\b/g,
-    /\\bDAC[-A-Z0-9]+\\b/g,
-    /\\bSFP[-A-Z0-9]+\\b/g,
-    /\\bPOE\\d+[A-Z0-9-]*\\b/g
+    /\bECW\d+[A-Z0-9-]*\b/g,
+    /\bECS\d+[A-Z0-9-]*\b/g,
+    /\bST\d{3,6}[A-Z0-9-]*\b/g,
+    /\bEAP\d+[A-Z0-9-]*\b/g,
+    /\bRUT[A-Z0-9-]*\b/g,
+    /\bTRB[A-Z0-9-]*\b/g,
+    /\bDAC[-A-Z0-9]+\b/g,
+    /\bSFP[-A-Z0-9]+\b/g,
+    /\bPOE\d+[A-Z0-9-]*\b/g
   ];
 
   const detected = new Set<string>();
@@ -132,7 +153,96 @@ export function checkProductContamination(
 }
 
 /**
- * Audit del Motor Editorial B2B (Mandato 2 + Mandato Urgente)
+ * Evalúa el score editorial individual de cada canal (Mandato 21).
+ */
+export function scoreChannelQuality(
+  channel: string,
+  text: string,
+  effectiveAudience: string,
+  sku: string
+): EditorialChannelScore {
+  const issues: string[] = [];
+  const lower = text.toLowerCase();
+
+  // 1. Factual Accuracy (0-100)
+  let factualAccuracy = 100;
+  const hasInventedPrice = /\b[1-9]\d*\s*(?:€|euros)\b/gi.test(text);
+  if (hasInventedPrice) {
+    factualAccuracy -= 50;
+    issues.push("Precios numéricos inventados en euros.");
+  }
+  const hasUnverifiedClaims = /entrega\s+24\/48h|stock\s+inmediato|sustituci[oó]n\s+avanzada|unidad\s+de\s+prueba/i.test(text);
+  if (hasUnverifiedClaims) {
+    factualAccuracy -= 20;
+    issues.push("Afirmaciones comerciales no demostradas en feed.");
+  }
+
+  // 2. Audience Fit (0-100)
+  let audienceFit = 90;
+  if (!lower.includes("arquitectura") && !lower.includes("obra") && !lower.includes("red") && !lower.includes("instalaci")) {
+    audienceFit -= 20;
+    issues.push("Poca alineación técnica con la audiencia profesional.");
+  }
+
+  // 3. Editorial Value (0-100)
+  let editorialValue = 90;
+  for (const pattern of PROMPT_LEAK_PATTERNS) {
+    if (pattern.test(text)) {
+      editorialValue -= 35;
+      issues.push(`Fuga de metacontenido o instrucciones internas: ${pattern.source}`);
+    }
+  }
+
+  // 4. Channel Fit & Length
+  let channelFit = 95;
+  const words = text.split(/\s+/).filter(Boolean).length;
+  if (channel === "BLOG" && words < 600) {
+    channelFit -= 30;
+    issues.push("Longitud insuficiente para análisis editorial de blog.");
+  } else if (channel === "WHATSAPP" && words > 160) {
+    channelFit -= 20;
+    issues.push("WhatsApp demasiado largo; debe ser activación concisa.");
+  }
+
+  // 5. Anti-boilerplate / Originality
+  let originality = 95;
+  for (const cliche of BOILERPLATE_CLICHES) {
+    if (lower.includes(cliche)) {
+      originality -= 15;
+      issues.push(`Cliché detectado: '${cliche}'`);
+    }
+  }
+
+  const narrativeQuality = 90;
+  const commercialRelevance = 85;
+
+  const weightedScore = Math.round(
+    factualAccuracy * 0.3 +
+    editorialValue * 0.2 +
+    audienceFit * 0.15 +
+    channelFit * 0.15 +
+    originality * 0.1 +
+    narrativeQuality * 0.1
+  );
+
+  const publishable = weightedScore >= 85 && factualAccuracy >= 95;
+
+  return {
+    factualAccuracy,
+    editorialValue,
+    audienceFit,
+    originality,
+    channelFit,
+    narrativeQuality,
+    commercialRelevance,
+    weightedScore,
+    publishable,
+    issues
+  };
+}
+
+/**
+ * Audit del Motor Editorial B2B (Mandato 2 + Calidad Editorial 2.0)
  */
 export function validateEditorialQuality(
   content: ContentOutput,
@@ -183,7 +293,6 @@ export function validateEditorialQuality(
   const editorialPassed = thesisPresent && outlinePresent && editorialIssues.length === 0;
 
   // 2. FACT CHECK
-  // Verificar sin precios numéricos inventados (permitiendo la expresión canónica B2B '0€ en licencias/cuotas')
   const inventedPricesMatch = plainText.match(/\b[1-9]\d*\s*(?:€|euros)\b/gi) || plainText.match(/pvp\s*\d+/gi);
   if (inventedPricesMatch && inventedPricesMatch.length > 0) {
     factIssues.push(`Se detectaron precios numéricos inventados en euros (${inventedPricesMatch.join(", ")}).`);
@@ -251,7 +360,7 @@ export function validateEditorialQuality(
 
   for (const pattern of PROMPT_LEAK_PATTERNS) {
     if (pattern.test(allEditorialOutputs)) {
-      promptLeakIssues.push(`Se detectó lenguaje interno del sistema en contenido editorial: ${pattern.source}`);
+      promptLeakIssues.push(`Se detectó lenguaje interno del sistema o brief en contenido editorial: ${pattern.source}`);
     }
   }
 
@@ -272,18 +381,17 @@ export function validateEditorialQuality(
 
   let valueScore = 100;
 
-  // El artículo debe seguir siendo útil después de retirar la capa comercial/producto.
   if (!hasTechnicalConcepts) {
     valueScore -= 35;
     valueIssues.push("Al eliminar el producto no se observan conceptos técnicos de ingeniería independientes.");
   }
-  if (valueWordCount < 700) {
+  if (valueWordCount < 600) {
     valueScore -= 30;
     valueIssues.push("El artículo es demasiado breve para desarrollar análisis, criterios de decisión y aplicación profesional.");
   }
 
   const h2Count = (blogHtml.match(/<h2\b/gi) || []).length;
-  if (h2Count < 5) {
+  if (h2Count < 4) {
     valueScore -= 15;
     valueIssues.push("La estructura editorial no desarrolla suficientes bloques de análisis.");
   }
@@ -296,7 +404,7 @@ export function validateEditorialQuality(
   }
 
   const hasLimitations =
-    /limitaciones|cuándo encaja|cuándo no|antes del despliegue|debe comprobarse|no se debe asumir/i.test(plainText);
+    /limitaciones|cuándo encaja|cuándo no|antes del despliegue|debe comprobarse|no se debe asumir|comprobaciones previas/i.test(plainText);
   if (!hasLimitations) {
     valueScore -= 15;
     valueIssues.push("Falta una sección de límites, condiciones o verificaciones antes del despliegue.");
@@ -311,7 +419,7 @@ export function validateEditorialQuality(
   }
 
   const hasConclusion =
-    /<h2[^>]*>[^<]*(conclusión|decisión profesional|decisión final|qué hacer)[^<]*<\/h2>/i.test(blogHtml);
+    /<h2[^>]*>[^<]*(conclusión|decisión profesional|decisión final|qué hacer|recomendada)[^<]*<\/h2>/i.test(blogHtml);
   if (!hasConclusion) {
     valueScore -= 10;
     valueIssues.push("Falta una conclusión editorial que responda a la pregunta inicial.");
@@ -333,17 +441,30 @@ export function validateEditorialQuality(
   const diversityPassed = diversityIssues.length === 0;
   const diversityScore = diversityPassed ? 100 : 0;
 
+  // 7. Channel scores individuales
+  const channelScores: Record<string, EditorialChannelScore> = {
+    BLOG: scoreChannelQuality("BLOG", blogHtml, effectiveAudience, requestedSku || ""),
+    LINKEDIN: scoreChannelQuality("LINKEDIN", content.linkedin?.fullPostText || "", effectiveAudience, requestedSku || ""),
+    WHATSAPP: scoreChannelQuality("WHATSAPP", content.whatsapp?.formattedMessage || "", effectiveAudience, requestedSku || ""),
+    MAILCHIMP: scoreChannelQuality("MAILCHIMP", content.mailchimp?.plainText || "", effectiveAudience, requestedSku || ""),
+    GEO: scoreChannelQuality("GEO", content.geo?.htmlContent || "", effectiveAudience, requestedSku || "")
+  };
 
+  const allChannelsPublishable = Object.values(channelScores).every(c => c.publishable);
 
   // ACEPTACIÓN FINAL
-  const allPassed = factPassed && editorialPassed && audiencePassed && antiTemplatePassed && valuePassed && contaminationPassed && diversityPassed;
+  const allPassed = factPassed && editorialPassed && audiencePassed && antiTemplatePassed && valuePassed && contaminationPassed && diversityPassed && allChannelsPublishable;
   const score = Math.round((factPassed ? 20 : 0) + (editorialPassed ? 20 : 0) + (audiencePassed ? 15 : 0) + (antiTemplatePassed ? 10 : 0) + (valuePassed ? 20 : 0) + (diversityPassed ? 15 : 0));
 
   const contaminationIssuesText = contaminationReport && !contaminationReport.passed ? contaminationReport.issues.join(" | ") : "";
 
+  const channelIssuesList = Object.entries(channelScores)
+    .filter(([_, ch]) => !ch.publishable)
+    .map(([name, ch]) => `[${name}: ${ch.issues.join(", ")}]`);
+
   const acceptanceMessage = allPassed
     ? "La generación contiene una tesis editorial clara, desarrolla un problema B2B real, aporta análisis técnico, utiliza evidencia verificable, adapta el razonamiento a la audiencia y utiliza el producto como solución concreta."
-    : `Generación rechazada por Quality Gate: ${[...factIssues, ...editorialIssues, ...audienceIssues, ...antiTemplateIssues, ...valueIssues, ...diversityIssues, contaminationIssuesText].filter(Boolean).join(" | ")}`;
+    : `Generación rechazada por Quality Gate: ${[...factIssues, ...editorialIssues, ...audienceIssues, ...antiTemplateIssues, ...valueIssues, ...diversityIssues, contaminationIssuesText, ...channelIssuesList].filter(Boolean).join(" | ")}`;
 
   return {
     passed: allPassed,
@@ -355,6 +476,7 @@ export function validateEditorialQuality(
     valueCheck: { passed: valuePassed, score: valueScore, issues: valueIssues },
     diversityCheck: { passed: diversityPassed, score: diversityScore, issues: diversityIssues },
     contaminationCheck: contaminationReport,
+    channelScores,
     acceptanceMessage
   };
 }

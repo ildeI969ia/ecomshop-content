@@ -16,19 +16,34 @@ const getApiKeyFromEnv = (): string =>
 
 /**
  * Determina si se debe usar Vertex AI o Gemini API Studio.
- * Si existe una API Key explícita, PREFIERE Gemini API Studio para evitar bloqueos por ADC desconfigurado.
+ * En el entorno corporativo de EcomShop en GCP (europe-west1 / us-central1),
+ * Vertex AI es el motor primario empresarial salvo que se fuerce explícitamente API key.
  */
 export function isVertexEnabled(): boolean {
+  if (process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || process.env.USE_VERTEX_AI === "true") return true;
+  if (process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT) return true;
   const apiKey = getApiKeyFromEnv();
   if (apiKey) return false;
-  if (process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || process.env.USE_VERTEX_AI === "true") return true;
-  return hasGcpProject;
+  return true;
 }
 
 export function createGenAIInstance(apiKeyOverride?: string, locationOverride?: string): GoogleGenAI {
   const isServer = typeof window === "undefined";
-  const apiKey = apiKeyOverride?.trim() || getApiKeyFromEnv() || (isServer ? "" : "dummy_browser_key");
-  
+  const explicitKey = apiKeyOverride?.trim();
+
+  // Si se solicita Vertex AI o estamos en entorno GCP con proyecto, usar Vertex AI
+  const project = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || "ecomshop-marketing-prod";
+  const location = locationOverride || VERTEX_LOCATION;
+
+  if (!explicitKey && (isVertexEnabled() || hasGcpProject)) {
+    return new GoogleGenAI({
+      vertexai: true,
+      project,
+      location,
+    });
+  }
+
+  const apiKey = explicitKey || getApiKeyFromEnv() || (isServer ? "" : "dummy_browser_key");
   if (apiKey) {
     return new GoogleGenAI({
       vertexai: false,
@@ -40,9 +55,6 @@ export function createGenAIInstance(apiKeyOverride?: string, locationOverride?: 
       },
     });
   }
-
-  const project = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || "ecomshop-marketing-prod";
-  const location = locationOverride || VERTEX_LOCATION;
 
   return new GoogleGenAI({
     vertexai: true,
@@ -58,11 +70,6 @@ export const aiClient = createGenAIInstance();
  * Factory de cliente Vertex AI especializado para Imagen 3.
  */
 export function getVertexImageClient(location: ImagenLocation = "us-central1"): GoogleGenAI {
-  const apiKey = getApiKeyFromEnv();
-  if (apiKey) {
-    return createGenAIInstance(apiKey);
-  }
-
   return new GoogleGenAI({
     vertexai: true,
     project: process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || "ecomshop-marketing-prod",
@@ -77,10 +84,9 @@ export function getGenAIClient(apiKeyOverride?: string): GoogleGenAI {
   if (apiKeyOverride?.trim()) {
     return createGenAIInstance(apiKeyOverride);
   }
-  return aiClient;
+  return createGenAIInstance();
 }
 
 export function getActiveGeminiModel(apiKey?: string): string {
   return AI_TEXT_MODEL;
 }
-

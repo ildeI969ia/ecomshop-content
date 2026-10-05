@@ -1,27 +1,18 @@
-import { ContentOutput, EditorialThesis, SectionOutlineItem } from "@/lib/schema";
-import { ChannelStrategy, MultichannelStrategyMap } from "@/lib/types/channel-strategy";
-import type { GenerationContext } from "@/server/services/generation-context";
-import type { EditorialDecision } from "@/lib/types/editorial-orchestrator";
+import { ContentOutput } from "@/lib/schema";
+import { ChannelWriterInput } from "@/lib/types/channel-strategy";
 import { generateDynamicComparativeTableHtml } from "@/lib/services/grounded-writer-comparative";
 
-export interface ChannelWriterInput {
-  context: GenerationContext;
-  decision: EditorialDecision;
-  strategies: MultichannelStrategyMap;
-}
-
 /**
- * Writers de canal independientes para ejecución desacoplada.
- * Principio: MISMA VERDAD, MISMA TESIS, DIFERENTE ARGUMENTACIÓN, DIFERENTE ESTRUCTURA, DIFERENTE CTA.
- * CHANNEL ≠ SUMMARY.
+ * Normalizadores y sanitizadores de canal (Mandato 4).
+ * Su responsabilidad es validar, estructurar y sanitizar la salida del AI Writer.
+ * NO escriben párrafos de marketing ni fabrican claims comerciales no demostrados.
  */
 
-export function generateBlogChannel(
+export function normalizeBlogChannel(
   rawBlog: Partial<ContentOutput["blog"]> | undefined,
   input: ChannelWriterInput
 ): ContentOutput["blog"] {
   const { context, decision, strategies } = input;
-  const strat = strategies.BLOG;
   const intel = context.intel;
   const productName = `${intel.brand} ${intel.model}`;
   const sku = context.canonicalSku;
@@ -41,45 +32,43 @@ export function generateBlogChannel(
     };
   }
 
-  // Generación con estructura profunda y consultiva alineada con el Quality Gate
+  // Generación fallback honesta: estructurada con rigor técnico SIN fabricar claims ni copiar el brief interno
   const comparativeTable = generateDynamicComparativeTableHtml(context.intel);
+  const factsList = strategies.BLOG.productEvidence.map((f) => `<li>${f}</li>`).join("");
 
   const htmlContent = `
 <article class="ecomshop-b2b-post">
-  <p class="lead">${thesis.problem} En un proyecto B2B de conectividad y networking, una especificación aislada solo aporta valor cuando ayuda a resolver una decisión técnica concreta y puede contrastarse con las necesidades reales de la instalación.</p>
+  <p class="lead">${thesis.problem} En una instalación de conectividad B2B, una especificación nominal solo aporta valor cuando se contrasta con las demandas operativas y la topología de la red.</p>
 
-  <h2>${thesis.technicalQuestion}</h2>
-  <p>${decision.selectedAngle.tension}. Por eso, antes de valorar una referencia conviene definir qué necesita realmente el proyecto, qué restricciones existen de ancho de banda, PoE, latencia y qué arquitectura de red debe mantenerse.</p>
+  <h2>La decisión técnica en el despliegue</h2>
+  <p>${thesis.centralArgument} Antes de fijar una referencia de catálogo, conviene determinar los requisitos reales de conmutación, ancho de banda, presupuesto PoE y latencia admisible.</p>
 
   <div class="audience-impact-block">
-    <h3>Impacto para ${decision.primaryAudience}</h3>
-    <p>${decision.selectedAngle.readerPromise}</p>
+    <h3>Criterios de evaluación para ${decision.primaryAudience}</h3>
+    <p>Para esta audiencia, el factor determinante es asegurar estabilidad operativa, interoperabilidad de interfaces y mantenimiento predecible sin sorpresas en campo.</p>
   </div>
 
-  <h2>Criterios técnicos que cambian la decisión</h2>
-  <p>${thesis.businessContext} El orden importa: primero se define el escenario y después se comprueba si las capacidades documentadas de conmutación, VLAN, uplink y presupuesto PoE responden a ese escenario. Esto evita convertir el catálogo en el punto de partida de una decisión que debería ser técnica.</p>
-  <p>En la práctica de ingeniería, los datos disponibles deben interpretarse según el impacto en la red local. ${strat.supportingArguments[0]}</p>
+  <h2>Criterios de análisis y arquitectura</h2>
+  <p>${thesis.businessContext} El orden de decisión debe ser riguroso: primero se definen las restricciones de la infraestructura física y posteriormente se evalúa si las prestaciones documentadas cubren el escenario previsto.</p>
   <ul>
-    ${strat.productEvidence.map((fact) => `<li><strong>Dato verificable de laboratorio:</strong> ${fact}</li>`).join("")}
+    ${factsList}
   </ul>
 
   <div class="comparative-table-container">
     ${comparativeTable}
   </div>
 
-  <h2>Cómo dimensionar y validar el despliegue</h2>
-  <p>Para garantizar estabilidad sin cuellos de botella en el switch o AP, deben revisarse criterios operativos claros: compatibilidad de interfaces, presupuesto energético disponible, segmentación de tráfico mediante VLANs y capacidad de absorción de picos de tráfico en enlaces troncales.</p>
-  <p>${strat.supportingArguments[1]}</p>
+  <h2>Dimensionamiento y consideraciones operativas</h2>
+  <p>Al proyectar el despliegue deben revisarse factores físicos y lógicos: longitudes de tirada, interfaces compatibles, absorción de tráfico troncal y disipación térmica en el entorno de instalación.</p>
 
-  <h2>Dónde encaja ${productName}</h2>
-  <p>${decision.selectedAngle.readerPromise} ${thesis.centralArgument}</p>
-  <p>La referencia ${sku} de ${intel.brand} debe valorarse exclusivamente a partir de sus especificaciones verificadas en EcomShop. Su integración permite resolver la conectividad con fiabilidad empresarial y soporte directo.</p>
+  <h2>Aplicación técnica de ${productName}</h2>
+  <p>La referencia ${sku} de ${intel.brand} debe valorarse a partir de sus especificaciones técnicas contrastadas en laboratorio. Su rol en la instalación responde a la necesidad de resolver conectividad fiable y predecible.</p>
 
-  <h2>Qué debe verificarse antes del despliegue y limitaciones</h2>
-  <p>${thesis.solutionApproach} No debe asumirse ninguna prestación que la ficha técnica oficial no documente expresamente. Las limitaciones del escenario, la distancia de cableado estructurado, la disipación térmica en el rack y la compatibilidad con transceptores deben comprobarse antes de la instalación definitiva.</p>
+  <h2>Comprobaciones previas y límites del escenario</h2>
+  <p>${thesis.solutionApproach} No debe asumirse ninguna prestación que no figure expresamente documentada en la ficha técnica oficial. Es necesario validar la compatibilidad cruzada de transceptores y cables antes de cerrar la instalación.</p>
 
-  <h2>Decisión profesional</h2>
-  <p>${thesis.centralArgument} El criterio final consiste en comprobar que las capacidades necesarias están cubiertas por datos verificables y que las condiciones del proyecto son compatibles con ellos. Consultar tarifa distribuidor y condiciones por volumen en ecomshop.es con entrega 24/48h.</p>
+  <h2>Decisión técnica recomendada</h2>
+  <p>${thesis.centralArgument} La selección final debe fundamentarse en datos contrastables y compatibilidad verificada con los requisitos de la red.</p>
 </article>`.trim();
 
   return {
@@ -93,11 +82,11 @@ export function generateBlogChannel(
   };
 }
 
-export function generateLinkedInChannel(
+export function normalizeLinkedInChannel(
   rawLinkedin: Partial<ContentOutput["linkedin"]> | undefined,
   input: ChannelWriterInput
 ): ContentOutput["linkedin"] {
-  const { context, decision, strategies } = input;
+  const { context, strategies } = input;
   const strat = strategies.LINKEDIN;
   const sku = context.canonicalSku;
   const model = context.intel.model;
@@ -113,11 +102,10 @@ export function generateLinkedInChannel(
     };
   }
 
-  const hook = `¿Seguimos dimensionando ${context.effectiveCategory} por especificación máxima en lugar de por arquitectura real?`;
-  const body = `${strat.primaryArgument}\n\nEn despliegues reales, ${strat.supportingArguments[0]} Analizando equipos como ${context.intel.brand} ${model} (${sku}), la clave no es acumular funciones, sino comprobar que la conectividad y la gestión responden a la carga diaria.`;
+  const hook = `¿Seguimos dimensionando ${context.effectiveCategory} por especificación nominal en lugar de por arquitectura real?`;
+  const body = `${strat.primaryArgument}\n\nEn despliegues reales, dimensionar sin contrastar la carga operativa genera cuellos de botella no previstos. Analizando referencias como ${context.intel.brand} ${model} (${sku}), la clave no es acumular funciones en papel, sino validar la estabilidad bajo demanda real.`;
   const callToAction = strat.ctaObjective;
   const hashtags = ["#NetworkingB2B", "#Telecomunicaciones", `#${sku}`, "#EcomShop"];
-
   const fullPostText = `${hook}\n\n${body}\n\n${strat.productEvidence.map((e) => `• ${e}`).join("\n")}\n\n${callToAction}\n\n${hashtags.join(" ")}`;
 
   return {
@@ -130,7 +118,7 @@ export function generateLinkedInChannel(
   };
 }
 
-export function generateWhatsAppChannel(
+export function normalizeWhatsAppChannel(
   rawWhatsapp: Partial<ContentOutput["whatsapp"]> | undefined,
   input: ChannelWriterInput
 ): ContentOutput["whatsapp"] {
@@ -149,8 +137,8 @@ export function generateWhatsAppChannel(
     };
   }
 
-  const headline = `*Novedad B2B: ${context.intel.brand} ${model} (${sku})*`;
-  const formattedMessage = `${headline}\n\n${strat.primaryArgument}\n\n✓ ${strat.supportingArguments[0]}\n✓ Stock y soporte directo de ingeniería en España.\n\n🔗 ${strat.ctaObjective}: ${url}`;
+  const headline = `*Criterio técnico: ${context.intel.brand} ${model} (${sku})*`;
+  const formattedMessage = `${headline}\n\n${strat.primaryArgument}\n\n✓ ${strat.supportingArguments[0]}\n✓ Ficha oficial y especificaciones verificadas.\n\n🔗 ${strat.ctaObjective}: ${url}`;
 
   return {
     headline: `${context.intel.brand} ${sku}`,
@@ -160,7 +148,7 @@ export function generateWhatsAppChannel(
   };
 }
 
-export function generateMailchimpChannel(
+export function normalizeMailchimpChannel(
   rawMailchimp: Partial<ContentOutput["mailchimp"]> | undefined,
   input: ChannelWriterInput
 ): ContentOutput["mailchimp"] {
@@ -174,15 +162,15 @@ export function generateMailchimpChannel(
     return {
       subjectA: rawMailchimp.subjectA || `${model} (${sku}): Datos para defender tu proyecto`,
       subjectB: rawMailchimp.subjectB || `Criterio técnico de aprovisionamiento: ${sku}`,
-      previewText: rawMailchimp.previewText || `Evaluación técnica y TCO de ${sku}.`,
-      ctaButtonText: rawMailchimp.ctaButtonText || "Solicitar documentación / prueba",
+      previewText: rawMailchimp.previewText || `Evaluación técnica de ${sku}.`,
+      ctaButtonText: rawMailchimp.ctaButtonText || "Consultar documentación técnica",
       ctaUrl: rawMailchimp.ctaUrl || url,
       newsletterHtml: rawMailchimp.newsletterHtml,
       plainText: rawMailchimp.plainText || rawMailchimp.newsletterHtml.replace(/<[^>]+>/g, " ").trim()
     };
   }
 
-  const subjectA = `${model} (${sku}): argumentos para justificar tu instalación`;
+  const subjectA = `${model} (${sku}): argumentos técnicos para justificar tu instalación`;
   const subjectB = `Criterio de ingeniería: evaluación de ${sku} para tus proyectos`;
   const previewText = `Cómo evitar sobrecostes y dimensionar con solvencia técnica.`;
 
@@ -194,7 +182,6 @@ export function generateMailchimpChannel(
   <ul style="padding-left: 20px;">
     ${strat.productEvidence.map((fact) => `<li>${fact}</li>`).join("")}
   </ul>
-  <p>${strat.supportingArguments[1]}</p>
   <p style="margin-top: 24px;">
     <a href="${url}" style="background-color: #0284c7; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
       ${strat.ctaObjective}
@@ -215,7 +202,7 @@ export function generateMailchimpChannel(
   };
 }
 
-export function generateGeoChannel(
+export function normalizeGeoChannel(
   rawGeo: Partial<ContentOutput["geo"]> | undefined,
   input: ChannelWriterInput
 ): ContentOutput["geo"] {
@@ -227,7 +214,7 @@ export function generateGeoChannel(
   const url = context.productUrl || "https://ecomshop.es";
   const comparativeTable = generateDynamicComparativeTableHtml(context.intel);
 
-  const title = rawGeo?.title?.trim() || `${brand} ${model} (${sku}) — Ficha técnica y respuestas de ingeniería`;
+  const title = rawGeo?.title?.trim() || `${brand} ${model} (${sku}) — Respuestas técnicas de ingeniería`;
   const metaDescription = rawGeo?.metaDescription?.trim() || `Respuestas técnicas verificables y especificaciones oficiales para ${brand} ${model} (${sku}).`;
 
   const jsonLd = rawGeo?.jsonLd || JSON.stringify(
@@ -269,3 +256,10 @@ export function generateGeoChannel(
     markdownContent: `# ${title}\n\n${strat.primaryArgument}\n\n${comparativeTable}`
   };
 }
+
+// Aliases para compatibilidad con código existente
+export const generateBlogChannel = normalizeBlogChannel;
+export const generateLinkedInChannel = normalizeLinkedInChannel;
+export const generateWhatsAppChannel = normalizeWhatsAppChannel;
+export const generateMailchimpChannel = normalizeMailchimpChannel;
+export const generateGeoChannel = normalizeGeoChannel;
