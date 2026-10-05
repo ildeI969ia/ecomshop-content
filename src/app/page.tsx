@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { 
   Sparkles, 
   Layers, 
@@ -65,6 +65,8 @@ export default function Page() {
   const [selectedSku, setSelectedSku] = useState<string>("ECW536");
   const [campaignOpportunity, setCampaignOpportunity] = useState<ProductOpportunityRecord | null>(null);
   const [campaignErrorMessage, setCampaignErrorMessage] = useState<string | null>(null);
+  const [campaignFailedStage, setCampaignFailedStage] = useState<GenerationStage | null>(null);
+  const campaignActiveStageRef = useRef<GenerationStage>("EXTRACTING");
   const [intelligenceCard, setIntelligenceCard] = useState<ProductIntelligenceCard | null>(null);
   const [loadingIntelligence, setLoadingIntelligence] = useState(false);
   const [selectedAngle, setSelectedAngle] = useState<EditorialAngle | null>(null);
@@ -240,6 +242,7 @@ export default function Page() {
     setFreeTopicTitle("");
     setCampaignContent(null);
     setCampaignErrorMessage(null);
+    setCampaignFailedStage(null);
     setCampaignStage("IDLE");
     setActiveSection("workspace");
     await loadIntelligenceCard(sku);
@@ -249,17 +252,21 @@ export default function Page() {
   const handleLaunchWithSku = async (sku: string) => {
     const product = catalogProducts.find((p) => p.sku === sku) || ECOMSHOP_FULL_CATALOG.find((p) => p.sku === sku);
     setSelectedSku(sku);
+    campaignActiveStageRef.current = "EXTRACTING";
     setCampaignStage("EXTRACTING");
+    setCampaignFailedStage(null);
     setCampaignErrorMessage(null);
     setCampaignContent(null);
     setActiveSection("workspace");
 
     // Progresión visual de etapas
     const t1 = setTimeout(() => {
+      campaignActiveStageRef.current = "NOTEBOOK_GROUNDING";
       setCampaignStage((prev) => (prev === "EXTRACTING" ? "NOTEBOOK_GROUNDING" : prev));
     }, 1200);
 
     const t2 = setTimeout(() => {
+      campaignActiveStageRef.current = "GENERATING_CHANNELS";
       setCampaignStage((prev) => (prev === "NOTEBOOK_GROUNDING" ? "GENERATING_CHANNELS" : prev));
     }, 3000);
 
@@ -284,6 +291,8 @@ export default function Page() {
       clearTimeout(t1);
       clearTimeout(t2);
 
+      campaignActiveStageRef.current = "COMPLETED";
+      setCampaignFailedStage(null);
       setCampaignStage("COMPLETED");
       setCampaignContent(data);
       setActiveContentId(data.id || null);
@@ -293,6 +302,7 @@ export default function Page() {
     } catch (err: any) {
       clearTimeout(t1);
       clearTimeout(t2);
+      setCampaignFailedStage(campaignActiveStageRef.current);
       setCampaignStage("ERROR");
       setCampaignErrorMessage(err instanceof Error ? err.message : "Error al generar el paquete de contenido multicanal");
     }
@@ -565,6 +575,7 @@ export default function Page() {
                 content={campaignContent}
                 intelligenceCard={intelligenceCard}
                 errorMessage={campaignErrorMessage}
+                failedStage={campaignFailedStage || undefined}
                 selectedSku={selectedSku}
                 products={catalogProducts}
                 isLoadingIntelligence={loadingIntelligence}
@@ -577,6 +588,7 @@ export default function Page() {
                   setCampaignStage("IDLE");
                   setCampaignContent(null);
                   setCampaignErrorMessage(null);
+                  setCampaignFailedStage(null);
                 }}
                 onOpenImageStudio={(prompt) => {
                   setImagePrompt(prompt);
