@@ -11,9 +11,12 @@ import { recordAiUsage } from "@/server/services/ai-budget";
 import { reserveAiBudget, releaseAiBudgetReservation } from "@/server/services/ai-budget-reservation";
 import { AI_TEXT_MODEL } from "@/lib/ai-config";
 import { validateEditorialQuality, checkProductContamination } from "@/lib/quality/editorial-quality-gate";
+import { logger } from "@/lib/logger";
 
 export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
   let budgetReservationId: string | undefined;
+  let pipelineStage = "REQUEST_VALIDATION";
+  const requestId = req.headers.get("x-request-id") || crypto.randomUUID();
   try {
     const json = await req.json();
     const parsed = GenerateRequestSchema.safeParse(json);
@@ -30,7 +33,10 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       );
     }
 
+    logger.info("Generation request started", { requestId });
+
     // 0. Reserva atómica de presupuesto FinOps antes de iniciar cualquier trabajo de IA.
+    pipelineStage = "BUDGET_RESERVATION";
     const budgetReservation = await reserveAiBudget(user.uid, user.role, 0.0045);
     if (!budgetReservation.allowed || !budgetReservation.reservation) {
       return NextResponse.json(
@@ -50,6 +56,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     const inputData = parsed.data;
 
     // 1. Resolver el contexto de generación de forma canónica y única (SKU Hard Lock)
+    pipelineStage = "CONTEXT_RESOLUTION";
     let generationContext;
     try {
       generationContext = await buildGenerationContext(inputData, {
@@ -84,6 +91,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     const productUrl = generationContext.productUrl;
 
     // 2. Generar con la arquitectura multicanal completa a partir del contexto ya resuelto
+    pipelineStage = "AI_GENERATION";
     let content = await generateB2BContent(
       {
         ...inputData,
@@ -96,6 +104,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     );
 
     // 3. Auditoría con EvidenceEngine (Podar o corregir claims técnicos erróneos)
+    pipelineStage = "EVIDENCE_AUDIT";
     if (intelligenceCard) {
       try {
         const [blogAudit, mailAudit, linkedinAudit, waAudit] = await Promise.all([
@@ -129,6 +138,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     }
 
     // 4. Sanitización estricta anti-XSS
+    pipelineStage = "SANITIZATION";
     if (content.blog?.htmlContent) {
       content.blog.htmlContent = sanitizeHtml(content.blog.htmlContent);
     }
@@ -137,6 +147,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     }
 
     // 5. SKU isolation is a hard generation boundary: monoproduct guarantee
+    pipelineStage = "PRODUCT_CONTAMINATION_CHECK";
     const contamination = checkProductContamination(content, generationContext.canonicalSku);
     if (!contamination.passed) {
       return NextResponse.json(
@@ -152,6 +163,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     }
 
     // 6. Quality Gate final
+    pipelineStage = "EDITORIAL_QUALITY_GATE";
     const finalEditorialQuality = validateEditorialQuality(
       content,
       inputData.targetAudience || content.editorialThesis?.targetProfessional || "audiencia editorial",
@@ -164,6 +176,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     }
 
     // 7. Registro FinOps: el coste real se registra antes de persistir
+    pipelineStage = "FINOPS_RECORDING";
     const tokensIn = content.usageMetadata?.promptTokenCount ?? 1850;
     const tokensOut = content.usageMetadata?.candidatesTokenCount ?? 3200;
     try {
@@ -185,6 +198,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     }
 
     // 8. Persistencia en Firestore
+    pipelineStage = "FIRESTORE_PERSISTENCE";
     const contentId = `gen_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const nowIso = new Date().toISOString();
 
@@ -338,6 +352,8 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       );
     }
 
+    logger.info("Generation request completed", { requestId, stage: "COMPLETED", sku: generationContext.canonicalSku, model: AI_TEXT_MODEL });
+
     return NextResponse.json({
       ...content,
       id: contentId,
@@ -358,8 +374,9 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     }
     const message = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: "Error en motor editorial IA", details: message },
-      { status: 500 }
+      logger.error("Generation request failed", { requestId, stage: pipelineStage, error: message });
+    { error: "Error en motor editorial IA", details: message, code: "GENERATION_PIPELINE_FAILED", stage: pipelineStage, requestId },
+      { status: 500, headers: { "x-request-id": requestId } }
     );
   }
 });
