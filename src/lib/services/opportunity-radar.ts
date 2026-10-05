@@ -339,17 +339,21 @@ export class OpportunityRadarService {
           editorialScore += 2;
         }
 
-        // 6. Directiva personalizada del usuario (si contiene palabras clave)
+        // 6. Directiva personalizada del usuario (si contiene palabras clave o SKU exacto)
         if (customDirective) {
           const skuLower = def.sku.toLowerCase();
           const catLower = def.category.toLowerCase();
           const titleLower = def.actionTitle.toLowerCase();
-          if (
-            customDirective.includes(skuLower) ||
-            customDirective.includes(catLower) ||
-            customDirective.split(" ").some(w => w.length > 3 && titleLower.includes(w))
+          const dirLower = customDirective.toLowerCase().trim();
+          if (skuLower === dirLower || def.sku.toUpperCase() === customDirective.trim().toUpperCase()) {
+            editorialScore += 100;
+            editorialFitReason = `Sustitución directa seleccionada: "${def.sku}"`;
+          } else if (
+            dirLower.includes(skuLower) ||
+            dirLower.includes(catLower) ||
+            dirLower.split(" ").some(w => w.length > 3 && titleLower.includes(w))
           ) {
-            editorialScore += 6;
+            editorialScore += 10;
             editorialFitReason = `Satisface la directiva específica: "${customDirective}"`;
           }
         }
@@ -540,8 +544,20 @@ export class OpportunityRadarService {
     rejectedSku: string,
     currentDisplayedSkus: string[],
     controls?: EditorialControls,
-    customDirective?: string
+    customDirective?: string,
+    targetSku?: string
   ): Promise<ProductOpportunityRecord | null> {
+    if (targetSku) {
+      const results = await this.getDailyOpportunities({
+        limitCount: 1,
+        editorialControls: controls,
+        excludedSkus: currentDisplayedSkus.filter(s => s.toUpperCase() !== targetSku.toUpperCase()),
+        customDirective: targetSku,
+        shuffleSeed: 0
+      });
+      if (results[0]) return results[0];
+    }
+
     const allExcluded = [...currentDisplayedSkus, rejectedSku];
     const results = await this.getDailyOpportunities({
       limitCount: 1,

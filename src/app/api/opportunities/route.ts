@@ -47,6 +47,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       replaceSku,
       currentSkus = [],
       customDirective,
+      targetSku,
       shuffleSeed = 0
     } = body;
 
@@ -58,7 +59,8 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
         replaceSku,
         currentSkus,
         editorialControls,
-        customDirective
+        customDirective,
+        targetSku
       );
 
       return NextResponse.json({

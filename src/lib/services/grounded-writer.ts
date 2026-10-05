@@ -84,7 +84,14 @@ export class GroundedWriterService {
         const ai = getGenAIClient(req.apiKey);
         const activeModel = getActiveGeminiModel(req.apiKey);
         const { AI_TEXT_MODEL, AI_FALLBACK_MODEL, normalizeVertexModelName } = await import("@/lib/ai-config");
-        const rawModels = [activeModel, AI_TEXT_MODEL, AI_FALLBACK_MODEL, "gemini-2.5-flash", "gemini-2.0-flash-001"];
+        const rawModels = [
+          activeModel,
+          AI_TEXT_MODEL,
+          "gemini-1.5-flash-002",
+          "gemini-1.5-flash",
+          "gemini-2.0-flash",
+          AI_FALLBACK_MODEL
+        ];
         const candidateModels = rawModels
           .filter((m): m is string => Boolean(m))
           .map((m) => normalizeVertexModelName(m))
@@ -190,11 +197,19 @@ export class GroundedWriterService {
       } catch (aiError) {
         console.error("[GroundedWriter] Error en generación IA multicanal:", aiError);
         const detail = aiError instanceof Error ? aiError.message : String(aiError);
-        throw new Error(`EDITORIAL_AI_GENERATION_FAILED: ${detail}`);
+        const allowEditorialFallback =
+          process.env.ALLOW_EDITORIAL_FALLBACK === "true" ||
+          process.env.NODE_ENV === "test" ||
+          process.env.VITEST === "true";
+        if (!allowEditorialFallback) {
+          throw new Error(`EDITORIAL_AI_GENERATION_FAILED: ${detail}`);
+        }
+        console.warn(`[GroundedWriter] Activando Fallback determinista honesto para ${sku} tras error de IA: ${detail}`);
+        return this.buildHonestFallback(genContext, editorialDecision, strategies, citations);
       }
     }
 
-    // 6. Honest Fallback
+    // 6. Honest Fallback si no hay proveedor de IA configurado
     const allowEditorialFallback =
       process.env.ALLOW_EDITORIAL_FALLBACK === "true" ||
       process.env.NODE_ENV === "test" ||
@@ -210,9 +225,9 @@ export class GroundedWriterService {
   private buildPrompt(req: GroundedWriterRequest, strategies: import("@/lib/types/channel-strategy").MultichannelStrategyMap): string {
     const { intel, editorialDecision } = req;
     return `
-OBJETIVO: GENERA CONTENIDO EDITORIAL B2B MULTICANAL DIFERENCIADO POR CANAL.
+OBJETIVO: GENERA CONTENIDO EDITORIAL B2B MULTICANAL COMPLETO Y DIFERENCIADO POR CANAL.
 PROHIBIDO GENERAR RESÚMENES DEL BLOG PARA LOS OTROS CANALES.
-CADA CANAL DEBE TENER SU PROPIO ARGUMENTO, ESTRUCTURA Y CTA.
+PROHIBIDO USAR FRASES DE PLANTILLA, PLACEHOLDERS O PREGUNTAS SIN DESARROLLAR (ej: "Respuesta directa a...", "Aplicar criterio de diseño..."). CADA CANAL DEBE CONTENER TEXTO REAL REDACTADO Y ARGUMENTADO.
 
 PRODUCT TRUTH INMUTABLE:
 - SKU: ${intel.sku}
@@ -229,13 +244,58 @@ TESIS EDITORIAL COMPARTIDA:
 - Audiencia: ${editorialDecision?.primaryAudience}
 
 ESTRATEGIAS POR CANAL:
-1. BLOG (Educación y análisis): ${strategies.BLOG.objective}. Job: ${strategies.BLOG.jobToBeDone}. Longitud mínima: ${strategies.BLOG.targetLength} palabras.
-2. LINKEDIN (Autoridad y debate): ${strategies.LINKEDIN.objective}. Job: ${strategies.LINKEDIN.jobToBeDone}.
-3. WHATSAPP (Activación rápida): ${strategies.WHATSAPP.objective}. Job: ${strategies.WHATSAPP.jobToBeDone}.
-4. MAILCHIMP (Decisión de aprovisionamiento): ${strategies.MAILCHIMP.objective}. Job: ${strategies.MAILCHIMP.jobToBeDone}.
-5. GEO (Respuestas directas y entidades): ${strategies.GEO.objective}. Job: ${strategies.GEO.jobToBeDone}.
+1. BLOG (Educación y análisis B2B):
+   - Genera en "blog.htmlContent" un artículo completo de ingeniería de mínimo 800 palabras estructurado con <h2>, <h3>, <p>, <ul> y <li>.
+   - Analiza la arquitectura técnica, topología de red, ventajas reales y mitigación de problemas operativos para ${intel.brand} ${intel.model} (${intel.sku}).
+   - Resuelve con profundidad técnica la pregunta: ${editorialDecision?.thesis.technicalQuestion}.
+2. GEO (Prensa / AEO / GEO Engine Optimization):
+   - Genera en "geo.htmlContent" un artículo técnico estructurado para motores de búsqueda y LLMs.
+   - Debe incluir cuadro Answer-First con respuesta técnica directa, resolución fundamentada y criterios de integración para ${editorialDecision?.primaryAudience}.
+3. LINKEDIN: ${strategies.LINKEDIN.objective}. Hook técnico, desarrollo y CTA sin clichés promocionales.
+4. WHATSAPP: ${strategies.WHATSAPP.objective}. Mensaje directo para instaladores/integradores.
+5. MAILCHIMP: ${strategies.MAILCHIMP.objective}. Asunto A/B y cuerpo de análisis consultivo.
 
-Devuelve exclusivamente un JSON conforme a ContentOutputSchema.
+FORMATO OBLIGATORIO:
+Devuelve un objeto JSON con esta estructura exacta:
+{
+  "topicTitle": "${editorialDecision?.thesis.technicalQuestion || `${intel.brand} ${intel.model}`}",
+  "blog": {
+    "title": "${intel.brand} ${intel.model} (${intel.sku}): Criterios técnicos de despliegue",
+    "metaDescription": "Análisis técnico de ingeniería para ${intel.brand} ${intel.model} (${intel.sku}) orientado a ${editorialDecision?.primaryAudience}.",
+    "slug": "${intel.sku.toLowerCase()}-criterios-b2b",
+    "readingTimeMinutes": 5,
+    "targetKeywords": ["${intel.sku}", "${intel.model}", "${req.category}"],
+    "htmlContent": "<article class=\\"ecomshop-b2b-post\\">...artículo completo de 800+ palabras con subtítulos H2 y H3 y párrafos reales...</article>",
+    "cleanPlainTextExcerpt": "${editorialDecision?.thesis.centralArgument.replace(/"/g, '\\"')}"
+  },
+  "geo": {
+    "title": "${intel.brand} ${intel.model} (${intel.sku}) — Respuestas técnicas de ingeniería",
+    "metaDescription": "Especificaciones y respuestas técnicas oficiales para ${intel.brand} ${intel.model} (${intel.sku}).",
+    "htmlContent": "<article class=\\"geo-knowledge-article\\">...artículo técnico completo Answer-First con análisis técnico real...</article>"
+  },
+  "linkedin": {
+    "hook": "¿Cómo resolver ${editorialDecision?.thesis.technicalQuestion.replace(/[¿?"]/g, '')} en entornos profesionales?",
+    "body": "...",
+    "takeaways": ["Punto clave 1", "Punto clave 2", "Punto clave 3"],
+    "callToAction": "...",
+    "hashtags": ["#NetworkingB2B", "#Telecomunicaciones", "#${intel.sku}"],
+    "fullPostText": "..."
+  },
+  "whatsapp": {
+    "hook": "...",
+    "body": "...",
+    "callToAction": "...",
+    "targetUrl": "${req.productUrl || 'https://ecomshop.es'}",
+    "formattedMessage": "..."
+  },
+  "mailchimp": {
+    "subjectA": "...",
+    "subjectB": "...",
+    "previewText": "...",
+    "newsletterHtml": "...",
+    "plainText": "..."
+  }
+}
 `;
   }
 

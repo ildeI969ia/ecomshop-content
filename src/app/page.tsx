@@ -84,6 +84,7 @@ export default function Page() {
   const [loadingRadar, setLoadingRadar] = useState(false);
   const [radarGoal, setRadarGoal] = useState<BusinessGoal>("ALL_OPPORTUNITIES");
   const [launchingRadarSku, setLaunchingRadarSku] = useState<string | null>(null);
+  const [replacingRadarSku, setReplacingRadarSku] = useState<string | null>(null);
 
   // Mejorador de Ficha de Producto
   const [enhancedSheet, setEnhancedSheet] = useState<EnhancedProductSheet | undefined>(undefined);
@@ -341,6 +342,90 @@ export default function Page() {
     }
   };
 
+  // Sustituir o cambiar ángulo de propuesta en Radar B2B
+  const handleReplaceOpportunity = async (
+    opp: ProductOpportunityRecord,
+    newSku?: string,
+    customDirective?: string,
+    newAngle?: "ROI" | "PERFORMANCE" | "OPERATIONS"
+  ) => {
+    setReplacingRadarSku(opp.sku);
+    try {
+      if (newSku) {
+        // Sustituir por una opción específica (ej: WI-PS318GF)
+        const targetProd = catalogProducts.find(p => p.sku === newSku);
+        const res = await apiFetch<{ replacement?: ProductOpportunityRecord; success: boolean }>("/api/opportunities", {
+          method: "POST",
+          body: JSON.stringify({
+            replaceSku: opp.sku,
+            currentSkus: radarOpportunities.map(o => o.sku),
+            targetSku: newSku,
+            customDirective: newSku,
+            businessGoal: radarGoal
+          })
+        });
+
+        if (res?.replacement) {
+          setRadarOpportunities(prev => prev.map(item => item.sku === opp.sku ? res.replacement! : item));
+        } else if (targetProd) {
+          const localReplacement: ProductOpportunityRecord = {
+            ...opp,
+            id: `opp-${targetProd.sku.toLowerCase()}-${Date.now()}`,
+            sku: targetProd.sku,
+            brand: targetProd.brand,
+            model: targetProd.name,
+            category: targetProd.category || "switches",
+            actionTitle: `Campaña B2B: ${targetProd.name}`,
+            scores: { ...opp.scores },
+            suggestedBundle: {
+              mainSku: targetProd.sku,
+              accessorySku: opp.suggestedBundle?.accessorySku || "POE30Gv2",
+              accessoryName: opp.suggestedBundle?.accessoryName || "Inyector PoE+ 30W Gigabit",
+              rationale: `Accesorio e interconexión recomendados para ${targetProd.name}.`
+            }
+          };
+          setRadarOpportunities(prev => prev.map(item => item.sku === opp.sku ? localReplacement : item));
+        }
+      } else if (newAngle) {
+        // Cambiar el ángulo comercial
+        setRadarOpportunities(prev =>
+          prev.map(item =>
+            item.sku === opp.sku
+              ? {
+                  ...item,
+                  recommendedAngle: newAngle,
+                  actionTitle:
+                    newAngle === "ROI"
+                      ? `Optimización TCO & Retorno de Inversión: ${item.model}`
+                      : newAngle === "PERFORMANCE"
+                      ? `Alto Rendimiento y Baja Latencia: ${item.model}`
+                      : `Operaciones Simplificadas y Fiabilidad en Obra: ${item.model}`
+                }
+              : item
+          )
+        );
+      } else if (customDirective) {
+        // Directiva personalizada escrita por el usuario
+        const res = await apiFetch<{ replacement?: ProductOpportunityRecord; success: boolean }>("/api/opportunities", {
+          method: "POST",
+          body: JSON.stringify({
+            replaceSku: opp.sku,
+            currentSkus: radarOpportunities.map(o => o.sku),
+            customDirective,
+            businessGoal: radarGoal
+          })
+        });
+        if (res?.replacement) {
+          setRadarOpportunities(prev => prev.map(item => item.sku === opp.sku ? res.replacement! : item));
+        }
+      }
+    } catch (err) {
+      console.error("[Radar] Error al sustituir oportunidad:", err);
+    } finally {
+      setReplacingRadarSku(null);
+    }
+  };
+
   // Generar Ficha Mejorada
   const handleEnhanceProductSheet = async () => {
     setLoadingEnhancedSheet(true);
@@ -562,6 +647,8 @@ export default function Page() {
                 isRegeneratingRadar={loadingRadar}
                 onLaunchCampaign={handleLaunchRadarOpportunity}
                 launchingSku={launchingRadarSku}
+                onReplaceOpportunity={handleReplaceOpportunity}
+                isReplacingSku={replacingRadarSku}
               />
             </div>
           )}

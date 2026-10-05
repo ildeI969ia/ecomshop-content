@@ -369,8 +369,13 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   const getChannelMarkdown = (channel: WorkspaceTab): string => {
     if (!content) return "";
     switch (channel) {
-      case "geo":
-        return content.geo?.markdownContent || `# ${content.blog.title}\n\n> ${content.blog.metaDescription}\n\n${content.blog.htmlContent}\n\n\`\`\`json\n${currentJsonLd}\n\`\`\``;
+      case "geo": {
+        const fullBlogMd = `# ${content.blog.title}\n\n> ${content.blog.metaDescription}\n\n${content.blog.htmlContent}\n\n\`\`\`json\n${currentJsonLd}\n\`\`\``;
+        if (content.geo?.markdownContent && content.geo.markdownContent.length >= 600) {
+          return content.geo.markdownContent;
+        }
+        return fullBlogMd;
+      }
       case "blog":
         return `# ${content.blog.title}\n\n> ${content.blog.metaDescription}\n\n${content.blog.htmlContent}`;
       case "linkedin":
@@ -391,7 +396,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
     let htmlContent = "";
     switch (channel) {
       case "geo":
-        htmlContent = content.geo?.htmlContent || formatForCleanBlogHtml(content.blog.htmlContent);
+        htmlContent = formatForCleanBlogHtml(content.blog.htmlContent);
         break;
       case "blog":
         htmlContent = formatForCleanBlogHtml(content.blog.htmlContent);
@@ -1047,11 +1052,11 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                       </h4>
                       <div 
                         onClick={handleContainerClick}
-                        className="border border-slate-200 rounded-xl p-6 bg-white text-slate-900 shadow-xs max-h-[500px] overflow-y-auto"
+                        className="border border-slate-200 rounded-xl p-6 bg-white text-slate-900 shadow-xs max-h-[600px] overflow-y-auto select-text cursor-text"
                       >
                         <SafeHtml
-                          className="prose max-w-none text-[15px] font-sans leading-relaxed"
-                          html={content.geo?.htmlContent || enrichedBlogHtml}
+                          className="prose max-w-none text-[15px] font-sans leading-relaxed select-text"
+                          html={enrichedBlogHtml || content.blog?.htmlContent || content.geo?.htmlContent || ""}
                         />
                       </div>
                     </div>
@@ -1155,7 +1160,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                     </div>
 
                     {/* Feed Card Mockup LinkedIn */}
-                    <div className="max-w-xl mx-auto bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg text-slate-200 text-[14px] font-sans my-2 w-full space-y-4">
+                    <div className="max-w-xl mx-auto bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg text-slate-200 text-[14px] font-sans my-2 w-full space-y-4 select-text cursor-text">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
                           EC
@@ -1229,8 +1234,8 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                           <p className="text-[10px] text-emerald-400">Canal Oficial Mayorista B2B</p>
                         </div>
                       </div>
-                      <div className="p-3 bg-[rgb(11,20,26)] min-h-[280px] flex flex-col justify-end">
-                        <div className="bg-[rgb(0,92,75)] text-slate-100 p-3.5 rounded-xl rounded-tr-none text-[13px] leading-relaxed shadow-sm space-y-2">
+                      <div className="p-3 bg-[rgb(11,20,26)] min-h-[280px] flex flex-col justify-end select-text cursor-text">
+                        <div className="bg-[rgb(0,92,75)] text-slate-100 p-3.5 rounded-xl rounded-tr-none text-[13px] leading-relaxed shadow-sm space-y-2 select-text cursor-text">
                           <p className="whitespace-pre-wrap">{content.whatsapp.formattedMessage}</p>
                           <div className="pt-2 border-t border-emerald-600/40 text-[11px] text-emerald-100 font-semibold space-y-1">
                             <div>📦 SKU: {selectedSku}</div>
@@ -1281,17 +1286,17 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                     </Card>
 
                     {/* VISTA PREVIA FICHA CMS */}
-                    <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 space-y-4 text-slate-200 text-xs leading-relaxed">
+                    <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 space-y-4 text-slate-200 text-xs leading-relaxed select-text cursor-text">
                       <div>
                         <h4 className="text-sm font-bold text-amber-300 uppercase tracking-wide mb-1">Argumentario Principal de Venta</h4>
-                        <p className="bg-slate-900 p-3.5 rounded-lg border border-slate-800 text-slate-300">
+                        <p className="bg-slate-900 p-3.5 rounded-lg border border-slate-800 text-slate-300 select-text">
                           {content.ecomshop?.argumentario || content.blog.cleanPlainTextExcerpt}
                         </p>
                       </div>
 
                       <div>
                         <h4 className="text-sm font-bold text-amber-300 uppercase tracking-wide mb-2">Puntos Fuertes Destacados en Ficha</h4>
-                        <ul className="space-y-1.5 list-disc pl-5">
+                        <ul className="space-y-1.5 list-disc pl-5 select-text">
                           {(content.ecomshop?.features || [
                             `Compatibilidad nativa con gestión EcomCloud de 0 licencias recurrentes`,
                             `Homologado para proyectos de ingeniería e infraestructura crítica EcomSpain`,
@@ -1309,14 +1314,14 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 {activeTab === "mailchimp" && (
                   <div className="flex flex-col gap-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Card variant="subtle" padding="md" className="border-purple-900/40 bg-slate-950">
+                      <Card variant="subtle" padding="md" className="border-purple-900/40 bg-slate-950 select-text cursor-text">
                         <Badge variant="neutral" size="xs" className="mb-2 text-purple-300">
                           Asunto Variante A
                         </Badge>
                         <p className="text-sm font-semibold text-slate-100">{content.mailchimp.subjectA}</p>
                       </Card>
 
-                      <Card variant="subtle" padding="md" className="border-purple-900/40 bg-slate-950">
+                      <Card variant="subtle" padding="md" className="border-purple-900/40 bg-slate-950 select-text cursor-text">
                         <Badge variant="neutral" size="xs" className="mb-2 text-purple-300">
                           Asunto Variante B
                         </Badge>
@@ -1324,8 +1329,8 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                       </Card>
                     </div>
 
-                    <div className="border border-slate-200 rounded-xl p-6 bg-white text-slate-900 max-h-[450px] overflow-y-auto">
-                      <SafeHtml html={enrichedMailchimpHtml} />
+                    <div className="border border-slate-200 rounded-xl p-6 bg-white text-slate-900 max-h-[450px] overflow-y-auto select-text cursor-text">
+                      <SafeHtml className="select-text" html={enrichedMailchimpHtml} />
                     </div>
                   </div>
                 )}

@@ -165,10 +165,10 @@ export class ChannelStrategyPlanner {
       audienceIntent: `Motores de IA generativa y profesionales buscando respuestas concretas, especificaciones exactas y tablas de decisión.`,
       jobToBeDone: `Obtener una respuesta técnica verificable, sin ambigüedades, estructurada en entidades y datos fiables sobre ${sku}.`,
       narrativeMode: "Respuesta directa Q&A, entidades canónicas, tabla de parámetros verificados y structured data JSON-LD",
-      primaryArgument: `Respuesta directa y fundamentada a: ${thesis.technicalQuestion}.`,
+      primaryArgument: `Para despliegues profesionales que deben resolver ${thesis.technicalQuestion.replace(/^¿|\?$/g, "")}, la integración de ${brand} ${model} (${sku}) garantiza ${thesis.centralArgument}.`,
       supportingArguments: [
         `Especificaciones formales del feed EcomShop para ${sku}.`,
-        `Criterios de compatibilidad y límites de aplicación verificados.`
+        `Criterios de compatibilidad y límites de aplicación verificados: ${thesis.solutionApproach}.`
       ],
       productEvidence: verifiedFacts,
       forbiddenClaims: [
