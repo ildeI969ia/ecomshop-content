@@ -141,6 +141,18 @@ export function checkProductContamination(
     allowedSkus.add(bundleSku);
   }
 
+  // Extraer cualquier alias, errata de feed o variante presente en las especificaciones o claims del producto canónico
+  const feedEvidenceParts: string[] = [];
+  if (Array.isArray(content.claims)) {
+    for (const c of content.claims) {
+      if (typeof c?.text === "string") feedEvidenceParts.push(c.text);
+    }
+  }
+  if (content.ecomshop?.argumentario) feedEvidenceParts.push(content.ecomshop.argumentario);
+  if (Array.isArray(content.ecomshop?.features)) {
+    feedEvidenceParts.push(...content.ecomshop.features.filter((f): f is string => typeof f === "string"));
+  }
+
   // Patrones de familias completas de hardware/dispositivos principales
   const deviceSkuPatterns = [
     /\bECW\d+[A-Z0-9-]*\b/g,
@@ -150,6 +162,16 @@ export function checkProductContamination(
     /\bRUT[A-Z0-9-]*\b/g,
     /\bTRB[A-Z0-9-]*\b/g
   ];
+
+  // Whitelist tokens de dispositivo que aparezcan legítimamente en las especificaciones / claims del producto
+  const rawFeedEvidenceText = feedEvidenceParts.join(" ").toUpperCase();
+  for (const pattern of deviceSkuPatterns) {
+    for (const match of rawFeedEvidenceText.matchAll(pattern)) {
+      const aliasValue = match[0].toUpperCase();
+      allowedSkus.add(aliasValue);
+    }
+  }
+
 
   const detected = new Set<string>();
   for (const pattern of deviceSkuPatterns) {

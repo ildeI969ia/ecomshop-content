@@ -306,6 +306,7 @@ REGLAS OBLIGATORIAS:
 2. DIFERENCIACIÓN MULTICANAL: Cada canal debe resolver un Job-To-Be-Done diferente. WhatsApp no es un resumen del blog; LinkedIn no es una copia del blog.
 3. GROUNDING: Solo datos verificados del feed. No inventar precios, certificaciones ni especificaciones.
 4. CALIDAD EDITORIAL: Desarrollar conceptos técnicos independientes (VLAN, PoE, latencia, roaming, backhaul).
+5. CONSISTENCIA DE IDENTIDAD: Si la descripción o especificaciones del catálogo contienen variantes tipográficas o erratas del modelo (ejemplo: ECS112FP en lugar de ECS1112FP), normaliza y redacta SIEMPRE utilizando con total fidelidad el SKU oficial solicitado: ${sku}.
 `;
   }
 
