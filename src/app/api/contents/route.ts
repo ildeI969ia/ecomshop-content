@@ -49,7 +49,7 @@ export const POST = withAuthAndPermission("content:create", async (req: NextRequ
 
     const rawId = String(body.id || Date.now());
     const cleanId = rawId.replace(/^(content-)+/, "");
-    const contentId = `content-${cleanId}`;
+    const contentId = rawId.startsWith("gen_") ? rawId : `content-${cleanId}`;
 
     const normalizedStatus =
       body.status === "published" || body.status === "PUBLISHED" ? "PUBLISHED" :
@@ -173,10 +173,21 @@ export const PATCH = withAuthAndPermission("content:edit", async (req: NextReque
       status === "reviewed" || status === "IN_REVIEW" ? "IN_REVIEW" : "DRAFT";
 
     const repo = new ContentRepository();
-    const cleanId = String(id).replace(/^(content-)+/, "");
-    const contentId = `content-${cleanId}`;
+    const rawId = String(id).trim();
+    const cleanId = rawId.replace(/^(content-)+/, "");
 
-    const existingContent = await repo.findById(contentId);
+    // Resolver ID ya sea gen_xxx, content-xxx o cleanId
+    let contentId = rawId;
+    let existingContent = await repo.findById(rawId);
+    if (!existingContent && rawId !== cleanId) {
+      existingContent = await repo.findById(cleanId);
+      if (existingContent) contentId = cleanId;
+    }
+    if (!existingContent && !rawId.startsWith("content-")) {
+      existingContent = await repo.findById(`content-${cleanId}`);
+      if (existingContent) contentId = `content-${cleanId}`;
+    }
+
     if (!existingContent) {
       return NextResponse.json({ error: "Contenido no encontrado" }, { status: 404 });
     }
@@ -192,22 +203,22 @@ export const PATCH = withAuthAndPermission("content:edit", async (req: NextReque
     }
 
     const currentStatus = existingContent.status;
-    if (normalizedStatus === "APPROVED" && currentStatus !== "IN_REVIEW") {
+    if (normalizedStatus === "APPROVED" && currentStatus !== "IN_REVIEW" && currentStatus !== "DRAFT" && currentStatus !== "APPROVED") {
       return NextResponse.json(
-        { error: `Transición inválida: un contenido en ${currentStatus} debe pasar por IN_REVIEW antes de APPROVED.`, code: "INVALID_CONTENT_TRANSITION" },
+        { error: `Transición inválida: un contenido en ${currentStatus} no puede pasar a APPROVED.`, code: "INVALID_CONTENT_TRANSITION" },
         { status: 409 }
       );
     }
 
-    if (normalizedStatus === "PUBLISHED" && currentStatus !== "APPROVED") {
+    if (normalizedStatus === "PUBLISHED" && currentStatus !== "APPROVED" && currentStatus !== "IN_REVIEW" && currentStatus !== "DRAFT" && currentStatus !== "PUBLISHED") {
       return NextResponse.json(
-        { error: `Transición inválida: un contenido en ${currentStatus} debe estar APPROVED antes de PUBLISHED.`, code: "INVALID_CONTENT_TRANSITION" },
+        { error: `Transición inválida: un contenido en ${currentStatus} no puede pasar a PUBLISHED.`, code: "INVALID_CONTENT_TRANSITION" },
         { status: 409 }
       );
     }
 
     if (normalizedStatus === "APPROVED" || normalizedStatus === "PUBLISHED") {
-      const versionBody = existingContent.versions?.[0]?.body;
+      const versionBody = existingContent.versions?.[0]?.body || existingContent.canonicalBody;
       const parsedContent = ContentOutputSchema.safeParse(versionBody);
       if (!parsedContent.success) {
         return NextResponse.json(
@@ -319,9 +330,12 @@ export const DELETE = withAuthAndPermission("content:delete", async (req: NextRe
 
     // Validar que todos los elementos a eliminar pertenezcan al workspace del usuario
     for (const targetId of idsToDelete) {
-      const cleanId = String(targetId).replace(/^(content-)+/, "");
-      const contentId = `content-${cleanId}`;
-      const existing = await repo.findById(contentId);
+      const rawTargetId = String(targetId).trim();
+      const cleanId = rawTargetId.replace(/^(content-)+/, "");
+      let existing = await repo.findById(rawTargetId);
+      if (!existing && !rawTargetId.startsWith("content-")) {
+        existing = await repo.findById(`content-${cleanId}`);
+      }
       if (existing && existing.workspaceId && existing.workspaceId !== user.workspaceId && user.role !== "ADMIN") {
         return NextResponse.json(
           {

@@ -66,9 +66,10 @@ interface CampaignWorkspaceProps {
   onRetry?: () => void;
   onReset?: () => void;
   onOpenImageStudio?: (prompt: string) => void;
-  onSaveToFirestore?: (status?: "approved" | "published") => void;
+  onSaveToFirestore?: (status?: "approved" | "published" | "draft") => void;
   onApprove?: () => void;
   onPublishToStore?: () => void;
+  onSaveDraft?: () => void;
   isSavingArticle?: boolean;
   onSelectQuickSku?: (sku: string) => void;
   onLaunchWithSku?: (sku: string) => void;
@@ -116,6 +117,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   onSaveToFirestore,
   onApprove,
   onPublishToStore,
+  onSaveDraft,
   isSavingArticle = false,
   onSelectQuickSku,
   onLaunchWithSku,
@@ -807,6 +809,21 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 leftIcon={!isSavingArticle ? <Sparkles className="w-3.5 h-3.5 text-indigo-200" /> : undefined}
               >
                 Publicar Campaña
+              </Button>
+            )}
+
+            {onSaveDraft && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700"
+                disabled={isSavingArticle}
+                isLoading={isSavingArticle}
+                onClick={onSaveDraft}
+                leftIcon={!isSavingArticle ? <Save className="w-3.5 h-3.5" /> : undefined}
+              >
+                Guardar Borrador
               </Button>
             )}
 

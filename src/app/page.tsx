@@ -309,23 +309,55 @@ export default function Page() {
     }
   };
 
-  // Cambiar el estado del contenido ya persistido por /api/generate.
-  // Evita crear un segundo ContentItem y obliga a pasar por el workflow de aprobación.
-  const handleSaveToFirestore = async (status: "approved" | "published" = "approved") => {
-    if (!campaignContent || !activeContentId) {
-      setCampaignErrorMessage("No existe un contenido persistido que pueda aprobarse o publicarse.");
+  // Guardar o cambiar el estado del contenido en Firestore (Borrador, Aprobada o Publicada).
+  const handleSaveToFirestore = async (status: "approved" | "published" | "draft" = "approved") => {
+    if (!campaignContent) {
+      setCampaignErrorMessage("No existe un contenido que pueda guardarse.");
       return;
     }
     setIsSavingArticle(true);
     try {
-      const result = await apiFetch<{ success: boolean; id: string; status: string }>("/api/contents", {
-        method: "PATCH",
-        body: JSON.stringify({ id: activeContentId, status })
-      });
-      setCampaignContent((prev) => prev ? { ...prev, status: result.status === "APPROVED" ? "APPROVED" : result.status === "PUBLISHED" ? "PUBLISHED" : prev.status } : prev);
-      alert(`Campaña actualizada correctamente: ${status}.`);
+      let resultId = activeContentId;
+      let newStatus = status.toUpperCase();
+
+      if (activeContentId) {
+        const result = await apiFetch<{ success: boolean; id: string; status: string }>("/api/contents", {
+          method: "PATCH",
+          body: JSON.stringify({ id: activeContentId, status })
+        });
+        resultId = result.id;
+        newStatus = result.status;
+      } else {
+        const res = await apiFetch<{ success: boolean; content: { id: string; status: string } }>("/api/contents", {
+          method: "POST",
+          body: JSON.stringify({
+            content: campaignContent,
+            status,
+            category: campaignContent.category || "general",
+            title: campaignContent.topicTitle || campaignContent.blog?.title || "Campaña B2B",
+            humanApproved: status === "approved" || status === "published"
+          })
+        });
+        resultId = res.content?.id;
+        newStatus = res.content?.status || status.toUpperCase();
+        if (resultId) {
+          setActiveContentId(resultId);
+        }
+      }
+
+      setCampaignContent((prev) => prev ? {
+        ...prev,
+        status: newStatus === "APPROVED" ? "APPROVED" : newStatus === "PUBLISHED" ? "PUBLISHED" : "DRAFT"
+      } : prev);
+
+      const statusLabels: Record<string, string> = {
+        approved: "aprobada",
+        published: "publicada",
+        draft: "guardada como borrador"
+      };
+      alert(`Campaña ${statusLabels[status] || status} correctamente en Firestore.`);
     } catch (err: unknown) {
-      alert(`Error al actualizar el estado: ${err instanceof Error ? err.message : String(err)}`);
+      alert(`Error al guardar en Firestore: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsSavingArticle(false);
     }
@@ -684,6 +716,7 @@ export default function Page() {
                 onSaveToFirestore={handleSaveToFirestore}
                 onApprove={() => handleSaveToFirestore("approved")}
                 onPublishToStore={() => handleSaveToFirestore("published")}
+                onSaveDraft={() => handleSaveToFirestore("draft")}
                 isSavingArticle={isSavingArticle}
                 selectedAngle={selectedAngle}
                 onSelectAngle={setSelectedAngle}
