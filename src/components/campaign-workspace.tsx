@@ -161,6 +161,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   // Estado para el Selector de Producto con Buscador en Tiempo Real y Familias
   const [productSearchQuery, setProductSearchQuery] = useState("");
   const [selectedFamily, setSelectedFamily] = useState<ProductFamily>("ALL");
+  const [showHistoricalContents, setShowHistoricalContents] = useState(false);
 
   // Estado para el Drawer de Fuentes / Citaciones
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -464,21 +465,35 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             </p>
           </div>
 
-          {selectedSku && onLaunchWithSku && (
-            <Button
-              type="button"
-              variant="primary"
-              size="md"
-              onClick={() => onLaunchWithSku(selectedSku)}
-              leftIcon={<Zap className="w-3.5 h-3.5 text-amber-300" />}
-            >
-              🚀 Lanzar Campaña ({selectedSku}) &bull; ≈0,03 €
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {onSelectHistoricalContent && (
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                onClick={() => setShowHistoricalContents((prev) => !prev)}
+                leftIcon={<History className="w-3.5 h-3.5 text-indigo-400" />}
+              >
+                {showHistoricalContents ? "Ocultar Artículos Guardados" : `Artículos Guardados (${historicalItems.length})`}
+              </Button>
+            )}
+
+            {selectedSku && onLaunchWithSku && (
+              <Button
+                type="button"
+                variant="primary"
+                size="md"
+                onClick={() => onLaunchWithSku(selectedSku)}
+                leftIcon={<Zap className="w-3.5 h-3.5 text-amber-300" />}
+              >
+                🚀 Lanzar Campaña ({selectedSku}) &bull; ≈0,03 €
+              </Button>
+            )}
+          </div>
         </div>
 
-        {/* 0. HISTORIAL DE CONTENIDOS GUARDADOS / PREVIAMENTE GENERADOS */}
-        {onSelectHistoricalContent && (
+        {/* 0. HISTORIAL DE CONTENIDOS GUARDADOS / PREVIAMENTE GENERADOS (OPCIONAL/COLAPSABLE) */}
+        {onSelectHistoricalContent && showHistoricalContents && (
           <HistoricalContentList
             items={historicalItems}
             isLoading={isLoadingHistory}

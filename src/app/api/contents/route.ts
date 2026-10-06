@@ -6,6 +6,8 @@ import { ContentItem } from "@/server/domain/types";
 import { ContentOutputSchema } from "@/lib/schema";
 import { validateEditorialQuality } from "@/lib/quality/editorial-quality-gate";
 
+import { normalizePersistedContent } from "@/lib/utils/content-normalizer";
+
 export const GET = withAuthAndPermission("content:view", async (req: NextRequest, user) => {
   const repo = new ContentRepository();
   try {
@@ -13,57 +15,71 @@ export const GET = withAuthAndPermission("content:view", async (req: NextRequest
     const limitParam = parseInt(url.searchParams.get("limit") || "100", 10);
     const limit = isNaN(limitParam) || limitParam <= 0 ? 100 : Math.min(limitParam, 200);
 
-    const list = await repo.listRecent(limit, user.workspaceId);
+    const querySearch = (url.searchParams.get("q") || url.searchParams.get("query") || "").trim().toLowerCase();
+    const statusParam = (url.searchParams.get("status") || "").trim().toUpperCase();
+    const skuParam = (url.searchParams.get("sku") || "").trim().toUpperCase();
+    const categoryParam = (url.searchParams.get("category") || "").trim().toLowerCase();
+    const isFullRequested = url.searchParams.get("full") === "true";
 
-    const formatted = list.map((item: ContentItem) => {
-      const versionBody = item.versions?.[0]?.body;
-      const content = versionBody || (item as any).content || (typeof (item as any).body === "object" ? (item as any).body : null) || {
-        topicTitle: item.title,
-        category: item.category,
-        generatedAt: item.createdAt,
-        blog: item.canonicalBody || {}
-      };
+    const cursorParam = url.searchParams.get("cursor") || undefined;
 
-      const normalizedStatus: "draft" | "reviewed" | "approved" | "published" =
-        item.status === "PUBLISHED" ? "published" :
-        item.status === "APPROVED" ? "approved" :
-        item.status === "IN_REVIEW" ? "reviewed" : "draft";
+    const { items: list, nextCursor } = await repo.listRecentPaginated(limit, user.workspaceId, cursorParam);
 
-      const previewText =
-        (content as any)?.blog?.metaDescription ||
-        (content as any)?.blog?.tldr ||
-        (typeof (content as any)?.blog?.introduction === "string" ? (content as any)?.blog?.introduction.slice(0, 160) : "") ||
-        item.title;
-
-      return {
-        id: item.id,
-        workspaceId: item.workspaceId || user.workspaceId,
-        type: "editorial_campaign",
-        title: item.title,
-        status: normalizedStatus,
-        rawStatus: item.status,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt || item.createdAt,
-        productId: item.linkedProductIds?.[0] || null,
-        campaignId: item.campaignId || null,
-        preview: previewText,
-        category: item.category,
-        content
-      };
+    let formatted = list.map((item: ContentItem) => {
+      const normalized = normalizePersistedContent(item, user.workspaceId);
+      if (!isFullRequested) {
+        // En modo resumen ligero omitimos el árbol pesado de content si no es requerido
+        return {
+          ...normalized,
+          content: null
+        };
+      }
+      return normalized;
     });
+
+    // Filtros en memoria para consulta flexible
+    if (querySearch) {
+      formatted = formatted.filter((item) =>
+        item.title.toLowerCase().includes(querySearch) ||
+        item.slug.toLowerCase().includes(querySearch) ||
+        (item.productId && item.productId.toLowerCase().includes(querySearch)) ||
+        item.preview.toLowerCase().includes(querySearch) ||
+        item.category.toLowerCase().includes(querySearch)
+      );
+    }
+
+    if (statusParam && statusParam !== "ALL") {
+      formatted = formatted.filter((item) =>
+        item.status.toUpperCase() === statusParam ||
+        item.rawStatus.toUpperCase() === statusParam
+      );
+    }
+
+    if (skuParam) {
+      formatted = formatted.filter((item) =>
+        item.productId && item.productId.toUpperCase().includes(skuParam)
+      );
+    }
+
+    if (categoryParam && categoryParam !== "all") {
+      formatted = formatted.filter((item) =>
+        item.category.toLowerCase() === categoryParam
+      );
+    }
 
     return NextResponse.json({
       items: formatted,
       contents: formatted, // Retrocompatibilidad para clientes existentes
       total: formatted.length,
-      nextCursor: null
+      nextCursor
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : "Error al recuperar contenidos persistidos.";
     console.error("[api/contents GET] Error al listar contenidos:", err);
     return NextResponse.json(
       {
         error: "INTERNAL_SERVER_ERROR",
-        message: err?.message || "Error al recuperar contenidos persistidos.",
+        message: errorMsg,
         code: "FIRESTORE_QUERY_FAILED"
       },
       { status: 500 }
@@ -303,7 +319,21 @@ export const PATCH = withAuthAndPermission("content:edit", async (req: NextReque
       );
     }
 
-    await repo.updateStatus(contentId, normalizedStatus as any);
+    // Si viene contenido editado (body.content o body.body), persistir nueva versión
+    if (body.content || body.body || body.canonicalBody) {
+      const updatedBody = body.content?.blog || body.body || body.canonicalBody || body.content;
+      const updatedItem: ContentItem = {
+        ...existingContent,
+        title: body.title || body.content?.topicTitle || existingContent.title,
+        status: normalizedStatus as any,
+        canonicalBody: updatedBody,
+        updatedBy: user.uid,
+        updatedAt: new Date().toISOString()
+      };
+      await repo.upsertBySlug(updatedItem);
+    } else {
+      await repo.updateStatus(contentId, normalizedStatus as any);
+    }
 
     const auditRepo = new AuditRepository();
     await auditRepo.record({
@@ -315,7 +345,7 @@ export const PATCH = withAuthAndPermission("content:edit", async (req: NextReque
       action: "EDIT",
       entity: "CONTENT_STATUS",
       entityId: contentId,
-      diff: { newStatus: normalizedStatus },
+      diff: { newStatus: normalizedStatus, hasContentUpdate: Boolean(body.content || body.body) },
       source: "UI"
     });
 

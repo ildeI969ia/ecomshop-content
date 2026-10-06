@@ -20,7 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/use-auth";
 
-export type NavSection = "resumen" | "radar" | "workspace" | "enhancer" | "images" | "finops" | "settings";
+export type NavSection = "resumen" | "radar" | "workspace" | "library" | "enhancer" | "images" | "finops" | "settings";
 
 interface SidebarProps {
   activeSection: NavSection;
@@ -46,6 +46,7 @@ export function Sidebar({
     { id: "resumen", label: "Resumen (Bento)", icon: LayoutDashboard },
     { id: "radar", label: "Radar B2B", icon: Sparkles, badge: "NUEVO" },
     { id: "workspace", label: "Campañas", icon: Megaphone },
+    { id: "library", label: "Artículos", icon: FileText },
     { id: "enhancer", label: "Catálogo", icon: PackageSearch },
     { id: "images", label: "Imágenes", icon: ImageIcon },
     { id: "finops", label: "FinOps Global", icon: CircleDollarSign },

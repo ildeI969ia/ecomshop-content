@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { ContentRepository } from "@/server/repositories";
 import { ContentItem } from "@/server/domain/types";
+import { normalizePersistedContent } from "@/lib/utils/content-normalizer";
 
 export const GET = withAuthAndPermission("content:view", async (req: NextRequest, user) => {
   const url = new URL(req.url);
@@ -32,36 +33,9 @@ export const GET = withAuthAndPermission("content:view", async (req: NextRequest
     );
   }
 
-  const rawItem = item as unknown as Record<string, unknown>;
-  const versionBody = item.versions?.[0]?.body;
-  const content =
-    versionBody ||
-    rawItem.content ||
-    (typeof rawItem.canonicalBody === "object" ? rawItem.canonicalBody : null) || {
-      topicTitle: item.title,
-      category: item.category,
-      generatedAt: item.createdAt,
-      blog: item.canonicalBody || {}
-    };
-
-  const normalizedStatus: "draft" | "reviewed" | "approved" | "published" =
-    item.status === "PUBLISHED" ? "published" :
-    item.status === "APPROVED" ? "approved" :
-    item.status === "IN_REVIEW" ? "reviewed" : "draft";
-
+  const normalized = normalizePersistedContent(item, user.workspaceId);
   const responseData = {
-    id: item.id,
-    workspaceId: item.workspaceId || user.workspaceId,
-    title: item.title,
-    category: item.category,
-    status: normalizedStatus,
-    rawStatus: item.status,
-    createdAt: item.createdAt,
-    updatedAt: item.updatedAt || item.createdAt,
-    productId: item.linkedProductIds?.[0] || null,
-    campaignId: item.campaignId || null,
-    content,
-    currentVersion: item.currentVersion || 1,
+    ...normalized,
     versions: item.versions || []
   };
 

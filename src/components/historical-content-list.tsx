@@ -19,6 +19,7 @@ export interface HistoricalContentItem {
   title: string;
   status: "draft" | "reviewed" | "approved" | "published";
   rawStatus?: string;
+  integrityStatus?: "VALID" | "CORRUPTED" | "LEGACY_NEEDS_REPAIR";
   createdAt: string;
   updatedAt: string;
   productId?: string | null;

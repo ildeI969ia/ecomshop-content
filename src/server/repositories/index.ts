@@ -101,6 +101,34 @@ export class ContentRepository {
     }
   }
 
+  async listRecentPaginated(
+    limitCount = 50,
+    workspaceId?: string,
+    startAfterCreatedAt?: string
+  ): Promise<{ items: ContentItem[]; nextCursor: string | null }> {
+    try {
+      let query: Query<DocumentData> = this.collection();
+      if (workspaceId) query = query.where("workspaceId", "==", workspaceId);
+      query = query.orderBy("createdAt", "desc").orderBy("__name__", "desc");
+
+      if (startAfterCreatedAt) {
+        query = query.startAfter(startAfterCreatedAt);
+      }
+
+      const snapshot = await query.limit(limitCount + 1).get();
+      const hasNextPage = snapshot.docs.length > limitCount;
+      const returnedDocs = hasNextPage ? snapshot.docs.slice(0, limitCount) : snapshot.docs;
+
+      const items = returnedDocs.map((d: QueryDocumentSnapshot) => d.data() as ContentItem);
+      const lastDoc = returnedDocs[returnedDocs.length - 1];
+      const nextCursor = hasNextPage && lastDoc ? (lastDoc.data()?.createdAt as string || null) : null;
+
+      return { items, nextCursor };
+    } catch (error) {
+      throw new RepositoryUnavailableError("contents.listRecentPaginated", error);
+    }
+  }
+
   async findBySlug(slug: string, workspaceId?: string): Promise<ContentItem | null> {
     try {
       let query: Query<DocumentData> = this.collection().where("slug", "==", slug);
@@ -222,6 +250,70 @@ export class ContentRepository {
       snapshot.docs.slice(i, i + BATCH_LIMIT).forEach((doc) => batch.delete(doc.ref));
       await batch.commit();
     }
+  }
+
+  async inspectIntegrity(id: string, workspaceId?: string): Promise<{
+    contentId: string;
+    workspaceId: string;
+    status: "VALID" | "CORRUPTED" | "LEGACY_NEEDS_REPAIR";
+    hasRoot: boolean;
+    orphanVersionsCount: number;
+    reasons: string[];
+  }> {
+    const rootDoc = await this.collection().doc(id).get();
+    const versionsSnapshot = await this.collection().doc(id).collection("versions").get();
+    const hasRoot = rootDoc.exists;
+    const rootData = hasRoot ? (rootDoc.data() as ContentItem) : null;
+    const orphanVersionsCount = !hasRoot ? versionsSnapshot.size : 0;
+    const reasons: string[] = [];
+
+    const itemWorkspace = rootData?.workspaceId || workspaceId || "";
+
+    if (!hasRoot) {
+      reasons.push("Documento raíz no existe en Firestore.");
+      if (orphanVersionsCount > 0) {
+        reasons.push(`Subcolección versions contiene ${orphanVersionsCount} versiones huérfanas sin raíz.`);
+      }
+      return {
+        contentId: id,
+        workspaceId: itemWorkspace,
+        status: "CORRUPTED",
+        hasRoot: false,
+        orphanVersionsCount,
+        reasons
+      };
+    }
+
+    if (!itemWorkspace || itemWorkspace.trim().length === 0) {
+      reasons.push("workspaceId está vacío o indefinido en el documento raíz.");
+    }
+
+    if (!rootData?.title || rootData.title.trim().length === 0 || rootData.title === "Sin título") {
+      reasons.push("Título vacío o sin valor editorial formal.");
+    }
+
+    const versionCount = versionsSnapshot.size;
+    const hasVersions = versionCount > 0 || Boolean(rootData?.canonicalBody && Object.keys(rootData.canonicalBody).length > 0);
+
+    if (!hasVersions) {
+      reasons.push("El documento carece de versiones en la subcolección y no posee canonicalBody.");
+    }
+
+    let status: "VALID" | "CORRUPTED" | "LEGACY_NEEDS_REPAIR" = "VALID";
+    if (!itemWorkspace || itemWorkspace.trim().length === 0) {
+      status = "CORRUPTED";
+    } else if (reasons.length > 0) {
+      status = "LEGACY_NEEDS_REPAIR";
+    }
+
+    return {
+      contentId: id,
+      workspaceId: itemWorkspace,
+      status,
+      hasRoot: true,
+      orphanVersionsCount: 0,
+      reasons
+    };
   }
 
   async delete(id: string): Promise<void> {

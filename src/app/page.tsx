@@ -43,6 +43,7 @@ import { ImageInterrogatorModal } from "@/components/ImageInterrogatorModal";
 import { ImageDetailModal, ImageDetailItem } from "@/components/ImageDetailModal";
 import { PromptRefinementData } from "@/components/PromptRefinementCard";
 import { HistoricalContentItem } from "@/components/historical-content-list";
+import { ArticleLibraryView } from "@/components/library/ArticleLibraryView";
 
 function LoadingScreen() {
   return (
@@ -205,30 +206,25 @@ export default function Page() {
         setSelectedSku(item.productId);
       }
 
-      // Si el item ya trae el contenido parseado completo
-      if (item.content) {
-        setCampaignContent(item.content as unknown as ContentOutput);
-        setCampaignStage("COMPLETED");
-        setActiveSection("workspace");
-        if (item.productId) {
-          void loadIntelligenceCard(item.productId);
-        }
-        return;
-      }
+      // Consultar siempre el endpoint individual GET /api/contents/[id] para garantizar la versión vigente hidratada desde Firestore
+      const detail = await apiFetch<{ item: HistoricalContentItem & { content?: ContentOutput } }>(
+        `/api/contents/${encodeURIComponent(item.id)}`
+      );
 
-      // De lo contrario, consultar el endpoint individual GET /api/contents/[id]
-      const detail = await apiFetch<{ item: HistoricalContentItem; content?: any }>(`/api/contents/${encodeURIComponent(item.id)}`);
-      if (detail?.item?.content) {
-        setCampaignContent(detail.item.content as unknown as ContentOutput);
+      const targetContent = detail?.item?.content || (item.content as unknown as ContentOutput);
+      if (targetContent) {
+        setCampaignContent(targetContent);
         setCampaignStage("COMPLETED");
         setActiveSection("workspace");
-        if (detail.item.productId) {
-          setSelectedSku(detail.item.productId);
-          void loadIntelligenceCard(detail.item.productId);
+        const resolvedSku = detail?.item?.productId || item.productId;
+        if (resolvedSku) {
+          setSelectedSku(resolvedSku);
+          void loadIntelligenceCard(resolvedSku);
         }
       }
-    } catch (err: any) {
-      alert(`Error al cargar detalle del contenido: ${err?.message}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error desconocido al recuperar el artículo";
+      alert(`Error al cargar detalle del contenido: ${msg}`);
     }
   }, [loadIntelligenceCard]);
 
@@ -383,7 +379,12 @@ export default function Page() {
       if (activeContentId) {
         const result = await apiFetch<{ success: boolean; id: string; status: string }>("/api/contents", {
           method: "PATCH",
-          body: JSON.stringify({ id: activeContentId, status })
+          body: JSON.stringify({
+            id: activeContentId,
+            status,
+            content: campaignContent,
+            title: campaignContent.topicTitle || campaignContent.blog?.title
+          })
         });
         resultId = result.id;
         newStatus = result.status;
@@ -953,6 +954,20 @@ export default function Page() {
                   setImagePrompt(`Fotografía de estudio industrial del producto ${prod.name}, chasis metálico en alta definición, iluminación comercial 8k`);
                   if (prod.imageUrl) setImageBase(prod.imageUrl);
                 }}
+              />
+            </div>
+          )}
+
+          {/* SECCIÓN 3b: BIBLIOTECA DE ARTÍCULOS PERSISTIDOS */}
+          {activeSection === "library" && (
+            <div className="space-y-6">
+              <ArticleLibraryView
+                items={historicalContents}
+                isLoading={loadingHistory}
+                error={historyError}
+                onRefresh={fetchHistoricalContents}
+                onOpenInWorkspace={handleSelectHistoricalContent}
+                userRole={user.role}
               />
             </div>
           )}
