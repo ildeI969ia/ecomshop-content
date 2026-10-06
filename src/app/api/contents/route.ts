@@ -9,7 +9,11 @@ import { validateEditorialQuality } from "@/lib/quality/editorial-quality-gate";
 export const GET = withAuthAndPermission("content:view", async (req: NextRequest, user) => {
   const repo = new ContentRepository();
   try {
-    const list = await repo.listRecent(100, user.workspaceId);
+    const url = new URL(req.url);
+    const limitParam = parseInt(url.searchParams.get("limit") || "100", 10);
+    const limit = isNaN(limitParam) || limitParam <= 0 ? 100 : Math.min(limitParam, 200);
+
+    const list = await repo.listRecent(limit, user.workspaceId);
 
     const formatted = list.map((item: ContentItem) => {
       const versionBody = item.versions?.[0]?.body;
@@ -25,20 +29,45 @@ export const GET = withAuthAndPermission("content:view", async (req: NextRequest
         item.status === "APPROVED" ? "approved" :
         item.status === "IN_REVIEW" ? "reviewed" : "draft";
 
+      const previewText =
+        (content as any)?.blog?.metaDescription ||
+        (content as any)?.blog?.tldr ||
+        (typeof (content as any)?.blog?.introduction === "string" ? (content as any)?.blog?.introduction.slice(0, 160) : "") ||
+        item.title;
+
       return {
         id: item.id,
+        workspaceId: item.workspaceId || user.workspaceId,
+        type: "editorial_campaign",
         title: item.title,
-        category: item.category,
         status: normalizedStatus,
+        rawStatus: item.status,
         createdAt: item.createdAt,
+        updatedAt: item.updatedAt || item.createdAt,
+        productId: item.linkedProductIds?.[0] || null,
+        campaignId: item.campaignId || null,
+        preview: previewText,
+        category: item.category,
         content
       };
     });
 
-    return NextResponse.json({ contents: formatted });
+    return NextResponse.json({
+      items: formatted,
+      contents: formatted, // Retrocompatibilidad para clientes existentes
+      total: formatted.length,
+      nextCursor: null
+    });
   } catch (err: any) {
     console.error("[api/contents GET] Error al listar contenidos:", err);
-    return NextResponse.json({ contents: [], error: err?.message }, { status: 200 });
+    return NextResponse.json(
+      {
+        error: "INTERNAL_SERVER_ERROR",
+        message: err?.message || "Error al recuperar contenidos persistidos.",
+        code: "FIRESTORE_QUERY_FAILED"
+      },
+      { status: 500 }
+    );
   }
 });
 

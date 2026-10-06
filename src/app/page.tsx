@@ -42,6 +42,7 @@ import { FinOpsDashboard } from "@/components/finops-dashboard";
 import { ImageInterrogatorModal } from "@/components/ImageInterrogatorModal";
 import { ImageDetailModal, ImageDetailItem } from "@/components/ImageDetailModal";
 import { PromptRefinementData } from "@/components/PromptRefinementCard";
+import { HistoricalContentItem } from "@/components/historical-content-list";
 
 function LoadingScreen() {
   return (
@@ -104,6 +105,11 @@ export default function Page() {
   const [activeContentId, setActiveContentId] = useState<string | null>(null);
   const [promptRefinement, setPromptRefinement] = useState<PromptRefinementData | null>(null);
   const [refiningPrompt, setRefiningPrompt] = useState(false);
+
+  // Historial de Contenidos Guardados (Persistence + Read Model)
+  const [historicalContents, setHistoricalContents] = useState<HistoricalContentItem[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   // 1. Cargar Oportunidades del Radar al entrar en la sección o al iniciar
   const fetchRadar = useCallback(async (goal: BusinessGoal = radarGoal) => {
@@ -175,6 +181,57 @@ export default function Page() {
     }
   }, []);
 
+  // 3b. Cargar contenidos persistidos desde Firestore (/api/contents)
+  const fetchHistoricalContents = useCallback(async () => {
+    setLoadingHistory(true);
+    setHistoryError(null);
+    try {
+      const res = await apiFetch<{ items?: HistoricalContentItem[]; contents?: HistoricalContentItem[] }>("/api/contents?limit=100");
+      const list = res.items || res.contents || [];
+      setHistoricalContents(list);
+    } catch (err: any) {
+      console.error("[Contents] Error cargando contenidos históricos:", err);
+      setHistoryError(err?.message || "Error al recuperar contenidos históricos.");
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, []);
+
+  // 3c. Seleccionar y cargar un contenido histórico completo en el Workspace
+  const handleSelectHistoricalContent = useCallback(async (item: HistoricalContentItem) => {
+    try {
+      setActiveContentId(item.id);
+      if (item.productId) {
+        setSelectedSku(item.productId);
+      }
+
+      // Si el item ya trae el contenido parseado completo
+      if (item.content) {
+        setCampaignContent(item.content as unknown as ContentOutput);
+        setCampaignStage("COMPLETED");
+        setActiveSection("workspace");
+        if (item.productId) {
+          void loadIntelligenceCard(item.productId);
+        }
+        return;
+      }
+
+      // De lo contrario, consultar el endpoint individual GET /api/contents/[id]
+      const detail = await apiFetch<{ item: HistoricalContentItem; content?: any }>(`/api/contents/${encodeURIComponent(item.id)}`);
+      if (detail?.item?.content) {
+        setCampaignContent(detail.item.content as unknown as ContentOutput);
+        setCampaignStage("COMPLETED");
+        setActiveSection("workspace");
+        if (detail.item.productId) {
+          setSelectedSku(detail.item.productId);
+          void loadIntelligenceCard(detail.item.productId);
+        }
+      }
+    } catch (err: any) {
+      alert(`Error al cargar detalle del contenido: ${err?.message}`);
+    }
+  }, [loadIntelligenceCard]);
+
   // 4. Cargar catálogo dinámico de productos desde Firestore (/api/catalog/products)
   const fetchCatalog = useCallback(async () => {
     setLoadingCatalog(true);
@@ -212,17 +269,18 @@ export default function Page() {
     }
   };
 
-  // Efecto para sincronizar según sección activa y cargar catálogo
+  // Efecto para sincronizar según sección activa, cargar catálogo y recuperar histórico de contenidos
   useEffect(() => {
     if (!user) return;
     fetchCatalog();
+    fetchHistoricalContents();
     if (activeSection === "radar" && radarOpportunities.length === 0) {
       fetchRadar();
     }
     if (activeSection === "images" && galleryImages.length === 0) {
       loadDatabaseAssets();
     }
-  }, [activeSection, user, fetchRadar, fetchCatalog, loadDatabaseAssets, radarOpportunities.length, galleryImages.length]);
+  }, [activeSection, user, fetchRadar, fetchCatalog, fetchHistoricalContents, loadDatabaseAssets, radarOpportunities.length, galleryImages.length]);
 
   // Cargar inteligencia técnica del SKU por defecto
   useEffect(() => {
@@ -300,6 +358,8 @@ export default function Page() {
       if (data.intelligenceCard) {
         setIntelligenceCard(data.intelligenceCard);
       }
+      // Invalidar y refrescar histórico inmediatamente tras generación persistida
+      void fetchHistoricalContents();
     } catch (err: any) {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -356,6 +416,9 @@ export default function Page() {
         draft: "guardada como borrador"
       };
       alert(`Campaña ${statusLabels[status] || status} correctamente en Firestore.`);
+
+      // Invalidar y refrescar histórico tras mutación de lifecycle
+      void fetchHistoricalContents();
     } catch (err: unknown) {
       alert(`Error al guardar en Firestore: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
@@ -722,6 +785,12 @@ export default function Page() {
                 onSelectAngle={setSelectedAngle}
                 freeTopicTitle={freeTopicTitle}
                 onFreeTopicChange={setFreeTopicTitle}
+                historicalItems={historicalContents}
+                isLoadingHistory={loadingHistory}
+                historyError={historyError}
+                onRefreshHistory={fetchHistoricalContents}
+                onSelectHistoricalContent={handleSelectHistoricalContent}
+                activeContentId={activeContentId}
               />
             </div>
           )}

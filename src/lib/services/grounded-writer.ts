@@ -88,8 +88,6 @@ export class GroundedWriterService {
         const rawModels = [
           activeModel,
           AI_TEXT_MODEL,
-          AI_TEXT_MODEL,
-          "gemini-2.0-flash-001",
           AI_FALLBACK_MODEL
         ];
         const candidateModels = rawModels

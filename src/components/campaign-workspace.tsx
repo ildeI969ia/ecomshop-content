@@ -34,8 +34,10 @@ import {
   Code,
   Table,
   Store,
-  Filter
+  Filter,
+  History
 } from "lucide-react";
+import { HistoricalContentList, HistoricalContentItem } from "./historical-content-list";
 import { ContentOutput } from "@/lib/schema";
 import { ProductOpportunityRecord } from "@/lib/services/opportunity-radar";
 import { ProductIntelligenceCard } from "@/lib/types/product-intelligence";
@@ -81,6 +83,12 @@ interface CampaignWorkspaceProps {
   freeTopicTitle?: string;
   onFreeTopicChange?: (title: string) => void;
   products?: CatalogProduct[];
+  historicalItems?: HistoricalContentItem[];
+  isLoadingHistory?: boolean;
+  historyError?: string | null;
+  onRefreshHistory?: () => void;
+  onSelectHistoricalContent?: (item: HistoricalContentItem) => void;
+  activeContentId?: string | null;
 }
 
 export function getProductFamily(deviceType: string): ProductFamily {
@@ -128,8 +136,14 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   onSelectAngle,
   freeTopicTitle,
   onFreeTopicChange,
-  products: initialProducts
-}) => {
+  products: initialProducts,
+  historicalItems = [],
+  isLoadingHistory = false,
+  historyError = null,
+  onRefreshHistory,
+  onSelectHistoricalContent,
+  activeContentId
+}: CampaignWorkspaceProps) => {
   const [content, setContent] = useState<ContentOutput | null>(initialContent);
 
   // Sincronizar estado si la prop initialContent cambia desde el padre
@@ -462,6 +476,18 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             </Button>
           )}
         </div>
+
+        {/* 0. HISTORIAL DE CONTENIDOS GUARDADOS / PREVIAMENTE GENERADOS */}
+        {onSelectHistoricalContent && (
+          <HistoricalContentList
+            items={historicalItems}
+            isLoading={isLoadingHistory}
+            error={historyError}
+            onRefresh={onRefreshHistory || (() => {})}
+            onSelectContent={onSelectHistoricalContent}
+            activeContentId={activeContentId}
+          />
+        )}
 
         {/* 1. SELECTOR DE PRODUCTO CON BUSCADOR EN TIEMPO REAL Y CLASIFICACIÓN POR FAMILIA */}
         <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-4 space-y-4">
@@ -848,9 +874,9 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 variant="secondary"
                 size="sm"
                 onClick={handleSafeReset}
-                leftIcon={<ArrowLeft className="w-3.5 h-3.5" />}
+                leftIcon={<History className="w-3.5 h-3.5 text-indigo-400" />}
               >
-                Cerrar Workspace
+                Historial / Catálogo
               </Button>
             )}
           </div>

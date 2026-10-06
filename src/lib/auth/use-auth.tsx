@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: data.user.email,
           displayName: data.user.displayName || data.user.email.split("@")[0],
           role: data.user.role || "EDITOR",
-          workspaceId: data.user.workspaceId || "ws-ecomspain",
+          workspaceId: data.user.workspaceId || "default-ecomspain",
         });
       } else {
         setUser(null);

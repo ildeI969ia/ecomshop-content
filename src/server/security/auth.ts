@@ -30,7 +30,7 @@ export async function authenticateServerRequest(req: NextRequest): Promise<Authe
         uid: "dev-local-user",
         email: "admin@ecomspain.com",
         role: "ADMIN",
-        workspaceId: "ws-ecomspain"
+        workspaceId: "default-ecomspain"
       };
     }
     return null;
