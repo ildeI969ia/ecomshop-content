@@ -3,6 +3,7 @@ import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { getAdminFirestore } from "@/server/config/firebase";
 import { ECOMSHOP_FULL_CATALOG, CatalogProduct } from "@/lib/data/ecomshop-catalog";
 import { sanitizeUndefined } from "@/server/repositories";
+import { getCatalogMasterRecords, catalogMasterRecordToCatalogProduct } from "@/lib/catalog-master";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +15,22 @@ export const GET = withAuthAndPermission("content:view", async (req: NextRequest
     const limitCount = parseInt(searchParams.get("limit") || "500", 10);
 
     const db = getAdminFirestore();
+    let products: CatalogProduct[] = [];
+    let source: "GCS_MASTER" | "FIRESTORE" | "STATIC" = "STATIC";
+
+    try {
+      const masterRecords = await getCatalogMasterRecords();
+      if (masterRecords.length > 0) {
+        products = masterRecords.map(catalogMasterRecordToCatalogProduct);
+        source = "GCS_MASTER";
+      }
+    } catch (masterError) {
+      console.warn("[CatalogProducts] Catálogo maestro GCS no disponible:", masterError);
+    }
+
     const snapshot = await db.collection("products").limit(Math.min(limitCount, 1000)).get();
 
-    let products: CatalogProduct[] = [];
+    if (products.length === 0) {
 
     // Si Firestore contiene productos sincronizados dinámicamente, usarlos como fuente primaria
     if (!snapshot.empty) {
@@ -60,6 +74,8 @@ export const GET = withAuthAndPermission("content:view", async (req: NextRequest
           console.warn("[CatalogProducts] Error sembrando productos iniciales:", e);
         }
       })();
+    }
+
     }
 
     // Filtrar por texto de búsqueda si se proporcionó
@@ -106,6 +122,8 @@ export const GET = withAuthAndPermission("content:view", async (req: NextRequest
       success: true,
       count: products.length,
       products,
+      source,
+      master: source === "GCS_MASTER" ? { bucket: process.env.CATALOG_MASTER_BUCKET || "fotosecomspain", object: process.env.CATALOG_MASTER_OBJECT || "catalogo/catalogo_maestro.json" } : undefined,
       lastSync
     });
   } catch (error: any) {
