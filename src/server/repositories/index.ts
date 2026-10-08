@@ -33,6 +33,22 @@ export class CampaignRepository {
     return snapshot.docs[0].data() as Campaign;
   }
 
+  async findByProductId(productId: string, workspaceId: string): Promise<Campaign[]> {
+    const snapshot = await this.collection()
+      .where("workspaceId", "==", workspaceId)
+      .where("productIds", "array-contains", productId)
+      .get();
+    return snapshot.docs.map((d: QueryDocumentSnapshot) => d.data() as Campaign);
+  }
+
+  async archive(id: string, updatedBy?: string): Promise<void> {
+    await this.collection().doc(id).update({
+      status: "ARCHIVED",
+      updatedAt: new Date().toISOString(),
+      ...(updatedBy ? { updatedBy } : {})
+    });
+  }
+
   async create(campaign: Campaign): Promise<void> {
     await this.collection().doc(campaign.id).set(campaign);
   }
@@ -42,6 +58,10 @@ export class CampaignRepository {
       ...updates,
       updatedAt: new Date().toISOString()
     });
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.collection().doc(id).delete();
   }
 }
 
@@ -87,6 +107,14 @@ export class ContentRepository {
 
   async listByCampaign(campaignId: string): Promise<ContentItem[]> {
     const snapshot = await this.collection().where("campaignId", "==", campaignId).get();
+    return snapshot.docs.map((d: QueryDocumentSnapshot) => d.data() as ContentItem);
+  }
+
+  async listByProduct(productId: string, workspaceId: string): Promise<ContentItem[]> {
+    const snapshot = await this.collection()
+      .where("workspaceId", "==", workspaceId)
+      .where("linkedProductIds", "array-contains", productId)
+      .get();
     return snapshot.docs.map((d: QueryDocumentSnapshot) => d.data() as ContentItem);
   }
 

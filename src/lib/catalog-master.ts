@@ -188,7 +188,7 @@ function normalizeRecord(raw: Record<string, unknown>): CatalogMasterRecord | nu
 }
 
 function extractRecords(payload: unknown): Record<string, unknown>[] {
-  if (Array.isArray(payload)) return payload.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object"));
+  if (Array.isArray(payload)) return payload.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object");
   if (!payload || typeof payload !== "object") return [];
   const object = payload as Record<string, unknown>;
   for (const key of ["data", "products", "catalog", "items", "productos"]) {

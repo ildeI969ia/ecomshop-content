@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { hasPermission } from "@/server/security/rbac";
-import { CampaignRepository } from "@/server/repositories";
+import { CampaignRepository, ContentRepository } from "@/server/repositories";
 
 export const GET = withAuthAndPermission("campaign:view", async (req: NextRequest, user) => {
   const url = new URL(req.url);
@@ -122,7 +122,68 @@ export const PATCH = withAuthAndPermission("campaign:edit", async (req: NextRequ
     const updated = await repo.findById(campaignId);
 
     return NextResponse.json({ success: true, campaign: updated });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+});
+
+export const DELETE = withAuthAndPermission("campaign:delete", async (req: NextRequest, user) => {
+  const url = new URL(req.url);
+  const campaignId = url.pathname.split("/").pop();
+  const hardDelete = url.searchParams.get("hard") === "true";
+  const cascadeContents = url.searchParams.get("cascade") !== "false";
+
+  if (!campaignId) {
+    return NextResponse.json({ error: "ID de campaña requerido" }, { status: 400 });
+  }
+
+  try {
+    const campaignRepo = new CampaignRepository();
+    const contentRepo = new ContentRepository();
+
+    const campaign = await campaignRepo.findById(campaignId);
+    if (!campaign) {
+      return NextResponse.json({ error: "Campaña no encontrada" }, { status: 404 });
+    }
+
+    if (campaign.workspaceId && campaign.workspaceId !== user.workspaceId) {
+      return NextResponse.json({ error: "Acceso no autorizado al workspace de esta campaña" }, { status: 403 });
+    }
+
+    let affectedContentsCount = 0;
+    const affectedContentIds: string[] = [];
+
+    if (cascadeContents) {
+      const contents = await contentRepo.listByCampaign(campaignId);
+      for (const item of contents) {
+        if (item.workspaceId && item.workspaceId !== user.workspaceId) continue;
+        affectedContentIds.push(item.id);
+        if (hardDelete) {
+          await contentRepo.delete(item.id);
+        } else {
+          await contentRepo.updateStatus(item.id, "ARCHIVED");
+        }
+      }
+      affectedContentsCount = affectedContentIds.length;
+    }
+
+    if (hardDelete) {
+      await campaignRepo.delete(campaignId);
+    } else {
+      await campaignRepo.archive(campaignId, user.uid);
+    }
+
+    return NextResponse.json({
+      success: true,
+      campaignId,
+      mode: hardDelete ? "HARD_DELETE" : "SOFT_DELETE",
+      status: hardDelete ? "DELETED" : "ARCHIVED",
+      affectedContentsCount,
+      affectedContentIds
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 });

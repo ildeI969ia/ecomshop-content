@@ -522,6 +522,32 @@ export default function Page() {
     }
   };
 
+  // Borrar / Archivar Campañas y Contenidos asociados a un producto del catálogo en cascada
+  const handleDeleteProductCampaigns = async (sku: string) => {
+    try {
+      const res = await apiFetch<{
+        success: boolean;
+        campaignsAffected: number;
+        contentsAffected: number;
+        mode: string;
+      }>(`/api/campaigns?sku=${encodeURIComponent(sku)}&hard=false&cascade=true`, {
+        method: "DELETE"
+      });
+
+      if (res?.success) {
+        alert(
+          `Campañas de ${sku} archivadas correctamente (${res.campaignsAffected} campañas, ${res.contentsAffected} contenidos en cascada).`
+        );
+        // Refrescar lista de contenidos históricos
+        void fetchHistoricalContents();
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      alert(`Error al archivar campañas de ${sku}: ${msg}`);
+      throw err;
+    }
+  };
+
   // Generar Ficha Mejorada
   const handleEnhanceProductSheet = async () => {
     setLoadingEnhancedSheet(true);
@@ -792,6 +818,8 @@ export default function Page() {
                 onRefreshHistory={fetchHistoricalContents}
                 onSelectHistoricalContent={handleSelectHistoricalContent}
                 activeContentId={activeContentId}
+                onDeleteProductCampaigns={handleDeleteProductCampaigns}
+                userRole={user.role}
               />
             </div>
           )}

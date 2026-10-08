@@ -35,7 +35,9 @@ import {
   Table,
   Store,
   Filter,
-  History
+  History,
+  Trash2,
+  X
 } from "lucide-react";
 import { HistoricalContentList, HistoricalContentItem } from "./historical-content-list";
 import { ContentOutput } from "@/lib/schema";
@@ -89,6 +91,8 @@ interface CampaignWorkspaceProps {
   onRefreshHistory?: () => void;
   onSelectHistoricalContent?: (item: HistoricalContentItem) => void;
   activeContentId?: string | null;
+  onDeleteProductCampaigns?: (sku: string) => Promise<void>;
+  userRole?: string;
 }
 
 export function getProductFamily(deviceType: string): ProductFamily {
@@ -142,7 +146,9 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   historyError = null,
   onRefreshHistory,
   onSelectHistoricalContent,
-  activeContentId
+  activeContentId,
+  onDeleteProductCampaigns,
+  userRole
 }: CampaignWorkspaceProps) => {
   const [content, setContent] = useState<ContentOutput | null>(initialContent);
 
@@ -162,6 +168,10 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   const [productSearchQuery, setProductSearchQuery] = useState("");
   const [selectedFamily, setSelectedFamily] = useState<ProductFamily>("ALL");
   const [showHistoricalContents, setShowHistoricalContents] = useState(false);
+
+  // Estado para borrado seguro en cascada de campañas asociadas al catálogo
+  const [skuToDeleteCampaigns, setSkuToDeleteCampaigns] = useState<string | null>(null);
+  const [isDeletingCampaigns, setIsDeletingCampaigns] = useState(false);
 
   // Estado para el Drawer de Fuentes / Citaciones
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -666,6 +676,17 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                         >
                           <Zap className="w-3 h-3 text-amber-300" />
                           <span>Lanzar</span>
+                        </button>
+                      )}
+
+                      {onDeleteProductCampaigns && (
+                        <button
+                          type="button"
+                          onClick={() => setSkuToDeleteCampaigns(device.sku)}
+                          className="p-1.5 bg-slate-900 hover:bg-rose-950/70 text-slate-400 hover:text-rose-400 rounded-lg text-[11px] transition border border-slate-800 hover:border-rose-800"
+                          title={`Borrar / Archivar campañas de ${device.sku}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>
@@ -1451,6 +1472,85 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
         citationId={activeCitationId}
         citationData={activeCitationData}
       />
+
+      {/* Modal de Confirmación de Borrado de Campañas del Catálogo */}
+      {skuToDeleteCampaigns && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-rose-950/80 border border-rose-800 text-rose-400">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    ¿Borrar campañas del catálogo ({skuToDeleteCampaigns})?
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Acción controlada bajo RBAC (<span className="font-mono text-indigo-400">campaign:delete</span>)
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSkuToDeleteCampaigns(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                disabled={isDeletingCampaigns}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800/80 space-y-2 text-xs text-slate-300 leading-relaxed">
+              <p>
+                Esta operación archivará de forma segura las campañas vinculadas a <strong className="text-white font-mono">{skuToDeleteCampaigns}</strong> y en <strong className="text-amber-300 font-semibold">CASCADA</strong> sus contenidos, artículos y variantes generadas.
+              </p>
+              <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <span>Modo de protección:</span>
+                <span className="font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
+                  SOFT DELETE (Archivado lógico)
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSkuToDeleteCampaigns(null)}
+                disabled={isDeletingCampaigns}
+              >
+                Cancelar
+              </Button>
+
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                className="bg-rose-600 hover:bg-rose-500 border-rose-500/50 text-white"
+                isLoading={isDeletingCampaigns}
+                disabled={isDeletingCampaigns}
+                onClick={async () => {
+                  if (!onDeleteProductCampaigns || !skuToDeleteCampaigns) return;
+                  setIsDeletingCampaigns(true);
+                  try {
+                    await onDeleteProductCampaigns(skuToDeleteCampaigns);
+                    setSkuToDeleteCampaigns(null);
+                  } catch (err: unknown) {
+                    console.error("Error al borrar campañas:", err);
+                  } finally {
+                    setIsDeletingCampaigns(false);
+                  }
+                }}
+                leftIcon={!isDeletingCampaigns ? <Trash2 className="w-3.5 h-3.5" /> : undefined}
+              >
+                {isDeletingCampaigns ? "Archivando..." : "Confirmar y Archivar en Cascada"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
