@@ -264,3 +264,57 @@ export function mergeMasterIntoCatalogProduct(
     masterAssets: master.assets
   };
 }
+
+export function catalogMasterRecordToCatalogProduct(master: CatalogMasterRecord): CatalogProduct {
+  const deviceType = master.deviceType || inferDeviceType([master.name, master.description].join(" "));
+  const category = master.category || inferCategory([master.name, master.description].join(" "));
+  return {
+    id: master.sku.toLowerCase(),
+    sku: master.sku,
+    model: master.model,
+    name: master.name,
+    brand: master.brand,
+    deviceType,
+    category,
+    description: master.description || "Producto del catálogo maestro EcomSpain.",
+    url: master.url || "https://ecomshop.es",
+    imageUrl: master.imageUrl || "/images/products/default.png",
+    priceEur: master.priceEur ?? 0,
+    stockStatus: master.stockStatus || "UNKNOWN",
+    specs: master.specs,
+    interfaces: master.interfaces,
+    powerRequirements: master.powerRequirements || "Consultar ficha técnica.",
+    poeType: master.poeType || "NONE",
+    powerConsumptionWatts: 0,
+    managementMode: "Standalone",
+    standards: [],
+    keyAdvantages: [],
+    rawSpecs: master.rawSpecs,
+    masterAssets: master.assets,
+    recommendedBundle: {
+      sku: "",
+      name: "",
+      relationshipType: "ACCESSORY",
+      rationale: ""
+    },
+    notebookSource: {
+      sourceId: master.assets.datasheetPath || master.assets.datasheetUrl || "catalog-master-gcs",
+      title: master.assets.datasheetUrl ? "Datasheet del catálogo maestro EcomSpain" : "Catálogo maestro EcomSpain",
+      type: master.assets.datasheetUrl ? "datasheet" : "url",
+      url: master.assets.datasheetUrl || master.url || undefined,
+      rationale: "Registro consolidado desde gs://fotosecomspain/catalogo/catalogo_maestro.json."
+    },
+    notebookSourceId: master.assets.datasheetPath || master.assets.datasheetUrl,
+    lifecycleStatus: "VERIFIED",
+    actionTitle: master.name,
+    targetSegment: "B2B",
+    defaultAngle: "PERFORMANCE",
+    commercialAngles: {
+      executiveRoi: "Evaluar coste total de propiedad y adecuación al proyecto.",
+      engineeringPerformance: "Basar la decisión en las especificaciones verificadas del catálogo maestro.",
+      operationsDeployment: "Priorizar una implantación trazable y compatible con el entorno existente."
+    },
+    sectorAffinity: {},
+    businessGoalAffinity: {}
+  };
+}
