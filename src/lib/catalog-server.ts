@@ -2,7 +2,7 @@ import { getAdminFirestore } from "@/server/config/firebase";
 import { CatalogProduct } from "./data/ecomshop-catalog";
 import { CatalogDevice, catalogProductToCatalogDevice, getCatalogDevice } from "./catalog";
 import { findCatalogProductExact } from "./data/ecomshop-catalog";
-import { getCatalogMasterRecord, mergeMasterIntoCatalogProduct } from "./catalog-master";
+import { getCatalogMasterRecord, mergeMasterIntoCatalogProduct, catalogMasterRecordToCatalogProduct } from "./catalog-master";
 
 /**
  * Consulta un dispositivo de catálogo resolviendo de forma asíncrona contra Firestore
@@ -95,6 +95,7 @@ export async function getDynamicCatalogProduct(sku: string): Promise<CatalogProd
     if (master) {
       const base = findCatalogProductExact(cleanSku);
       if (base) return mergeMasterIntoCatalogProduct(base, master);
+      return catalogMasterRecordToCatalogProduct(master);
     }
   } catch (masterError) {
     console.warn("[CatalogServer] Catálogo maestro GCS no disponible; se mantiene fallback canónico:", masterError);
