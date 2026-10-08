@@ -55,6 +55,18 @@ export async function getDynamicCatalogProduct(sku: string): Promise<CatalogProd
   const cleanSku = normalizeSku(sku);
   if (!cleanSku) return undefined;
 
+  // 1. Product Truth: el catálogo maestro GCS tiene prioridad absoluta.
+  try {
+    const master = await getCatalogMasterRecord(cleanSku);
+    if (master) {
+      const base = findCatalogProductExact(cleanSku);
+      return base ? mergeMasterIntoCatalogProduct(base, master) : catalogMasterRecordToCatalogProduct(master);
+    }
+  } catch (masterError) {
+    console.warn("[CatalogServer] Catálogo maestro GCS no disponible:", masterError);
+  }
+
+  // 2. Fallback operativo: Firestore sincronizado.
   try {
     const db = getAdminFirestore();
     const docSnap = await db.collection("products").doc(cleanSku.toLowerCase()).get();
@@ -88,17 +100,6 @@ export async function getDynamicCatalogProduct(sku: string): Promise<CatalogProd
     }
   } catch (error) {
     console.warn("[CatalogServer] No se pudo leer el producto del feed sincronizado:", error);
-  }
-
-  try {
-    const master = await getCatalogMasterRecord(cleanSku);
-    if (master) {
-      const base = findCatalogProductExact(cleanSku);
-      if (base) return mergeMasterIntoCatalogProduct(base, master);
-      return catalogMasterRecordToCatalogProduct(master);
-    }
-  } catch (masterError) {
-    console.warn("[CatalogServer] Catálogo maestro GCS no disponible; se mantiene fallback canónico:", masterError);
   }
 
   return undefined;
