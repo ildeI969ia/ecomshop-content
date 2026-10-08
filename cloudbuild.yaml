@@ -45,7 +45,7 @@ steps:
       - '--max-instances=5'
       - '--memory=1Gi'
       - '--cpu=1'
-      - '--update-env-vars=GOOGLE_CLOUD_PROJECT=ecomshop-marketing-prod,GOOGLE_CLOUD_LOCATION=europe-west1,VERTEX_LOCATION=us-central1,GOOGLE_GENAI_USE_VERTEXAI=true,GCS_BUCKET_NAME=ecomshop-marketing-assets,ANTIGRAVITY_SDK_ENABLED=true'
+      - '--update-env-vars=GOOGLE_CLOUD_PROJECT=ecomshop-marketing-prod,GOOGLE_CLOUD_LOCATION=europe-west1,VERTEX_LOCATION=us-central1,GOOGLE_GENAI_USE_VERTEXAI=true,GCS_BUCKET_NAME=ecomshop-marketing-assets,CATALOG_MASTER_BUCKET=fotosecomspain,CATALOG_MASTER_OBJECT=catalogo/catalogo_maestro.json,ANTIGRAVITY_SDK_ENABLED=true'
       # Sólo referencias a secretos: jamás el valor de la API key en el repo.
       - '--update-secrets=FIREBASE_API_KEY=FIREBASE_API_KEY:latest'
 

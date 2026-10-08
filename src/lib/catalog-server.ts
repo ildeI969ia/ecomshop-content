@@ -1,6 +1,8 @@
 import { getAdminFirestore } from "@/server/config/firebase";
 import { CatalogProduct } from "./data/ecomshop-catalog";
 import { CatalogDevice, catalogProductToCatalogDevice, getCatalogDevice } from "./catalog";
+import { findCatalogProductExact } from "./data/ecomshop-catalog";
+import { getCatalogMasterRecord, mergeMasterIntoCatalogProduct, catalogMasterRecordToCatalogProduct } from "./catalog-master";
 
 /**
  * Consulta un dispositivo de catálogo resolviendo de forma asíncrona contra Firestore
@@ -53,6 +55,18 @@ export async function getDynamicCatalogProduct(sku: string): Promise<CatalogProd
   const cleanSku = normalizeSku(sku);
   if (!cleanSku) return undefined;
 
+  // 1. Product Truth: el catálogo maestro GCS tiene prioridad absoluta.
+  try {
+    const master = await getCatalogMasterRecord(cleanSku);
+    if (master) {
+      const base = findCatalogProductExact(cleanSku);
+      return base ? mergeMasterIntoCatalogProduct(base, master) : catalogMasterRecordToCatalogProduct(master);
+    }
+  } catch (masterError) {
+    console.warn("[CatalogServer] Catálogo maestro GCS no disponible:", masterError);
+  }
+
+  // 2. Fallback operativo: Firestore sincronizado.
   try {
     const db = getAdminFirestore();
     const docSnap = await db.collection("products").doc(cleanSku.toLowerCase()).get();
