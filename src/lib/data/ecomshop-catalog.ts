@@ -171,6 +171,15 @@ export interface CatalogProduct {
   // Especificaciones crudas para IA (usado por product-brain)
   rawSpecs?: string[];
 
+  /** Assets y evidencias provenientes del catálogo maestro de GCS. */
+  masterAssets?: {
+    datasheetUrl?: string;
+    datasheetPath?: string;
+    imageUrl?: string;
+    imageUrls: string[];
+    sourceUrls: string[];
+  };
+
   lifecycleStatus?: "DISCOVERED" | "VERIFIED" | "HOMOLOGATED" | "EXTERNAL_UNVERIFIED";
   isEcomshopOwnProduct?: boolean;
 
