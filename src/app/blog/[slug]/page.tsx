@@ -13,7 +13,7 @@ interface PageProps {
   }>;
 }
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 /**
  * Metadatos dinámicos para SEO y AEO (OpenGraph, Twitter Cards, Canonical)

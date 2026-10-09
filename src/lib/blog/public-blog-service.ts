@@ -83,12 +83,18 @@ function extractFeaturedImage(rawBlog: any, rawItem: any): string | null {
 export async function getPublishedBlogPosts(limitCount = 20): Promise<PublicBlogPostItem[]> {
   try {
     const db = getAdminFirestore();
-    // Consulta sin orderBy para evitar exigir índice compuesto (status + createdAt) en Firestore
-    const snapshot = await db
+    // Consulta con timeout de seguridad (4000ms) para evitar bloqueos durante compilación
+    const queryPromise = db
       .collection("contents")
       .where("status", "==", "PUBLISHED")
       .limit(Math.max(limitCount * 2, 50))
       .get();
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("FIRESTORE_TIMEOUT")), 4000)
+    );
+
+    const snapshot = await Promise.race([queryPromise, timeoutPromise]);
 
     if (snapshot.empty) {
       return [];
@@ -137,12 +143,18 @@ export async function getPublishedBlogPosts(limitCount = 20): Promise<PublicBlog
 export async function getPublishedBlogPostBySlug(slug: string): Promise<PublicBlogDetail | null> {
   try {
     const db = getAdminFirestore();
-    const snapshot = await db
+    const queryPromise = db
       .collection("contents")
       .where("slug", "==", slug)
       .where("status", "==", "PUBLISHED")
       .limit(1)
       .get();
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("FIRESTORE_TIMEOUT")), 4000)
+    );
+
+    const snapshot = await Promise.race([queryPromise, timeoutPromise]);
 
     if (snapshot.empty) {
       return null;

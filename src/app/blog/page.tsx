@@ -7,7 +7,7 @@ import { BlogPostCard } from "@/components/blog/BlogPostCard";
 import { BlogEmptyState } from "@/components/blog/BlogEmptyState";
 import { Sparkles, ArrowRight, BookOpen, Layers, ShieldCheck, Cpu } from "lucide-react";
 
-export const revalidate = 60; // Regeneración estática incremental cada 60s
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Blog Técnico B2B | EcomShop Telecomunicaciones y Redes",
