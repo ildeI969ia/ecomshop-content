@@ -44,8 +44,9 @@ export async function middleware(req: NextRequest) {
       return response;
     }
   } else {
-    // 4. Proteger panel privado (/admin/**): si no existe cookie __session, redirigir a login o a la home
-    if (!sessionCookie && pathname.startsWith("/admin")) {
+    // 4. Panel privado: /admin permite acceso público para mostrar la pantalla de CorporateSignIn
+    // Si se accede a subrutas (/admin/...) sin sesión, redirigir a /admin
+    if (!sessionCookie && pathname.startsWith("/admin/") && pathname !== "/admin") {
       const response = NextResponse.redirect(new URL("/admin?login=required", req.url));
       response.headers.set("x-request-id", requestId);
       return response;
