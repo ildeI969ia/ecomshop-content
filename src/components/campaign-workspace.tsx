@@ -864,13 +864,13 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 type="button"
                 variant="primary"
                 size="sm"
-                className="bg-indigo-600 hover:bg-indigo-500 border-indigo-500/50"
+                className="bg-sky-600 hover:bg-sky-500 border-sky-500/50 text-white font-bold shadow-md shadow-sky-500/20"
                 disabled={isSavingArticle}
                 isLoading={isSavingArticle}
                 onClick={onPublishToStore}
-                leftIcon={!isSavingArticle ? <Sparkles className="w-3.5 h-3.5 text-indigo-200" /> : undefined}
+                leftIcon={!isSavingArticle ? <Globe className="w-3.5 h-3.5 text-sky-100" /> : undefined}
               >
-                Publicar Campaña
+                Publicar en Blog Público
               </Button>
             )}
 

@@ -85,7 +85,12 @@ export function CorporateSignIn({ onSuccess }: CorporateSignInProps) {
           </button>
         </form>
         <div className="mt-6 pt-5 border-t border-slate-800 space-y-2 text-[11px] text-slate-400 font-mono">
-          <div className="flex items-center gap-2"><Shield className="w-3.5 h-3.5 text-emerald-400" /> Firebase Auth + RBAC</div>
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center gap-2"><Shield className="w-3.5 h-3.5 text-emerald-400" /> Firebase Auth + RBAC</div>
+            <a href="/" className="text-sky-400 hover:text-sky-300 transition-colors font-sans font-medium text-xs">
+              ← Ver Blog Público
+            </a>
+          </div>
           <div className="flex items-center gap-2"><Lock className="w-3.5 h-3.5 text-sky-400" /> Cookie de sesión httpOnly</div>
         </div>
       </div>

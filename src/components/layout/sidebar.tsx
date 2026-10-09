@@ -50,6 +50,7 @@ export function Sidebar({
     { id: "enhancer", label: "Catálogo", icon: PackageSearch },
     { id: "images", label: "Imágenes", icon: ImageIcon },
     { id: "finops", label: "FinOps Global", icon: CircleDollarSign },
+
   ];
 
   return (
@@ -115,6 +116,25 @@ export function Sidebar({
             );
           })}
         </nav>
+
+        {/* Enlace directo a Ver Blog Público */}
+        <div className="px-3 pt-2">
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title={collapsed ? "Ver Blog Público" : undefined}
+            className={cn(
+              "flex w-full items-center gap-2.5 rounded-lg border border-slate-700/60 bg-slate-900/60 px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white",
+              collapsed && "justify-center px-0"
+            )}
+          >
+            <FileText className="size-4 shrink-0 text-sky-400" />
+            <span className={cn("truncate", collapsed && "lg:hidden")}>
+              Ver Blog Público
+            </span>
+          </a>
+        </div>
 
         {/* Botón de Sincronización Directa con ecomshop.es */}
         {onSyncCatalog && (
