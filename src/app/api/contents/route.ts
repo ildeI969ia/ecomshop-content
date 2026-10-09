@@ -132,7 +132,7 @@ export const POST = withAuthAndPermission("content:create", async (req: NextRequ
       status: normalizedStatus as any,
       currentVersion: 1,
       authorId: user.uid,
-      canonicalBody: body.content?.blog || (typeof body.body === "object" ? body.body : {}),
+      canonicalBody: body.content || (typeof body.body === "object" ? body.body : {}),
       linkedProductIds: body.linkedProductIds || [],
       linkedSourceIds: body.linkedSourceIds || [],
       versions: [
@@ -247,6 +247,58 @@ export const PATCH = withAuthAndPermission("content:edit", async (req: NextReque
       );
     }
 
+    // Resolver el ContentOutput que se va a guardar/validar. Priorizar la versión activa,
+    // y aceptar una edición completa nueva aunque el registro previo esté dañado.
+    const latestVersionBody =
+      existingContent.versions?.find((version) => version.version === existingContent.currentVersion)?.body ||
+      [...(existingContent.versions || [])].sort((a, b) => b.version - a.version)[0]?.body ||
+      existingContent.canonicalBody;
+
+    const incomingBody = body.content ?? body.body ?? body.canonicalBody;
+    let candidateBody: unknown = latestVersionBody;
+
+    if (incomingBody && typeof incomingBody === "object" && !Array.isArray(incomingBody)) {
+      const incomingRecord = incomingBody as Record<string, unknown>;
+      const parsedIncoming = ContentOutputSchema.safeParse(incomingRecord);
+      if (parsedIncoming.success) {
+        candidateBody = parsedIncoming.data;
+      } else {
+        // El editor puede enviar solo el blog. En ese caso se actualiza el blog
+        // sobre el ContentOutput existente, sin destruir el resto de canales/metadatos.
+        const parsedExisting = ContentOutputSchema.safeParse(latestVersionBody);
+        if (parsedExisting.success) {
+          if (incomingRecord.blog && typeof incomingRecord.blog === "object" && !Array.isArray(incomingRecord.blog)) {
+            candidateBody = {
+              ...parsedExisting.data,
+              ...incomingRecord,
+              blog: { ...parsedExisting.data.blog, ...(incomingRecord.blog as Record<string, unknown>) }
+            };
+          } else if ("htmlContent" in incomingRecord || "metaDescription" in incomingRecord || "cleanPlainTextExcerpt" in incomingRecord) {
+            candidateBody = {
+              ...parsedExisting.data,
+              blog: { ...parsedExisting.data.blog, ...incomingRecord }
+            };
+          } else {
+            candidateBody = { ...parsedExisting.data, ...incomingRecord };
+          }
+        } else {
+          candidateBody = incomingRecord;
+        }
+      }
+    }
+
+    const parsedCandidate = ContentOutputSchema.safeParse(candidateBody);
+    if (incomingBody !== undefined && !parsedCandidate.success) {
+      return NextResponse.json(
+        {
+          error: "INVALID_CONTENT_OUTPUT",
+          message: "El contenido editado debe cumplir el contrato ContentOutput antes de guardarse.",
+          details: parsedCandidate.error.issues
+        },
+        { status: 400 }
+      );
+    }
+
     const currentStatus = existingContent.status;
     if (normalizedStatus === "APPROVED" && currentStatus !== "IN_REVIEW" && currentStatus !== "DRAFT" && currentStatus !== "APPROVED") {
       return NextResponse.json(
@@ -263,8 +315,7 @@ export const PATCH = withAuthAndPermission("content:edit", async (req: NextReque
     }
 
     if (normalizedStatus === "APPROVED" || normalizedStatus === "PUBLISHED") {
-      const versionBody = existingContent.versions?.[0]?.body || existingContent.canonicalBody;
-      const parsedContent = ContentOutputSchema.safeParse(versionBody);
+      const parsedContent = ContentOutputSchema.safeParse(candidateBody);
       if (!parsedContent.success) {
         return NextResponse.json(
           { error: "QUALITY_GATE_BLOCKED: El contenido persistido no cumple el contrato ContentOutput.", details: parsedContent.error.issues },
@@ -319,16 +370,47 @@ export const PATCH = withAuthAndPermission("content:edit", async (req: NextReque
       );
     }
 
-    // Si viene contenido editado (body.content o body.body), persistir nueva versión
-    if (body.content || body.body || body.canonicalBody) {
-      const updatedBody = body.content?.blog || body.body || body.canonicalBody || body.content;
+    // Guardar el ContentOutput completo y registrar cada edición como una versión.
+    if (incomingBody !== undefined) {
+      const parsedUpdatedBody = ContentOutputSchema.safeParse(candidateBody);
+      if (!parsedUpdatedBody.success) {
+        return NextResponse.json(
+          {
+            error: "INVALID_CONTENT_OUTPUT",
+            message: "No se puede persistir un contenido incompleto o incompatible con ContentOutput.",
+            details: parsedUpdatedBody.error.issues
+          },
+          { status: 400 }
+        );
+      }
+
+      const nowIso = new Date().toISOString();
+      const nextVersion = Math.max(
+        existingContent.currentVersion || 0,
+        ...(existingContent.versions || []).map((version) => version.version),
+        0
+      ) + 1;
+      const updatedBody = parsedUpdatedBody.data as unknown as Record<string, unknown>;
       const updatedItem: ContentItem = {
         ...existingContent,
-        title: body.title || body.content?.topicTitle || existingContent.title,
+        title: body.title || parsedUpdatedBody.data.blog.title || parsedUpdatedBody.data.topicTitle || existingContent.title,
+        slug: parsedUpdatedBody.data.blog.slug || existingContent.slug,
         status: normalizedStatus as any,
+        currentVersion: nextVersion,
         canonicalBody: updatedBody,
+        versions: [
+          ...(existingContent.versions || []),
+          {
+            version: nextVersion,
+            body: updatedBody,
+            changeSummary: "Edición guardada desde Campaign Workspace",
+            editedByUserId: user.uid,
+            isAIGenerated: false,
+            timestamp: nowIso
+          }
+        ],
         updatedBy: user.uid,
-        updatedAt: new Date().toISOString()
+        updatedAt: nowIso
       };
       await repo.upsertBySlug(updatedItem);
     } else {
