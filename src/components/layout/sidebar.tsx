@@ -71,9 +71,13 @@ export function Sidebar({
         )}
       >
         {/* Header Branding */}
-        <div className={cn("flex items-center gap-3 px-5 pb-5 pt-6", collapsed && "lg:justify-center lg:px-0")}>
-          <div className="grid size-9 place-items-center rounded-lg bg-primary font-extrabold text-primary-foreground shadow-md">
-            E
+        <div className={cn("flex items-center gap-3 px-4 pb-5 pt-6", collapsed && "lg:justify-center lg:px-0")}>
+          <div className="h-10 px-2 py-1 rounded-lg bg-white flex items-center justify-center shadow-md shrink-0">
+            <img
+              src="/ecomspain-logo.png"
+              alt="EcomSpain"
+              className="h-6 w-auto object-contain"
+            />
           </div>
           <div className={cn("leading-tight transition-opacity", collapsed && "lg:hidden")}>
             <p className="text-sm font-bold tracking-tight text-sidebar-foreground">EcomSpain</p>

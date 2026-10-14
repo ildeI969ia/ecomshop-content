@@ -45,9 +45,15 @@ export function CorporateSignIn({ onSuccess }: CorporateSignInProps) {
     <main className="min-h-screen bg-slate-950 flex items-center justify-center px-4 py-10 text-slate-100">
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl">
         <div className="flex items-center gap-3 mb-7 pb-6 border-b border-slate-800">
-          <div className="w-11 h-11 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-lg">E</div>
+          <div className="h-12 px-3 py-1.5 rounded-xl bg-white flex items-center justify-center shadow-md">
+            <img
+              src="/ecomspain-logo.png"
+              alt="EcomSpain Conectividad"
+              className="h-9 w-auto object-contain"
+            />
+          </div>
           <div>
-            <h1 className="text-lg font-bold text-white">ECOMSPAIN Marketing OS</h1>
+            <h1 className="text-lg font-bold text-white">EcomSpain Marketing OS</h1>
             <p className="text-[11px] font-mono uppercase tracking-widest text-slate-400 mt-1">Corporate access</p>
           </div>
         </div>

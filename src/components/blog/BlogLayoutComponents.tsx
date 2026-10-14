@@ -7,14 +7,18 @@ export function BlogHeader() {
     <header className="sticky top-0 z-40 w-full border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-9 h-9 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 group-hover:scale-105 transition-transform">
-              <Cpu className="w-5 h-5 text-sky-400" />
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="h-10 px-2.5 py-1 rounded-xl bg-white flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+              <img
+                src="/ecomspain-logo.png"
+                alt="EcomSpain Conectividad"
+                className="h-7 w-auto object-contain"
+              />
             </div>
             <div>
-              <span className="font-bold text-slate-100 tracking-tight text-lg">EcomShop</span>
+              <span className="font-bold text-slate-100 tracking-tight text-lg">EcomSpain</span>
               <span className="text-xs ml-1.5 px-2 py-0.5 rounded-full bg-slate-800 text-sky-400 border border-sky-500/20 font-medium">
-                Blog Técnico B2B
+                Blog Técnico
               </span>
             </div>
           </Link>
