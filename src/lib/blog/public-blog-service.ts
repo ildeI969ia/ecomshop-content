@@ -58,15 +58,15 @@ export interface PublicBlogDetail extends PublicBlogPostItem {
  * Helper para extraer la imagen principal de un artículo
  */
 function extractFeaturedImage(rawBlog: any, rawItem: any): string | null {
-  if (rawBlog?.editorialLayout?.photoPlacements && Array.isArray(rawBlog.editorialLayout.photoPlacements)) {
-    const validPhoto = rawBlog.editorialLayout.photoPlacements.find((p: any) => typeof p.imageUrl === "string" && p.imageUrl.startsWith("http"));
-    if (validPhoto?.imageUrl) return validPhoto.imageUrl;
-  }
   if (typeof rawBlog?.featuredImageUrl === "string" && rawBlog.featuredImageUrl.startsWith("http")) {
     return rawBlog.featuredImageUrl;
   }
   if (typeof rawItem?.featuredImageUrl === "string" && rawItem.featuredImageUrl.startsWith("http")) {
     return rawItem.featuredImageUrl;
+  }
+  if (rawBlog?.editorialLayout?.photoPlacements && Array.isArray(rawBlog.editorialLayout.photoPlacements)) {
+    const validPhoto = rawBlog.editorialLayout.photoPlacements.find((p: any) => typeof p.imageUrl === "string" && p.imageUrl.startsWith("http"));
+    if (validPhoto?.imageUrl) return validPhoto.imageUrl;
   }
   // Búsqueda en el cuerpo HTML por si hay <img>
   const html = rawBlog?.htmlContent || "";

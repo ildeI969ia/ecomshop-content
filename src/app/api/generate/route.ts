@@ -12,6 +12,7 @@ import { reserveAiBudget, releaseAiBudgetReservation } from "@/server/services/a
 import { AI_TEXT_MODEL } from "@/lib/ai-config";
 import { validateEditorialQuality, checkProductContamination } from "@/lib/quality/editorial-quality-gate";
 import { logger } from "@/lib/logger";
+import { generateAutoHeroImage } from "@/server/services/auto-hero-image";
 
 export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
   let budgetReservationId: string | undefined;
@@ -197,7 +198,56 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       }
     }
 
-    // 8. Persistencia en Firestore
+    // 8. Auto-generación de imagen Hero relevante y SEO-ready para el post
+    pipelineStage = "AUTO_HERO_IMAGE";
+    try {
+      const existingHero = content.blog?.featuredImageUrl || content.blog?.editorialLayout?.photoPlacements?.find(p => p.imageUrl)?.imageUrl;
+      if (!existingHero) {
+        const autoHero = await generateAutoHeroImage({
+          workspaceId: user.workspaceId,
+          userId: user.uid,
+          userRole: user.role,
+          sku: generationContext.canonicalSku,
+          topicTitle: effectiveTitle,
+          brand: intelligenceCard?.product.brand,
+          model: intelligenceCard?.product.model,
+          category: generationContext.effectiveCategory,
+          technicalQuestion: content.editorialThesis?.technicalQuestion,
+          centralArgument: content.editorialThesis?.centralArgument,
+          officialImageUrl: undefined
+        });
+
+        if (autoHero) {
+          content.blog.featuredImageUrl = autoHero.imageUrl;
+          const currentPlacements = content.blog.editorialLayout?.photoPlacements || [];
+          content.blog.editorialLayout = {
+            ...content.blog.editorialLayout,
+            photoPlacements: [
+              {
+                id: autoHero.assetId,
+                placementAfterHeading: "Introducción",
+                position: "BEFORE_SECTION",
+                photoType: "PRODUCT_HERO",
+                aspectRatio: "16:9",
+                description: autoHero.caption,
+                imagen3Prompt: autoHero.caption,
+                productSku: generationContext.canonicalSku,
+                altText: autoHero.altText,
+                caption: autoHero.caption,
+                assetId: autoHero.assetId,
+                imageUrl: autoHero.imageUrl,
+                status: "GENERATED"
+              },
+              ...currentPlacements.filter(p => p.photoType !== "PRODUCT_HERO")
+            ]
+          };
+        }
+      }
+    } catch (heroErr) {
+      console.warn("[API Generate] Auto hero generation skipped or non-blocking error:", heroErr);
+    }
+
+    // 9. Persistencia en Firestore
     pipelineStage = "FIRESTORE_PERSISTENCE";
     const contentId = `gen_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const nowIso = new Date().toISOString();

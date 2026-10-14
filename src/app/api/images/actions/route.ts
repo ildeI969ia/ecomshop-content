@@ -127,7 +127,7 @@ export const POST = withAuthAndPermission("content:edit", async (req: NextReques
       const currentHtml = typeof currentBlog.htmlContent === "string" ? currentBlog.htmlContent : "";
       const marker = `{{IMAGE:${String(placement.id)}}}`;
       const imageHtml =
-        `<figure data-image-id="${escapeHtml(asset.id)}"><img src="${escapeHtml(asset.publicUrl)}" alt="${escapeHtml(String(placement.altText))}" /></figure>`;
+        `<figure data-image-id="${escapeHtml(asset.id)}" class="my-6 rounded-xl overflow-hidden border border-slate-800 bg-slate-900"><img src="${escapeHtml(asset.publicUrl)}" alt="${escapeHtml(String(placement.altText))}" class="w-full h-auto object-cover" />${placement.caption ? `<figcaption class="p-2 text-center text-xs text-slate-400 font-sans">${escapeHtml(String(placement.caption))}</figcaption>` : ""}</figure>`;
 
       const nextHtml = currentHtml.includes(marker)
         ? currentHtml.replaceAll(marker, imageHtml)
@@ -138,13 +138,18 @@ export const POST = withAuthAndPermission("content:edit", async (req: NextReques
       const nextBlog = {
         ...currentBlog,
         htmlContent: sanitizeHtml(nextHtml),
+        ...(mode === "hero" ? { featuredImageUrl: asset.publicUrl } : {}),
         editorialLayout: {
           ...currentLayout,
           photoPlacements: placements
         }
       };
 
-      nextBody = { ...canonicalBody, blog: nextBlog };
+      nextBody = {
+        ...canonicalBody,
+        ...(mode === "hero" ? { featuredImageUrl: asset.publicUrl } : {}),
+        blog: nextBlog
+      };
       operationLabel = `Imagen insertada en artículo como ${mode === "hero" ? "Hero" : "cuerpo"}`;
     } else {
       const channel = body.channel as CampaignChannel;

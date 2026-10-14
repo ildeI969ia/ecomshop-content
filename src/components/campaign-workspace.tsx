@@ -37,10 +37,12 @@ import {
   Filter,
   History,
   Trash2,
+  Edit3,
   X
 } from "lucide-react";
 import { HistoricalContentList, HistoricalContentItem } from "./historical-content-list";
 import { ContentOutput } from "@/lib/schema";
+import { ArticleInlineEditorModal } from "./ArticleInlineEditorModal";
 import { ProductOpportunityRecord } from "@/lib/services/opportunity-radar";
 import { ProductIntelligenceCard } from "@/lib/types/product-intelligence";
 import { ProductIntelligenceView } from "./product-intelligence-view";
@@ -163,6 +165,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [clipboardError, setClipboardError] = useState<string | null>(null);
   const [showCloseWorkspaceConfirm, setShowCloseWorkspaceConfirm] = useState(false);
+  const [isEditorModalOpen, setIsEditorModalOpen] = useState(false);
 
   // Estado para el Selector de Producto con Buscador en Tiempo Real y Familias
   const [productSearchQuery, setProductSearchQuery] = useState("");
@@ -1105,6 +1108,17 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                           type="button"
                           variant="secondary"
                           size="sm"
+                          onClick={() => setIsEditorModalOpen(true)}
+                          className="bg-indigo-950/70 hover:bg-indigo-900 border-indigo-700 text-indigo-200"
+                          leftIcon={<Edit3 className="w-3.5 h-3.5 text-indigo-400" />}
+                        >
+                          Editar Artículo & Imagen
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
                           onClick={() => copyToClipboard(getChannelMarkdown("geo"), "geo-md")}
                           leftIcon={copiedKey === "geo-md" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                         >
@@ -1550,6 +1564,37 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de Edición Inline de Contenido, SEO e Imagen */}
+      {content && isEditorModalOpen && (
+        <ArticleInlineEditorModal
+          isOpen={isEditorModalOpen}
+          onClose={() => setIsEditorModalOpen(false)}
+          content={content}
+          contentId={activeContentId}
+          sku={selectedSku}
+          onOpenImageStudio={onOpenImageStudio}
+          onSaveContent={async (updatedContent) => {
+            setContent(updatedContent);
+            if (activeContentId) {
+              const res = await fetch("/api/contents", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  id: activeContentId,
+                  status: content.status === "PUBLISHED" ? "PUBLISHED" : content.status === "APPROVED" ? "APPROVED" : "DRAFT",
+                  content: updatedContent,
+                  title: updatedContent.blog?.title || updatedContent.topicTitle
+                })
+              });
+              if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || errData.message || "Error al actualizar en Firestore");
+              }
+            }
+          }}
+        />
       )}
     </div>
   );

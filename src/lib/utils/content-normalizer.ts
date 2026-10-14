@@ -101,6 +101,7 @@ export function normalizePersistedContent(item: ContentItem, userWorkspaceId?: s
         targetKeywords: Array.isArray(rawBlog.targetKeywords) ? (rawBlog.targetKeywords as string[]) : [],
         htmlContent: String(rawBlog.htmlContent || rawBlog.content || ""),
         cleanPlainTextExcerpt: String(rawBlog.cleanPlainTextExcerpt || preview),
+        featuredImageUrl: typeof rawBlog.featuredImageUrl === "string" ? rawBlog.featuredImageUrl : undefined,
         editorialLayout: (typeof rawBlog.editorialLayout === "object" && rawBlog.editorialLayout !== null
           ? (rawBlog.editorialLayout as ContentOutput["blog"]["editorialLayout"])
           : { photoPlacements: [] })

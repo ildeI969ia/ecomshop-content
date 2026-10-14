@@ -38,6 +38,7 @@ export const ContentOutputSchema = z.object({
     targetKeywords: z.array(z.string()),
     htmlContent: z.string(),
     cleanPlainTextExcerpt: z.string(),
+    featuredImageUrl: z.string().optional(),
     // Guía Editorial de Maquetación B2B
     editorialLayout: z.object({
       targetProfiles: z.array(z.object({
