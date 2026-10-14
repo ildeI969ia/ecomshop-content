@@ -58,6 +58,7 @@ interface ImageStudioViewProps {
   onApplyToCampaignBlog: (img: GeneratedImageItem) => void;
   onUseAsBase: (url: string) => void;
   onReuseInLinkedIn: (img: GeneratedImageItem) => void;
+  onReturnToWorkspace?: () => void;
 
   // Parámetros y Generador
   imagePrompt: string;
@@ -106,6 +107,7 @@ export const ImageStudioView: React.FC<ImageStudioViewProps> = ({
   onApplyToCampaignBlog,
   onUseAsBase,
   onReuseInLinkedIn,
+  onReturnToWorkspace,
   imagePrompt,
   onChangePrompt,
   imageAspectRatio,
@@ -160,9 +162,20 @@ export const ImageStudioView: React.FC<ImageStudioViewProps> = ({
                 Genera imágenes con IA o importa fotografías oficiales del catálogo EnGenius.
               </p>
             </div>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300">
-              ~0,004 € / img
-            </span>
+            <div className="flex items-center gap-2">
+              {onReturnToWorkspace && (
+                <button
+                  type="button"
+                  onClick={onReturnToWorkspace}
+                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/60 text-indigo-300 hover:text-white transition cursor-pointer flex items-center gap-1.5 shadow-xs"
+                >
+                  <span>← Volver al Editor</span>
+                </button>
+              )}
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300">
+                ~0,004 € / img
+              </span>
+            </div>
           </div>
 
           {/* Selector de Pestañas Principales */}

@@ -918,16 +918,81 @@ export default function Page() {
                     setImageNotice(`Error eliminando imagen: ${message}`);
                   }
                 }}
-                onApplyToCampaignBlog={(img) => {
+                onApplyToCampaignBlog={async (img) => {
+                  if (activeContentId) {
+                    try {
+                      await apiFetch("/api/images/actions", {
+                        method: "POST",
+                        body: JSON.stringify({
+                          action: "insert_article",
+                          assetId: img.id,
+                          contentId: activeContentId,
+                          mode: "hero"
+                        })
+                      });
+                      setImageNotice(`Imagen ${img.id} conectada con éxito como portada del artículo.`);
+                    } catch (err: unknown) {
+                      console.warn("Error en /api/images/actions:", err);
+                    }
+                  }
+                  // Actualizar en el estado local del contenido de la campaña
+                  setCampaignContent((prev) => {
+                    if (!prev) return prev;
+                    const existingPlacements = prev.blog?.editorialLayout?.photoPlacements || [];
+                    return {
+                      ...prev,
+                      blog: {
+                        ...prev.blog,
+                        featuredImageUrl: img.url,
+                        editorialLayout: {
+                          ...prev.blog?.editorialLayout,
+                          photoPlacements: [
+                            {
+                              id: `manual-${img.id}`,
+                              placementAfterHeading: "Introducción",
+                              position: "BEFORE_SECTION" as const,
+                              photoType: "PRODUCT_HERO" as const,
+                              aspectRatio: "16:9",
+                              description: img.prompt || "Imagen de cabecera",
+                              imagen3Prompt: img.prompt || "",
+                              productSku: selectedSku,
+                              altText: `${selectedSku} - Vista técnica`,
+                              caption: `Imagen técnica de infraestructura para ${selectedSku}`,
+                              assetId: img.id,
+                              imageUrl: img.url,
+                              status: "GENERATED" as const
+                            },
+                            ...existingPlacements.filter(p => p.photoType !== "PRODUCT_HERO")
+                          ]
+                        }
+                      }
+                    };
+                  });
                   setActiveSection("workspace");
                 }}
                 onUseAsBase={(url) => {
                   setImageBase(url);
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
-                onReuseInLinkedIn={(img) => {
+                onReuseInLinkedIn={async (img) => {
+                  if (activeContentId) {
+                    try {
+                      await apiFetch("/api/images/actions", {
+                        method: "POST",
+                        body: JSON.stringify({
+                          action: "reuse_campaign",
+                          assetId: img.id,
+                          contentId: activeContentId,
+                          channel: "linkedin"
+                        })
+                      });
+                    } catch (err) {
+                      console.warn("Error reuse_campaign:", err);
+                    }
+                  }
                   setActiveSection("workspace");
                 }}
+                onReturnToWorkspace={() => setActiveSection("workspace")}
                 imagePrompt={imagePrompt}
                 onChangePrompt={setImagePrompt}
                 imageAspectRatio={imageAspectRatio}

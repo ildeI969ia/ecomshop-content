@@ -1137,6 +1137,36 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                       </div>
                     </Card>
 
+                    {/* IMAGEN DESTACADA DEL ARTÍCULO (HERO) */}
+                    {(content.blog?.featuredImageUrl || content.blog?.editorialLayout?.photoPlacements?.find(p => p.imageUrl)?.imageUrl) && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                            <ImageIcon className="w-4 h-4 text-indigo-400" />
+                            <span>Imagen Destacada del Post (Hero / SEO)</span>
+                          </h4>
+                          <button
+                            type="button"
+                            onClick={() => setIsEditorModalOpen(true)}
+                            className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 cursor-pointer font-medium"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Cambiar o regenerar imagen</span>
+                          </button>
+                        </div>
+                        <div className="relative aspect-[16/9] max-h-72 w-full rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-md">
+                          <img
+                            src={content.blog?.featuredImageUrl || content.blog?.editorialLayout?.photoPlacements?.find(p => p.imageUrl)?.imageUrl}
+                            alt={content.blog?.editorialLayout?.photoPlacements?.[0]?.altText || content.blog?.title || "Imagen destacada"}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute bottom-0 inset-x-0 bg-slate-950/80 backdrop-blur-xs p-2 text-center text-xs text-slate-300 border-t border-slate-800">
+                            {content.blog?.editorialLayout?.photoPlacements?.[0]?.caption || `Fotografía técnica de infraestructura para ${selectedSku}`}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* VISTA DEL ARTÍCULO HTML */}
                     <div className="space-y-2">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
