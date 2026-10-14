@@ -203,18 +203,23 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
     try {
       const existingHero = content.blog?.featuredImageUrl || content.blog?.editorialLayout?.photoPlacements?.find(p => p.imageUrl)?.imageUrl;
       if (!existingHero) {
+        const resolvedOfficialImg =
+          generationContext.canonicalProduct?.imageUrl ||
+          undefined;
+
         const autoHero = await generateAutoHeroImage({
           workspaceId: user.workspaceId,
           userId: user.uid,
           userRole: user.role,
           sku: generationContext.canonicalSku,
           topicTitle: effectiveTitle,
-          brand: intelligenceCard?.product.brand,
-          model: intelligenceCard?.product.model,
+          brand: intelligenceCard?.product.brand || generationContext.canonicalProduct?.brand,
+          model: intelligenceCard?.product.model || generationContext.canonicalProduct?.model,
           category: generationContext.effectiveCategory,
+          deviceType: generationContext.canonicalProduct?.deviceType,
           technicalQuestion: content.editorialThesis?.technicalQuestion,
           centralArgument: content.editorialThesis?.centralArgument,
-          officialImageUrl: undefined
+          officialImageUrl: resolvedOfficialImg
         });
 
         if (autoHero) {

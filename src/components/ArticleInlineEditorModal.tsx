@@ -148,12 +148,29 @@ export function ArticleInlineEditorModal({
     setErrorMessage(null);
 
     try {
-      const prompt = `Professional high-end B2B photography of ${sku} networking hardware in clean modern datacenter, sharp focus, 8k resolution, studio lighting.`;
+      const upperSku = sku.toUpperCase();
+      let hwPrompt = `Professional photorealistic B2B photograph of ${sku} in an enterprise telecommunications environment.`;
+      let altDesc = `${sku} - Infraestructura y conectividad técnica`;
+
+      if (upperSku.startsWith("ECW") || upperSku.includes("AP") || upperSku.includes("WIFI")) {
+        const isOutdoor = upperSku.includes("546") || upperSku.includes("OUTDOOR");
+        hwPrompt = isOutdoor
+          ? `Ruggedized IP67 outdoor telecommunications installation of ${sku} access point securely pole-mounted on telecom mast, photorealistic 8k.`
+          : `Sleek enterprise ceiling-mounted installation of ${sku} Wi-Fi access point in modern corporate office, matte white casing, discrete status LED, photorealistic 8k.`;
+        altDesc = `${sku} - Punto de acceso Wi-Fi empresarial`;
+      } else if (upperSku.startsWith("ESG") || upperSku.startsWith("ECC") || upperSku.startsWith("RUT") || upperSku.startsWith("TRB")) {
+        hwPrompt = `Industrial telecommunications edge deployment of ${sku} gateway with external SMA antennas and rugged DIN-rail enclosure, clean telecom cabinet, photorealistic 8k.`;
+        altDesc = `${sku} - Gateway y controlador de red industrial`;
+      } else if (upperSku.startsWith("ECS") || upperSku.includes("SWITCH")) {
+        hwPrompt = `High-end enterprise switch ${sku} with high-density RJ45 PoE ports and 10G SFP+ uplinks in an organized professional patch rack, photorealistic 8k.`;
+        altDesc = `${sku} - Switch gestionable PoE+`;
+      }
+
       const res = await fetch("/api/images/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt,
+          prompt: hwPrompt,
           aspectRatio: "16:9",
           mode: "ai",
           autoImprove: true
@@ -167,7 +184,7 @@ export function ArticleInlineEditorModal({
 
       if (data.imageUrl) {
         setFeaturedImageUrl(data.imageUrl);
-        setImageAltText(`${sku} - Vista técnica de infraestructura y conectividad`);
+        setImageAltText(altDesc);
         setStatusNotice("Nueva imagen generada y asignada como destacada.");
       }
     } catch (err: unknown) {
@@ -315,7 +332,16 @@ export function ArticleInlineEditorModal({
                     variant="outline"
                     size="xs"
                     onClick={() => {
-                      onOpenImageStudio(`Professional B2B render of ${sku} in server rack`);
+                      const upper = sku.toUpperCase();
+                      let studioPrompt = `Professional photorealistic B2B photograph of ${sku} in telecommunications environment`;
+                      if (upper.startsWith("ECW")) {
+                        studioPrompt = `EnGenius ${sku} Wi-Fi access point mounted on corporate ceiling, photorealistic 8k`;
+                      } else if (upper.startsWith("ESG") || upper.startsWith("ECC")) {
+                        studioPrompt = `EnGenius ${sku} industrial gateway in telecommunications cabinet, photorealistic 8k`;
+                      } else if (upper.startsWith("ECS")) {
+                        studioPrompt = `EnGenius ${sku} PoE switch in organized patch panel, photorealistic 8k`;
+                      }
+                      onOpenImageStudio(studioPrompt);
                       onClose();
                     }}
                   >

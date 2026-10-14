@@ -14,6 +14,7 @@ export interface AutoHeroImageInput {
   brand?: string;
   model?: string;
   category?: string;
+  deviceType?: string;
   technicalQuestion?: string;
   centralArgument?: string;
   officialImageUrl?: string;
@@ -37,6 +38,88 @@ function parseDataUrl(dataUrl: string): { mimeType: string; buffer: Buffer } | n
 }
 
 /**
+ * Devuelve el entorno de instalación y contexto físico auténtico según la familia de dispositivo.
+ */
+function getHardwareEnvironmentPrompt(
+  deviceType: string | undefined,
+  brand: string,
+  model: string,
+  sku: string,
+  technicalQuestion?: string
+): { contextPrompt: string; defaultCaption: string; defaultAlt: string } {
+  const cleanType = (deviceType || "").toUpperCase();
+  const upperSku = sku.toUpperCase();
+
+  // 1. Puntos de acceso WiFi (techo corporativo, pared o mástil exterior)
+  if (cleanType === "ACCESS_POINT" || upperSku.startsWith("ECW")) {
+    const isOutdoor = upperSku.includes("546") || upperSku.includes("OUTDOOR");
+    if (isOutdoor) {
+      return {
+        contextPrompt: `Ruggedized IP67 outdoor telecommunications installation of ${brand} ${model} (${sku}) securely pole-mounted on an exterior telecom mast. Weatherproof cabling with sealed glands, subtle status LEDs, photorealistic architectural outdoor depth of field.`,
+        defaultCaption: `Despliegue exterior de alta densidad con ${brand} ${model} (${sku}).`,
+        defaultAlt: `${brand} ${model} (${sku}) - Punto de acceso Wi-Fi exterior montado en mástil`
+      };
+    }
+    return {
+      contextPrompt: `Sleek enterprise ceiling-mounted installation of ${brand} ${model} (${sku}) Wi-Fi access point in a modern architectural office ceiling with recessed lighting. Clean matte white chassis, discrete blue/green LED indicator, zero visible messy cables, photorealistic interior corporate lighting.`,
+      defaultCaption: `Instalación en techo de ${brand} ${model} (${sku}) en entorno empresarial.`,
+      defaultAlt: `${brand} ${model} (${sku}) - Punto de acceso Wi-Fi profesional montado en techo`
+    };
+  }
+
+  // 2. Gateways, Routers celulares y Edge Controllers (ECC500, ESG series, RUT series)
+  if (
+    cleanType === "GATEWAY" ||
+    cleanType === "ROUTER_CELLULAR" ||
+    upperSku.startsWith("ESG") ||
+    upperSku.startsWith("ECC") ||
+    upperSku.startsWith("RUT") ||
+    upperSku.startsWith("TRB")
+  ) {
+    const isCellularOrIndustrial = upperSku.startsWith("ECC") || upperSku.startsWith("RUT") || upperSku.startsWith("TRB");
+    if (isCellularOrIndustrial) {
+      return {
+        contextPrompt: `Industrial telecommunications edge deployment of ${brand} ${model} (${sku}) gateway with external SMA antennas and rugged DIN-rail or wall enclosure. Dual Ethernet connections, active SIM status LEDs, clean telecom demarcation cabinet, photorealistic industrial finish.`,
+        defaultCaption: `Controlador y gateway de borde ${brand} ${model} (${sku}) en gabinete de telecomunicaciones.`,
+        defaultAlt: `${brand} ${model} (${sku}) - Gateway y controlador industrial montado en carril DIN`
+      };
+    }
+    return {
+      contextPrompt: `Enterprise security gateway and SD-WAN appliance ${brand} ${model} (${sku}) installed in a modern network aggregation facility. High-speed multi-gigabit WAN/LAN patch cabling, active link status indicators, clean matte front panel aesthetics.`,
+      defaultCaption: `Gateway de seguridad y SD-WAN ${brand} ${model} (${sku}) en entorno de red corporativo.`,
+      defaultAlt: `${brand} ${model} (${sku}) - Gateway de seguridad de red empresarial`
+    };
+  }
+
+  // 3. Cámaras CCTV / Seguridad física
+  if (cleanType === "CCTV_CAMERA") {
+    return {
+      contextPrompt: `Professional security camera ${brand} ${model} (${sku}) surveillance mount installed on a modern facility wall with weather-sealed bracket, subtle infrared lens array, crisp depth of field.`,
+      defaultCaption: `Cámara de videovigilancia IP ${brand} ${model} (${sku}) en despliegue de seguridad.`,
+      defaultAlt: `${brand} ${model} (${sku}) - Cámara IP de seguridad y videovigilancia`
+    };
+  }
+
+  // 4. Switches y Conmutación (ECS series)
+  if (cleanType === "SWITCH" || upperSku.startsWith("ECS")) {
+    return {
+      contextPrompt: `High-end enterprise switch ${brand} ${model} (${sku}) with high-density RJ45 PoE ports and 10G SFP+ uplinks in an organized professional patch rack with neatly dressed slim Cat6A patch cables and glowing link LEDs.`,
+      defaultCaption: `Conmutador gestionable ${brand} ${model} (${sku}) con cableado estructurado de alta densidad.`,
+      defaultAlt: `${brand} ${model} (${sku}) - Switch gestionable en rack de distribución`
+    };
+  }
+
+  // 5. Fallback general contextual
+  return {
+    contextPrompt: technicalQuestion
+      ? `Technical deployment and architectural setup of ${brand} ${model} (${sku}) resolving: "${technicalQuestion}".`
+      : `Professional deployment of ${brand} ${model} (${sku}) in a modern corporate telecommunications environment.`,
+    defaultCaption: `Instalación y arquitectura técnica de ${brand} ${model} (${sku}) para redes profesionales.`,
+    defaultAlt: `${brand} ${model} (${sku}) - Despliegue de infraestructura de red profesional`
+  };
+}
+
+/**
  * Genera automáticamente una imagen Hero de alta relevancia técnica para el post,
  * optimizada para la indexación visual en Google (SEO / AEO), con persistencia
  * verificada en Google Cloud Storage y registro en Firestore.
@@ -53,6 +136,7 @@ export async function generateAutoHeroImage(
     brand = "EcomSpain",
     model = sku,
     category = "Tecnología de Redes B2B",
+    deviceType,
     technicalQuestion,
     centralArgument,
     officialImageUrl
@@ -65,18 +149,16 @@ export async function generateAutoHeroImage(
       console.warn(`[AutoHeroImage] Presupuesto de IA alcanzado para ${userId}. Usando modo catálogo/curado.`);
     }
 
-    // 2. Construcción de prompt altamente relevante para el producto y contexto B2B
+    // 2. Construcción de prompt altamente relevante según el tipo de hardware
     const cleanBrand = brand || "EcomSpain";
-    const contextPrompt = technicalQuestion
-      ? `Technical deployment and architectural setup of ${cleanBrand} ${model} (${sku}) resolving: "${technicalQuestion}".`
-      : `High-end enterprise networking deployment of ${cleanBrand} ${model} (${sku}) in a clean datacenter or server rack.`;
+    const hwEnv = getHardwareEnvironmentPrompt(deviceType, cleanBrand, model, sku, technicalQuestion);
 
-    const fullPrompt = `Professional photorealistic B2B photograph of ${cleanBrand} ${model} (${sku}) in a telecommunications environment. ${contextPrompt} Realistic depth of field, sharp hardware details, RJ45 ports and LED activity lights, clean industrial aesthetics, 8k resolution.`;
+    const fullPrompt = `Professional photorealistic B2B photograph of ${cleanBrand} ${model} (${sku}). ${hwEnv.contextPrompt} Realistic depth of field, sharp hardware details, authentic status LEDs, clean industrial aesthetics, 8k resolution.`;
 
-    const altText = `${cleanBrand} ${model} (${sku}) - Despliegue e infraestructura en ${category}`;
-    const caption = `Instalación y arquitectura técnica de ${cleanBrand} ${model} (${sku}) para redes profesionales.`;
+    const altText = hwEnv.defaultAlt;
+    const caption = hwEnv.defaultCaption;
 
-    // 3. Generación con Imagen / Gemini Image
+    // 3. Generación con Imagen / Gemini Image (con grounding en officialImageUrl si está disponible)
     const genResult = await generateImageWithImagen({
       prompt: fullPrompt,
       aspectRatio: "16:9",
