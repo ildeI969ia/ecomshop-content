@@ -357,6 +357,8 @@ export function ArticleInlineEditorModal({
                   <img
                     src={featuredImageUrl}
                     alt={imageAltText}
+                    referrerPolicy="no-referrer"
+                    loading="lazy"
                     className="w-full h-full object-cover"
                   />
                 </div>

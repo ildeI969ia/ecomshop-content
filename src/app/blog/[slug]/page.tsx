@@ -231,6 +231,7 @@ export default async function BlogPostDetailPage({ params }: PageProps) {
             <img
               src={post.featuredImageUrl}
               alt={post.title}
+              referrerPolicy="no-referrer"
               className="w-full h-full object-cover"
               loading="eager"
             />

@@ -244,7 +244,7 @@ export function catalogDeviceToStarProduct(device: CatalogDevice): StarProduct {
     category: cat,
     description: device.shortDesc,
     url: device.productUrl,
-    imageUrl: `https://store.engeniustech.com/cdn/shop/files/${device.sku}-front.jpg`,
+    imageUrl: device.imageUrl || "",
     specs: specsList.length > 0 ? specsList : device.keyAdvantages
   };
 }

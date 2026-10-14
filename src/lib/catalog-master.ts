@@ -122,6 +122,7 @@ function normalizeRecord(raw: Record<string, unknown>): CatalogMasterRecord | nu
   const url = firstText(raw, ["url", "url_producto", "product_url", "web_url"]);
   const imageUrls = firstArray(raw, ["fotos", "imagenes", "imageUrls", "image_urls", "photos"]);
   const imageUrl = firstText(raw, [
+    "url_imagen",
     "foto_optimizada_url",
     "imagen_optimizada_url",
     "imageUrl",
@@ -278,7 +279,7 @@ export function catalogMasterRecordToCatalogProduct(master: CatalogMasterRecord)
     category,
     description: master.description || "Producto del catálogo maestro EcomSpain.",
     url: master.url || "https://ecomshop.es",
-    imageUrl: master.imageUrl || "/images/products/default.png",
+    imageUrl: master.imageUrl || "",
     priceEur: master.priceEur ?? 0,
     stockStatus: master.stockStatus || "UNKNOWN",
     specs: master.specs,

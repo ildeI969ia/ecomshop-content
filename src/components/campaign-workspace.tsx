@@ -621,17 +621,35 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                         </Badge>
                       </div>
 
-                      {/* Imagen oficial del producto desde Gesio feed */}
-                      {device.imageUrl && (
+                      {/* Imagen oficial del producto desde Gesio feed / catálogo */}
+                      {device.imageUrl ? (
                         <div className="w-full h-28 rounded-lg overflow-hidden bg-white/5 border border-slate-800 relative group flex items-center justify-center p-1">
                           <img
                             src={device.imageUrl}
                             alt={device.name}
+                            referrerPolicy="no-referrer"
+                            loading="lazy"
                             className="max-h-full max-w-full object-contain filter drop-shadow transition-transform duration-300 group-hover:scale-105"
                             onError={(e) => {
-                              (e.target as HTMLElement).style.display = 'none';
+                              // Si falla la carga de la imagen remota, mostrar placeholder elegante
+                              const parent = (e.target as HTMLElement).parentElement;
+                              if (parent) {
+                                parent.innerHTML = `
+                                  <div class="flex flex-col items-center justify-center text-slate-500 py-3">
+                                    <svg class="w-8 h-8 opacity-40 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <span class="text-[9px] uppercase font-mono tracking-wider opacity-60">Foto en catálogo</span>
+                                  </div>
+                                `;
+                              }
                             }}
                           />
+                        </div>
+                      ) : (
+                        <div className="w-full h-28 rounded-lg bg-slate-900/50 border border-slate-800/80 flex flex-col items-center justify-center text-slate-500 p-2">
+                          <ImageIcon className="w-7 h-7 opacity-30 mb-1 text-slate-400" />
+                          <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500">{device.sku}</span>
                         </div>
                       )}
 
@@ -1158,6 +1176,8 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                           <img
                             src={content.blog?.featuredImageUrl || content.blog?.editorialLayout?.photoPlacements?.find(p => p.imageUrl)?.imageUrl}
                             alt={content.blog?.editorialLayout?.photoPlacements?.[0]?.altText || content.blog?.title || "Imagen destacada"}
+                            referrerPolicy="no-referrer"
+                            loading="lazy"
                             className="w-full h-full object-cover"
                           />
                           <div className="absolute bottom-0 inset-x-0 bg-slate-950/80 backdrop-blur-xs p-2 text-center text-xs text-slate-300 border-t border-slate-800">

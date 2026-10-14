@@ -567,11 +567,22 @@ export const ImageStudioView: React.FC<ImageStudioViewProps> = ({
                 return (
                   <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2.5">
                     <div className="flex items-center gap-3">
-                      <img
-                        src={activeStar.imageUrl}
-                        alt={activeStar.name}
-                        className="w-20 h-16 object-contain bg-slate-900 rounded-lg p-1 border border-slate-800 shrink-0"
-                      />
+                      {activeStar.imageUrl ? (
+                        <img
+                          src={activeStar.imageUrl}
+                          alt={activeStar.name}
+                          referrerPolicy="no-referrer"
+                          loading="lazy"
+                          className="w-20 h-16 object-contain bg-slate-900 rounded-lg p-1 border border-slate-800 shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <div className="w-20 h-16 flex items-center justify-center bg-slate-900 rounded-lg border border-slate-800 shrink-0 text-slate-500">
+                          <ImageIcon className="w-6 h-6 opacity-40" />
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <span className="font-mono font-bold text-xs text-white">{activeDevice.sku}</span>
