@@ -1,13 +1,16 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Sparkles, Wrench, Coins, Building2, Edit3, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Sparkles, Wrench, Coins, Building2, Edit3, RefreshCw, CheckCircle2, ChevronDown, Users } from "lucide-react";
 import { EditorialAngle } from "@/app/api/editorial/suggest-angles/route";
+import { AUDIENCE_OPTIONS, isAudienceMatch } from "./campaign-stepper";
 
 interface EditorialAnglesSelectorProps {
   sku: string;
   selectedAngle: EditorialAngle | null;
   onSelectAngle: (angle: EditorialAngle | null, isFreeTopic?: boolean) => void;
+  selectedAudience?: string;
+  onSelectAudience?: (audience: string) => void;
   freeTopicTitle?: string;
   onFreeTopicChange?: (title: string) => void;
   brand?: string;
@@ -20,6 +23,8 @@ export const EditorialAnglesSelector: React.FC<EditorialAnglesSelectorProps> = (
   sku,
   selectedAngle,
   onSelectAngle,
+  selectedAudience,
+  onSelectAudience,
   freeTopicTitle = "",
   onFreeTopicChange,
   brand,
@@ -35,6 +40,7 @@ export const EditorialAnglesSelector: React.FC<EditorialAnglesSelectorProps> = (
   const [error, setError] = useState<string | null>(null);
   const [isFreeTopic, setIsFreeTopic] = useState<boolean>(false);
   const [variationSeed, setVariationSeed] = useState<number>(0);
+  const [showAllAudiences, setShowAllAudiences] = useState<boolean>(false);
 
   const fetchAngles = useCallback(async (seed = variationSeed) => {
     setLoading(true);
@@ -78,6 +84,9 @@ export const EditorialAnglesSelector: React.FC<EditorialAnglesSelectorProps> = (
   const handleAngleClick = (angle: EditorialAngle) => {
     setIsFreeTopic(false);
     onSelectAngle(angle, false);
+    if (angle.targetAudience && onSelectAudience) {
+      onSelectAudience(angle.targetAudience);
+    }
   };
 
   const handleFreeTopicClick = () => {
@@ -135,26 +144,110 @@ export const EditorialAnglesSelector: React.FC<EditorialAnglesSelectorProps> = (
         </div>
       ) : (
         <div className="space-y-4">
-          {recommendedAudiences.length > 0 && (
-            <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-300 mb-2">Target Persons recomendados</div>
-              <div className="flex flex-wrap gap-2">
-                {recommendedAudiences.map((a) => (
-                  <span key={a.label} title={a.whyThisAudience} className="text-[10px] px-2 py-1 rounded-md bg-slate-800 text-slate-200 border border-slate-700">{a.label}</span>
-                ))}
+          <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3 space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">
+                  Target Person / Audiencia Objetivo
+                </span>
+                {selectedAudience && (
+                  <span className="bg-indigo-950/80 border border-indigo-700/60 text-indigo-200 text-[10px] px-2 py-0.5 rounded-full font-medium">
+                    {selectedAudience}
+                  </span>
+                )}
               </div>
+              <button
+                type="button"
+                onClick={() => setShowAllAudiences((prev: boolean) => !prev)}
+                className="text-[10px] text-slate-400 hover:text-white flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+              >
+                <span>{showAllAudiences ? "Ver sugeridos" : `Ver todos (${AUDIENCE_OPTIONS.length})`}</span>
+                <ChevronDown className={`w-3 h-3 transition-transform ${showAllAudiences ? "rotate-180" : ""}`} />
+              </button>
             </div>
-          )}
+
+            {showAllAudiences ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1">
+                {AUDIENCE_OPTIONS.map((aud) => {
+                  const isSelected = isAudienceMatch(aud, selectedAudience);
+                  return (
+                    <button
+                      key={aud.id}
+                      type="button"
+                      onClick={() => onSelectAudience?.(aud.label)}
+                      title={`${aud.label}: ${aud.contextDesc}`}
+                      className={`text-left text-[10px] px-2.5 py-1.5 rounded-md transition border cursor-pointer flex flex-col justify-between ${
+                        isSelected
+                          ? "bg-indigo-600 border-indigo-400 text-white font-bold shadow-xs ring-1 ring-indigo-400/40"
+                          : "bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border-slate-700 hover:border-slate-600"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="truncate">{aud.label}</span>
+                        {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0" />}
+                      </div>
+                      <span className="text-[8px] text-slate-400 truncate mt-0.5">{aud.badge}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {recommendedAudiences.length > 0 ? (
+                  recommendedAudiences.map((a: { label: string; whyThisAudience: string }) => {
+                    const isSelected = selectedAudience?.toLowerCase().includes(a.label.toLowerCase()) || a.label.toLowerCase().includes(selectedAudience?.toLowerCase() || "");
+                    return (
+                      <button
+                        key={a.label}
+                        type="button"
+                        onClick={() => onSelectAudience?.(a.label)}
+                        title={a.whyThisAudience}
+                        className={`text-[10px] px-2.5 py-1 rounded-md transition border cursor-pointer flex items-center gap-1.5 ${
+                          isSelected
+                            ? "bg-indigo-600 border-indigo-400 text-white font-bold shadow-xs ring-1 ring-indigo-400/40"
+                            : "bg-slate-800/90 hover:bg-slate-700 text-slate-300 border-slate-700 hover:border-slate-600"
+                        }`}
+                      >
+                        <span>{a.label}</span>
+                        {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0" />}
+                      </button>
+                    );
+                  })
+                ) : (
+                  AUDIENCE_OPTIONS.slice(0, 4).map((aud) => {
+                    const isSelected = isAudienceMatch(aud, selectedAudience);
+                    return (
+                      <button
+                        key={aud.id}
+                        type="button"
+                        onClick={() => onSelectAudience?.(aud.label)}
+                        title={aud.contextDesc}
+                        className={`text-[10px] px-2.5 py-1 rounded-md transition border cursor-pointer flex items-center gap-1.5 ${
+                          isSelected
+                            ? "bg-indigo-600 border-indigo-400 text-white font-bold shadow-xs"
+                            : "bg-slate-800/90 hover:bg-slate-700 text-slate-300 border-slate-700 hover:border-slate-600"
+                        }`}
+                      >
+                        <span>{aud.label}</span>
+                        {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0" />}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
           {editorialQuestions.length > 0 && (
             <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
               <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 mb-2">Preguntas editoriales detectadas</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-                {editorialQuestions.slice(0, 12).map((q) => <div key={q} className="text-[11px] text-slate-300">• {q}</div>)}
+                {editorialQuestions.slice(0, 12).map((q: string) => <div key={q} className="text-[11px] text-slate-300">• {q}</div>)}
               </div>
             </div>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {angles.map((angle) => {
+          {angles.map((angle: EditorialAngle) => {
             const isSelected = !isFreeTopic && selectedAngle?.id === angle.id;
 
             return (

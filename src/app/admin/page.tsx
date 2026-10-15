@@ -72,6 +72,7 @@ export default function Page() {
   const [intelligenceCard, setIntelligenceCard] = useState<ProductIntelligenceCard | null>(null);
   const [loadingIntelligence, setLoadingIntelligence] = useState(false);
   const [selectedAngle, setSelectedAngle] = useState<EditorialAngle | null>(null);
+  const [selectedAudience, setSelectedAudience] = useState<string>("Instalador B2B");
   const [freeTopicTitle, setFreeTopicTitle] = useState<string>("");
   const [isSavingArticle, setIsSavingArticle] = useState(false);
 
@@ -332,7 +333,7 @@ export default function Page() {
           sku,
           topicTitle: freeTopicTitle || selectedAngle?.title || (product ? `${product.name} - Conectividad B2B Enterprise` : `Solución ${sku}`),
           category: product ? product.category : "general",
-          targetAudience: selectedAngle?.targetAudience || undefined,
+          targetAudience: selectedAudience || selectedAngle?.targetAudience || undefined,
           productUrl: product ? product.url : `https://ecomshop.es/productos/${sku.toLowerCase()}`,
           customAngle: selectedAngle?.intent || "ENGINEERING",
           editorialAngle: selectedAngle || undefined,
@@ -818,7 +819,14 @@ export default function Page() {
                 onSaveDraft={() => handleSaveToFirestore("draft")}
                 isSavingArticle={isSavingArticle}
                 selectedAngle={selectedAngle}
-                onSelectAngle={setSelectedAngle}
+                onSelectAngle={(angle, isFree) => {
+                  setSelectedAngle(angle);
+                  if (angle?.targetAudience) {
+                    setSelectedAudience(angle.targetAudience);
+                  }
+                }}
+                selectedAudience={selectedAudience}
+                onSelectAudience={setSelectedAudience}
                 freeTopicTitle={freeTopicTitle}
                 onFreeTopicChange={setFreeTopicTitle}
                 historicalItems={historicalContents}

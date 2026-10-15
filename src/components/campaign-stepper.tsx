@@ -21,10 +21,20 @@ export type GenerationStage =
   | "COMPLETED" 
   | "ERROR";
 
-export type TargetAudienceType = "INSTALADOR_B2B" | "EMPRESA_PYME" | "CLIENTE_B2C";
+export type TargetAudienceType =
+  | "INSTALADOR_B2B"
+  | "INTEGRADOR_MSP"
+  | "DIRECTOR_TIC"
+  | "INGENIERO_REDES"
+  | "ADMIN_SISTEMAS"
+  | "JEFE_COMPRAS"
+  | "EMPRESA_PYME"
+  | "RESELLER_CANAL"
+  | "CLIENTE_B2C"
+  | string;
 
 export interface AudienceOption {
-  id: TargetAudienceType;
+  id: string;
   label: string;
   badge: string;
   contextDesc: string;
@@ -34,22 +44,70 @@ export const AUDIENCE_OPTIONS: AudienceOption[] = [
   {
     id: "INSTALADOR_B2B",
     label: "Instalador B2B",
-    badge: "PoE++, Wi-Fi 7, Garantía",
-    contextDesc: "PoE++, Wi-Fi 7, certificaciones, ancho de banda, garantía profesional"
+    badge: "PoE++, Wi-Fi 7, CCTV, Garantía",
+    contextDesc: "Instaladores de telecomunicaciones, integradores de campo, cableado estructurado y CCTV"
+  },
+  {
+    id: "INTEGRADOR_MSP",
+    label: "Integrador IT / MSP",
+    badge: "Cloud, Multisede, SLAs",
+    contextDesc: "Proveedores de servicios gestionados, monitorización remota, contratos de mantenimiento y SLAs"
+  },
+  {
+    id: "DIRECTOR_TIC",
+    label: "Director TIC / CIO",
+    badge: "Continuidad, Seguridad, TCO",
+    contextDesc: "Responsables de tecnología, arquitectura de red empresarial, ciberseguridad y presupuesto"
+  },
+  {
+    id: "INGENIERO_REDES",
+    label: "Ingeniero de Redes",
+    badge: "VLANs, Uplinks, Routing, RF",
+    contextDesc: "Diseño de RF, topología física/lógica, balanceo de carga, protocolos L2/L3 y conmutación"
+  },
+  {
+    id: "ADMIN_SISTEMAS",
+    label: "Administrador de Sistemas",
+    badge: "Zero-Touch, VPN, Firewall",
+    contextDesc: "Aprovisionamiento ágil, gateways perimetrales, VPNs seguras y políticas de red sin fricción"
+  },
+  {
+    id: "JEFE_COMPRAS",
+    label: "Jefe de Compras / Distribuidores",
+    badge: "Stock 24h, Margen, Mayorista",
+    contextDesc: "Aprovisionamiento rápido, entrega en 24h desde España, garantía oficial y volumen B2B"
   },
   {
     id: "EMPRESA_PYME",
     label: "Empresa / Pyme",
-    badge: "Continuidad, ROI, Soporte",
-    contextDesc: "Continuidad de negocio, seguridad, soporte y ROI"
+    badge: "Sin licencias, ROI, Soporte",
+    contextDesc: "Conectividad robusta, cero costes ocultos por licencias y soporte técnico preventa"
+  },
+  {
+    id: "RESELLER_CANAL",
+    label: "Distribuidor / Reseller",
+    badge: "Canal B2B, Descuento volumen",
+    contextDesc: "Comercialización a clientes finales con respaldo de ingeniería y tarifas mayoristas"
   },
   {
     id: "CLIENTE_B2C",
-    label: "Cliente Final B2C",
-    badge: "Sencillez, Ahorro, Facilidad",
-    contextDesc: "Sencillez, velocidad real, ahorro y fácil configuración"
+    label: "Cliente Final / Prosumer",
+    badge: "Sencillez, Ahorro, Doméstico",
+    contextDesc: "Sencillez, máxima velocidad real, ahorro y fácil configuración sin complejidad técnica"
   }
 ];
+
+export function isAudienceMatch(option: AudienceOption, selected?: string): boolean {
+  if (!selected) return option.id === "INSTALADOR_B2B" || option.label === "Instalador B2B";
+  const s = selected.trim().toLowerCase();
+  const idLower = option.id.toLowerCase();
+  const labelLower = option.label.toLowerCase();
+  if (idLower === s || labelLower === s) return true;
+  const normS = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+  const normLabel = labelLower.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+  const normId = idLower.replace(/[^a-z0-9]/g, "");
+  return normS === normLabel || normS === normId || normLabel.includes(normS) || normS.includes(normLabel);
+}
 
 interface CampaignStepperProps {
   currentStage: GenerationStage;
@@ -59,6 +117,7 @@ interface CampaignStepperProps {
   activeAngle?: string;
   selectedAudience?: TargetAudienceType;
   onSelectAudience?: (audience: TargetAudienceType) => void;
+  customAudiences?: AudienceOption[];
   selectedAngle?: any;
   onSelectAngle?: (angle: any, isFreeTopic?: boolean) => void;
   failedStage?: GenerationStage;
@@ -112,10 +171,32 @@ export const CampaignStepper: React.FC<CampaignStepperProps> = ({
   activeAngle,
   selectedAudience,
   onSelectAudience,
+  customAudiences = [],
   failedStage
 }) => {
   const [isRetrying, setIsRetrying] = React.useState(false);
+  const [internalAudience, setInternalAudience] = React.useState<string>(selectedAudience || "Instalador B2B");
   const lastActiveStageRef = React.useRef<GenerationStage>("EXTRACTING");
+
+  React.useEffect(() => {
+    if (selectedAudience) {
+      setInternalAudience(selectedAudience);
+    }
+  }, [selectedAudience]);
+
+  const activeAudience = selectedAudience || internalAudience;
+
+  const allAudienceOptions = React.useMemo(() => {
+    if (!customAudiences || customAudiences.length === 0) return AUDIENCE_OPTIONS;
+    const existingLabels = new Set(AUDIENCE_OPTIONS.map((a) => a.label.toLowerCase()));
+    const customUnique = customAudiences.filter((c) => !existingLabels.has(c.label.toLowerCase()));
+    return [...customUnique, ...AUDIENCE_OPTIONS];
+  }, [customAudiences]);
+
+  const handleAudienceClick = (aud: AudienceOption) => {
+    setInternalAudience(aud.label);
+    onSelectAudience?.(aud.label);
+  };
 
   // Mantener el último paso de procesamiento activo para reflejar exactamente dónde ocurrió el error
   React.useEffect(() => {
@@ -245,28 +326,41 @@ export const CampaignStepper: React.FC<CampaignStepperProps> = ({
 
               {step.key === "NOTEBOOK_GROUNDING" && (
                 <div className="mt-3 pt-2.5 border-t border-slate-800/80 space-y-1.5">
-                  <span className="text-[10px] font-semibold tracking-wider text-sky-400 uppercase block">
-                    Audiencia Target:
-                  </span>
-                  <div className="flex flex-col gap-1">
-                    {AUDIENCE_OPTIONS.map((aud) => {
-                      const isSelected = (selectedAudience || "INSTALADOR_B2B") === aud.id;
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold tracking-wider text-sky-400 uppercase block">
+                      Audiencia Target:
+                    </span>
+                    <span className="text-[9px] text-slate-400 font-mono">
+                      {allAudienceOptions.length} perfiles
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1 max-h-48 overflow-y-auto pr-1">
+                    {allAudienceOptions.map((aud) => {
+                      const isSelected = isAudienceMatch(aud, activeAudience);
                       return (
                         <button
                           key={aud.id}
                           type="button"
-                          onClick={() => onSelectAudience?.(aud.id)}
-                          className={`text-left text-[10px] px-2 py-1 rounded transition border cursor-pointer ${
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAudienceClick(aud);
+                          }}
+                          className={`text-left text-[10px] px-2 py-1.5 rounded transition border cursor-pointer ${
                             isSelected
-                              ? "bg-sky-900/70 border-sky-400 text-sky-100 font-bold"
-                              : "bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                              ? "bg-sky-900/80 border-sky-400 text-sky-100 font-bold shadow-xs ring-1 ring-sky-400/50"
+                              : "bg-slate-900/60 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800/80"
                           }`}
-                          title={aud.contextDesc}
+                          title={`${aud.label} — ${aud.contextDesc}`}
                         >
-                          <div className="flex items-center justify-between">
-                            <span>{aud.label}</span>
-                            {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />}
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="truncate">{aud.label}</span>
+                            {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shrink-0" />}
                           </div>
+                          {aud.badge && (
+                            <span className="text-[8px] text-slate-400 block truncate font-mono mt-0.5">
+                              {aud.badge}
+                            </span>
+                          )}
                         </button>
                       );
                     })}

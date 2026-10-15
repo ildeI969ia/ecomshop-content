@@ -84,6 +84,8 @@ interface CampaignWorkspaceProps {
   initialTab?: WorkspaceTab;
   selectedAngle?: EditorialAngle | null;
   onSelectAngle?: (angle: EditorialAngle | null, isFreeTopic?: boolean) => void;
+  selectedAudience?: string;
+  onSelectAudience?: (audience: string) => void;
   freeTopicTitle?: string;
   onFreeTopicChange?: (title: string) => void;
   products?: CatalogProduct[];
@@ -140,6 +142,8 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   initialTab,
   selectedAngle,
   onSelectAngle,
+  selectedAudience,
+  onSelectAudience,
   freeTopicTitle,
   onFreeTopicChange,
   products: initialProducts,
@@ -153,6 +157,20 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   userRole
 }: CampaignWorkspaceProps) => {
   const [content, setContent] = useState<ContentOutput | null>(initialContent);
+  const [internalAudience, setInternalAudience] = useState<string>(selectedAudience || "Instalador B2B");
+
+  React.useEffect(() => {
+    if (selectedAudience) {
+      setInternalAudience(selectedAudience);
+    }
+  }, [selectedAudience]);
+
+  const activeAudience = selectedAudience || internalAudience;
+
+  const handleSelectAudience = (aud: string) => {
+    setInternalAudience(aud);
+    onSelectAudience?.(aud);
+  };
 
   // Sincronizar estado si la prop initialContent cambia desde el padre
   React.useEffect(() => {
@@ -312,7 +330,8 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             sku: selectedSku,
-            topicTitle: content?.topicTitle || `Artículo GEO para ${selectedSku}`
+            topicTitle: content?.topicTitle || `Artículo GEO para ${selectedSku}`,
+            targetAudience: activeAudience
           })
         });
         const json = await res.json();
@@ -348,6 +367,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             sku: selectedSku,
             topicTitle: content?.topicTitle || `Campaña ${targetChannel} para ${selectedSku}`,
             category: content?.category || "general",
+            targetAudience: activeAudience,
             currentContent: content ? (content as any)[targetChannel] : null
           })
         });
@@ -747,6 +767,8 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 specs={intelligenceCard.technicalSpecs.standards}
                 selectedAngle={selectedAngle || null}
                 onSelectAngle={onSelectAngle || (() => {})}
+                selectedAudience={activeAudience}
+                onSelectAudience={handleSelectAudience}
                 freeTopicTitle={freeTopicTitle}
                 onFreeTopicChange={onFreeTopicChange}
               />
@@ -810,6 +832,8 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
             onRetry={onRetry}
             activeSku={opportunity?.sku || selectedSku}
             activeAngle={opportunity?.recommendedAngle}
+            selectedAudience={activeAudience}
+            onSelectAudience={handleSelectAudience}
           />
         </div>
       </div>
@@ -957,6 +981,8 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
           onRetry={onRetry}
           activeSku={opportunity?.sku || selectedSku}
           activeAngle={opportunity?.recommendedAngle}
+          selectedAudience={activeAudience}
+          onSelectAudience={handleSelectAudience}
         />
       </div>
 
