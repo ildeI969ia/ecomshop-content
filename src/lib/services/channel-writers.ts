@@ -1,6 +1,7 @@
 import { ContentOutput } from "@/lib/schema";
 import { ChannelWriterInput } from "@/lib/types/channel-strategy";
 import { generateDynamicComparativeTableHtml } from "@/lib/services/grounded-writer-comparative";
+import { sanitizeEditorialPromptLeaks } from "@/lib/quality/editorial-quality-gate";
 
 /**
  * Normalizadores y sanitizadores de canal (Mandato 4).
@@ -22,14 +23,15 @@ export function normalizeBlogChannel(
 
   const rawHtml = rawBlog?.htmlContent || (rawBlog as any)?.content || (rawBlog as any)?.body || (rawBlog as any)?.articleHtml;
   if (rawHtml && rawHtml.length >= 400) {
+    const sanitizedHtml = sanitizeEditorialPromptLeaks(String(rawHtml));
     return {
-      title,
-      metaDescription: rawBlog?.metaDescription || `Análisis técnico consultivo de ${productName} para ${decision.primaryAudience}.`,
+      title: sanitizeEditorialPromptLeaks(title),
+      metaDescription: sanitizeEditorialPromptLeaks(rawBlog?.metaDescription || `Análisis técnico consultivo de ${productName} para ${decision.primaryAudience}.`),
       slug,
-      readingTimeMinutes: rawBlog?.readingTimeMinutes || Math.max(4, Math.ceil(rawHtml.split(/\s+/).length / 200)),
+      readingTimeMinutes: rawBlog?.readingTimeMinutes || Math.max(4, Math.ceil(sanitizedHtml.split(/\s+/).length / 200)),
       targetKeywords: rawBlog?.targetKeywords || [sku, intel.model, context.effectiveCategory],
-      htmlContent: rawHtml,
-      cleanPlainTextExcerpt: rawBlog?.cleanPlainTextExcerpt || thesis.centralArgument
+      htmlContent: sanitizedHtml,
+      cleanPlainTextExcerpt: sanitizeEditorialPromptLeaks(rawBlog?.cleanPlainTextExcerpt || thesis.centralArgument)
     };
   }
 
@@ -94,12 +96,12 @@ export function normalizeLinkedInChannel(
 
   if (rawLinkedin?.fullPostText && rawLinkedin.fullPostText.length >= 80) {
     return {
-      hook: rawLinkedin.hook || `¿Cómo evitar cuellos de botella en ${context.effectiveCategory}?`,
-      body: rawLinkedin.body || strat.primaryArgument,
+      hook: sanitizeEditorialPromptLeaks(rawLinkedin.hook || `¿Cómo evitar cuellos de botella en ${context.effectiveCategory}?`),
+      body: sanitizeEditorialPromptLeaks(rawLinkedin.body || strat.primaryArgument),
       takeaways: rawLinkedin.takeaways || strat.productEvidence,
-      callToAction: rawLinkedin.callToAction || strat.ctaObjective,
+      callToAction: sanitizeEditorialPromptLeaks(rawLinkedin.callToAction || strat.ctaObjective),
       hashtags: rawLinkedin.hashtags || ["#NetworkingB2B", "#Ingenieria", `#${sku}`],
-      fullPostText: rawLinkedin.fullPostText
+      fullPostText: sanitizeEditorialPromptLeaks(rawLinkedin.fullPostText)
     };
   }
 
@@ -131,9 +133,9 @@ export function normalizeWhatsAppChannel(
 
   if (rawWhatsapp?.formattedMessage && rawWhatsapp.formattedMessage.length >= 30) {
     return {
-      headline: rawWhatsapp.headline || `${context.intel.brand} ${sku}`,
-      formattedMessage: rawWhatsapp.formattedMessage,
-      callToAction: rawWhatsapp.callToAction || strat.ctaObjective,
+      headline: sanitizeEditorialPromptLeaks(rawWhatsapp.headline || `${context.intel.brand} ${sku}`),
+      formattedMessage: sanitizeEditorialPromptLeaks(rawWhatsapp.formattedMessage),
+      callToAction: sanitizeEditorialPromptLeaks(rawWhatsapp.callToAction || strat.ctaObjective),
       targetUrl: rawWhatsapp.targetUrl || url
     };
   }
@@ -160,14 +162,15 @@ export function normalizeMailchimpChannel(
   const url = context.productUrl || "https://ecomshop.es";
 
   if (rawMailchimp?.newsletterHtml && rawMailchimp.newsletterHtml.length >= 100) {
+    const sanitizedHtml = sanitizeEditorialPromptLeaks(rawMailchimp.newsletterHtml);
     return {
-      subjectA: rawMailchimp.subjectA || `${model} (${sku}): Datos para defender tu proyecto`,
-      subjectB: rawMailchimp.subjectB || `Criterio técnico de aprovisionamiento: ${sku}`,
-      previewText: rawMailchimp.previewText || `Evaluación técnica de ${sku}.`,
+      subjectA: sanitizeEditorialPromptLeaks(rawMailchimp.subjectA || `${model} (${sku}): Datos para defender tu proyecto`),
+      subjectB: sanitizeEditorialPromptLeaks(rawMailchimp.subjectB || `Criterio técnico de aprovisionamiento: ${sku}`),
+      previewText: sanitizeEditorialPromptLeaks(rawMailchimp.previewText || `Evaluación técnica de ${sku}.`),
       ctaButtonText: rawMailchimp.ctaButtonText || "Consultar documentación técnica",
       ctaUrl: rawMailchimp.ctaUrl || url,
-      newsletterHtml: rawMailchimp.newsletterHtml,
-      plainText: rawMailchimp.plainText || rawMailchimp.newsletterHtml.replace(/<[^>]+>/g, " ").trim()
+      newsletterHtml: sanitizedHtml,
+      plainText: sanitizeEditorialPromptLeaks(rawMailchimp.plainText || sanitizedHtml.replace(/<[^>]+>/g, " ").trim())
     };
   }
 
@@ -215,8 +218,8 @@ export function normalizeGeoChannel(
   const url = context.productUrl || "https://ecomshop.es";
   const comparativeTable = generateDynamicComparativeTableHtml(context.intel);
 
-  const title = rawGeo?.title?.trim() || `${brand} ${model} (${sku}) — Respuestas técnicas de ingeniería`;
-  const metaDescription = rawGeo?.metaDescription?.trim() || `Respuestas técnicas verificables y especificaciones oficiales para ${brand} ${model} (${sku}).`;
+  const title = sanitizeEditorialPromptLeaks(rawGeo?.title?.trim() || `${brand} ${model} (${sku}) — Respuestas técnicas de ingeniería`);
+  const metaDescription = sanitizeEditorialPromptLeaks(rawGeo?.metaDescription?.trim() || `Respuestas técnicas verificables y especificaciones oficiales para ${brand} ${model} (${sku}).`);
 
   const jsonLd = rawGeo?.jsonLd || JSON.stringify(
     {
@@ -238,7 +241,7 @@ export function normalizeGeoChannel(
   const productName = `${brand} ${model}`;
 
   const htmlContent = rawHtml && rawHtml.length >= 350
-    ? rawHtml
+    ? sanitizeEditorialPromptLeaks(String(rawHtml))
     : `
 <article class="geo-knowledge-article ecomshop-b2b-post space-y-6">
   <div class="aeo-answer-first-box bg-slate-900 border border-indigo-500/40 p-5 rounded-xl shadow-inner">

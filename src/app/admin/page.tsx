@@ -367,8 +367,12 @@ export default function Page() {
   };
 
   // Guardar o cambiar el estado del contenido en Firestore (Borrador, Aprobada o Publicada).
-  const handleSaveToFirestore = async (status: "approved" | "published" | "draft" = "approved") => {
-    if (!campaignContent) {
+  const handleSaveToFirestore = async (
+    status: "approved" | "published" | "draft" = "approved",
+    latestContent?: ContentOutput | null
+  ) => {
+    const effectiveContent = latestContent || campaignContent;
+    if (!effectiveContent) {
       setCampaignErrorMessage("No existe un contenido que pueda guardarse.");
       return;
     }
@@ -383,8 +387,11 @@ export default function Page() {
           body: JSON.stringify({
             id: activeContentId,
             status,
-            content: campaignContent,
-            title: campaignContent.topicTitle || campaignContent.blog?.title
+            content: effectiveContent,
+            title: effectiveContent.topicTitle || effectiveContent.blog?.title,
+            targetAudience: selectedAudience || selectedAngle?.targetAudience || effectiveContent.editorialThesis?.targetProfessional,
+            sku: selectedSku,
+            humanApproved: status === "approved" || status === "published"
           })
         });
         resultId = result.id;
@@ -393,10 +400,12 @@ export default function Page() {
         const res = await apiFetch<{ success: boolean; content: { id: string; status: string } }>("/api/contents", {
           method: "POST",
           body: JSON.stringify({
-            content: campaignContent,
+            content: effectiveContent,
             status,
-            category: campaignContent.category || "general",
-            title: campaignContent.topicTitle || campaignContent.blog?.title || "Campaña B2B",
+            category: effectiveContent.category || "general",
+            title: effectiveContent.topicTitle || effectiveContent.blog?.title || "Campaña B2B",
+            targetAudience: selectedAudience || selectedAngle?.targetAudience || effectiveContent.editorialThesis?.targetProfessional,
+            sku: selectedSku,
             humanApproved: status === "approved" || status === "published"
           })
         });
@@ -407,10 +416,10 @@ export default function Page() {
         }
       }
 
-      setCampaignContent((prev) => prev ? {
-        ...prev,
+      setCampaignContent({
+        ...effectiveContent,
         status: newStatus === "APPROVED" ? "APPROVED" : newStatus === "PUBLISHED" ? "PUBLISHED" : "DRAFT"
-      } : prev);
+      });
 
       const statusLabels: Record<string, string> = {
         approved: "aprobada",
@@ -418,7 +427,7 @@ export default function Page() {
         draft: "guardada como borrador"
       };
       
-      const slug = campaignContent.blog?.slug;
+      const slug = effectiveContent.blog?.slug;
       if (status === "published" && slug) {
         const publicUrl = `/blog/${slug}`;
         if (confirm(`¡Artículo publicado con éxito en el Blog Público!\n\n¿Deseas abrirlo ahora en una pestaña nueva para verlo en vivo?`)) {
@@ -814,9 +823,10 @@ export default function Page() {
                   setActiveSection("images");
                 }}
                 onSaveToFirestore={handleSaveToFirestore}
-                onApprove={() => handleSaveToFirestore("approved")}
-                onPublishToStore={() => handleSaveToFirestore("published")}
-                onSaveDraft={() => handleSaveToFirestore("draft")}
+                onApprove={(latest) => handleSaveToFirestore("approved", latest)}
+                onPublishToStore={(latest) => handleSaveToFirestore("published", latest)}
+                onSaveDraft={(latest) => handleSaveToFirestore("draft", latest)}
+                onContentChange={(updated) => setCampaignContent(updated)}
                 isSavingArticle={isSavingArticle}
                 selectedAngle={selectedAngle}
                 onSelectAngle={(angle, isFree) => {

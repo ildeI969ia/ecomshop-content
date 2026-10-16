@@ -140,6 +140,33 @@ export function normalizePersistedContent(item: ContentItem, userWorkspaceId?: s
         : undefined,
       outline: Array.isArray(candidateBody.outline)
         ? (candidateBody.outline as ContentOutput["outline"])
+        : undefined,
+      editorialDecision: typeof candidateBody.editorialDecision === "object" && candidateBody.editorialDecision !== null
+        ? (candidateBody.editorialDecision as Record<string, unknown>)
+        : undefined,
+      citations: typeof candidateBody.citations === "object" && candidateBody.citations !== null
+        ? (candidateBody.citations as ContentOutput["citations"])
+        : undefined,
+      claims: Array.isArray(candidateBody.claims)
+        ? (candidateBody.claims as ContentOutput["claims"])
+        : undefined,
+      factCheckScore: typeof candidateBody.factCheckScore === "number"
+        ? candidateBody.factCheckScore
+        : undefined,
+      source: candidateBody.source === "ai" || candidateBody.source === "fallback"
+        ? candidateBody.source
+        : undefined,
+      generator: typeof candidateBody.generator === "string"
+        ? candidateBody.generator
+        : undefined,
+      fallbackUsed: typeof candidateBody.fallbackUsed === "boolean"
+        ? candidateBody.fallbackUsed
+        : undefined,
+      status: (candidateBody.status === "DRAFT" || candidateBody.status === "NEEDS_REVIEW" || candidateBody.status === "APPROVED" || candidateBody.status === "PUBLISHED")
+        ? candidateBody.status
+        : undefined,
+      fallbackNotice: typeof candidateBody.fallbackNotice === "string"
+        ? candidateBody.fallbackNotice
         : undefined
     };
 

@@ -72,10 +72,11 @@ interface CampaignWorkspaceProps {
   onRetry?: () => void;
   onReset?: () => void;
   onOpenImageStudio?: (prompt: string) => void;
-  onSaveToFirestore?: (status?: "approved" | "published" | "draft") => void;
-  onApprove?: () => void;
-  onPublishToStore?: () => void;
-  onSaveDraft?: () => void;
+  onSaveToFirestore?: (status?: "approved" | "published" | "draft", currentContent?: ContentOutput | null) => void;
+  onApprove?: (currentContent?: ContentOutput | null) => void;
+  onPublishToStore?: (currentContent?: ContentOutput | null) => void;
+  onSaveDraft?: (currentContent?: ContentOutput | null) => void;
+  onContentChange?: (updatedContent: ContentOutput) => void;
   isSavingArticle?: boolean;
   onSelectQuickSku?: (sku: string) => void;
   onLaunchWithSku?: (sku: string) => void;
@@ -134,6 +135,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
   onApprove,
   onPublishToStore,
   onSaveDraft,
+  onContentChange,
   isSavingArticle = false,
   onSelectQuickSku,
   onLaunchWithSku,
@@ -338,8 +340,11 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
         if (json.success && json.data) {
           setContent((prev) => {
             if (!prev) return prev;
-            return {
+            const next: ContentOutput = {
               ...prev,
+              editorialThesis: json.editorialThesis || prev.editorialThesis,
+              outline: json.outline || prev.outline,
+              editorialDecision: json.editorialDecision || prev.editorialDecision,
               geo: {
                 title: json.data.title || prev.blog?.title || "Artículo GEO EcomShop",
                 metaDescription: json.data.metaDescription || prev.blog?.metaDescription || "",
@@ -355,6 +360,8 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 metaDescription: json.data.metaDescription || prev.blog.metaDescription
               }
             };
+            onContentChange?.(next);
+            return next;
           });
         }
       } else {
@@ -375,10 +382,12 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
         if (json.success && json.data) {
           setContent((prev) => {
             if (!prev) return prev;
-            return {
+            const next: ContentOutput = {
               ...prev,
               [targetChannel]: json.data
             };
+            onContentChange?.(next);
+            return next;
           });
         }
       }
@@ -897,7 +906,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 className="bg-emerald-600 hover:bg-emerald-500 border-emerald-500/50"
                 disabled={isSavingArticle}
                 isLoading={isSavingArticle}
-                onClick={onApprove}
+                onClick={() => onApprove(content)}
                 leftIcon={!isSavingArticle ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" /> : undefined}
               >
                 Aprobar Campaña
@@ -912,7 +921,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 className="bg-sky-600 hover:bg-sky-500 border-sky-500/50 text-white font-bold shadow-md shadow-sky-500/20"
                 disabled={isSavingArticle}
                 isLoading={isSavingArticle}
-                onClick={onPublishToStore}
+                onClick={() => onPublishToStore(content)}
                 leftIcon={!isSavingArticle ? <Globe className="w-3.5 h-3.5 text-sky-100" /> : undefined}
               >
                 Publicar en Blog Público
@@ -927,7 +936,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 className="bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700"
                 disabled={isSavingArticle}
                 isLoading={isSavingArticle}
-                onClick={onSaveDraft}
+                onClick={() => onSaveDraft(content)}
                 leftIcon={!isSavingArticle ? <Save className="w-3.5 h-3.5" /> : undefined}
               >
                 Guardar Borrador
@@ -942,7 +951,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                 className="bg-emerald-600 hover:bg-emerald-500 border-emerald-500/50"
                 disabled={isSavingArticle}
                 isLoading={isSavingArticle}
-                onClick={() => onSaveToFirestore("approved")}
+                onClick={() => onSaveToFirestore("approved", content)}
                 leftIcon={!isSavingArticle ? <Save className="w-3.5 h-3.5" /> : undefined}
               >
                 {isSavingArticle ? "Guardando..." : "Guardar en Firestore"}
@@ -1663,6 +1672,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
           onOpenImageStudio={onOpenImageStudio}
           onSaveContent={async (updatedContent) => {
             setContent(updatedContent);
+            onContentChange?.(updatedContent);
             if (activeContentId) {
               const res = await fetch("/api/contents", {
                 method: "PATCH",
@@ -1671,7 +1681,10 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                   id: activeContentId,
                   status: content.status === "PUBLISHED" ? "PUBLISHED" : content.status === "APPROVED" ? "APPROVED" : "DRAFT",
                   content: updatedContent,
-                  title: updatedContent.blog?.title || updatedContent.topicTitle
+                  title: updatedContent.blog?.title || updatedContent.topicTitle,
+                  targetAudience: activeAudience,
+                  sku: selectedSku,
+                  humanApproved: true
                 })
               });
               if (!res.ok) {

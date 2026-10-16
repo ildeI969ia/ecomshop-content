@@ -66,6 +66,7 @@ export const POST = withAuthAndPermission("ai:execute", async (req, user) => {
       data: geoData,
       editorialThesis: content.editorialThesis,
       outline: content.outline,
+      editorialDecision: content.editorialDecision,
       qualityReport,
       tokensUsed: 3700
     });

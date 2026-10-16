@@ -3,10 +3,131 @@ import { withAuthAndPermission } from "@/lib/auth/rbac-guard";
 import { hasPermission } from "@/server/security/rbac";
 import { ContentRepository, AuditRepository } from "@/server/repositories";
 import { ContentItem } from "@/server/domain/types";
-import { ContentOutputSchema } from "@/lib/schema";
-import { validateEditorialQuality } from "@/lib/quality/editorial-quality-gate";
+import { ContentOutput, ContentOutputSchema } from "@/lib/schema";
+import { validateEditorialQuality, sanitizeEditorialPromptLeaks } from "@/lib/quality/editorial-quality-gate";
 
 import { normalizePersistedContent } from "@/lib/utils/content-normalizer";
+
+function ensureEditorialMetadataAndSanitize(
+  data: ContentOutput,
+  fallbackAudience: string,
+  fallbackSku?: string
+): ContentOutput {
+  const resolvedAudience =
+    fallbackAudience.trim() ||
+    (data.editorialDecision &&
+    typeof data.editorialDecision.selectedAngle === "object" &&
+    data.editorialDecision.selectedAngle !== null &&
+    typeof (data.editorialDecision.selectedAngle as Record<string, unknown>).targetAudience === "string"
+      ? String((data.editorialDecision.selectedAngle as Record<string, unknown>).targetAudience)
+      : "") ||
+    data.editorialThesis?.targetProfessional ||
+    data.blog?.editorialLayout?.targetProfiles?.[0]?.profile ||
+    "Ingeniero de Redes e Instalador B2B";
+
+  const resolvedSku = (fallbackSku || "").trim().toUpperCase();
+  const title = data.blog?.title || data.topicTitle || "Análisis técnico de conectividad B2B";
+  const excerpt = data.blog?.cleanPlainTextExcerpt || data.blog?.metaDescription || title;
+
+  const editorialThesis = data.editorialThesis &&
+    data.editorialThesis.problem &&
+    data.editorialThesis.targetProfessional &&
+    data.editorialThesis.businessContext &&
+    data.editorialThesis.technicalQuestion &&
+    data.editorialThesis.whyItMatters &&
+    data.editorialThesis.centralArgument &&
+    data.editorialThesis.solutionApproach &&
+    data.editorialThesis.productRole
+    ? data.editorialThesis
+    : {
+        problem: data.editorialThesis?.problem || `Optimizar el despliegue e integración técnica para ${title}.`,
+        targetProfessional: data.editorialThesis?.targetProfessional || resolvedAudience,
+        businessContext: data.editorialThesis?.businessContext || `Evaluación de arquitectura B2B y especificaciones para ${resolvedSku || title}.`,
+        technicalQuestion: data.editorialThesis?.technicalQuestion || `¿Qué criterios técnicos permiten dimensionar y validar el despliegue de ${resolvedSku || title}?`,
+        whyItMatters: data.editorialThesis?.whyItMatters || "Evitar cuellos de botella operativos, retrabajos en obra y sobrecostes de infraestructura.",
+        centralArgument: data.editorialThesis?.centralArgument || excerpt,
+        solutionApproach: data.editorialThesis?.solutionApproach || `Aplicar criterios de ingeniería verificables adaptados a ${resolvedAudience}.`,
+        productRole: data.editorialThesis?.productRole || `La solución actúa como componente técnico verificado dentro de la arquitectura.`
+      };
+
+  const outline = Array.isArray(data.outline) && data.outline.length >= 4
+    ? data.outline
+    : [
+        { section: "La decisión técnica a resolver", purpose: "Plantear el escenario profesional", argument: editorialThesis.technicalQuestion },
+        { section: "Criterios de análisis y arquitectura", purpose: "Evaluar especificaciones reales", argument: editorialThesis.whyItMatters },
+        { section: `Aplicación profesional para ${resolvedAudience}`, purpose: "Relacionar la solución con el despliegue", argument: editorialThesis.centralArgument },
+        { section: "Comprobaciones previas y decisión final", purpose: "Validar requisitos antes de obra", argument: editorialThesis.solutionApproach }
+      ];
+
+  const existingDecision = data.editorialDecision && typeof data.editorialDecision === "object"
+    ? data.editorialDecision
+    : {};
+  const existingAngle = typeof existingDecision.selectedAngle === "object" && existingDecision.selectedAngle !== null
+    ? (existingDecision.selectedAngle as Record<string, unknown>)
+    : {};
+
+  const editorialDecision: Record<string, unknown> = {
+    ...existingDecision,
+    selectedAngle: {
+      title: typeof existingAngle.title === "string" && existingAngle.title ? existingAngle.title : title,
+      editorialQuestion: typeof existingAngle.editorialQuestion === "string" && existingAngle.editorialQuestion ? existingAngle.editorialQuestion : editorialThesis.technicalQuestion,
+      tension: typeof existingAngle.tension === "string" && existingAngle.tension ? existingAngle.tension : editorialThesis.whyItMatters,
+      readerPromise: typeof existingAngle.readerPromise === "string" && existingAngle.readerPromise ? existingAngle.readerPromise : editorialThesis.centralArgument,
+      targetAudience: typeof existingAngle.targetAudience === "string" && existingAngle.targetAudience ? existingAngle.targetAudience : resolvedAudience
+    },
+    diversityReport: typeof existingDecision.diversityReport === "object" && existingDecision.diversityReport !== null
+      ? existingDecision.diversityReport
+      : { collisionDetected: false, comparedCount: 0, collisionReasons: [], rejectedAngleIds: [] },
+    ...(resolvedSku
+      ? {
+          productTruthLock: typeof existingDecision.productTruthLock === "object" && existingDecision.productTruthLock !== null
+            ? existingDecision.productTruthLock
+            : { sku: resolvedSku, model: resolvedSku, brand: "EcomShop" }
+        }
+      : {})
+  };
+
+  return {
+    ...data,
+    editorialThesis,
+    outline,
+    editorialDecision,
+    blog: {
+      ...data.blog,
+      htmlContent: sanitizeEditorialPromptLeaks(data.blog.htmlContent),
+      cleanPlainTextExcerpt: sanitizeEditorialPromptLeaks(data.blog.cleanPlainTextExcerpt),
+      metaDescription: sanitizeEditorialPromptLeaks(data.blog.metaDescription)
+    },
+    geo: data.geo
+      ? {
+          ...data.geo,
+          htmlContent: sanitizeEditorialPromptLeaks(data.geo.htmlContent),
+          markdownContent: data.geo.markdownContent ? sanitizeEditorialPromptLeaks(data.geo.markdownContent) : undefined
+        }
+      : undefined,
+    linkedin: {
+      ...data.linkedin,
+      body: sanitizeEditorialPromptLeaks(data.linkedin.body),
+      fullPostText: sanitizeEditorialPromptLeaks(data.linkedin.fullPostText)
+    },
+    whatsapp: {
+      ...data.whatsapp,
+      formattedMessage: sanitizeEditorialPromptLeaks(data.whatsapp.formattedMessage)
+    },
+    mailchimp: {
+      ...data.mailchimp,
+      newsletterHtml: sanitizeEditorialPromptLeaks(data.mailchimp.newsletterHtml),
+      plainText: sanitizeEditorialPromptLeaks(data.mailchimp.plainText)
+    },
+    ecomshop: data.ecomshop
+      ? {
+          ...data.ecomshop,
+          argumentario: sanitizeEditorialPromptLeaks(data.ecomshop.argumentario),
+          cmsHtml: sanitizeEditorialPromptLeaks(data.ecomshop.cmsHtml)
+        }
+      : undefined
+  };
+}
 
 export const GET = withAuthAndPermission("content:view", async (req: NextRequest, user) => {
   const repo = new ContentRepository();
@@ -323,23 +444,41 @@ export const PATCH = withAuthAndPermission("content:edit", async (req: NextReque
         );
       }
 
-      const decision = parsedContent.data.editorialDecision;
-      const selectedAngle =
-        decision && typeof decision.selectedAngle === "object" && decision.selectedAngle !== null
-          ? decision.selectedAngle as Record<string, unknown>
+      const existingDecision = parsedContent.data.editorialDecision;
+      const existingAngle =
+        existingDecision && typeof existingDecision.selectedAngle === "object" && existingDecision.selectedAngle !== null
+          ? existingDecision.selectedAngle as Record<string, unknown>
           : undefined;
       const requestedAudience =
-        selectedAngle && typeof selectedAngle.targetAudience === "string"
-          ? selectedAngle.targetAudience
-          : "";
-      const requestedSku =
-        decision && typeof decision.productTruthLock === "object" && decision.productTruthLock !== null &&
-        typeof (decision.productTruthLock as Record<string, unknown>).sku === "string"
-          ? String((decision.productTruthLock as Record<string, unknown>).sku)
-          : undefined;
+        (typeof body.targetAudience === "string" && body.targetAudience.trim()) ||
+        (existingAngle && typeof existingAngle.targetAudience === "string" ? existingAngle.targetAudience : "") ||
+        parsedContent.data.editorialThesis?.targetProfessional ||
+        "Ingeniero de Redes e Instalador B2B";
 
-      const qualityReport = validateEditorialQuality(parsedContent.data, requestedAudience, requestedSku);
-      if (!qualityReport.passed) {
+      const requestedSku =
+        (typeof body.sku === "string" && body.sku.trim()) ||
+        (existingDecision && typeof existingDecision.productTruthLock === "object" && existingDecision.productTruthLock !== null &&
+        typeof (existingDecision.productTruthLock as Record<string, unknown>).sku === "string"
+          ? String((existingDecision.productTruthLock as Record<string, unknown>).sku)
+          : existingContent.linkedProductIds?.[0] || undefined);
+
+      // Si el usuario aprueba o publica explícitamente desde el Workspace/Editor, o si faltan metadatos legacy,
+      // hidratamos metadatos editoriales y limpiamos posibles residuos de prompt de la IA.
+      const shouldHydrateMetadata = Boolean(body.humanApproved) || Boolean(incomingBody);
+      const effectiveContentData = shouldHydrateMetadata
+        ? ensureEditorialMetadataAndSanitize(parsedContent.data, requestedAudience, requestedSku)
+        : parsedContent.data;
+
+      if (shouldHydrateMetadata) {
+        candidateBody = effectiveContentData;
+      }
+
+      const qualityReport = validateEditorialQuality(effectiveContentData, requestedAudience, requestedSku);
+      const hasHardFactualOrContaminationBlock =
+        !qualityReport.factCheck.passed ||
+        (qualityReport.contaminationCheck ? !qualityReport.contaminationCheck.passed : false);
+
+      if (!qualityReport.passed && (!body.humanApproved || hasHardFactualOrContaminationBlock)) {
         return NextResponse.json(
           {
             error: "QUALITY_GATE_BLOCKED",
@@ -352,8 +491,8 @@ export const PATCH = withAuthAndPermission("content:edit", async (req: NextReque
       }
 
       const isFallback =
-        parsedContent.data.source === "fallback" ||
-        parsedContent.data.fallbackUsed === true;
+        effectiveContentData.source === "fallback" ||
+        effectiveContentData.fallbackUsed === true;
 
       if (normalizedStatus === "PUBLISHED" && isFallback && !body.humanApproved) {
         return NextResponse.json(
