@@ -1156,7 +1156,7 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
                           className="bg-indigo-950/70 hover:bg-indigo-900 border-indigo-700 text-indigo-200"
                           leftIcon={<Edit3 className="w-3.5 h-3.5 text-indigo-400" />}
                         >
-                          Editar Artículo & Imagen
+                          Editor WYSIWYG & Fotos IA
                         </Button>
 
                         <Button
@@ -1215,10 +1215,20 @@ export const CampaignWorkspace: React.FC<CampaignWorkspaceProps> = ({
 
                     {/* VISTA DEL ARTÍCULO HTML */}
                     <div className="space-y-2">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                        <Globe className="w-4 h-4 text-sky-400" />
-                        <span>Vista previa del Artículo Blog GEO</span>
-                      </h4>
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-sky-400" />
+                          <span>Vista previa del Artículo Blog GEO</span>
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditorModalOpen(true)}
+                          className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 cursor-pointer font-semibold"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>Editar en WYSIWYG e insertar fotos en secciones</span>
+                        </button>
+                      </div>
                       <div 
                         onClick={handleContainerClick}
                         className="border border-slate-200 rounded-xl p-6 bg-white text-slate-900 shadow-xs max-h-[600px] overflow-y-auto select-text cursor-text"

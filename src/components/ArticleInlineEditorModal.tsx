@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
 import { ContentOutput } from "@/lib/schema";
+import { RichArticleEditor } from "@/components/editor/RichArticleEditor";
 
 interface ArticleInlineEditorModalProps {
   isOpen: boolean;
@@ -196,8 +197,8 @@ export function ArticleInlineEditorModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-5 overflow-y-auto">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-7xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Cabecera del Editor */}
         <div className="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -206,13 +207,13 @@ export function ArticleInlineEditorModal({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-white">Editor de Publicación & SEO</h3>
+                <h3 className="text-base font-bold text-white">Estudio de Edición WYSIWYG, Fotos IA & SEO</h3>
                 <Badge variant="indigo" size="xs">
                   SKU: {sku}
                 </Badge>
               </div>
               <p className="text-xs text-slate-400">
-                Modifica el texto, palabras clave y la imagen destacada que se renderiza en el blog público.
+                Edita el artículo visualmente en tiempo real, inserta fotografías generadas con IA en los puntos recomendados y ajusta el SEO.
               </p>
             </div>
           </div>
@@ -397,21 +398,27 @@ export function ArticleInlineEditorModal({
             </div>
           </div>
 
-          {/* Fila 5: Editor del Cuerpo HTML */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="font-semibold text-slate-300">
-                Cuerpo del Artículo (HTML / Secciones técnicas)
-              </label>
-              <span className="text-[10px] text-slate-500 font-mono">
-                {htmlContent.length} caracteres
-              </span>
-            </div>
-            <textarea
-              rows={12}
-              value={htmlContent}
-              onChange={(e) => setHtmlContent(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs text-slate-200 leading-relaxed focus:border-indigo-500 focus:outline-none"
+          {/* Fila 5: Entorno de Edición WYSIWYG + Guía de Fotos IA */}
+          <div className="space-y-2">
+            <label className="font-semibold text-slate-200 text-sm flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-indigo-400" />
+              <span>Entorno de Edición Visual WYSIWYG y Ubicación de Fotografías IA</span>
+            </label>
+            <RichArticleEditor
+              htmlContent={htmlContent}
+              onChangeHtmlContent={setHtmlContent}
+              sku={sku}
+              articleTitle={title}
+              featuredImageUrl={featuredImageUrl}
+              existingPlacements={initialContent.blog?.editorialLayout?.photoPlacements || []}
+              onOpenImageStudio={
+                onOpenImageStudio
+                  ? (prompt) => {
+                      onOpenImageStudio(prompt);
+                      onClose();
+                    }
+                  : undefined
+              }
             />
           </div>
         </div>

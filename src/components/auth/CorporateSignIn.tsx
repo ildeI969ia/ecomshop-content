@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Shield, Lock, AlertCircle, Mail, Key } from "lucide-react";
 
 interface CorporateSignInProps {
@@ -12,6 +12,17 @@ export function CorporateSignIn({ onSuccess }: CorporateSignInProps) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Asegurar que al acceder o cerrar sesión los campos estén vacíos y sin recordar al usuario previo
+  useEffect(() => {
+    setEmail("");
+    setPassword("");
+    const timer = setTimeout(() => {
+      setEmail("");
+      setPassword("");
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,27 +77,65 @@ export function CorporateSignIn({ onSuccess }: CorporateSignInProps) {
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /><span>{errorMsg}</span>
           </div>
         )}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4">
+          {/* Inputs honeypot ocultos para neutralizar el autofill agresivo de Chromium */}
+          <input
+            type="text"
+            name="prevent_autofill_username"
+            style={{ display: "none" }}
+            tabIndex={-1}
+            aria-hidden="true"
+            autoComplete="off"
+          />
+          <input
+            type="password"
+            name="prevent_autofill_password"
+            style={{ display: "none" }}
+            tabIndex={-1}
+            aria-hidden="true"
+            autoComplete="new-password"
+          />
+
           <label className="block text-xs font-semibold text-slate-300">
             Correo electrónico
             <div className="relative mt-1">
               <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
-              <input type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)}
+              <input
+                type="email"
+                required
+                name="ecom_corporate_user"
+                id="ecom_corporate_user"
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="usuario@ecomspain.com"
-                className="w-full h-11 pl-9 pr-3 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500" />
+                className="w-full h-11 pl-9 pr-3 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+              />
             </div>
           </label>
           <label className="block text-xs font-semibold text-slate-300">
             Contraseña
             <div className="relative mt-1">
               <Key className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
-              <input type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)}
+              <input
+                type="password"
+                required
+                name="ecom_corporate_secret"
+                id="ecom_corporate_secret"
+                autoComplete="new-password"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full h-11 pl-9 pr-3 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500" />
+                className="w-full h-11 pl-9 pr-3 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+              />
             </div>
           </label>
           <button type="submit" disabled={loading}
-            className="w-full h-11 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition disabled:opacity-50">
+            className="w-full h-11 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition disabled:opacity-50 cursor-pointer">
             {loading ? "Autenticando..." : "Iniciar sesión"}
           </button>
         </form>
