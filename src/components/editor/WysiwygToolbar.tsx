@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import {
   Bold,
   Italic,
@@ -14,7 +13,8 @@ import {
   RemoveFormatting,
   Sparkles,
   Columns,
-  Code
+  Code,
+  Wand2
 } from "lucide-react";
 
 export type EditorViewMode = "BLOCKS_AI" | "SPLIT_LIVE" | "HTML_CODE";
@@ -23,6 +23,7 @@ interface WysiwygToolbarProps {
   viewMode: EditorViewMode;
   onChangeViewMode: (mode: EditorViewMode) => void;
   onExecCommand: (command: string, value?: string) => void;
+  onAutoFormat?: () => void;
   characterCount: number;
   photoCount: number;
 }
@@ -31,6 +32,7 @@ export const WysiwygToolbar: React.FC<WysiwygToolbarProps> = ({
   viewMode,
   onChangeViewMode,
   onExecCommand,
+  onAutoFormat,
   characterCount,
   photoCount
 }) => {
@@ -168,6 +170,21 @@ export const WysiwygToolbar: React.FC<WysiwygToolbarProps> = ({
         >
           <RemoveFormatting className="w-3.5 h-3.5" />
         </button>
+
+        {onAutoFormat && (
+          <>
+            <div className="w-px h-4 bg-slate-800 mx-0.5" />
+            <button
+              type="button"
+              onClick={onAutoFormat}
+              title="Maquetar automáticamente el artículo con títulos, subtítulos, negritas y llamadas destacadas"
+              className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+            >
+              <Wand2 className="w-3.5 h-3.5 text-amber-300" />
+              <span>Maquetar Automático</span>
+            </button>
+          </>
+        )}
       </div>
 
       {/* Selector de Modo de Edición y Contadores */}

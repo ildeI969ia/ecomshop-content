@@ -10,6 +10,7 @@ import {
   serializeEditableSectionsToHtml,
   buildSectionPhotoSuggestion
 } from "@/lib/editorial-photo-suggester";
+import { autoFormatAndStyleArticleHtml } from "@/lib/editorial-auto-styler";
 import { WysiwygToolbar, EditorViewMode } from "./WysiwygToolbar";
 import { PhotoSlotCard } from "./PhotoSlotCard";
 
@@ -130,6 +131,12 @@ export const RichArticleEditor: React.FC<RichArticleEditorProps> = ({
     syncSectionsToParent(nextSections);
   };
 
+  const handleAutoFormat = () => {
+    const formatted = autoFormatAndStyleArticleHtml(htmlContent, { sku, topicTitle: articleTitle });
+    const nextSections = parseHtmlIntoEditableSections(formatted, sku, existingPlacements);
+    syncSectionsToParent(nextSections);
+  };
+
   const handleAddNewSection = () => {
     const nextIndex = sections.length;
     const defaultHeading = "Nueva Sección Técnica";
@@ -152,6 +159,7 @@ export const RichArticleEditor: React.FC<RichArticleEditorProps> = ({
         viewMode={viewMode}
         onChangeViewMode={handleChangeViewMode}
         onExecCommand={handleExecCommand}
+        onAutoFormat={handleAutoFormat}
         characterCount={htmlContent.length}
         photoCount={insertedPhotosCount}
       />

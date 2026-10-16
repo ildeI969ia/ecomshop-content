@@ -1,6 +1,7 @@
 import { getAdminFirestore } from "@/server/config/firebase";
 import { ContentItem } from "@/server/domain/types";
 import { normalizePersistedContent, ContentLibraryItem } from "@/lib/utils/content-normalizer";
+import { autoFormatAndStyleArticleHtml } from "@/lib/editorial-auto-styler";
 
 export interface PublicBlogPostItem {
   id: string;
@@ -167,6 +168,9 @@ export async function getPublishedBlogPostBySlug(slug: string): Promise<PublicBl
     const rawBlog = rawBody.blog || rawBody;
     const rawGeo = rawBody.geo || {};
 
+    const rawHtml = normalized.content?.blog.htmlContent || rawBlog.htmlContent || rawBlog.content || "";
+    const cleanExcerpt = normalized.content?.blog.cleanPlainTextExcerpt || normalized.preview;
+    const finalHtml = rawHtml ? autoFormatAndStyleArticleHtml(rawHtml, { sku: normalized.productId || undefined, topicTitle: item.title }) : "";
     const featuredImage = extractFeaturedImage(rawBlog, item);
 
     return {
@@ -181,8 +185,8 @@ export async function getPublishedBlogPostBySlug(slug: string): Promise<PublicBl
       productId: normalized.productId,
       featuredImageUrl: featuredImage,
       targetKeywords: normalized.content?.blog.targetKeywords || [],
-      htmlContent: normalized.content?.blog.htmlContent || "",
-      cleanPlainTextExcerpt: normalized.content?.blog.cleanPlainTextExcerpt || normalized.preview,
+      htmlContent: finalHtml,
+      cleanPlainTextExcerpt: cleanExcerpt,
       metaDescription: normalized.content?.blog.metaDescription || normalized.preview,
       jsonLd: rawGeo.jsonLd || undefined,
       comparativeTableHtml: rawGeo.comparativeTableHtml || undefined,

@@ -265,7 +265,18 @@ export default async function BlogPostDetailPage({ params }: PageProps) {
         )}
 
         {/* Article Body */}
-        <div className="prose prose-invert prose-sky max-w-none text-slate-300 leading-relaxed text-base sm:text-lg">
+        <div className="prose prose-invert prose-sky max-w-none text-slate-300 leading-relaxed text-base sm:text-lg 
+          [&_h2]:text-2xl sm:[&_h2]:text-3xl [&_h2]:font-extrabold [&_h2]:text-white [&_h2]:tracking-tight [&_h2]:mt-12 [&_h2]:mb-4 [&_h2]:pt-6 [&_h2]:border-t [&_h2]:border-slate-800/80 [&_h2]:flex [&_h2]:items-center [&_h2]:gap-2
+          [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-sky-300 [&_h3]:mt-8 [&_h3]:mb-3
+          [&_p]:mb-5 [&_p]:leading-relaxed
+          [&_p.lead]:text-lg sm:[&_p.lead]:text-xl [&_p.lead]:font-medium [&_p.lead]:text-slate-100 [&_p.lead]:border-l-4 [&_p.lead]:border-sky-500 [&_p.lead]:pl-5 [&_p.lead]:py-3 [&_p.lead]:my-8 [&_p.lead]:bg-slate-900/60 [&_p.lead]:rounded-r-2xl
+          [&_strong]:text-white [&_strong]:font-bold [&_strong]:bg-slate-800/60 [&_strong]:px-1 [&_strong]:py-0.5 [&_strong]:rounded
+          [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-6 [&_ul]:space-y-2 [&_li]:text-slate-300
+          [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-6 [&_ol]:space-y-2
+          [&_blockquote]:border-l-4 [&_blockquote]:border-sky-500 [&_blockquote]:pl-5 [&_blockquote]:italic [&_blockquote]:text-slate-200 [&_blockquote]:bg-slate-900/40 [&_blockquote]:py-3 [&_blockquote]:rounded-r-xl [&_blockquote]:my-6
+          [&_figure]:my-8 [&_figure]:p-4 [&_figure]:bg-slate-900/80 [&_figure]:border [&_figure]:border-slate-800 [&_figure]:rounded-2xl [&_figure]:shadow-xl
+          [&_figure_img]:rounded-xl [&_figure_img]:w-full [&_figure_img]:object-cover [&_figure_img]:aspect-video
+          [&_figcaption]:mt-3 [&_figcaption]:text-xs [&_figcaption]:text-center [&_figcaption]:text-slate-400 [&_figcaption]:font-sans">
           {post.htmlContent ? (
             <SafeHtml html={post.htmlContent} />
           ) : (

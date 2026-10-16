@@ -2,6 +2,7 @@ import { ContentOutput } from "@/lib/schema";
 import { ChannelWriterInput } from "@/lib/types/channel-strategy";
 import { generateDynamicComparativeTableHtml } from "@/lib/services/grounded-writer-comparative";
 import { sanitizeEditorialPromptLeaks } from "@/lib/quality/editorial-quality-gate";
+import { autoFormatAndStyleArticleHtml } from "@/lib/editorial-auto-styler";
 
 /**
  * Normalizadores y sanitizadores de canal (Mandato 4).
@@ -24,13 +25,14 @@ export function normalizeBlogChannel(
   const rawHtml = rawBlog?.htmlContent || (rawBlog as any)?.content || (rawBlog as any)?.body || (rawBlog as any)?.articleHtml;
   if (rawHtml && rawHtml.length >= 400) {
     const sanitizedHtml = sanitizeEditorialPromptLeaks(String(rawHtml));
+    const styledHtml = autoFormatAndStyleArticleHtml(sanitizedHtml, { sku, topicTitle: title });
     return {
       title: sanitizeEditorialPromptLeaks(title),
       metaDescription: sanitizeEditorialPromptLeaks(rawBlog?.metaDescription || `Análisis técnico consultivo de ${productName} para ${decision.primaryAudience}.`),
       slug,
-      readingTimeMinutes: rawBlog?.readingTimeMinutes || Math.max(4, Math.ceil(sanitizedHtml.split(/\s+/).length / 200)),
+      readingTimeMinutes: rawBlog?.readingTimeMinutes || Math.max(4, Math.ceil(styledHtml.split(/\s+/).length / 200)),
       targetKeywords: rawBlog?.targetKeywords || [sku, intel.model, context.effectiveCategory],
-      htmlContent: sanitizedHtml,
+      htmlContent: styledHtml,
       cleanPlainTextExcerpt: sanitizeEditorialPromptLeaks(rawBlog?.cleanPlainTextExcerpt || thesis.centralArgument)
     };
   }
