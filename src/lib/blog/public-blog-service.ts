@@ -84,15 +84,15 @@ function extractFeaturedImage(rawBlog: any, rawItem: any): string | null {
 export async function getPublishedBlogPosts(limitCount = 20): Promise<PublicBlogPostItem[]> {
   try {
     const db = getAdminFirestore();
-    // Consulta con timeout de seguridad (4000ms) para evitar bloqueos durante compilación
+    // Consulta con soporte para estados 'PUBLISHED' y 'published' con timeout de seguridad (12000ms) para tolerar cold-starts en Cloud Run
     const queryPromise = db
       .collection("contents")
-      .where("status", "==", "PUBLISHED")
+      .where("status", "in", ["PUBLISHED", "published"])
       .limit(Math.max(limitCount * 2, 50))
       .get();
 
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("FIRESTORE_TIMEOUT")), 4000)
+      setTimeout(() => reject(new Error("FIRESTORE_TIMEOUT")), 12000)
     );
 
     const snapshot = await Promise.race([queryPromise, timeoutPromise]);
@@ -147,12 +147,12 @@ export async function getPublishedBlogPostBySlug(slug: string): Promise<PublicBl
     const queryPromise = db
       .collection("contents")
       .where("slug", "==", slug)
-      .where("status", "==", "PUBLISHED")
+      .where("status", "in", ["PUBLISHED", "published"])
       .limit(1)
       .get();
 
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("FIRESTORE_TIMEOUT")), 4000)
+      setTimeout(() => reject(new Error("FIRESTORE_TIMEOUT")), 12000)
     );
 
     const snapshot = await Promise.race([queryPromise, timeoutPromise]);

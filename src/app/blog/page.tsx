@@ -8,6 +8,8 @@ import { BlogEmptyState } from "@/components/blog/BlogEmptyState";
 import { Sparkles, ArrowRight, BookOpen, Layers, ShieldCheck, Cpu } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 
 export const metadata: Metadata = {
   title: "Blog Técnico B2B | EcomShop Telecomunicaciones y Redes",
