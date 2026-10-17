@@ -101,15 +101,36 @@ export async function getPublishedBlogPosts(limitCount = 20): Promise<PublicBlog
       return [];
     }
 
-    const items: PublicBlogPostItem[] = snapshot.docs.map((doc) => {
+    const validItems: PublicBlogPostItem[] = [];
+    const seenKeys = new Set<string>();
+
+    for (const doc of snapshot.docs) {
       const item = doc.data() as ContentItem;
       const normalized = normalizePersistedContent(item);
       const rawBody = (item.versions?.[0]?.body as any) || (item.canonicalBody as any) || item;
       const rawBlog = rawBody.blog || rawBody;
 
+      // Descartar artículos sin contenido real (esqueletos o pruebas incompletas)
+      const hasContent = Boolean(
+        normalized.content?.blog?.htmlContent ||
+        rawBlog?.htmlContent ||
+        rawBlog?.content ||
+        (normalized.preview && normalized.preview !== item.title && normalized.preview.length > 30)
+      );
+      if (!hasContent) {
+        continue;
+      }
+
+      // Deduplicar por slug canónico o por título exacto si existieran copias
+      const dedupeKey = (item.slug || normalized.slug || item.title || normalized.title).toLowerCase().trim();
+      if (seenKeys.has(dedupeKey)) {
+        continue;
+      }
+      seenKeys.add(dedupeKey);
+
       const featuredImage = extractFeaturedImage(rawBlog, item);
 
-      return {
+      validItems.push({
         id: item.id || doc.id,
         title: item.title || normalized.title,
         slug: item.slug || normalized.slug,
@@ -125,13 +146,13 @@ export async function getPublishedBlogPosts(limitCount = 20): Promise<PublicBlog
           name: "Equipo de Ingeniería EcomShop",
           role: "Consultoría y Soluciones de Red B2B"
         }
-      };
-    });
+      });
+    }
 
     // Ordenación en memoria descendente por fecha de publicación/creación
-    items.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+    validItems.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
-    return items.slice(0, limitCount);
+    return validItems.slice(0, limitCount);
   } catch (error) {
     console.error("[getPublishedBlogPosts] Error al consultar Firestore:", error);
     return [];
